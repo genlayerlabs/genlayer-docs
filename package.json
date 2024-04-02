@@ -1,7 +1,7 @@
 {
-  "name": "nextra-docs-template",
+  "name": "genlayer-docs",
   "version": "0.0.1",
-  "description": "Nextra docs template",
+  "description": "GenLayer documentation",
   "scripts": {
     "dev": "next dev",
     "build": "next build",
@@ -9,14 +9,14 @@
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/shuding/nextra-docs-template.git"
+    "url": "git+https://github.com/yeagerai/genlayer-docs.git"
   },
-  "author": "Shu Ding <g@shud.in>",
+  "author": "GenLayer",
   "license": "MIT",
   "bugs": {
-    "url": "https://github.com/shuding/nextra-docs-template/issues"
+    "url": "https://github.com/yeagerai/genlayer-docs/issues"
   },
-  "homepage": "https://github.com/shuding/nextra-docs-template#readme",
+  "homepage": "https://github.com/yeagerai/genlayer-docs#readme",
   "dependencies": {
     "next": "^13.0.6",
     "nextra": "latest",
