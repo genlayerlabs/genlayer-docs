@@ -3,7 +3,5 @@
   "/_error": "pages/_error.js",
   "/_document": "pages/_document.js",
   "/": "pages/index.js",
-  "/advanced/satori": "pages/advanced/satori.js",
-  "/another": "pages/another.js",
-  "/advanced": "pages/advanced.js"
+  "/about": "pages/about.js"
 }

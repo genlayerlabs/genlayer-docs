@@ -1,22 +1,12 @@
-# Nextra Docs Template 
+# GenLayer Documentation
 
-This is a template for creating documentation with [Nextra](https://nextra.site).
+This repo contains technical documentation for the [GenLayer project](https://genlayer.com/). 
 
-[**Live Demo →**](https://nextra-docs-template.vercel.app)
+## Setting up the Docs Locally
 
-[![](.github/screenshot.png)](https://nextra-docs-template.vercel.app)
+- First, run `pnpm i` to install the dependencies.
 
-## Quick Start
-
-Click the button to clone this repository and deploy it on Vercel:
-
-[![](https://vercel.com/button)](https://vercel.com/new/clone?s=https%3A%2F%2Fgithub.com%2Fshuding%2Fnextra-docs-template&showOptionalTeamCreation=false)
-
-## Local Development
-
-First, run `pnpm i` to install the dependencies.
-
-Then, run `pnpm dev` to start the development server and visit localhost:3000.
+- Then, run `pnpm dev` to start the development server and visit localhost:3000.
 
 ## License
 

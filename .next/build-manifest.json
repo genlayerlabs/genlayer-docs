@@ -30,20 +30,10 @@
       "static/chunks/main.js",
       "static/chunks/pages/_error.js"
     ],
-    "/advanced": [
+    "/about": [
       "static/chunks/webpack.js",
       "static/chunks/main.js",
-      "static/chunks/pages/advanced.js"
-    ],
-    "/advanced/satori": [
-      "static/chunks/webpack.js",
-      "static/chunks/main.js",
-      "static/chunks/pages/advanced/satori.js"
-    ],
-    "/another": [
-      "static/chunks/webpack.js",
-      "static/chunks/main.js",
-      "static/chunks/pages/another.js"
+      "static/chunks/pages/about.js"
     ]
   },
   "ampFirstPages": []
