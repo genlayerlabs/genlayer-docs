@@ -1,7 +1,7 @@
 {
   "index": "Introduction",
-  "another": "Another Page",
-  "advanced": "Advanced (A Folder)",
+  "concepts": "",
+  "simulator": "Simulator",
   "about": {
     "title": "About",
     "type": "page"
