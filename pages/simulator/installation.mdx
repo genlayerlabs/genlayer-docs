@@ -1,4 +1,7 @@
 # Installation
+
+import { Callout } from 'nextra-theme-docs'
+
 Follow these detailed steps to set up and start using the simulator for developing and testing Intelligent Contracts.
 
 ## Prerequisites
@@ -22,9 +25,16 @@ In the root directory of the cloned repository, execute the following commands:
 
 ```bash
 cp .env.example .env
-docker compose build
-docker compose up
+vim .env
+GENVMOPENAIKEY     = '...' # Replace the placeholder with your actual OpenAI API key
+docker-compose build
+docker-compose up
 ```
+
+<Callout>
+   To obtain your `GENVMOPENAIKEY`, visit [OpenAI's API platform](https://openai.com/). You will need to register and create an API key that allows your instance of GenVM to interact with OpenAI services.
+</Callout>
+
 
 ### Step 2: Install and configure the GenLayer Simulator
 
@@ -36,7 +46,7 @@ Open a second terminal window for the following setup steps:
 docker exec -it ollama ollama run llama2
 ```
 
-#### Set Up the virtual environment
+#### Set up the Python virtual environment
 
 For macOS/Linux:
 
@@ -65,13 +75,17 @@ virtualenv .venv
 (.venv) $env:PYTHONPATH = (Get-Location).Path
 ```
 
-#### Initialize the environment
+#### Setup GenVM and run simple contract
 
 Execute the demo script to set up an initial state with validators and deploy a sample contract:
 
 ```bash
 (.venv) python scripts/debug_prototype.py
 ```
+
+<Callout>
+  If you prefer to run the steps separately instead of using the script above, you can follow the commands written [here](https://github.com/yeagerai/genlayer-simulator?tab=readme-ov-file#seperate-steps).
+</Callout>
 
 ## Set up the Frontend
 
@@ -88,4 +102,4 @@ npm install
 npm run dev
 ```
 
-This will compile the project and start a development server.
+This will compile the project and start the localhost development server.
