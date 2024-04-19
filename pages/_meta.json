@@ -1,6 +1,7 @@
 {
   "index": "Introduction",
-  "concepts": "",
+  "installation": "",
+  "command-line-options": "",
   "simulator": "Simulator",
   "about": {
     "title": "About",
