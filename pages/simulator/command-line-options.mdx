@@ -2,7 +2,7 @@
 
 Each command includes syntax, usage information, and examples to help you effectively use the CLI for interacting with the GenLayer ecosystem.
 
-## Command Line Syntax Overview
+## Command line syntax
 
 General syntax for using the GenLayer CLI is:
 
@@ -10,7 +10,7 @@ General syntax for using the GenLayer CLI is:
 genlayer [global options] command [command options] [arguments...]
 ```
 
-## Commands and Usage
+## Commands and usage
 
 ### Initialize
 
@@ -37,7 +37,7 @@ EXAMPLES:
    genlayer up --no-restart session123
 ```
 
-### Fund Account
+### Fund account
 
 Adds tokens to an account identified by the given address.
 
@@ -49,7 +49,7 @@ EXAMPLES:
    genlayer fund-account --to 0xABC123 --from 0xDEF456 --amount 1000
 ```
 
-### Send Transaction
+### Send transaction
 
 Transfers tokens from one account to another.
 
@@ -61,7 +61,7 @@ EXAMPLES:
    genlayer send --to 0x789 --from 0x456
 ```
 
-### Deploy Contract
+### Deploy contract
 
 Deploys an Intelligent Contract from a specified file.
 
@@ -73,7 +73,7 @@ EXAMPLES:
    genlayer deploy-contract path/to/contract.py --from-account 0xABC123
 ```
 
-### Call Contract Function
+### Call contract function
 
 Invokes a function of a deployed Intelligent Contract.
 
@@ -85,7 +85,7 @@ EXAMPLES:
    genlayer contract --address 0xDEF456 --function "increaseCount" --args [10] --from 0xABC123
 ```
 
-### Get Validators Count
+### Get validators count
 
 Retrieves the number of validators currently active in the simulator.
 
@@ -97,7 +97,7 @@ EXAMPLES:
    genlayer validators
 ```
 
-### Get Account Balance
+### Get account balance
 
 Displays the balance of a specified account.
 
