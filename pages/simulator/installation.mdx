@@ -1,105 +1,46 @@
-# Installation
+# Install GenLayer
 
-import { Callout } from 'nextra-theme-docs'
-
-Follow these detailed steps to set up and start using the simulator for developing and testing Intelligent Contracts.
+The GenLayer CLI provides development environment for interacting with the GenLayer ecosystem, supporting tasks such as account creation, transaction handling, and Intelligent Contract operations. It facilitates operations across different environments including mainnet, testnet, and a local simulator.
 
 ## Prerequisites
+Before installing GenLayer, ensure you have the following prerequisites installed:
 
-Before you begin, ensure you have [Docker installed](https://docs.docker.com/engine/install/), as they are required to create the necessary environment for the GenLayer Simulator.
+- [Docker](https://docs.docker.com/engine/install/): Required to run the simulator environment.
+- [Node.js and Npm](https://docs.npmjs.com/downloading-and-installing-node-js-and-npm/): Needed for the GenLayer CLI tool.
+
 
 ## Installation steps
 
-### Clone the repository
+### 1. Install GenLayer CLI
 
-Start by cloning the GenLayer Simulator repository from GitHub to get the latest version of the simulator. Open a terminal window and run:
-
-```bash
-git clone https://github.com/yeagerai/genlayer-simulator
-cd genlayer-simulator
-```
-
-### Step 1: Set Up the Docker environment
-
-In the root directory of the cloned repository, execute the following commands:
+GenLayer CLI is the main tool for interacting with the GenLayer ecosystem. Install it via npm:
 
 ```bash
-cp .env.example .env
-vim .env
-GENVMOPENAIKEY     = '...' # Replace the placeholder with your actual OpenAI API key
-docker-compose build
-docker-compose up
+npm install genlayer
 ```
 
-<Callout>
-   To obtain your `GENVMOPENAIKEY`, visit [OpenAI's API platform](https://openai.com/). You will need to register and create an API key that allows your instance of GenVM to interact with OpenAI services.
-</Callout>
+### 2. Initialize the environment
 
-
-### Step 2: Install and configure the GenLayer Simulator
-
-Open a second terminal window for the following setup steps:
-
-#### Install the Ollama model
+After installing the CLI, set up your development environment:
 
 ```bash
-docker exec -it ollama ollama run llama2
+genlayer init
 ```
 
-#### Set up the Python virtual environment
+This command performs several actions:
+- Verifies that Docker is installed.
+- Downloads and runs the necessary Docker images.
+- Initializes the database and sets up the required tables and accounts.
+- Launches the simulator and optionally the frontend in your browser.
 
-For macOS/Linux:
+You'll be notified of the frontend's URL and provided documentation links once the setup completes.
+
+## 3. Start the simulator
+
+To begin using the GenLayer environment and test your Intelligent Contracts, start the simulator with the following command:
 
 ```bash
-virtualenv .venv
-source .venv/bin/activate
-(.venv) pip install -r requirements.txt
-(.venv) export PYTHONPATH="$(pwd)"
+genlayer up
 ```
 
-For Windows (cmd):
-
-```cmd
-virtualenv .venv
-.\\.venv\\Scripts\\activate
-(.venv) pip install -r requirements.txt
-(.venv) set PYTHONPATH=%cd%
-```
-
-For Windows (PowerShell):
-
-```powershell
-virtualenv .venv
-.\\.venv\\Scripts\\activate
-(.venv) pip install -r requirements.txt
-(.venv) $env:PYTHONPATH = (Get-Location).Path
-```
-
-#### Setup GenVM and run simple contract
-
-Execute the demo script to set up an initial state with validators and deploy a sample contract:
-
-```bash
-(.venv) python scripts/debug_prototype.py
-```
-
-<Callout>
-  If you prefer to run the steps separately instead of using the script above, you can follow the commands written [here](https://github.com/yeagerai/genlayer-simulator?tab=readme-ov-file#seperate-steps).
-</Callout>
-
-## Set up the Frontend
-
-Navigate to the frontend directory within the cloned repository:
-
-```bash
-cd frontend
-```
-
-Install dependencies and start the development server:
-
-```bash
-npm install
-npm run dev
-```
-
-This will compile the project and start the localhost development server.
+This command will start the simulator with a fresh database and account setup. It will also provide the frontend URL.

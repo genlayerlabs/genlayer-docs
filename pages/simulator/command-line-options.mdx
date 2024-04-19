@@ -1,0 +1,111 @@
+# Command Line Options
+
+Each command includes syntax, usage information, and examples to help you effectively use the CLI for interacting with the GenLayer ecosystem.
+
+## Command Line Syntax Overview
+
+General syntax for using the GenLayer CLI is:
+
+```bash
+genlayer [global options] command [command options] [arguments...]
+```
+
+## Commands and Usage
+
+### Initialize
+
+Prepares and verifies your environment to run the GenLayer simulator.
+
+```bash
+USAGE:
+   genlayer init
+
+EXAMPLES:
+   genlayer init
+```
+
+### Start Simulator
+
+Launches the simulator and its frontend, initializing a fresh set of database and accounts.
+
+```bash
+USAGE:
+   genlayer up [--no-restart <sessionId>]
+
+EXAMPLES:
+   genlayer up
+   genlayer up --no-restart session123
+```
+
+### Fund Account
+
+Adds tokens to an account identified by the given address.
+
+```bash
+USAGE:
+   genlayer fund-account --to <address> [--from <address>] --amount <amount>
+
+EXAMPLES:
+   genlayer fund-account --to 0xABC123 --from 0xDEF456 --amount 1000
+```
+
+### Send Transaction
+
+Transfers tokens from one account to another.
+
+```bash
+USAGE:
+   genlayer send --to <address> [--from <address>]
+
+EXAMPLES:
+   genlayer send --to 0x789 --from 0x456
+```
+
+### Deploy Contract
+
+Deploys an Intelligent Contract from a specified file.
+
+```bash
+USAGE:
+   genlayer deploy-contract <path-to-file> [--from-account <address>]
+
+EXAMPLES:
+   genlayer deploy-contract path/to/contract.py --from-account 0xABC123
+```
+
+### Call Contract Function
+
+Invokes a function of a deployed Intelligent Contract.
+
+```bash
+USAGE:
+   genlayer contract --address <contract-address> --function <function-name> [--args [arg1, arg2, ...]] [--from <address>]
+
+EXAMPLES:
+   genlayer contract --address 0xDEF456 --function "increaseCount" --args [10] --from 0xABC123
+```
+
+### Get Validators Count
+
+Retrieves the number of validators currently active in the simulator.
+
+```bash
+USAGE:
+   genlayer validators
+
+EXAMPLES:
+   genlayer validators
+```
+
+### Get Account Balance
+
+Displays the balance of a specified account.
+
+```bash
+USAGE:
+   genlayer account --address <address>
+
+EXAMPLES:
+   genlayer account --address 0x789
+```
+
