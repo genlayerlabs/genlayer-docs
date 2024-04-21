@@ -12,31 +12,30 @@ import Image from 'next/image'
  
 <Image src="/your-contract.png" alt="Deploy Contract" width={400} height={400} />
 
-2. Modify your contract code in the text editor pane. Use the save functionality to ensure changes are not lost.
-3. Provide a JSON object that represents the contract’s initial state. This step is crucial for contracts that require specific variables or settings at the start.
+2. Modify your contract code in the text editor pane.
+3. Provide a JSON object that represents the contract’s default state. This step is crucial for contracts that require specific variables or settings at the start.
 
-    Example of initial state JSON:
+    Example of default state JSON:
     ```json
     {
         "have_coin": true
     }
     ```
-4. **Deploy**: Once the contract is finalized and the initial state is set, in the **Run and Debug** section click the **Deploy Intelligent Contract** button to compile and deploy your contract to the GenLayer simulator's blockchain.
+4. Once the contract is finalized and the default state is set, in the **Run and Debug** section click the **Deploy Intelligent Contract** button to compile and deploy your contract to the GenLayer simulator's blockchain.
    
 ![Your Conntract](/simulator-deploy.png)
 
-The simulator will automatically compile your contract if necessary and a deployment transaction is sent to the blockchain. The UI will display the transaction ID, indicating the deployment status. 
+The Simulator will automatically compile your contract if necessary and a deployment transaction is sent to the blockchain. The UI will display the transaction ID, indicating the deployment status. 
 
 After deployment, your contract is now an active participant on the blockchain:
 
 - Note down the contract's address; it's a unique identifier for interacting with the contract henceforth.
-- In the **Current Intelligent Contract State** section, check to see if the initial state reflects the JSON parameters you provided.
+- In the **Current Intelligent Contract State** section, check to see if the default state reflects the JSON parameters you provided.
 - You can now start interacting with the contract, calling its functions, and executing transactions.
 
 ## Best practices
 
-- Pay attention to the logs output during the deployment for any execution notes or errors.
-- Use the contract state viewer to ensure state changes occur as expected with each transaction.
+Pay attention to the logs output during the deployment for any execution notes or errors.
 
 ## Troubleshooting
 
