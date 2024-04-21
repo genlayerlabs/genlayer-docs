@@ -2,11 +2,11 @@
 
 The Contract State in the GenLayer Simulator holds the current details that your contract needs to remember to make decisions and keep track of changes over time.
 
-## Setting the initial contract state
+## Setting the default contract state
 
-The initial contract state determines the starting conditions of your Intelligent Contract. It's defined as a JSON object.
+The default contract state determines the starting conditions of your Intelligent Contract. It's defined as a JSON object.
 
-Here's an example of a JSON object that could be used to set the initial state of a contract:
+Here's an example of a JSON object that could be used to set the default state of a contract:
 
 ```json
 {
@@ -24,16 +24,16 @@ import Image from 'next/image'
 
 By setting `"have_coin": true`, you're specifying the contract's behavior for subsequent transactions that may depend on this state variable. If the state were improperly set, the contract might not behave as intended, which could lead to errors during testing.
 
-With the initial state defined, deploy your contract. The provided state will be used to initialize the contract on the blockchain.
+With the default state defined, deploy your contract. The provided state will be used to initialize the contract on the blockchain.
 
 ## Best Practices
 
 - Ensure that your JSON object is correctly formatted to prevent deployment errors.
-- The initial values should align with the contract's logic and intended functionality.
-- Use different initial states to test all possible scenarios that your contract is designed to handle.
+- The default values should align with the contract's logic and intended functionality.
+- Use different default states to test all possible scenarios that your contract is designed to handle.
 
 ## Troubleshooting
 
-- If a contract fails to deploy, check if the initial state object has syntax errors or mismatched types.
-- If the contract behaves unexpectedly, review the initial state to ensure it was set as intended.
+- If a contract fails to deploy, check if the default state object has syntax errors or mismatched types.
+- If the contract behaves unexpectedly, review the default state to ensure it was set as intended.
 
