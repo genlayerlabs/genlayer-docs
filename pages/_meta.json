@@ -1,6 +1,7 @@
 {
-  "index": "Introduction",
-  "concepts": "",
+  "index": "What is GenLayer",
+  "installation": "Getting Started",
+  "command-line-options": "",
   "simulator": "Simulator",
   "about": {
     "title": "About",

@@ -1,0 +1,56 @@
+# Install GenLayer
+
+The GenLayer CLI supports GenLayer Simulator and, in the future, mainnet and testnet environments.
+
+## Prerequisites
+Before installing the GenLayer CLI, ensure you have the following prerequisites installed:
+
+- [Docker](https://docs.docker.com/engine/install/): Required to run GenLayer environment.
+- [Node.js and Npm](https://docs.npmjs.com/downloading-and-installing-node-js-and-npm/): Needed for the GenLayer CLI tool.
+
+## Installation steps
+
+### 1. Install GenLayer CLI
+
+GenLayer CLI is the main tool for interacting with the GenLayer ecosystem. Install it via npm:
+
+import { Tabs } from 'nextra-theme-docs'
+
+<Tabs items={['npm', 'npx']}>
+ <Tabs.Tab>
+```bash
+npm install -g genlayer
+```
+</Tabs.Tab>
+ <Tabs.Tab>
+```bash
+npx install -g genlayer
+```
+</Tabs.Tab>
+</Tabs>
+
+### 2. Initialize the environment
+
+After installing the CLI, set up your development environment:
+
+```bash
+genlayer init
+```
+
+This command performs several actions:
+- Verifies that Docker is installed.
+- Downloads and runs the necessary Docker images.
+- Initializes the database and sets up the required tables and accounts.
+- Launches the simulator and optionally the frontend in your browser.
+
+You'll be notified of the frontend's URL and provided documentation links once the setup completes.
+
+### 3. Start the GenLayer environment
+
+To begin using the GenLayer environment and test your Intelligent Contracts, run the following command:
+
+```bash
+genlayer up
+```
+
+This command will start the GenLayer environment and the Simulator in your browser with a fresh database and accounts setup.
