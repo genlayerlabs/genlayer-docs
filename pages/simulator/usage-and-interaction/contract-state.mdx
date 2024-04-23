@@ -1,7 +1,7 @@
 # Contract State
 The Contract State in the GenLayer Simulator holds the current details that your Intelligent Contract needs to remember to make decisions and keep track of changes over time.
 
-## Setting the Default Contract State
+## Setting the default contract state
 
 The default contract state determines the starting conditions of your Intelligent Contract. It's defined as a JSON object.
 
@@ -81,12 +81,12 @@ In the `ask_for_coin` method, the state of `have_coin` influences the logic flow
   ```
 This piece of code checks the outcome from a decision-making process (typically involving a large language model, LLM). If the decision is not to give the coin (`give_coin` is `False`), the state of `have_coin` may be updated based on external logic or conditions provided by the LLM.
 
-## Scenario Example
+## Scenario example
 
 - **If `have_coin` is set to `true`**: The wizard starts with the coin. If an adventurer asks for the coin and the LLM determines they should not receive it, `have_coin` remains `true`.
 - **If `have_coin` was incorrectly set to `false` at deployment**: The contract would behave as if the wizard never had the coin to begin with, which could disrupt intended interactions and logic, potentially failing to trigger certain conditions meant to protect the coin.
 
-### Best Practices
+### Best practices
 
 - Ensure that your JSON object is correctly formatted to prevent deployment errors.
 - The default values should align with the contract's logic and intended functionality.
