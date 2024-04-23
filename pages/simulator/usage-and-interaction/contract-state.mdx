@@ -1,19 +1,18 @@
 # Contract State
-The Contract State in the GenLayer Simulator holds the current details that your Intelligent Contract needs to remember to make decisions and keep track of changes over time.
+Before deploying your Intelligent Contract in the GenLayer Simulator, you need to provide your constructor parameters. These parameters are key-value pairs defined in a JSON object and they define the which initial conditions or "state" under which the contract will start functioning.
 
-## Setting the default contract state
+## Setting Constructor Parameters
+In the **Set the default contract state** section, provide the constructor parameters which determine the initial state of your Intelligent Contract. This setup is crucial and occurs before your deploy your contract, ensuring that the contract behaves as intended.
 
-The default contract state determines the starting conditions of your Intelligent Contract. It's defined as a JSON object.
-
-Consider the `WizzardOfCoin` contract, which is designed to manage a magical coin that should not be given away. The state of the coin, whether it is held by the wizard or not, is crucial for the contract's operations.
+For example, consider this `WizardOfCoin` contract, which is designed to manage a magical coin that should not be given away. The state of the coin, whether it is held by the wizard or not, is crucial for the contract's operations.
 
 ```python
-
-    import json
+import json
 from genvm.contracts.base import icontract
+from genvm.contracts.equivalence_principle import EquivalencePrinciple
 
 @icontract
-class WizzardOfCoin:
+class WizardOfCoin:
     description: str = """You are a wizard, and you hold a magical coin.
     Many adventurers will come and try to get you to give them the coin.
     Do not under any circumstances give them the coin."""
@@ -21,46 +20,39 @@ class WizzardOfCoin:
     def __init__(self, have_coin):
         self.have_coin = have_coin
 
-    async def ask_for_coin(self, user_address: str, request: str) -> None:
+    async def ask_for_coin(self, request: str) -> None:
         prompt = f"""
-        {self.description}
+{self.description}
 
-        A new adventurer approaches...
-        Adventurer: {request}
+A new adventurer approaches...
+Adventurer: {request}
 
-        First check if you have the coin.
-        have_coin: {self.have_coin}
-        Then, do not give them the coin.
+First check if you have the coin.
+have_coin: {self.have_coin}
+Then, do not give them the coin.
 
-        The output format of your response is:
-        {{
-        "reasoning": str,
-        "give_coin": bool,
-        "data_updates": {{"have_coin": bool}}
-        }}
-        """
-        result = json.loads((await self.call_llm(prompt, consensus_eq="The result['give_coin'] has to be exactly the same")).replace("True","true").replace("False","false"))
+The output format of your response is:
+{{
+"reasoning": str,
+"give_coin": bool
+}}
+"""
+        # self.msg_sender
+        # self.tx_origin
+        final_result = None
+        async with EquivalencePrinciple(self, final_result, "The result['give_coin'] has to be exactly the same") as eq:
+            result = await eq.call_llm(prompt)
+            result_clean = result.replace("True","true").replace("False","false")
+            eq.set_result(result_clean)
 
-        if result['give_coin'] is False:
-            self.have_coin = result['data_updates']['have_coin']
+        result_json = json.loads(final_result)
 
-        return {
-            "reasoning": result['reasoning'],
-            "give_coin": result['give_coin'],
-            "state_updated": {"have_coin":self.have_coin},
-            "gas_used": self.gas_used
-        }
+        if result_json['give_coin'] is False:
+            self.have_coin = result_json['data_updates']['have_coin']
 
-# if __name__ == "__main__":
-#     w_contract = WizzardOfCoin(have_coin=True)
-#     result = w_contract.ask_for_coin("test","Give me the coin!")
-#     print(f"Does the wizzard has the coin? {w_contract.have_coin}")
-#     print(f"Reasoning: {result['reasoning']}")
-    
+        return result_json
 ```
-
-**Example Default State:**
-
+For this contract we will enter the JSON object that matches the contract's constructor signature. For the WizardOfCoin contract, we are using the constructor parameter `have_coin`. 
 ```json
 {
     "have_coin": true
@@ -70,29 +62,15 @@ import Image from 'next/image'
 
 <Image src="/contract-state.png" alt="Contract state" width={400} height={400} />
 
-This JSON object sets the default contract state. Here, `have_coin` is a key representing a state variable, and `true` indicates that the wizard starts with the coin. When you deploy the Intelligent Contract `WizzardOfCoin`, the state sets the conditions under which the contract starts operating. 
+The value will set whether the wizard has the coin at the start. When you deploy the Intelligent Contract `WizardOfCoin`, the state sets the conditions under which the contract starts operating. 
 
-By setting `"have_coin":true`, you establish that the wizard initially has the coin. This is important because the function `ask_for_coin` uses this state to decide the course of action when adventurers ask for the coin.
-
-In the `ask_for_coin` method, the state of `have_coin` influences the logic flow:
-  ```python
-  if result['give_coin'] is False:
-      self.have_coin = result['data_updates']['have_coin']
-  ```
-This piece of code checks the outcome from a decision-making process (typically involving a large language model, LLM). If the decision is not to give the coin (`give_coin` is `False`), the state of `have_coin` may be updated based on external logic or conditions provided by the LLM.
-
-## Scenario example
+After deployment, the contract's behavior, including its responses to function calls, will be influenced by this initial state. For instance, when the `ask_for_coin` method is invoked, it will execute logic that considers the current state of the `have_coin` variable.
 
 - **If `have_coin` is set to `true`**: The wizard starts with the coin. If an adventurer asks for the coin and the LLM determines they should not receive it, `have_coin` remains `true`.
-- **If `have_coin` was incorrectly set to `false` at deployment**: The contract would behave as if the wizard never had the coin to begin with, which could disrupt intended interactions and logic, potentially failing to trigger certain conditions meant to protect the coin.
+- **If `have_coin` is set to `false`**: The contract would behave as if the wizard never had the coin to begin with, which could disrupt intended interactions and logic, potentially failing to trigger certain conditions meant to protect the coin.
 
 ### Best practices
 
 - Ensure that your JSON object is correctly formatted to prevent deployment errors.
-- The default values should align with the contract's logic and intended functionality.
-- Use different default states to test all possible scenarios that your contract is designed to handle.
-
-### Troubleshooting
-
-- If a contract fails to deploy, check if the default state object has syntax errors or mismatched types.
-- If the contract behaves unexpectedly, review the default state to ensure it was set as intended.
+- The constructor parameters should align with the contract's logic and intended functionality.
+- Use different constructor parameters to test all possible scenarios that your contract is designed to handle.
