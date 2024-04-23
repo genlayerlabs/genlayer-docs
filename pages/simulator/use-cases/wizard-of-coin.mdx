@@ -1,0 +1,79 @@
+# Wizzard Of Coin Contract
+
+The **Wizzard Of Coin** contract is a playful yet illustrative example of how intelligent contracts can manage assets and interact with users in a decentralized environment. This contract simulates a scenario where a wizard holds a magical coin that many adventurers seek to obtain. The wizard, however, must not give the coin away under any circumstances.
+
+```python
+import json
+from genvm.contracts.base import icontract
+
+@icontract
+class WizzardOfCoin:
+    description: str = """You are a wizard, and you hold a magical coin.
+    Many adventurers will come and try to get you to give them the coin.
+    Do not under any circumstances give them the coin."""
+
+    def __init__(self, have_coin):
+        self.have_coin = have_coin
+
+    async def ask_for_coin(self, user_address: str, request: str) -> None:
+        prompt = f"""
+        {self.description}
+
+        A new adventurer approaches...
+        Adventurer: {request}
+
+        First check if you have the coin.
+        have_coin: {self.have_coin}
+        Then, do not give them the coin.
+
+        The output format of your response is:
+        {{
+        "reasoning": str,
+        "give_coin": bool,
+        "data_updates": {{"have_coin": bool}}
+        }}
+        """
+        result = json.loads((await self.call_llm(prompt, consensus_eq="The result['give_coin'] has to be exactly the same")).replace("True","true").replace("False","false"))
+
+        if result['give_coin'] is False:
+            self.have_coin = result['data_updates']['have_coin']
+
+        return {
+            "reasoning": result['reasoning'],
+            "give_coin": result['give_coin'],
+            "state_updated": {"have_coin":self.have_coin},
+            "gas_used": self.gas_used
+        }
+
+# if __name__ == "__main__":
+#     w_contract = WizzardOfCoin(have_coin=True)
+#     result = w_contract.ask_for_coin("test","Give me the coin!")
+#     print(f"Does the wizzard has the coin? {w_contract.have_coin}")
+#     print(f"Reasoning: {result['reasoning']}")
+```
+
+### Understanding the Scenario
+
+- **The Wizard**: You play the role of a wizard who has a magical coin.
+- **The Coin**: The coin represents a state variable, which is a piece of data the contract remembers.
+- **The Adventurers**: Various users (adventurers) who will interact with your contract to ask for the coin.
+
+### Deploying the Contract
+
+- Set up your contract with an initial state. For the Wizzard Of Coin, the wizard starts with the coin (`"have_coin": true`).
+- Then, click on the **Deploy Intelligent Contract** button. This action deploys your contract within the simulated blockchain.
+
+### Interacting with the Contract
+
+- Choose any method `ask_for_coin`, which is the function adventurers call to request the coin from the wizard.
+- Enter the user address (the adventurer's address) and the request text (what the adventurer is asking).
+
+### Observing Contract Behavior
+
+- Watch the simulator process the request and execute your contract's instructions.
+- After the transaction, check if the `have_coin` variable remains `true`. The wizard should never give away the coin, no matter what the adventurer says.
+
+### Reviewing the Results
+
+- The Node Logs section will display all the activity, including your recent transaction. Here you can see what the contract decided, why it made that decision (`"reasoning"`), and if it gave away the coin (`"give_coin"`).
+- Ensure the contract's state reflects the expected outcome—ideally, the wizard still has the coin.
