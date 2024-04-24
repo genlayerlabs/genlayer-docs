@@ -1,18 +1,18 @@
 # Contract State
-Before deploying your Intelligent Contract in the GenLayer Simulator, you need to provide your constructor parameters. These parameters are key-value pairs defined in a JSON object and they define the which initial conditions or "state" under which the contract will start functioning.
+Before deploying your Intelligent Contract in the GenLayer Simulator, you need to provide your constructor parameters. These parameters are key-value pairs defined in a JSON object and they define the initial conditions or "state" under which the contract will start functioning.
 
 ## Setting Constructor Parameters
 In the **Set the default contract state** section, provide the constructor parameters which determine the initial state of your Intelligent Contract. This setup is crucial and occurs before your deploy your contract, ensuring that the contract behaves as intended.
 
-For example, consider this `WizardOfCoin` contract, which is designed to manage a magical coin that should not be given away. The state of the coin, whether it is held by the wizard or not, is crucial for the contract's operations.
+For example, consider this `WizzardOfCoin` contract, which is designed to manage a magical coin that should not be given away. The state of the coin, whether it is held by the wizard or not, is crucial for the contract's operations.
 
-```python
+```python filename="WizzardOfCoin.py" showLineNumbers
 import json
 from genvm.contracts.base import icontract
 from genvm.contracts.equivalence_principle import EquivalencePrinciple
 
 @icontract
-class WizardOfCoin:
+class WizzardOfCoin:
     description: str = """You are a wizard, and you hold a magical coin.
     Many adventurers will come and try to get you to give them the coin.
     Do not under any circumstances give them the coin."""
@@ -52,7 +52,7 @@ The output format of your response is:
 
         return result_json
 ```
-For this contract we will enter the JSON object that matches the contract's constructor signature. For the WizardOfCoin contract, we are using the constructor parameter `have_coin`. 
+For this contract we will enter the JSON object that matches the contract's constructor signature. For the WizzardOfCoin contract, we are using the constructor parameter `have_coin`. 
 ```json
 {
     "have_coin": true
@@ -62,7 +62,7 @@ import Image from 'next/image'
 
 <Image src="/contract-state.png" alt="Contract state" width={400} height={400} />
 
-The value will set whether the wizard has the coin at the start. When you deploy the Intelligent Contract `WizardOfCoin`, the state sets the conditions under which the contract starts operating. 
+The value will set whether the wizard has the coin at the start. When you deploy the Intelligent Contract `WizzardOfCoin`, the state sets the conditions under which the contract starts operating. 
 
 After deployment, the contract's behavior, including its responses to function calls, will be influenced by this initial state. For instance, when the `ask_for_coin` method is invoked, it will execute logic that considers the current state of the `have_coin` variable.
 
