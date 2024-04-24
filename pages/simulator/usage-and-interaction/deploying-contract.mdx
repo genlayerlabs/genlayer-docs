@@ -1,46 +1,39 @@
-# Deploying a contract
+# Deploying a Contract
 
-Deploying an Intelligent Contract to the GenLayer Simulator enables you to test and interact with your contract within a controlled environment. 
+By deploying your Intelligent Contract to the GenLayer Simulator, you can test and interact with your contract within a controlled environment.
 
-## Deployment steps
+## Deployment Steps
 
-Follow these steps to deploy your contract within the simulator:
+To deploy your contract within the simulator, follow these steps:
 
-1. In the **Your Contracts** section of the navigation pane, select an existing contract or create a new one by clicking the **+** or upload icon.
+1. Navigate to the **Your Contracts** section of the navigation pane. Here, you can select an existing contract or create a new one by clicking the **+** or upload icon.
 
 import Image from 'next/image'
  
 <Image src="/your-contract.png" alt="Deploy Contract" width={400} height={400} />
+  
 
-2. Modify your contract code in the text editor pane.
-3. Provide a JSON object that represents the contract’s default state. This step is crucial for contracts that require specific variables or settings at the start.
+2. Enter the contract code in the text editor pane provided within the simulator.
 
-    Example of default state JSON:
-    ```json
-    {
-        "have_coin": true
-    }
-    ```
-4. Once the contract is finalized and the default state is set, in the **Run and Debug** section click the **Deploy Intelligent Contract** button to deploy your contract to the GenLayer simulator's blockchain.
-   
+3. Set the contract's constructor parameters by providing a JSON object in the **Constructor Parameters** input area. These parameters initialize the contract's variables or settings upon deployment.
+
+   Example JSON object for constructor parameters:
+   ```json
+   {
+       "have_coin": true
+   }
+   ```
+
+Ensure that the keys in the JSON object match the variables expected by the contract's constructor.
+
+4. After you've set the constructor parameters and the contract code is ready, go to the **Run and Debug** section and click the **Deploy Intelligent Contract** button. This action will deploy your contract to the simulated blockchain environment of the GenLayer Simulator.
+
 ![Your Conntract](/simulator-deploy.png)
 
-The UI will display the transaction ID, indicating the deployment status. 
+Upon successful deployment, the UI will display the contract address.  In the **Current Intelligent Contract State** section, check to see if the default state reflects the JSON parameters you provided.
 
-After deployment, your contract is now an active participant on the blockchain:
+With the contract now deployed, you are ready to invoke its functions and execute transactions as part of your testing process.
 
-- Note down the contract's address; it's a unique identifier for interacting with the contract henceforth.
-- In the **Current Intelligent Contract State** section, check to see if the default state reflects the JSON parameters you provided.
-- You can now start interacting with the contract, calling its functions, and executing transactions.
+## Best Practices
 
-## Best practices
-
-Pay attention to the logs output during the deployment for any execution notes or errors.
-
-## Troubleshooting
-
-Should you encounter errors during deployment:
-
-- Review the logs for detailed error messages.
-- If the contract state does not update correctly, double-check the JSON format and contract constructor for potential mismatches.
-- Revisit the code in the contract editor to ensure all functions are correctly defined and that the contract compiles without issues.
+Keep an eye on the logs logs output during the deployment for any execution notes or errors. If you run into issues during the deployment, review the logs for detailed error messages.

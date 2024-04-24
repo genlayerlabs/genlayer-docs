@@ -7,13 +7,15 @@ Once your Intelligent Contract is deployed in the GenLayer Simulator, you can st
 To initiate a transaction:
 
 1. In the **Your Contracts** section, run the contract you want to interact with.
-2. From the dropdown menu **Select a method**, choose the contract method you wish to execute.
+2. After deploying your contract, In the Execute transaction section From the dropdown menu **Select a method**, choose the contract method you wish to execute.
+
+![Select Method](/select-method.png)
+
 3. If the method requires arguments, input the necessary parameters in the appropriate format. For methods that change the contract's state, make sure to enter values that are valid according to your contract's logic.
 4. Click on the **Execute Contract** button to send your request to the simulator. This will invoke the selected contract method with the provided arguments.
+
 5. Monitor the logs at the bottom of the screen for transaction receipts and any output returned by the contract method, including events emitted or state changes made.
 
 ## Inspect contract state
-
-After the transaction is processed, inspect the **Current Intelligent Contract State** area to confirm that the state has been updated as expected.
 
 Evaluate the **Node Logs** section for the success or failure of your transaction, which includes valuable debugging information and any revert messages. Ensure all function arguments match the expected types and formats defined in your contract.
