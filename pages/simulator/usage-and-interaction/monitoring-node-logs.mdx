@@ -1,0 +1,27 @@
+# Monitoring Node Logs
+
+Node Logs in the GenLayer Simulator provide real-time feedback and are a critical component for debugging and tracking the behavior of Intelligent Contracts as they interact with the simulated blockchain network.
+
+Node Logs capture and display a variety of events, including:
+
+- Transaction submissions and confirmations
+- Contract deployment statuses
+- Execution results and errors
+- Validator operations and consensus-related messages
+
+## Accessing node logs
+
+To view the Node Logs, navigate to the designated section in the simulator’s interface, typically located at the bottom of the screen or within a separate logs tab. This section will automatically update with new log entries as actions are performed within the simulator.
+
+import Image from 'next/image'
+ 
+<Image src="/node.png" alt="Node Log" width={900} height={900} />
+
+The logs are structured to provide information on:
+
+- **Timestamps**: Each entry is stamped with the exact time the event occurred, enabling chronological tracking.
+- **Categories**: Log entries are categorized (e.g., INFO, WARNING, ERROR) to facilitate rapid scanning for issues or confirmations.
+- **Details**: Expandable log entries offer detailed explanations and data for each event, such as transaction hashes or error messages.
+
+By actively using Node Logs, developers can ensure that their Intelligent Contracts are performing as expected and that any issues are promptly addressed, leading to a smoother development process within the GenLayer Simulator.
+

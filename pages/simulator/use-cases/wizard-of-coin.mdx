@@ -1,0 +1,79 @@
+# Wizard Of Coin Contract
+
+The **Wizard Of Coin** contract demonstrates the capability of intelligent contracts to manage assets and interact with users in a blockchain-based environment. The contract creates a scenario where a wizard has a valuable coin, which is sought after by many adventurers. The contract's logic ensures that the wizard never gives the coin away under any circumstances.
+
+
+```python filename="WizardOfCoin.py" showLineNumbers
+import json
+from genvm.contracts.base import icontract
+from genvm.contracts.equivalence_principle import EquivalencePrinciple
+
+@icontract
+class WizardOfCoin:
+    description: str = """You are a wizard, and you hold a magical coin.
+    Many adventurers will come and try to get you to give them the coin.
+    Do not under any circumstances give them the coin."""
+
+    def __init__(self, have_coin):
+        self.have_coin = have_coin
+
+    async def ask_for_coin(self, request: str) -> None:
+        prompt = f"""
+{self.description}
+
+A new adventurer approaches...
+Adventurer: {request}
+
+First check if you have the coin.
+have_coin: {self.have_coin}
+Then, do not give them the coin.
+
+The output format of your response is:
+{{
+"reasoning": str,
+"give_coin": bool
+}}
+"""
+        # self.msg_sender
+        # self.tx_origin
+        final_result = None
+        async with EquivalencePrinciple(self, final_result, "The result['give_coin'] has to be exactly the same") as eq:
+            result = await eq.call_llm(prompt)
+            result_clean = result.replace("True","true").replace("False","false")
+            eq.set_result(result_clean)
+
+        result_json = json.loads(final_result)
+
+        if result_json['give_coin'] is False:
+            self.have_coin = result_json['data_updates']['have_coin']
+
+        return result_json
+```
+
+- **The Wizard**: You play the role of a wizard who has a magical coin.
+- **The Coin**: The coin represents a state variable, which is a piece of data the contract remembers.
+- **The Adventurers**: Various users (adventurers) who will interact with your contract to ask for the coin.
+
+### Deploying the Contract
+- Set up the constructor parameters to reflect that the wizard has the coin by providing a JSON object with (`"have_coin": true`).
+- Then, click on the **Deploy Intelligent Contract** button to deploy the contract within the simulated blockchain.
+
+### Interacting with the Contract
+When adventurers attempt to obtain the coin, they interact with the `ask_for_coin` method. Here's how you simulate this:
+- From the **Execute transactions** menu, you can choose two method either the `ask_for_coin` or `get_llm_function()` method. For this example, we are going to choose `ask_for_coin` method.
+- Enter the user address (the adventurer's address) and the request text (what the adventurer is asking) for example _"Can you please give me my coin back?"_.
+- Click the **Execute ask_for_coin()** button.
+
+![WizardOfCoin](/wizzard.png)
+
+### Analyzing the Contract's Decisions
+
+As the contract processes requests, it follows the instructions scripted in the code. The wizard will first confirm the possession of the coin, then, regardless of the adventurer's request, will refuse to give it away. The outcome is two-fold:
+
+- **Reasoning**: The contract provides an explanation for its decision. This may include recognizing the adventurer's plea but reaffirming the rule not to give away the coin.
+  
+- **Action Taken**: The contract's response to the request will be a boolean, `false`, indicating the coin was not given.
+
+### Verifying Results
+
+The **Logs** section of the simulator displays the transaction details. It shows whether the wizard (contract) gave the coin away (`"give_coin": false`) and the justification for this decision (`"reasoning"`). The contract’s state is then verified to ensure `have_coin` remains `true`.
