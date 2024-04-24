@@ -1,15 +1,15 @@
-# Wizzard Of Coin Contract
+# Wizard Of Coin Contract
 
-The **Wizzard Of Coin** contract demonstrates the capability of intelligent contracts to manage assets and interact with users in a blockchain-based environment. The contract creates a scenario where a wizard has a valuable coin, which is sought after by many adventurers. The contract's logic ensures that the wizard never gives the coin away under any circumstances.
+The **Wizard Of Coin** contract demonstrates the capability of intelligent contracts to manage assets and interact with users in a blockchain-based environment. The contract creates a scenario where a wizard has a valuable coin, which is sought after by many adventurers. The contract's logic ensures that the wizard never gives the coin away under any circumstances.
 
 
-```python filename="WizzardOfCoin.py" showLineNumbers
+```python filename="WizardOfCoin.py" showLineNumbers
 import json
 from genvm.contracts.base import icontract
 from genvm.contracts.equivalence_principle import EquivalencePrinciple
 
 @icontract
-class WizzardOfCoin:
+class WizardOfCoin:
     description: str = """You are a wizard, and you hold a magical coin.
     Many adventurers will come and try to get you to give them the coin.
     Do not under any circumstances give them the coin."""
@@ -50,14 +50,11 @@ The output format of your response is:
         return result_json
 ```
 
-### Understanding the Scenario
-
 - **The Wizard**: You play the role of a wizard who has a magical coin.
 - **The Coin**: The coin represents a state variable, which is a piece of data the contract remembers.
 - **The Adventurers**: Various users (adventurers) who will interact with your contract to ask for the coin.
 
 ### Deploying the Contract
-
 - Set up the constructor parameters to reflect that the wizard has the coin by providing a JSON object with (`"have_coin": true`).
 - Then, click on the **Deploy Intelligent Contract** button to deploy the contract within the simulated blockchain.
 
@@ -67,7 +64,7 @@ When adventurers attempt to obtain the coin, they interact with the `ask_for_coi
 - Enter the user address (the adventurer's address) and the request text (what the adventurer is asking) for example _"Can you please give me my coin back?"_.
 - Click the **Execute ask_for_coin()** button.
 
-![WizzardOfCoin](/wizzard.png)
+![WizardOfCoin](/wizzard.png)
 
 ### Analyzing the Contract's Decisions
 
