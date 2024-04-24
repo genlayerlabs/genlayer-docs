@@ -8,17 +8,16 @@ To deploy your contract within the simulator, follow these steps:
 
 1. Navigate to the **Your Contracts** section of the navigation pane and select an existing contract or create a new one by clicking the **+** or upload icon.
 
-import Image from 'next/image'
- 
-<Image src="/your-contract.png" alt="Deploy Contract" width={700} height={700} />
-
 2. Enter your contract code in the text editor and click **Run and Debug** icon.
 
-3. Provide a valid JSON for your contract's constructor parameters. These parameters define the initial conditions under which the contract will start functioning. Ensure that the keys in the JSON object match the variables expected by the contract's constructor.
+import Image from 'next/image'
+ 
+<Image src="/your-contract.png" alt="Deploy Contract" width={900} height={900} />
+
+3. Provide a valid JSON for your contract's constructor parameters. These parameters define the initial conditions under which the contract will start functioning. Ensure that the keys in the JSON object match the variables expected by your contract.
 
 4. Click the **Deploy Intelligent Contract** button to deploy your contract to the simulated blockchain environment.
  
-
 <Image src="/simulator-deploy.png" alt="Deploy Contract" width={900} height={900} />
 
 Once your contract is deployed, the UI will display the contract address in the **Current Intelligent Contract State** section. With the contract now deployed, you are ready to invoke its functions and execute transactions as part of your testing process.
