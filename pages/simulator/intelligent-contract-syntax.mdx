@@ -1,104 +1,156 @@
-## Intelligent Contract Syntax in GenLayer
+## Intelligent Contract Syntax
 
 Intelligent Contracts extend traditional smart contract capabilities by processing natural language instructions and interfacing with web data. These contracts are written in Python and executed within the GenVM, a specialized virtual environment.
 
-### Structure of an Intelligent Contract
+## Import
+
+When working with Intelligent Contracts, you start by importing the necessary modules:
+
+```python
+import json
+from genvm.contracts.base import icontract
+from genvm.contracts.equivalence_principle import EquivalencePrinciple
+```
+
+- The `json` module is used for parsing and manipulating JSON data.
+- The `icontract` module is imported from `genvm.contracts.base` and provides the necessary foundation to create an Intelligent Contract.
+- The `EquivalencePrinciple` is imported from `genvm.contracts.equivalence_principle` and is used to ensure consensus among validators for non-deterministic outputs.
+
+## Structure of an Intelligent Contract
 
 An Intelligent Contract is defined as a Python class, with properties representing its state and methods that can be invoked to perform actions or respond to queries.
 
-When working with Intelligent Contracts, you start first by importing the Python’s built-in `json` library. The `json` library is essential for several tasks:
-
-- Parsing JSON responses from web APIs or LLM calls.
-- Structuring data to send to web services or as inputs to LLMs.
-- Serializing state changes in the contract to JSON format for logging or messaging.
-
-Along with the `json` module, we import `icontract` from GenLayer’s contract base module. This import provides the necessary foundation to create an Intelligent Contract.
+The contract class is decorated with `@icontract`, which designates it as an Intelligent Contract recognized by the GenVM.
 
 ```python
-import json
-from genvm.contracts.base import icontract
+@icontract
+class YourContract:
+    # Contract definition goes here
 ```
 
-### Defining the Contract
+## Defining the contract
 
-The `@icontract` decorator is used to designate a Python class as an Intelligent Contract. Within the class, you define:
+Within the contract class, you define:
 
-- **State Variables**: Properties that hold the contract's current state.
-- **Constructor (`__init__`)**: A method to set initial state conditions based on parameters.
-- **Methods**: Functions that define the contract's behavior and can be invoked through transactions.
+1. State Variables: Properties that hold the contract's current state.
+2. Constructor (`__init__`): A method to set initial state conditions based on parameters.
+3. Methods: Functions that define the contract's behavior and can be invoked through transactions.
 
 ```python
-import json
-from genvm.contracts.base import icontract
 @icontract
-class ExampleContract:
-    # State variables represent the current state of the contract
-    description: str = "This is an example contract."
+class YourContract:
+    description: str = "Description of your contract goes here."
     
-    # The constructor sets up the initial state using the given parameters
     def __init__(self, initial_state):
         self.state_variable = initial_state
     
-    # Methods define contract behavior and interaction with the blockchain
-    async def example_method(self, parameter):
-        # Example of an asynchronous method
-        pass
+    async def your_method(self, request: str) -> None:
+        # Method implementation goes here
 ```
 
-### Asynchronous Operations and LLM Calls
+## Asynchronous operations and LLM calls
 
-Intelligent Contracts can perform asynchronous operations, which is defined with `async def` syntax. This is crucial when interacting with LLMs or making web requests, as these operations are inherently non-blocking and can take time to complete.
+Intelligent Contracts can perform asynchronous operations, which are defined with `async def` syntax. This is crucial when interacting with LLMs or making web requests, as these operations are inherently non-blocking and can take time to complete.
 
-Prompts for the LLM is crafted using string formatting. This prompt is essential for interacting with the LLM and influencing its response, which in turn affects the contract's behavior.
+Prompts for the LLM are crafted using string formatting. This prompt is essential for interacting with the LLM and influencing its response, which in turn affects the contract's behavior.
 
 ```python
-async def interact_with_user(self, user_address: str, user_request: str) -> None:
-    # Here we simulate a structured prompt for an LLM
-    prompt = (
-        f"{self.description}\n"
-        f"User: {user_request}\n"
-        f"Have item: {self.have_item}\n"
-    )
+async def your_method(self, request: str) -> None:
+    prompt = f"""
+{self.description}
+
+Context for the request:
+Request: {request}
+
+First check the current state.
+state_variable: {self.state_variable}
+Then, perform the desired action based on the request and state.
+
+The output format of your response is:
+{{
+"reasoning": str,
+"desired_outcome": bool
+}}
+"""
     # Additional logic to interact with LLM and process response goes here
-
 ```
 
-### State Management and Persistence
+## The Equivalence Principle
 
-The state within the contract is represented by variables and can be modified through the methods. Any change in the state variables reflects on the blockchain.
-```python
-self.state_variable1 = new_value
-```
-
-### The Equivalence Principle
-
-The Equivalence Principle is a fundamental concept in Intelligent Contracts, allowing for consensus among validators on non-deterministic outputs. When non-deterministic operations occur, like those involving an LLM, the Equivalence Principle is applied to validate the consistency of responses. 
+The Equivalence Principle is a fundamental concept in Intelligent Contracts, allowing for consensus among validators on non-deterministic outputs. When non-deterministic operations occur, like those involving an LLM, the Equivalence Principle is applied to validate the consistency of responses.
 
 Intelligent Contracts must include logic to determine if varying results from different validators are equivalent, maintaining consensus.
 
 ```python
-# Equivalence check within a method
-async with Equivalence Principle(self, final_result, "The result must be consistent") as eq:
+async with EquivalencePrinciple(self, final_result, "The result['desired_outcome'] has to be exactly the same") as eq:
     result = await eq.call_llm(prompt)
-    # Checking for equivalence in LLM responses
+    result_clean = result.replace("True","true").replace("False","false")
+    eq.set_result(result_clean)
 ```
 
-### State Updates and JSON Handling
+## State updates and JSON handling
 
 Within an Intelligent Contract, you often need to update the state based on external information. The `json` library is utilized to parse the structured JSON responses from LLMs into Python data types for further processing.
 
 ```python
 result_json = json.loads(final_result)
-if not result_json['desired_outcome']:
-    self.state_variable = result_json['data_updates']['new_value']
+if result_json['desired_outcome'] is False:
+    self.state_variable = result_json['data_updates']['state_variable']
 ```
 
-### Returning the Result
+## Returning the result
 
 Finally, methods can return information, such as a JSON response, which can be read by other contracts or off-chain systems.
 
 ```python
 return result_json
 ```
-## Complete Example Code
-Here's a full code snippet that integrates the components mentioned above,
+
+## Complete example code
+
+Here's a complete example code that demonstrates the structure and components of an Intelligent Contract:
+
+```python
+import json
+from genvm.contracts.base import icontract
+from genvm.contracts.equivalence_principle import EquivalencePrinciple
+
+@icontract
+class YourContract:
+    description: str = """Description of your contract goes here.
+    It can span multiple lines and provide context for the contract's purpose."""
+
+    def __init__(self, initial_state):
+        self.state_variable = initial_state
+
+    async def your_method(self, request: str) -> None:
+        prompt = f"""
+{self.description}
+
+Context for the request:
+Request: {request}
+
+First check the current state.
+state_variable: {self.state_variable}
+Then, perform the desired action based on the request and state.
+
+The output format of your response is:
+{{
+"reasoning": str,
+"desired_outcome": bool
+}}
+"""
+        final_result = None
+        async with EquivalencePrinciple(self, final_result, "The result['desired_outcome'] has to be exactly the same") as eq:
+            result = await eq.call_llm(prompt)
+            result_clean = result.replace("True","true").replace("False","false")
+            eq.set_result(result_clean)
+
+        result_json = json.loads(final_result)
+
+        if result_json['desired_outcome'] is False:
+            self.state_variable = result_json['data_updates']['state_variable']
+
+        return result_json
+```
+
