@@ -47,13 +47,15 @@ The `initial_state` parameter is passed to the constructor when creating a new i
 The task method is designed to handle user requests asynchronously, allowing the contract to perform web queries and LLM interactions without blocking other operations.The Intelligent Contract uses your defined method, `your_method`, to construct prompts based on user input, preparing for interactions with both Large Language Models (LLMs) and web data sources.
 
 ```python copy
-async def your_method(self, request: str) -> None:
-    prompt = f"""Say HI
+  async def your_method(self, request: str) -> None:
+        prompt = f"""
+Given the request: {request}
+Determine if the request is a greeting.
 
 Please respond in the following valid JSON format:
 {{
-    "explanation": str, 
-    "response": bool   
+"explanation": str,
+"is_greeting": bool
 }}
 """
 ```
@@ -67,7 +69,7 @@ Actual calls to the LLM or Web Browsing and managing results, are done within th
 The Equivalence Principle is a cornerstone in ensuring that Intelligent Contracts function consistently across various validators, especially when handling non-deterministic outputs like responses from Large Language Models (LLMs) or data retrieved through web browsing. It plays a crucial role in how validators assess and agree on the outcomes proposed by the leader.
 
 ```python copy
-async with EquivalencePrinciple(self, final_result, "The ['response'] must be exactly 'Hi'") as eq:
+async with EquivalencePrinciple(self, final_result, "The ['is_greeting'] value must be the same across all validators") as eq:
     result = await eq.call_llm(prompt)
     eq.set_result(result)
 ```
@@ -120,8 +122,8 @@ result_json = json.loads(result)
 Once the Equivalence Principle has processed and validated the response, the next steps involve evaluating the parsed result and updating the state of the contract if necessary.
 
 ```python copy
-if result_json['response'] is False:
-    self.state_variable = result_json['response']
+if result_json['is_greeting'] is False:
+    self.state_variable = result_json['is_greeting']
 return result_json
 
 ```
@@ -142,22 +144,24 @@ class YourContract:
         self.state_variable = initial_state
     
     async def your_method(self, request: str) -> None:
-        prompt = f"""Say HI
+        prompt = f"""
+Given the request: {request}
+Determine if the request is a greeting.
 
 Please respond in the following valid JSON format:
 {{
-    "explanation": str, 
-    "response": bool   
+"explanation": str,
+"is_greeting": bool
 }}
 """
-        async with EquivalencePrinciple(self, "The ['response'] must be exactly 'Hi'") as eq:
+        async with EquivalencePrinciple(self, "The ['is_greeting'] value must be the same across all validators") as eq:
             result = await eq.call_llm(prompt)
             eq.set_result(result)
         
         result_json = json.loads(result)
 
-        if result_json['response'] is False:
-            self.state_variable = result_json['response']
+        if result_json['is_greeting'] is False:
+            self.state_variable = result_json['is_greeting']
         return result_json
 
 ```
