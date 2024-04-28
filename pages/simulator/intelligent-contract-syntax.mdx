@@ -85,7 +85,7 @@ async with EquivalencePrinciple(self, final_result, "The ['is_greeting'] value m
 - Once the data is processed, the final output is set in the `eq.set_result(result)`. Once eq.set_result(result) is called, the output becomes the subject of validation by all participating validators in the network. This step is crucial as it involves checking if the result meets the predefined criteria.
 
 <Callout type="info" emoji="ℹ️">
-  State variables cannot be set or accessed within the Equivalence Principle block. This restriction ensures the block operates as a pure function, only the result is returned in the end. This is necessary to ensure consistency of the state when different validators execute the contract
+  State variables cannot be set or accessed within the Equivalence Principle block. This ensures the block operates as a pure function, only the result is returned in the end. This is necessary to ensure consistency of the state when different validators execute the contract.
 </Callout>
 
 ### Types of Equivalence Principles
