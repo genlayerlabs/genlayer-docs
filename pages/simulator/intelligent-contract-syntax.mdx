@@ -47,15 +47,15 @@ The `initial_state` parameter is passed to the constructor when creating a new i
 The task method is designed to handle user requests asynchronously, allowing the contract to perform web queries and LLM interactions without blocking other operations.The Intelligent Contract uses your defined method, `your_method`, to construct prompts based on user input, preparing for interactions with both Large Language Models (LLMs) and web data sources.
 
 ```python copy
-  async def your_method(self, request: str) -> None:
-        prompt = f"""
+async def your_method(self, request: str) -> None:
+    prompt = f"""
 Given the request: {request}
 Determine if the request is a greeting.
 
 Please respond in the following valid JSON format:
 {{
-"explanation": str,
-"is_greeting": bool
+    "explanation": str,
+    "is_greeting": bool
 }}
 """
 ```
@@ -142,7 +142,7 @@ from genvm.contracts.equivalence_principle import EquivalencePrinciple
 class YourContract:
     def __init__(self, initial_state):
         self.state_variable = initial_state
-    
+
     async def your_method(self, request: str) -> None:
         prompt = f"""
 Given the request: {request}
@@ -150,19 +150,18 @@ Determine if the request is a greeting.
 
 Please respond in the following valid JSON format:
 {{
-"explanation": str,
-"is_greeting": bool
+    "explanation": str,
+    "is_greeting": bool
 }}
 """
         async with EquivalencePrinciple(self, "The ['is_greeting'] value must be the same across all validators") as eq:
             result = await eq.call_llm(prompt)
             eq.set_result(result)
-        
+
         result_json = json.loads(result)
 
         if result_json['is_greeting'] is False:
             self.state_variable = result_json['is_greeting']
         return result_json
-
 ```
 
