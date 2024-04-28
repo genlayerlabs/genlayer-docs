@@ -33,7 +33,7 @@ By defining your contract with the `@icontract` it signals to the GenVM that thi
 
 ## Initializing the Intelligent Contract
 
-The constructor method, `__init__`, initializes each new instance of the contract with a predefined state.  
+The constructor method, `__init__`, is called automatically when a new instance of the contract is created, and it sets up the initial state of the contract.
 
 ```python copy
 def __init__(self, initial_state):
@@ -78,7 +78,7 @@ async with EquivalencePrinciple(self, final_result, "The ['is_greeting'] value m
 
 - The `async with` statement initiates an asynchronous context specifically for applying the Equivalence Principle. This ensures that actions within the block are executed consistently and reliably by different validators.
 
-- Inside the block, `result = await eq.call_llm(prompt)` performs an asynchronous call to an LLM using the prompt prepared in previous steps to identify the most relevant data for a given query, such as determining the best website to extract information. 
+- Inside the block, `eq.call_llm(prompt)` is responsible for method is responsible for actually making an asynchronous call to the LLM or web and retrieving the result.
 
 - Once the data is processed, the final output is set in the `eq.set_result(result)`. Once eq.set_result(result) is called, the output becomes the subject of validation by all participating validators in the network. This step is crucial as it involves checking if the result meets the predefined criteria.
 
@@ -112,11 +112,13 @@ async with EquivalencePrinciple(self, final_result, "The result must provide acc
 By selecting the comparative mode (True or False), validators can either be required to produce directly comparable outputs or to assess the sufficiency of a provided result, tailoring the Equivalence Principle's application to the specific needs of the contract and the nature of the task. 
 
 ## Parsing result to 
-After the result has been validated and finalized within the Equivalence Principle block, it is crucial to convert the result from a JSON-formatted string making it easier to extract specific data.
+After the result has been validated and finalized within the Equivalence Principle block, it is crucial to convert the result from a JSON-formatted string.
 
 ```python
 result_json = json.loads(result)
 ```
+
+The `json.loads()` function is used to parse the JSON-formatted string into a Python dictionary, making it easier to access and manipulate the data.
 
 ## Result Evaluation
 Once the Equivalence Principle has processed and validated the response, the next steps involve evaluating the parsed result and updating the state of the contract if necessary.
@@ -127,7 +129,7 @@ if result_json['is_greeting'] is False:
 return result_json
 
 ```
-If the response indicates a failure (False), the contract updates its internal state to reflect this outcome, ensuring the state remains consistent with the latest interactions.
+The if statement checks if the `is_greeting` key in the parsed JSON result is `False`, and if so, it updates the `state_variable` accordingly.
 
 ## Complete example code
 
