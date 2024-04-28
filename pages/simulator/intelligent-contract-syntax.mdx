@@ -2,6 +2,11 @@
 
 Intelligent Contracts extend traditional smart contract capabilities by processing natural language instructions and interfacing with web data. These contracts are written in Python and executed within the GenVM, a specialized virtual environment.
 
+import { Callout } from 'nextra-theme-docs'
+
+<Callout type="info" emoji="ℹ️">
+  The syntax presented here is a temporary placeholder used in the simulator. For the GenLayer blockchain the final syntax will include specialized keywords that streamline some of the processes currently handled through standard Python code.
+</Callout>
 ## Import
 
 When working with Intelligent Contracts, you start by importing the necessary modules:
@@ -34,7 +39,6 @@ Within the contract class, you define:
 
 1. State Variables: Properties that hold the contract's current state.
 2. Constructor (`__init__`): A method to set initial state conditions based on parameters.
-3. Methods: Functions that define the contract's behavior and can be invoked through transactions.
 
 ```python
 @icontract
@@ -43,68 +47,69 @@ class YourContract:
     
     def __init__(self, initial_state):
         self.state_variable = initial_state
-    
-    async def your_method(self, request: str) -> None:
-        # Method implementation goes here
 ```
 
-## Asynchronous operations and LLM calls
+## Constructing prompts - Web browsing and LLMs
 
-Intelligent Contracts can perform asynchronous operations, which are defined with `async def` syntax. This is crucial when interacting with LLMs or making web requests, as these operations are inherently non-blocking and can take time to complete.
-
-Prompts for the LLM are crafted using string formatting. This prompt is essential for interacting with the LLM and influencing its response, which in turn affects the contract's behavior.
+When developing Intelligent Contracts, one of the key functionalities is interacting with Large Language Models (LLMs) to process natural language queries or web browsing. This is done by sending them specific prompts or questions, which are like instructions based on what the contract needs at that moment or what information it receives.
 
 ```python
 async def your_method(self, request: str) -> None:
-    prompt = f"""
-{self.description}
-
-Context for the request:
-Request: {request}
-
-First check the current state.
-state_variable: {self.state_variable}
-Then, perform the desired action based on the request and state.
-
-The output format of your response is:
-{{
-"reasoning": str,
-"desired_outcome": bool
-}}
-"""
-    # Additional logic to interact with LLM and process response goes here
+    prompt = "Say hi!"
+    # Constructs prompts for the LLM 
 ```
+`async def` allows the function `your_method` to perform operations without blocking the execution of other functions or tasks. Actual calls to the LLM or Web Browsing, and handling their responses, are done within an **Equivalence Principle** block.
 
-## The Equivalence Principle
+## Equivalence Principle - 
 
-The Equivalence Principle is a fundamental concept in Intelligent Contracts, allowing for consensus among validators on non-deterministic outputs. When non-deterministic operations occur, like those involving an LLM, the Equivalence Principle is applied to validate the consistency of responses.
-
-Intelligent Contracts must include logic to determine if varying results from different validators are equivalent, maintaining consensus.
+The Equivalence Principle is fundamental in ensuring that Intelligent Contracts operate consistently across different validators when handling both deterministic and non-deterministic outputs such as responses from LLMs or data retrieved via web browsing. It is how each validator evaluates the leader's proposed result.
 
 ```python
-async with EquivalencePrinciple(self, final_result, "The result['desired_outcome'] has to be exactly the same") as eq:
+async with EquivalencePrinciple(self, final_result, "The result['desired_outcome'] must be exactly the same") as eq:
     result = await eq.call_llm(prompt)
-    result_clean = result.replace("True","true").replace("False","false")
-    eq.set_result(result_clean)
+    eq.set_result(result)
 ```
 
-## State updates and JSON handling
+The execution in the Equivalence Principle block goes through a multi-step process. 
+- An LLM call determines the most relevant website for a query.
+- Subsequent web browsing retrieves and extracts the necessary data.
+- Only the final extracted data is compared and agreed upon by validators, ensuring that intermediate steps can vary.
+The final output set in `eq.set_result()` is compared.
 
-Within an Intelligent Contract, you often need to update the state based on external information. The `json` library is utilized to parse the structured JSON responses from LLMs into Python data types for further processing.
+You can't set or access any state variables in the Equivalence Principle block, the block is a pure function, only the result is returned in the end. This is necessary to ensure consistency of the state when different validators execute the contract
+
+### Types of Equivalence Principle
+
+#### Comparative Equivalence Principle
+
+The comparative method involves direct comparison of results from different validators to ensure they are within an acceptable margin of error. This approach is used when outputs can be quantitatively measured and compared.
+
+For example, suppose an intelligent contract is tasked with fetching the current follower count of a Twitter account. If the leader's result is 42 followers, and another validator reports 43 followers, the Equivalence Principle might allow a 5% margin of error. Since the results are within this margin, they are considered equivalent, ensuring consistency without exact match.
+
+#### Non-Comparative
+
+The non-comparative method evaluates the adequacy of the leader's output based on set criteria, without requiring other validators to reproduce the same output. This method reduces computational demands and saves resources, as it eliminates the need for multiple validators to perform identical operations.
+
+For example, consider a contract that requires a summary of an article. The leader provides a summary, and instead of generating their own summaries, other validators simply assess if the leader’s summary meets the specified criteria for accuracy and completeness. This approach saves one LLM call per validator, thereby reducing the associated gas costs.
+```python
+async with EquivalencePrinciple(self, final_result, "The result must provide accurate information", comparative=False) as eq:
+    result = await eq.perform_web_browsing("https://example.com")
+    eq.set_result(result)
+```
+
+By setting the comparative parameter to True, validators are required to generate outputs that are compared directly. When set to False, validators focus solely on evaluating the adequacy of the leader's provided result.
+
+## Processing LLM Responses
+
+When your Intelligent Contract receives data from an LLM, it's important to handle this information correctly. You’ll often need to decode the data and make decisions based on the content. Once your Intelligent Contract has processed the information, the final step is to send a response back. This is done to inform other parts of your application or other contracts about what was decided or found:
 
 ```python
 result_json = json.loads(final_result)
 if result_json['desired_outcome'] is False:
-    self.state_variable = result_json['data_updates']['state_variable']
+    self.state_variable = result_json['state_variable']
 ```
 
-## Returning the result
-
-Finally, methods can return information, such as a JSON response, which can be read by other contracts or off-chain systems.
-
-```python
-return result_json
-```
+In this example, the contract first turns the result, which is usually in JSON format, into a format it can work with more easily `json.loads`. Then, it checks if the outcome it was hoping for didn’t happen `desired_outcome is False`. If that’s the case, it updates a variable in the contract to reflect this new information.
 
 ## Complete example code
 
@@ -124,22 +129,7 @@ class YourContract:
         self.state_variable = initial_state
 
     async def your_method(self, request: str) -> None:
-        prompt = f"""
-{self.description}
-
-Context for the request:
-Request: {request}
-
-First check the current state.
-state_variable: {self.state_variable}
-Then, perform the desired action based on the request and state.
-
-The output format of your response is:
-{{
-"reasoning": str,
-"desired_outcome": bool
-}}
-"""
+        prompt = "Say hi!"
         final_result = None
         async with EquivalencePrinciple(self, final_result, "The result['desired_outcome'] has to be exactly the same") as eq:
             result = await eq.call_llm(prompt)
@@ -149,7 +139,7 @@ The output format of your response is:
         result_json = json.loads(final_result)
 
         if result_json['desired_outcome'] is False:
-            self.state_variable = result_json['data_updates']['state_variable']
+            self.state_variable = result_json['state_variable']
 
         return result_json
 ```
