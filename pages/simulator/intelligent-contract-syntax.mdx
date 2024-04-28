@@ -44,7 +44,9 @@ The `initial_state` parameter is passed to the constructor when creating a new i
 
 ## Crafting prompts for LLM and web browsing interactions
 
-The task method is designed to handle user requests asynchronously, allowing the contract to perform web queries and LLM interactions without blocking other operations.The Intelligent Contract uses your defined method, `your_method`, to construct prompts based on user input, preparing for interactions with both Large Language Models (LLMs) and web data sources.
+When developing Intelligent Contracts, one critical functionality is interacting with Large Language Models (LLMs) and accessing web data. This is achieved by sending them specific prompts or queries based on the current needs of the contract or the incoming user requests.
+
+Within your Intelligent Contract, you define a method (such as `your_method` in the example below) that constructs a prompt.
 
 ```python copy
 async def your_method(self, request: str) -> None:
