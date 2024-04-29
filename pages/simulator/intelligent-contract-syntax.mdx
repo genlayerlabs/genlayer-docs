@@ -67,7 +67,7 @@ The `async def` declaration allows `your_method` to prepare and send out prompts
 
 ## Equivalence Principle - Managing Intelligent Contract Operations
 
-The Equivalence Principle is a cornerstone in ensuring that Intelligent Contracts function consistently across various validators, when handling non-deterministic outputs like responses from Large Language Models (LLMs) or data retrieved through web browsing. It plays a crucial role in how validators assess and agree on the outcomes proposed by the leader.
+The Equivalence Principle is a cornerstone in ensuring that Intelligent Contracts function consistently across various validators when handling non-deterministic outputs like responses from Large Language Models (LLMs) or data retrieved through web browsing. It plays a crucial role in how validators assess and agree on the outcomes proposed by the Leader.
 
 ```python copy
 async with EquivalencePrinciple(self, final_result, "The ['is_greeting'] value must be the same") as eq:
@@ -81,39 +81,45 @@ async with EquivalencePrinciple(self, final_result, "The ['is_greeting'] value m
 
 - Inside the block, `eq.call_llm(prompt)` is responsible for actually making calls to the LLM or web and retrieving the result.
 
-- Once the data is processed, the final output is set in the `eq.set_result(result)`. Then the validators checking if the result from the leader meets the predefined criteria.
+- Once the data is processed, the final output is set in the `eq.set_result(result)`. Then the validators checking if the result from the L meets the predefined criteria.
 
 <Callout type="info" emoji="ℹ️">
   State variables cannot be set or accessed within the Equivalence Principle block as the block operates as a pure function, only the result is returned in the end. This is necessary to ensure consistency of the state when different validators execute the contract.
 </Callout>
 
 ### Types of Equivalence Principles
-Validators work to reach a consensus on whether the result set by the leader is acceptable which might involve direct comparison or qualitative evaluation, depending on the contract’s design. 
+
+Validators work to reach a consensus on whether the result set by the Leader is acceptable which might involve direct comparison or qualitative evaluation, depending on the contract’s design. 
 
 If the validators do not reach a consensus perhaps due to differing data interpretations or an error in data processing, the result might be challenged or an appeal process might be initiated.
 
 #### Comparative Equivalence Principle
 
-This method involves a direct comparison of results from different validators to ensure they fall within an acceptable margin of error, which is crucial when outputs can be quantitatively measured and compared. 
+The Comparative Equivalence Principle requires multiple validators to perform identical tasks as the Leader and directly compare their results against the criteria defined in the Equivalence Principle. This method uses an acceptable margin of error to handle slight variations in results between validators and is suitable for quantifiable outputs. However, since multiple validators perform the same computations it increases computational demands and associated costs.
 
-For example, if an intelligent contract is tasked with fetching the follower count of a Twitter account and results vary slightly among validators (the leader reports 42 followers and the validator reports 43), a small margin of error is permissible to consider the results equivalent (the a 5% margin of error is permissible). This is set with the `comparative=True` parameter is the Equivalence Principle constructor,
+For example, if an intelligent contract is tasked with fetching the follower count of a Twitter account and the Equivalence Principle might specify that _Follower counts should not differ by more than 5%_. If the Leader retrieves a count of 42 followers, and the validators find a count of 43 followers, it will evaluate this result against the Leader's figure based on the criteria set by the Equivalence Principle to decide if the difference falls within the acceptable margin. 
+
+This is set with the `comparative=True` parameter is the Equivalence Principle constructor.
 
 ```python copy
-async with EquivalencePrinciple(self, final_result, "The result['follower_count'] has to be exactly the same", comparative=True) as eq:
+async with EquivalencePrinciple(self, final_result, "The result['follower_count'] should not differ by more than 5%", comparative=True) as eq:
 ```
+
 
 #### Non-Comparative Equivalence Principle
 
-In contrast, the non-comparative method assesses the adequacy of the leader's output based on predefined criteria, without necessitating other validators to replicate the exact output. This approach is less resource-intensive as it avoids redundant operations across validators. 
+In contrast, the Non-Comparative Equivalence Principle does not require validators to replicate the Leader's output which makes the validation process faster and less costly. Instead, validators assess the accuracy of the leader’s result against the criteria defined in the Equivalence Principle. This method is particularly useful for qualitative outputs like text summaries.
 
-For instance, a leader generates a summary of an article using an LLM and submits it for validation. Other validators then review this summary to check its quality, rather than creating their own. This saves on LLM calls and gas costs, as only the leader's summary needs to be evaluated for accuracy and completeness.
+For example, consider an intelligent contract designed to summarize a news article. The Equivalence Principle specifies that the summary should capture all key points accurately. The leader executes this task and the validators do not generate their own summaries; instead, they evaluate the leader’s summary against the criteria set by the Equivalence Principle to determine accuracy and completeness.
 
-This is set with the `comparative=False` parameter is the Equivalence Principle constructor,
+This is set with the `comparative=False` parameter is the Equivalence Principle constructor.
 
 ``` python copy
 async with EquivalencePrinciple(self, final_result, "The summary has to have all the key points of the source article", comparative=False) as eq:
 ```
+
 ## Parsing result
+
 Once a result has been validated and finalized within the Equivalence Principle block, it can be parsed for easier data handling. If you request the validator to produce the output in a JSON format, you can use `json.loads` to parse it. 
 
 ```python copy
@@ -124,6 +130,7 @@ result_json = json.loads(final_result)
 </Callout>
 
 ## Result evaluation
+
 Here, the JSON-formatted result is evaluated to determine if the user's input was recognized. Depending on the outcome, the contract's state is updated and returns the complete JSON response, providing detailed information about the evaluation.
 
 ```python copy
