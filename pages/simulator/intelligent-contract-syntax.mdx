@@ -95,9 +95,9 @@ If the validators do not reach a consensus perhaps due to differing data interpr
 
 #### Comparative Equivalence Principle
 
-In the Comparative Equivalence Principle both the Leader and the validators perform identical tasks and then directly compare their respective results with the predefined criteria in the Equivalence Principle to ensure consistency and accuracy. This method uses an acceptable margin of error to handle slight variations in results between validators and is suitable for quantifiable outputs. However, since validators perform the same tasks as the Leader, it increases computational demands and associated costs.
+In the Comparative Equivalence Principle both the Leader and the validators perform identical tasks and then directly compare their respective results with the predefined criteria in the Equivalence Principle to ensure consistency and accuracy. This method uses an acceptable margin of error to handle slight variations in results between validators and is suitable for quantifiable outputs. However, since multiple validators perform the same tasks as the Leader, it increases computational demands and associated costs.
 
-For example, if an intelligent contract is tasked with fetching the follower count of a Twitter account and the Equivalence Principle might specify that _Follower counts should not differ by more than 5%_. If the Leader retrieves a count of 42 followers, and the validators find a count of 43 followers, it will evaluate this result against the Leader's figure based on the criteria set by the Equivalence Principle to decide if the difference falls within the acceptable margin. 
+For example, an intelligent contract is tasked with fetching the follower count of a Twitter account and the Equivalence Principle specify that _Follower counts should not differ by more than 5%_. If the Leader retrieves a count of 42 followers, and the validators find a count of 43 followers. The validators will evaluate their result against the Leader's figure based on the criteria set by the Equivalence Principle to decide if the difference falls within the acceptable margin. 
 
 This is set with the `comparative=True` parameter is the Equivalence Principle constructor.
 
