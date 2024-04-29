@@ -42,7 +42,8 @@ def __init__(self, initial_state):
 This function takes a parameter, `initial_state` which defines the starting condition of the contract and the `self.state_variable` is an attribute where the initial state of the contract is stored. This state is crucial because it influences how the contract behaves and responds to further interactions.
 
 <Callout type="info" emoji="ℹ️">
-  Within the constructor of your intelligent contract, you have the flexibility to include any number of parameters and execute any type of code. The initial_state parameter and state_variable names provided here serve as examples. Feel free to define or customize these placeholders to suit the specific context of your intelligent contract.
+  In the `__init__` constructor method, you can execute any type of code(run any Python commands that you might use else where in your contract) and add any number of parameters as needed. Also, the names `initial_state` and `state_variable` used in the examples are placeholders. Feel free to rename these to better suit the context of your Intelligent Contract.
+
 </Callout>
 
 ## Crafting Prompts for LLM and Web Browsing Interactions
