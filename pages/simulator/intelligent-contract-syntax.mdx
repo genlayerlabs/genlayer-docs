@@ -39,7 +39,11 @@ The constructor method, `__init__`, sets up the initial state of the contract an
 def __init__(self, initial_state):
     self.state_variable = initial_state
 ```
-This function takes a parameter, `initial_state`, and assigns it to `self.state_variable`. The `initial_state` parameter is passed to the contract at the time of its creation, defining the initial setup of the state variable. The `state_variable` holds critical information that dictates how the contract responds to interactions.
+This function takes a parameter, `initial_state` which defines the starting condition of the contract and the `self.state_variable` is an attribute where the initial state of the contract is stored. This state is crucial because it influences how the contract behaves and responds to further interactions.
+
+<Callout type="info" emoji="ℹ️">
+ The `initial_state` parameter and `state_variable` name in this code are just placeholders and can be defined/customized how you want to fit the context of your intelligent contract. 
+</Callout>
 
 ## Crafting Prompts for LLM and Web Browsing Interactions
 
@@ -59,14 +63,14 @@ Please respond in the following valid JSON format:
 """
 ```
 
-The `async def` declaration allows `your_method` to prepare and send out prompts asynchronously without disrupting other operations of the contract. Actual calls to the LLM or Web Browsing and managing results, are done within the **Equivalence Principle** block.
+The `async def` declaration allows `your_method` to prepare and send out prompts asynchronously without disrupting other operations of the contract. Actual calls to the LLM or web and managing results, are done within the **Equivalence Principle** block.
 
 ## Equivalence Principle - Managing Intelligent Contract Operations
 
-The Equivalence Principle is a cornerstone in ensuring that Intelligent Contracts function consistently across various validators, especially when handling non-deterministic outputs like responses from Large Language Models (LLMs) or data retrieved through web browsing. It plays a crucial role in how validators assess and agree on the outcomes proposed by the leader.
+The Equivalence Principle is a cornerstone in ensuring that Intelligent Contracts function consistently across various validators, when handling non-deterministic outputs like responses from Large Language Models (LLMs) or data retrieved through web browsing. It plays a crucial role in how validators assess and agree on the outcomes proposed by the leader.
 
 ```python copy
-async with EquivalencePrinciple(self, final_result, "The ['is_greeting'] value must be the same across all validators") as eq:
+async with EquivalencePrinciple(self, final_result, "The ['is_greeting'] value must be the same") as eq:
     result = await eq.call_llm(prompt)
     eq.set_result(result)
 ```
@@ -92,20 +96,32 @@ If the validators do not reach a consensus perhaps due to differing data interpr
 
 This method involves a direct comparison of results from different validators to ensure they fall within an acceptable margin of error, which is crucial when outputs can be quantitatively measured and compared. 
 
-For example, if an intelligent contract is tasked with fetching the follower count of a Twitter account and results vary slightly among validators (the leader reports 42 followers and the validator reports 43), a small margin of error is permissible to consider the results equivalent (the a 5% margin of error is permissible).
+For example, if an intelligent contract is tasked with fetching the follower count of a Twitter account and results vary slightly among validators (the leader reports 42 followers and the validator reports 43), a small margin of error is permissible to consider the results equivalent (the a 5% margin of error is permissible). This is set with the `comparative=True` parameter is the Equivalence Principle constructor,
+
+```python copy
+async with EquivalencePrinciple(self, final_result, "The result['follower_count'] has to be exactly the same", comparative=True) as eq:
+```
 
 #### Non-Comparative Equivalence Principle
 
 In contrast, the non-comparative method assesses the adequacy of the leader's output based on predefined criteria, without necessitating other validators to replicate the exact output. This approach is less resource-intensive as it avoids redundant operations across validators. 
 
-For instance, a leader generates a summary of an article using an LLM and submits it for validation. Other validators then review this summary to check its quality, rather than creating their own. This saves on LLM calls and gas costs, as only the leader's summary needs to be evaluated for accuracy and completeness
+For instance, a leader generates a summary of an article using an LLM and submits it for validation. Other validators then review this summary to check its quality, rather than creating their own. This saves on LLM calls and gas costs, as only the leader's summary needs to be evaluated for accuracy and completeness.
 
+This is set with the `comparative=False` parameter is the Equivalence Principle constructor,
+
+``` python copy
+async with EquivalencePrinciple(self, final_result, "The summary has to have all the key points of the source article", comparative=False) as eq:
+```
 ## Parsing result
-After the result has been validated and finalized within the Equivalence Principle block, the  `json.loads()` function is used to parse the result into a JSON format making it easier to access and extract the data.
+Once a result has been validated and finalized within the Equivalence Principle block, it can be parsed for easier data handling. If you request the validator to produce the output in a JSON format, you can use `json.loads` to parse it. 
 
 ```python copy
-result_json = json.loads(result)
+result_json = json.loads(final_result)
 ```
+<Callout type="info" emoji="ℹ️">
+  While this approach is recommended for its convenience, it's not mandatory. You have the flexibility to request the output in any format that best suits your needs.
+</Callout>
 
 ## Result evaluation
 Here, the JSON-formatted result is evaluated to determine if the user's input was recognized. Depending on the outcome, the contract's state is updated and returns the complete JSON response, providing detailed information about the evaluation.
@@ -140,12 +156,12 @@ Please respond in the following valid JSON format:
 "explanation": str,
 "is_greeting": bool
 }}
-"""
-        async with EquivalencePrinciple(self, "The ['is_greeting'] value must be the same across all validators") as eq:
+"""     final_result = None
+        async with EquivalencePrinciple(self, final_result, "The ['is_greeting'] value must be the same") as eq:
             result = await eq.call_llm(prompt)
             eq.set_result(result)
 
-        result_json = json.loads(result)
+        result_json = json.loads(final_result)
 
         if result_json['is_greeting'] is False:
             self.state_variable = result_json['is_greeting']
