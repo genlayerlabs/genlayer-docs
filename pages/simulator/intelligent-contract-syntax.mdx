@@ -119,7 +119,7 @@ async with EquivalencePrinciple(self, final_result, "The summary has to have all
 
 ## Parsing result
 
-Once a result has been validated and finalized within the Equivalence Principle block, it can be parsed for easier data handling. If you request the validator to produce the output in a JSON format, you can use `json.loads` to parse it. 
+Once a result has been validated and finalized within the Equivalence Principle block, it can be parsed for easier data handling. In our [example prompt](http://localhost:3000/simulator/intelligent-contract-syntax#crafting-prompts-for-llm-and-web-browsing-interactions), we requested our validator to produce the output in a JSON format and for that we are using the `json.loads` to parse it. 
 
 ```python copy
 result_json = json.loads(final_result)
