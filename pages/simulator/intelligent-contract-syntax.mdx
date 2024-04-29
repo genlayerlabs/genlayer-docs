@@ -45,8 +45,6 @@ This function takes a parameter, `initial_state`, and assigns it to `self.state_
 
 When developing Intelligent Contracts, one critical functionality is interacting with Large Language Models (LLMs) and accessing web data. This is achieved by sending them specific prompts or queries based on the current needs of the contract or the incoming user requests.
 
-Within your Intelligent Contract, you define a method (such as `your_method` in the example below) that constructs a prompt.
-
 ```python copy
 async def your_method(self, request: str) -> None:
     prompt = f"""
@@ -94,21 +92,13 @@ If the validators do not reach a consensus perhaps due to differing data interpr
 
 This method involves a direct comparison of results from different validators to ensure they fall within an acceptable margin of error, which is crucial when outputs can be quantitatively measured and compared. 
 
-For example, if an intelligent contract is tasked with fetching the follower count of a Twitter account and results vary slightly among validators (e.g., one validator reports 42 followers and another reports 43), a small margin of error is permissible to consider the results equivalent (e.g., the a 5% margin of error is permissible).
+For example, if an intelligent contract is tasked with fetching the follower count of a Twitter account and results vary slightly among validators (the leader reports 42 followers and the validator reports 43), a small margin of error is permissible to consider the results equivalent (the a 5% margin of error is permissible).
 
 #### Non-Comparative Equivalence Principle
 
 In contrast, the non-comparative method assesses the adequacy of the leader's output based on predefined criteria, without necessitating other validators to replicate the exact output. This approach is less resource-intensive as it avoids redundant operations across validators. 
 
-For instance, if the task is to summarize an article, validators would only need to evaluate the summary's accuracy and completeness instead of generating their own summaries, thus saving computational resources and reducing costs.
-
-```python copy
-async with EquivalencePrinciple(self, final_result, "The result must provide accurate information", comparative=False) as eq:
-    result = await eq.perform_web browsing("https://example.com")
-    eq.set_result(result)
-```
-
-By selecting the comparative mode (True or False), validators can either be required to produce directly comparable outputs or to assess the sufficiency of a provided result, tailoring the Equivalence Principle's application to the specific needs of the contract and the nature of the task. 
+For instance, a leader generates a summary of an article using an LLM and submits it for validation. Other validators then review this summary to check its quality, rather than creating their own. This saves on LLM calls and gas costs, as only the leader's summary needs to be evaluated for accuracy and completeness
 
 ## Parsing result
 After the result has been validated and finalized within the Equivalence Principle block, the  `json.loads()` function is used to parse the result into a JSON format making it easier to access and extract the data.
@@ -118,7 +108,7 @@ result_json = json.loads(result)
 ```
 
 ## Result evaluation
-Here the JSON-formatted result is evaluated to determine if the user's input was recognized. Depending on the outcome, the contract's state is updated. Then the method returns the complete JSON response, providing detailed information about the evaluation.
+Here, the JSON-formatted result is evaluated to determine if the user's input was recognized. Depending on the outcome, the contract's state is updated and returns the complete JSON response, providing detailed information about the evaluation.
 
 ```python copy
 if result_json['is_greeting'] is False:
