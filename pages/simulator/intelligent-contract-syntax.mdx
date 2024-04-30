@@ -1,0 +1,176 @@
+## Intelligent Contract Syntax
+
+Intelligent Contracts extend traditional smart contract capabilities by processing natural language instructions and interfacing with web data. These contracts are written in Python and executed within the GenVM, a specialized virtual environment.
+
+import { Callout } from 'nextra-theme-docs'
+
+<Callout emoji="👾">
+  The syntax presented here is a temporary placeholder used in the simulator. For the GenLayer blockchain the final syntax will include specialized keywords that streamline some of the processes currently handled through standard Python code. you can define any number of parameters and include any initialization logic as required by your contract.
+</Callout>
+## Import
+
+When working with Intelligent Contracts, start by importing the necessary modules:
+
+```python copy
+import json
+from genvm.contracts.base import icontract
+from genvm.contracts.equivalence_principle import EquivalencePrinciple
+```
+
+- The `json` module is used for parsing and manipulating JSON data.
+- The `icontract` module is imported from `genvm.contracts.base` and provides the necessary foundation to create an Intelligent Contract.
+- The `EquivalencePrinciple` is imported from `genvm.contracts.equivalence_principle` and is used to ensure consensus among validators for non-deterministic outputs.
+
+## Defining the Intelligent Contract Class
+The `@icontract` decorator is used to define an Intelligent Contract class in Python, which allows the contract to be recognized within the GenVM environment. 
+
+```python copy
+@icontract
+class YourContract:
+    description: str = "Description of your contract goes here."
+```
+The `description` attribute stores text that explains what the contract is about.
+
+## Initializing the Intelligent Contract
+
+The constructor method, `__init__`, sets up the initial state of the contract and is called automatically when a new instance of the contract is created.
+
+```python copy
+def __init__(self, initial_state):
+    self.state_variable = initial_state
+```
+This function takes a parameter, `initial_state` which defines the starting condition of the contract and the `self.state_variable` is an attribute where the initial state of the contract is stored. This state is crucial because it influences how the contract behaves and responds to further interactions.
+
+<Callout type="info" emoji="ℹ️">
+  In the constructor method  `__init__`, you can execute any Python code and add as many parameters as needed. The names `initial_state` and `state_variable` are placeholders—customize them to fit your intelligent contract’s context.
+</Callout>
+
+## Crafting Prompts for LLM and Web Browsing Interactions
+
+When developing Intelligent Contracts, one critical functionality is interacting with Large Language Models (LLMs) and accessing web data. This is achieved by sending them specific prompts or queries based on the current needs of the contract or the incoming user requests.
+
+```python copy
+async def your_method(self, request: str) -> None:
+    prompt = f"""
+Given the request: {request}
+Determine if the request is a greeting.
+
+Please respond in the following valid JSON format:
+{{
+ "explanation": str,
+ "is_greeting": bool
+}}
+"""
+```
+
+The `async def` declaration allows `your_method` to prepare and send out prompts asynchronously without disrupting other operations of the contract. Actual calls to the LLM or web and managing results, are done within the **Equivalence Principle** block.
+
+## Equivalence Principle - Managing Intelligent Contract Operations
+
+The Equivalence Principle is a cornerstone in ensuring that Intelligent Contracts function consistently across various validators when handling non-deterministic outputs like responses from Large Language Models (LLMs) or data retrieved through web browsing. It plays a crucial role in how validators assess and agree on the outcomes proposed by the Leader.
+
+```python copy
+async with EquivalencePrinciple(self, final_result, "The ['is_greeting'] value must be the same") as eq:
+    result = await eq.call_llm(prompt)
+    eq.set_result(result)
+```
+
+### How the Equivalence Principle Works
+
+- The `async with` statement initiates an asynchronous context to ensure that actions within the Equivalence block are executed without blocking the contract’s other functionalities.
+
+- Inside the block, `eq.call_llm(prompt)` is responsible for actually making calls to the LLM or web and retrieving the result.
+
+- Once the data is processed, the final output is set in the `eq.set_result(result)`. Then the validators checking if the result from the L meets the predefined criteria.
+
+<Callout type="info" emoji="ℹ️">
+  State variables cannot be set or accessed within the Equivalence Principle block as the block operates as a pure function, only the result is returned in the end. This is necessary to ensure consistency of the state when different validators execute the contract.
+</Callout>
+
+### Types of Equivalence Principles
+
+Validators work to reach a consensus on whether the result set by the Leader is acceptable which might involve direct comparison or qualitative evaluation, depending on the contract’s design. 
+
+If the validators do not reach a consensus perhaps due to differing data interpretations or an error in data processing, the result might be challenged or an appeal process might be initiated.
+
+#### Comparative Equivalence Principle
+
+In the Comparative Equivalence Principle both the Leader and the validators perform identical tasks and then directly compare their respective results with the predefined criteria in the Equivalence Principle to ensure consistency and accuracy. This method uses an acceptable margin of error to handle slight variations in results between validators and is suitable for quantifiable outputs. However, since multiple validators perform the same tasks as the Leader, it increases computational demands and associated costs.
+
+For example, an intelligent contract is tasked with fetching the follower count of a Twitter account and the Equivalence Principle specify that _Follower counts should not differ by more than 5%_. If the Leader retrieves a count of 42 followers, and the validators find a count of 43 followers. The validators will evaluate their result against the Leader's figure based on the criteria set by the Equivalence Principle to decide if the difference falls within the acceptable margin. 
+
+This is set with the `comparative=True` parameter is the Equivalence Principle constructor.
+
+```python copy
+async with EquivalencePrinciple(self, final_result, "The result['follower_count'] should not differ by more than 5%", comparative=True) as eq:
+```
+
+#### Non-Comparative Equivalence Principle
+
+In contrast, the Non-Comparative Equivalence Principle does not require validators to replicate the Leader's output which makes the validation process faster and less costly. Instead, validators assess the accuracy of the leader’s result against the criteria defined in the Equivalence Principle. This method is particularly useful for qualitative outputs like text summaries.
+
+For example, consider an intelligent contract designed to summarize a news article. The Equivalence Principle specifies that _the summary has to have all the key points of the source article_. The leader executes this task and the validators do not generate their own summaries; instead, they evaluate the leader’s summary against the criteria set by the Equivalence Principle to determine accuracy and completeness.
+
+This is set with the `comparative=False` parameter is the Equivalence Principle constructor.
+
+``` python copy
+async with EquivalencePrinciple(self, final_result, "The summary has to have all the key points of the source article", comparative=False) as eq:
+```
+
+## Parsing result
+
+Once a result has been validated and finalized within the Equivalence Principle block, it can be parsed for easier data handling. In our [example prompt](http://localhost:3000/simulator/intelligent-contract-syntax#crafting-prompts-for-llm-and-web-browsing-interactions), we requested our validator to produce the output in a JSON format and for that we are using the `json.loads` to parse it. 
+
+```python copy
+result_json = json.loads(final_result)
+```
+<Callout type="info" emoji="ℹ️">
+  While this approach is recommended for its convenience, it's not mandatory. You have the flexibility to request the output in any format that best suits your needs.
+</Callout>
+
+## Result evaluation
+
+Here, the JSON-formatted result is evaluated to determine if the user's input was recognized. Depending on the outcome, the contract's state is updated and returns the complete JSON response, providing detailed information about the evaluation.
+
+```python copy
+if result_json['is_greeting'] is False:
+    self.state_variable = result_json['is_greeting']
+return result_json
+```
+
+## Complete example code
+
+Here's a complete example code that demonstrates the structure and components of an Intelligent Contract:
+
+```python copy
+import json
+from genvm.contracts.base import icontract
+from genvm.contracts.equivalence_principle import EquivalencePrinciple
+
+@icontract
+class YourContract:
+    def __init__(self, initial_state):
+        self.state_variable = initial_state
+
+    async def your_method(self, request: str) -> None:
+        prompt = f"""
+Given the request: {request}
+Determine if the request is a greeting.
+
+Please respond in the following valid JSON format:
+{{
+"explanation": str,
+"is_greeting": bool
+}}
+"""     final_result = None
+        async with EquivalencePrinciple(self, final_result, "The ['is_greeting'] value must be the same") as eq:
+            result = await eq.call_llm(prompt)
+            eq.set_result(result)
+
+        result_json = json.loads(final_result)
+
+        if result_json['is_greeting'] is False:
+            self.state_variable = result_json['is_greeting']
+        return result_json
+```
+
