@@ -5,7 +5,9 @@
     "title": "About",
     "type": "page"
   },
-  "command-line-options": "",
+  "command-line-options": {
+    "display": "hidden"
+  },
   "contact": {
     "title": "Contact ↗",
     "type": "page",
