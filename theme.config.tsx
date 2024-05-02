@@ -25,12 +25,12 @@ const config: DocsThemeConfig = {
       openGraph: {
         type: 'website',
         locale: 'en_IE',
-        url: 'https://www.yourwebsite.com' + asPath,
+        url: 'https://genlayer-docs.netlify.app/' + asPath,
         site_name: 'GenLayer Documentation',
       },
       additionalLinkTags: [
-        { rel: 'icon', href: '/favicon.ico' },
-        { rel: 'apple-touch-icon', href: '/apple-icon.png', sizes: '180x180' }
+        { rel: 'icon', href: './components/icon' },
+        { rel: 'apple-touch-icon', href: './components/icon', sizes: '180x180' }
       ],
       additionalMetaTags: [
         {
@@ -43,7 +43,7 @@ const config: DocsThemeConfig = {
         },
         {
           property: 'og:image',
-          content: 'https://www.yourwebsite.com/images/og-image.png'
+          content: './components/icon'
         }
       ]
     }
