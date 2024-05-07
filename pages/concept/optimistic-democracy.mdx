@@ -1,28 +1,26 @@
-# Optimistic Democracy 
+# Optimistic Democracy
 
-Optimistic Democracy is GenLayer’s unique consensus mechanism designed to efficiently validate transactions and smart contract operations. This mechanism stands out by its approach to handling disagreements and validating transactions in a manner that is both efficient and secure, especially for operations that involve non-deterministic outcomes, such as those relying on web data or AI models.
+Optimistic Democracy is GenLayer’s consensus mechanism designed to efficiently validate transactions and Intelligent Contract operations. This mechanism is unique in its approach to handling disagreements and validating transactions, particularly those involving non-deterministic outcomes, such as those relying on web data or AI models.
 
-### Key Components
+## Key Components
 
-- **Validators:** Network participants who stake tokens as collateral to be selected for validating transactions. They play a crucial role in both the initial validation and dispute resolution phases.
+- **Validators:** Network participants who stake tokens to participate in validating transactions. They play a crucial role in both the initial validation and appeals phases.
 
 - **Leader Selection:** A process that randomly selects one validator to propose the execution outcome for each transaction, ensuring fairness and mitigating bias.
 
-- **Challenge Mechanism:** Allows any network participant to raise concerns about a transaction's validation, ensuring transparency and accountability.
+- **Appeals Process:** Allows any network participant to raise concerns about a transaction's validation during the Finality Window, ensuring transparency and accountability.
 
-### How It Works
+## How It Works
 
 Optimistic Democracy operates on a principle of trust, with a fallback for verification to ensure integrity:
 
-1. **Initial Validation:** A small, randomly selected group of validators is chosen to review each transaction. One of these validators acts as the leader, proposing how the transaction should be executed based on the smart contract's logic.
+1. **Initial Validation:** A small, randomly selected group of validators is chosen to review each transaction. One of these validators acts as the leader, proposing how the transaction should be executed based on the Intelligent Contract's logic.
 
 2. **Consensus by Default:** If no validator objects to the leader's proposal within a specific timeframe, the transaction is considered valid by default. This “optimistic” aspect assumes that proposals are correct unless proven otherwise, significantly speeding up the transaction process.
 
-3. **Challenge Period:** After a transaction is initially validated, there is a short period during which any participant in the network can challenge the outcome if they believe it to be incorrect or fraudulent.
+3. **Finality Window:** After a transaction is initially validated, there is a short period during which any participant in the network can appeal the outcome if they believe it to be incorrect or fraudulent.
 
-4. **Resolution of Disputes:** If a transaction is challenged, a larger set of validators is convened to review the transaction again. This ensures that any potentially incorrect decisions made during the initial validation can be corrected.
+4. **Appeals:** If a transaction is appealed, a larger set of validators is convened to review the transaction again. This ensures that any potentially incorrect decisions made during the initial validation can be corrected.
 
-By trusting validators to correctly propose transaction outcomes and only verifying in case of disputes, Optimistic Democracy greatly speeds up the consensus process compared to traditional, every-step verification methods. 
-Also, the mechanism of staking and the possibility of losing staked tokens if found to be acting maliciously incentivize validators to act honestly and diligently.
-
+By trusting validators to correctly propose transaction outcomes and only verifying in case of disputes, Optimistic Democracy significantly accelerates the consensus process compared to traditional, every-step verification methods. The staking mechanism and the possibility of losing staked tokens if found to be acting maliciously incentivize validators to act honestly and diligently.
 
