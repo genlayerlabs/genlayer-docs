@@ -5,6 +5,7 @@
     "title": "About",
     "type": "page"
   },
+  "concepts": "Concept",
   "command-line-options": {
     "display": "hidden"
   },
