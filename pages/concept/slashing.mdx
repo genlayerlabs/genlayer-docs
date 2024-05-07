@@ -1,0 +1,37 @@
+# Slashing in GenLayer
+
+Slashing is a mechanism used in GenLayer to penalize validators who engage in behavior detrimental to the network. This mechanism ensures that validators act honestly and effectively, maintaining the integrity of the platform and the Intelligent Contracts executed within it. The slashing system, part of the Optimistic Democracy consensus mechanism, helps enforce the rules of the network and align validators' incentives with those of the system.
+
+The primary purpose of slashing is to ensure that validators behave honestly and efficiently, which is crucial for maintaining trust and functionality within GenLayer. By penalizing undesirable behavior, slashing helps align validators' incentives with those of the network and its users.
+## When Slashing Occurs
+
+Validators in GenLayer can be slashed for several reasons:
+
+1. **Voting Against the Majority**: If a validator votes against the majority during the transaction execution process and the appeals process concludes that the validator was incorrect, the validator is slashed. This encourages validators to align with the consensus when validating non-deterministic transactions.
+
+2. **Missing Transaction Execution Window**: Validators are expected to execute transactions within a specified time frame. If a validator misses this window, they are penalized, ensuring that validators remain active and responsive.
+
+3. **Missing Appeal Execution Window**: During the appeals process, validators must respond within a set time frame. If they fail to do so, they are slashed, which motivates validators to participate in the appeals process.
+
+## Amount Slashed
+
+The amount slashed varies based on the severity of the violation and the specific rules set by the GenLayer platform. The slashing amount is designed to be substantial enough to deter malicious or negligent behavior while not being excessively punitive for honest mistakes.
+
+## Slashing Process
+
+1. **Violation Detection**: The network identifies a violation, such as voting against the majority or missing an execution window.
+
+2. **Slash Calculation**: The amount to be slashed is calculated based on the specific violation and platform rules.
+
+3. **Stake Reduction**: The slashed amount is deducted from the validator's stake.
+
+4. **Finality**: The slashing becomes final after the Finality Window closes, ensuring that the validator's balance is finalized and accounts for any potential appeals.
+
+## Slashing and Unstaking
+
+Validators wishing to unstake their tokens must undergo an unstaking procedure. This process ensures that any potential violations are accounted for before the validator's stake is returned. The steps include:
+
+1. **Unstaking Request**: The validator submits an unstaking request.
+2. **Validator Removal**: The validator is removed from the set of active validators.
+3. **Finality Period**: The validator waits for the Finality Window to ensure their balance is finalized.
+4. **Stake Withdrawal**: The validator and their delegators withdraw their stake.
