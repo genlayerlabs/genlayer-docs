@@ -1,0 +1,30 @@
+### Finality and Finality Window in GenLayer
+
+Finality and the Finality Window are integral parts of the Optimistic Democracy that ensures that transactions are thoroughly validated and disputes are resolved before becoming permanent.
+
+## Finality in GenLayer
+
+Finality refers to the state in which a transaction is considered settled and unchangeable. In GenLayer, once a transaction achieves finality, it cannot be appealed or altered, providing certainty to all participants in the system. This is particularly important for applications that rely on accurate and definitive outcomes, such as financial contracts or decentralized autonomous organizations (DAOs).
+
+## Finality Window
+
+The Finality Window is a time frame during which a transaction can be challenged or appealed before it becomes final. This window serves several purposes:
+
+1. **Appeals**: During the Finality Window, any participant can appeal a transaction if they believe the validation was incorrect. This allows for a process of checks and balances, ensuring that non-deterministic transactions are evaluated properly.
+
+2. **Re-computation**: If a transaction is appealed, the system can re-evaluate the transaction with a new set of validators. The Finality Window provides the time necessary for this process to occur.
+
+3. **Security**: The window also acts as a security feature, allowing the network to correct potential errors or malicious activity before finalizing a transaction.
+
+## Deterministic vs. Non-Deterministic Transactions
+
+In GenLayer, deterministic transactions, which have predictable outcomes, can have a shorter Finality Window because their validation is straightforward. Non-deterministic transactions, which involve elements like Large Language Model (LLM) calls or web data retrieval, require a longer Finality Window to account for potential appeals and re-computation.
+
+## Fast Finality
+
+For scenarios requiring immediate finality, such as emergency decisions in a DAO, it is possible to pay for all validators to validate the transaction immediately. This approach, though more costly, allows for fast finality, bypassing the typical Finality Window.
+
+## Appealability and Gas
+
+When submitting a transaction, users can include additional gas to cover potential appeals. If a transaction lacks sufficient gas for appeals, third parties can supply additional gas during the Finality Window. Developers of Intelligent Contracts can also set minimum gas requirements for appealability, ensuring that critical transactions have adequate coverage.
+
