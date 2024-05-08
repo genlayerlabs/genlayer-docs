@@ -45,3 +45,23 @@ This command performs the following actions:
 
 Go to http://localhost:8080/ to access and start using the GenLayer Simulator. The Simulator will be downloaded into your user home folder.
 
+### 3. Start the Simulator
+
+To start the GenLayer Simulator, use the following command:
+
+```bash copy
+genlayer up
+```
+This command starts the simulator with the following configurable options:
+
+- `--no-reset-accounts`: By default, this command restarts the database for accounts and transactions. Include this option to retain existing data.
+- `--reset-validators`: Include this option to remove all current validators and create new random ones, starting with a clean validator state.
+
+The command can be tailored as per your requirements using these options:
+
+```bash copy
+genlayer up --no-reset-accounts
+genlayer up --reset-validators
+```
+
+Access the simulator via http://localhost:8080/ to visualize and manage the network and its components.
