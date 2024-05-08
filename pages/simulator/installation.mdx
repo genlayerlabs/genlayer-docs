@@ -43,25 +43,21 @@ This command performs the following actions:
 - Initializes the database and sets up the required tables and accounts.
 - Launches the Simulator frontend interface.
 
-Go to http://localhost:8080/ to access and start using the GenLayer Simulator. The Simulator will be downloaded into your user home folder.
 
 ### 3. Start the Simulator
 
-To start the GenLayer Simulator, use the following command:
+Once the environment is initialized, you can start the GenLayer Simulator with the following command:
 
-```bash copy
+```bash
 genlayer up
 ```
-This command starts the simulator with the following configurable options:
+**Command Options:**
+- `--no-reset-accounts`: Use this option to retain the database for accounts and transactions without restarting. This is useful for continuous development without losing existing data.
+- `--reset-validators`: This option removes all current validators and creates new random ones. Ideal for testing scenarios that require a fresh set of validators.
 
-- `--no-reset-accounts`: By default, this command restarts the database for accounts and transactions. Include this option to retain existing data.
-- `--reset-validators`: Include this option to remove all current validators and create new random ones, starting with a clean validator state.
+After executing the start command, go to http://localhost:8080/ to access and start using the GenLayer Simulator. 
+import { Callout } from 'nextra-theme-docs'
 
-The command can be tailored as per your requirements using these options:
-
-```bash copy
-genlayer up --no-reset-accounts
-genlayer up --reset-validators
-```
-
-Access the simulator via http://localhost:8080/ to visualize and manage the network and its components.
+<Callout>
+  The GenLayer Simulator is installed in your user home folder, making it easily accessible for development and testing purposes.
+</Callout>
