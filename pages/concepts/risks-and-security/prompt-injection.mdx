@@ -1,29 +1,22 @@
-# Prompt Injection
+# Managing Prompt Injection Risks
 
-Prompt Injection is a type of attack where malicious actors craft inputs or "prompts" that are designed to manipulate the behavior of AI models. By carefully formulating these prompts, attackers can trick the AI into performing unintended actions or producing outcomes that compromise the security or functionality of Intelligent Contracts.
+Intelligent Contracts exclusively interact with public data, reducing certain types of risks such as data leakage. However, ensuring the integrity of these contracts still requires careful management of inputs and outputs.
 
-Preventing prompt injection is vital for ensuring that Intelligent Contracts operate as intended without interference or manipulation. By securing the inputs and behavior of AI models, GenLayer protects the integrity of its platform and the transactions processed within it, providing a reliable and secure environment for all users.
+## Understanding Prompt Injection
 
-## How Prompt Injection Occurs
+Prompt injection involves manipulating the prompts fed to AI models to produce unintended outcomes. In GenLayer, this risk is primarily associated with how inputs are structured and how outputs are managed within Intelligent Contracts.
 
-Prompt injection can happen in several ways within GenLayer:
+## Strategies for Mitigating Prompt Injection
 
-1. **Direct Input Manipulation**: Attackers may directly provide misleading or specially crafted inputs that are designed to be misinterpreted by the AI, leading to erroneous or harmful actions.
+To safeguard against prompt injection in GenLayer, you need to implement these key strategies:
 
-2. **Exploiting Model Biases**: LLMs may have inherent biases or vulnerabilities due to their training data. Attackers can exploit these weaknesses to influence the model's responses in predictable but unintended ways.
+- **Restrict Inputs**: Limit user inputs to the minimum necessary information. This reduces the chances of malicious data entering the system. Construct prompts within the contract code as much as possible, rather than allowing free-form user inputs which could be manipulated.
 
-3. **External Data Manipulation**: Since Intelligent Contracts on GenLayer can interact with external web data, there is a risk that compromised or maliciously crafted web content could be used to influence AI behavior by feeding it deceptive information.
+- **Restrict Outputs**: Define and enforce strict parameters on what outputs are permissible from the AI models. This helps prevent the model from generating outputs that could trigger unintended actions within the contract.
 
-## Mitigating Prompt Injection
+- **Simplify and Secure Contract Logic**: Ensure that the logic within Intelligent Contracts is clear and robust against manipulation. Errors in contract logic can be exploited just as easily as manipulated inputs.
 
-To counteract the risks associated with prompt injection, GenLayer employs several robust security measures:
-
-- **Rigorous Input Sanitization**: All inputs to LLMs are thoroughly checked and sanitized to strip out potentially malicious elements before they are processed by the AI. This helps prevent harmful or manipulative code from reaching the model.
-
-- **Secure Model Training**: AI models in GenLayer are trained with an emphasis on recognizing and resisting manipulative prompts. This includes using diverse and extensive datasets to reduce model biases and increase resilience against unexpected inputs.
-
-- **Continuous Monitoring and Updates**: GenLayer continuously monitors the behavior of deployed AI models and updates their training and operational parameters to address new threats and vulnerabilities as they are identified.
-
-- **Trusted Data Sources**: When Intelligent Contracts fetch data from the web, GenLayer ensures that only trusted and verified sources are used. This minimizes the risk of ingesting manipulated data that could lead to prompt injection.
+- **Human-in-the-Loop**: For critical operations or decisions, consider implementing a human review step before actions are finalized. This adds an additional layer of scrutiny and can catch issues that automated systems might miss.
 
 
+These measures are essential for maintaining the security and reduce the risk of prompt injections
