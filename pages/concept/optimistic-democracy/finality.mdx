@@ -1,9 +1,5 @@
 # Finality
 
-Finality and the Finality Window are integral parts of the Optimistic Democracy consensus mechanism, ensuring that transactions are thoroughly validated and disputes are resolved before becoming permanent.
-
-## Finality in GenLayer
-
 Finality refers to the state in which a transaction is considered settled and unchangeable. In GenLayer, once a transaction achieves finality, it cannot be appealed or altered, providing certainty to all participants in the system. This is particularly important for applications that rely on accurate and definitive outcomes, such as financial contracts or decentralized autonomous organizations (DAOs).
 
 ## Finality Window
@@ -15,6 +11,10 @@ The Finality Window is a time frame during which a transaction can be challenged
 2. **Re-computation**: If a transaction is appealed, the system can re-evaluate the transaction with a new set of validators. The Finality Window provides the time necessary for this process to occur.
 
 3. **Security**: The window also acts as a security feature, allowing the network to correct potential errors or malicious activity before finalizing a transaction.
+
+import Image from 'next/image'
+
+<Image src="/final.png" width={1000} height={1000} />
 
 ## Deterministic vs. Non-Deterministic Transactions
 

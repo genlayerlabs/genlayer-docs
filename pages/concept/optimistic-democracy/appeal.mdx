@@ -6,7 +6,7 @@ The appeals process in GenLayer is a critical component of the Optimistic Democr
 
 1. **Initial Validation**: When a transaction is submitted, a small subset of randomly selected validators checks its validity. The transaction is executed by a leader, and other validators assess the quality of the leader's proposal using the Equivalence Principle.
 
-2. **Provisional Acceptance**: If the leader's proposal is accepted by a majority of validators, the transaction is provisionally accepted. However, this decision is not yet final, allowing for the possibility of appeals during a limited window of time, known as the "Finality Window."
+2. **Provisional Acceptance**: If the leader's proposal is accepted by a majority of validators, the transaction is provisionally accepted. However, this decision is not yet final, allowing for the possibility of appeals during a limited window of time, known as the **[Finality Window](/concept/optimistic-democracy/finality)**.
 
 3. **Initiating an Appeal**: If any participant disagrees with the initial validation, they can initiate an appeal within the Finality Window by submitting a request along with a required bond. Upon initiation, the new set of validators is added to those from the initial validation. They first vote to determine if the original transaction needs to be reconsidered. If so, a new leader is selected to re-evaluate the transaction, which is then validated by all validators in the combined set.
 
@@ -15,6 +15,10 @@ The appeals process in GenLayer is a critical component of the Optimistic Democr
 5. **Escalating Appeals**:  If the appealing party is still unsatisfied, the process can escalate further, with each round involving a larger set of validators. Each round doubles the number of validators. A new leader is only selected if the transaction is overturned
 
 6. **Final Decision**: The appeals process continues until a majority consensus is reached or until all validators have participated. The final decision is then recorded, and the transaction's state is updated accordingly. If the appealing party is correct, they receive a reward for their efforts, while incorrect appellants lose their bond.
+
+import Image from 'next/image'
+ 
+<Image src="/appeal.png" width={500} height={500} />
 
 ## Gas Costs for Appeals
 
