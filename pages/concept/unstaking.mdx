@@ -1,29 +1,29 @@
 # Unstaking in GenLayer
 
-Unstaking in GenLayer is the process by which validators remove their staked tokens from the network, thereby ceasing their role as active validators. The unstaking procedure ensures that validators meet all requirements and resolve any pending obligations before withdrawing their stake. This process is designed to maintain the network's integrity and align the incentives of validators with the security of the platform.
+Unstaking in GenLayer is the process by which validators disengage their staked tokens from the network, ending their active participation as validators. This procedure ensures that all obligations are fulfilled and pending issues resolved, maintaining the network's integrity and securing the platform’s operations.
 
 ## How Unstaking Works
 
-The unstaking process involves the following steps:
+The unstaking process includes several key steps:
 
-1. **Initiating Unstaking**: The validator submits a transaction to start the unstaking process. This signals their intention to stop validating transactions on the network.
+1. **Initiating Unstaking**: Validators initiate their exit from active duties by submitting an unstaking transaction, signaling their intention to cease participation in validating transactions.
 
-2. **Validator Removal**: After submitting the unstaking request, the validator is removed from the set of active validators. This means they will no longer be assigned new transactions or appeals for validation.
+2. **Validator Removal**: Once the unstaking request is made, the validator is promptly removed from the pool of active validators, meaning they will no longer receive new transactions or be called upon for appeal validations.
 
-3. **Finality Period**: The validator must wait for the Finality Window to close. This waiting period ensures that any potential violations, such as incorrect validations or missed execution windows, are accounted for before the validator's balance is finalized.
+3. **Finality Period**: During this period, validators must wait for all transactions they have participated in to reach full finality. This is crucial to ensure that validators do not exit while still having potential influence over unresolved transactions. This cooldown period helps prevent the situation where new transactions with new finality windows could prevent them from ever achieving full finality on all transactions they were involved in.
 
-4. **Withdrawing Stake**: After the Finality Window closes and no outstanding issues remain, the validator and their delegators can withdraw their stake. The stake, including any rewards, is then returned to the appropriate accounts.
+4. **Withdrawing Stake**: After all transactions have achieved finality and no outstanding issues remain, validators and their delegators can safely withdraw their staked tokens and any accrued rewards.
 
 ## Purpose of Unstaking
 
-The unstaking process serves several important purposes:
+The unstaking process is designed to:
 
-1. **Ensuring Accountability**: The Finality Window ensures that any outstanding violations or potential appeals are resolved before a validator's stake is returned. This prevents validators from leaving the network without addressing potential issues.
+- **Ensure Accountability**: By enforcing a Finality Window, validators are held accountable for their actions until all transactions they influenced are fully resolved. This prevents premature exit from the network and ensures that all potential disputes are settled.
+  
+- **Align Incentives**: The requirement for validators to wait through the Finality Window aligns their incentives with the long-term security and reliability of the network, promoting responsible participation.
 
-2. **Aligning Incentives**: The waiting period aligns the incentives of validators with the network, ensuring they act honestly and fulfill their responsibilities before unstaking.
-
-3. **Maintaining Security**: By requiring validators to go through an unstaking process, GenLayer ensures that validators cannot easily exit the network without resolving potential security concerns.
+- **Maintain Network Security**: The unstaking process discourages abrupt departures and ensures that validators address any possible security concerns related to their past validations before leaving.
 
 ## Implications for Validators and Delegators
 
-For validators, the unstaking process means they must plan ahead if they wish to stop validating, as the Finality Window can vary. For delegators, unstaking their tokens requires them to wait for the validator to go through the unstaking process, which protects their interests by ensuring any penalties or rewards are accounted for before withdrawal.
+For validators, this process mandates careful planning regarding their exit strategy from the network, considering the need to wait out the Finality Window. Delegators must also be patient, understanding that their assets will remain locked until their validator has cleared all responsibilities, safeguarding their investments from potential liabilities caused by unresolved validations.
