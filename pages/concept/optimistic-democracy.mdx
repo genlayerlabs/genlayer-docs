@@ -8,18 +8,31 @@ Optimistic Democracy is the consensus mechanism employed by GenLayer, designed t
   
 - **Leader Selection:** A process that randomly selects one validator to propose the execution outcome for each transaction, ensuring fairness and reducing potential biases.
 
-- **Appeals Process:** This component allows any network participant to contest the results of a transaction's validation during a designated Finality Window, promoting transparency and accountability.
-
 ## How It Works
 
 Optimistic Democracy relies on a balance of trust and verification to ensure the integrity of transactions:
 
-1. **Initial Validation:** For each transaction, a small subset of validators is randomly selected. Among them, one acts as the leader, tasked with proposing the transaction's execution based on the Intelligent Contract's specifications.
+1. **Initial Validation**: When a transaction is submitted, a small subset of randomly selected validators checks its validity. Among them, one is selected as the leader. The leader executes the transaction, and other validators assess the quality of the leader's proposal using the Equivalence Principle.
 
-2. **Affirmative Majority Consensus:** The transaction is accepted if a majority of the initial validators affirmatively approve the leader's proposal. If any validator fails to vote, they are replaced, and a new validator is selected to vote within a specific timeframe.
+2. **Affirmative Majority Consensus**: If the leader's proposal is accepted by a majority of validators, the transaction is provisionally accepted. However, this decision is not yet final, allowing for the possibility of appeals during a limited window of time, known as the **[Finality Window](/concept/optimistic-democracy/finality)**.
 
-3. **Finality Window:** Once a transaction passes the initial validation, there is a short period known as the Finality Window during which any network participant can challenge the validation if they believe it to be incorrect or fraudulent.
+import { Callout } from 'nextra-theme-docs'
 
-4. **Appeals:** In the event of an appeal, a larger group of validators is convened to reassess the transaction. This secondary review ensures that any potentially incorrect decisions from the initial validation phase can be revisited and corrected if necessary.
+<Callout>
+  If any validator fails to vote within the specified timeframe, they are replaced, and a new validator is selected to cast a vote
+</Callout>
 
-Optimistic Democracy enhances the efficiency of the consensus process by primarily trusting validators to propose accurate transaction outcomes and invoking verification mechanisms only in cases of disputes. The requirement for validators to stake tokens, with the risk of losing them if found to act maliciously, incentivizes honest and diligent behavior.
+3. **Initiating an Appeal**:  If a participant disagrees with a transaction's initial validation(if it's incorrect or fradulent), they can start an appeal to challenge the validation during the Finality Window. To do this, they must submit a request and provide a required bond. After the appeal is initiated, a new group of validators joins the original ones. This combined group first votes on whether the transaction should be re-evaluated. If they agree it should, a new leader is chosen to reassess the transaction, and all validators in the group then review this new evaluation.
+
+4. **Appeal Evaluation**: The new leader re-evaluates the transaction, while the other validators again assess the leader's proposal using the Equivalence Principle. This escalated validation involves a larger number of validators, increasing the chances of an accurate decision.
+
+5. **Escalating Appeals**:  If the appealing party is still unsatisfied, the process can escalate further, with each round involving a larger set of validators. Each round doubles the number of validators. A new leader is only selected if the transaction is overturned
+
+6. **Final Decision**: The appeals process continues until a majority consensus is reached or until all validators have participated. The final decision is then recorded, and the transaction's state is updated accordingly. If the appealing party is correct, they receive a reward for their efforts, while incorrect appellants lose their bond.
+
+## Diagram of the Optimistic Democracy
+Here is the graph diagram illustrating the Optimistic Democracy consensus mechanism in GenLayer.
+
+import Image from 'next/image'
+
+<Image src="/optimistic-democracy.png" width={600} height={600} />

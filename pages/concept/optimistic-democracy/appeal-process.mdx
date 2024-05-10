@@ -1,0 +1,17 @@
+# Appeals Process
+
+The appeals process in GenLayer is a critical component of the Optimistic Democracy consensus mechanism. It provides a means for correcting errors or disagreements in the validation of Intelligent Contracts. This process ensures that non-deterministic transactions are accurately evaluated, contributing to the robustness and fairness of the platform.
+
+## How It Works
+
+- **Initiating an Appeal**: Participants can appeal the initial decision by submitting a request and a required bond during the Finality Window. A new set of validators is then added to the original group to reassess the transaction.
+
+- **Appeal Evaluation**: A new leader re-evaluates the transaction. The combined group of original and new validators review this new evaluation to ensure accuracy.
+
+- **Escalating Appeals**: If unresolved, the appeal can escalate, doubling the number of validators each round until a majority consensus is reached or all validators have participated.
+
+Once a consensus is reached, the final decision is recorded, and the transaction's state is updated. Correct appellants receive a reward, while those who are incorrect may lose their bond.
+
+## Gas Costs for Appeals
+
+The gas costs for an appeal can be covered by the original user, the appellant, or any third party. When submitting a transaction, users can include an optional tip to cover potential appeal costs. If insufficient gas is provided, the appeal may fail to be processed, but any party can supply additional gas to ensure the appeal proceeds.
