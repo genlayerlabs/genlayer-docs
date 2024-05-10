@@ -1,26 +1,25 @@
 # Optimistic Democracy
 
-Optimistic Democracy is GenLayer’s consensus mechanism designed to efficiently validate transactions and Intelligent Contract operations. This mechanism is unique in its approach to handling disagreements and validating transactions, particularly those involving non-deterministic outcomes, such as those relying on web data or AI models.
+Optimistic Democracy is the consensus mechanism employed by GenLayer, designed to validate transactions and operations of Intelligent Contracts efficiently. This method is particularly adept at handling non-deterministic outcomes from transactions involving web data or AI models, crucial for maintaining the integrity and reliability of the network.
 
 ## Key Components
 
-- **Validators:** Network participants who stake tokens to participate in validating transactions. They play a crucial role in both the initial validation and appeals phases.
+- **Validators:** Participants who stake tokens to earn the right to validate transactions. They are critical in both the initial validation and the subsequent appeals process, if necessary.
+  
+- **Leader Selection:** A process that randomly selects one validator to propose the execution outcome for each transaction, ensuring fairness and reducing potential biases.
 
-- **Leader Selection:** A process that randomly selects one validator to propose the execution outcome for each transaction, ensuring fairness and mitigating bias.
-
-- **Appeals Process:** Allows any network participant to raise concerns about a transaction's validation during the Finality Window, ensuring transparency and accountability.
+- **Appeals Process:** This component allows any network participant to contest the results of a transaction's validation during a designated Finality Window, promoting transparency and accountability.
 
 ## How It Works
 
-Optimistic Democracy operates on a principle of trust, with a fallback for verification to ensure integrity:
+Optimistic Democracy relies on a balance of trust and verification to ensure the integrity of transactions:
 
-1. **Initial Validation:** A small, randomly selected group of validators is chosen to review each transaction. One of these validators acts as the leader, proposing how the transaction should be executed based on the Intelligent Contract's logic.
+1. **Initial Validation:** For each transaction, a small subset of validators is randomly selected. Among them, one acts as the leader, tasked with proposing the transaction's execution based on the Intelligent Contract's specifications.
 
-2. **Consensus by Default:** If no validator objects to the leader's proposal within a specific timeframe, the transaction is considered valid by default. This “optimistic” aspect assumes that proposals are correct unless proven otherwise, significantly speeding up the transaction process.
+2. **Affirmative Majority Consensus:** The transaction is accepted if a majority of the initial validators affirmatively approve the leader's proposal. If any validator fails to vote, they are replaced, and a new validator is selected to vote within a specific timeframe.
 
-3. **Finality Window:** After a transaction is initially validated, there is a short period during which any participant in the network can appeal the outcome if they believe it to be incorrect or fraudulent.
+3. **Finality Window:** Once a transaction passes the initial validation, there is a short period known as the Finality Window during which any network participant can challenge the validation if they believe it to be incorrect or fraudulent.
 
-4. **Appeals:** If a transaction is appealed, a larger set of validators is convened to review the transaction again. This ensures that any potentially incorrect decisions made during the initial validation can be corrected.
+4. **Appeals:** In the event of an appeal, a larger group of validators is convened to reassess the transaction. This secondary review ensures that any potentially incorrect decisions from the initial validation phase can be revisited and corrected if necessary.
 
-By trusting validators to correctly propose transaction outcomes and only verifying in case of disputes, Optimistic Democracy significantly accelerates the consensus process compared to traditional, every-step verification methods. The staking mechanism and the possibility of losing staked tokens if found to be acting maliciously incentivize validators to act honestly and diligently.
-
+Optimistic Democracy enhances the efficiency of the consensus process by primarily trusting validators to propose accurate transaction outcomes and invoking verification mechanisms only in cases of disputes. The requirement for validators to stake tokens, with the risk of losing them if found to act maliciously, incentivizes honest and diligent behavior.

@@ -8,11 +8,11 @@ The appeals process in GenLayer is a critical component of the Optimistic Democr
 
 2. **Provisional Acceptance**: If the leader's proposal is accepted by a majority of validators, the transaction is provisionally accepted. However, this decision is not yet final, allowing for the possibility of appeals during a limited window of time, known as the "Finality Window."
 
-3. **Initiating an Appeal**: If any party disagrees with the initial validation, they can initiate an appeal. This involves submitting a request during the Finality Window, along with a bond that demonstrates their commitment to the appeal. The appeal is assigned to a new set of validators, with one of them randomly selected as the leader.
+3. **Initiating an Appeal**: If any participant disagrees with the initial validation, they can initiate an appeal within the Finality Window by submitting a request along with a required bond. Upon initiation, the new set of validators is added to those from the initial validation. They first vote to determine if the original transaction needs to be reconsidered. If so, a new leader is selected to re-evaluate the transaction, which is then validated by all validators in the combined set.
 
 4. **Appeal Evaluation**: The new leader re-evaluates the transaction, while the other validators again assess the leader's proposal using the Equivalence Principle. This escalated validation involves a larger number of validators, increasing the chances of an accurate decision.
 
-5. **Escalating Appeals**: If the appealing party is still unsatisfied, the process can escalate further, with each round involving a larger set of validators. The number of validators doubles with each round, up to the maximum number available. Each round involves a new leader and a new set of validators, enhancing the diversity and thoroughness of the evaluation.
+5. **Escalating Appeals**:  If the appealing party is still unsatisfied, the process can escalate further, with each round involving a larger set of validators. Each round doubles the number of validators. A new leader is only selected if the transaction is overturned
 
 6. **Final Decision**: The appeals process continues until a majority consensus is reached or until all validators have participated. The final decision is then recorded, and the transaction's state is updated accordingly. If the appealing party is correct, they receive a reward for their efforts, while incorrect appellants lose their bond.
 

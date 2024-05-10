@@ -6,7 +6,7 @@ The primary purpose of slashing is to ensure that validators behave honestly and
 
 ## Slashing Process
 
-1. **Violation Detection**: The network identifies a violation, such as voting against the majority or missing an execution window.
+1. **Violation Detection**: The network identifies a violation, such as missing an execution window.
 
 2. **Slash Calculation**: The amount to be slashed is calculated based on the specific violation and platform rules.
 
@@ -18,11 +18,9 @@ The primary purpose of slashing is to ensure that validators behave honestly and
 
 Validators in GenLayer can be slashed for several reasons:
 
-1. **Voting Against the Majority**: If a validator votes against the majority during the transaction execution process and the appeals process concludes that the validator was incorrect, the validator is slashed. This encourages validators to align with the consensus when validating non-deterministic transactions.
+1. **Missing Transaction Execution Window**: Validators are expected to execute transactions within a specified time frame. If a validator misses this window, they are penalized, ensuring that validators remain active and responsive.
 
-2. **Missing Transaction Execution Window**: Validators are expected to execute transactions within a specified time frame. If a validator misses this window, they are penalized, ensuring that validators remain active and responsive.
-
-3. **Missing Appeal Execution Window**: During the appeals process, validators must respond within a set time frame. If they fail to do so, they are slashed, which motivates validators to participate in the appeals process.
+2. **Missing Appeal Execution Window**: During the appeals process, validators must respond within a set time frame. If they fail to do so, they are slashed, which motivates validators to participate in the appeals process.
 
 ### Amount Slashed
 
