@@ -24,17 +24,11 @@ In the Comparative Equivalence Principle both the Leader and the validators perf
 
 For example, if an Intelligent Contract is tasked with calculating the average rating of a product based on user reviews. The Equivalence Principle specifies that the average ratings should not differ by more than 0.1 points. If the Leader calculate an average rating of 4.5 and the validators calculates an average rating of 4.6, the validators will evaluate their result against the Leader's figure based on the criteria set by the Equivalence Principle to decide if the difference falls within the acceptable margin.
 
-import Image from 'next/image'
-
-<Image src="/comparative-eq.png" width={600} height={600} />
-
 ### Non-Comparative Equivalence Principle
 
 In contrast, the Non-Comparative Equivalence Principle does not require validators to replicate the Leader's output which makes the validation process faster and less costly. Instead, validators assess the accuracy of the leader’s result against the criteria defined in the Equivalence Principle. This method is particularly useful for qualitative outputs like text summaries.
  
 For example, Intelligent Contract designed to summarize news articles, the Leader validator generates a summary. Validators do not generate their own summaries but evaluate the Leader’s summary against the predefined criteria, such as accuracy, relevance, and length. If the Leader’s summary meets these criteria, it is accepted.
-
-<Image src="/non-comparative-eq.png" width={600} height={600} />
 
 ## Key Points for Developers
 
