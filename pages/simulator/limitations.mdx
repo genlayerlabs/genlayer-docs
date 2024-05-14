@@ -12,10 +12,13 @@ Token transfers between addresses are not supported in the simulator. Developers
 Transactions within the simulator do not consume gas. While this is beneficial for rapid prototyping, the absence of gas simulation may result in behavior differing from live blockchain networks.
 
 ## Consensus Algorithm
-The GenLayer Simulator does not implement the full Optimistic Democracy consensus. There is no change of leader or appeals process. The simulator focuses on providing a basic execution environment without the complexities of the full consensus mechanism.
+The GenLayer Simulator does not implement the full Optimistic Democracy consensus mechanism. There is no change of leader or appeals process. The simulator focuses on providing a basic execution environment without the complexities of the full consensus mechanism.
 
 ## Programming Language
-The programming language used in the simulator is an early version and is not final. It is expected to undergo many changes as development progresses. 
+The programming language used in the simulator is an early version and is not final. It is expected to undergo many changes as development progresses.
 
 ## Web Access
 While the simulator supports web browsing capabilities, it is primarily for testing purposes. The actual web access and data retrieval might differ when deployed on the live network.
+
+## State Persistence
+The simulator does not support state persistence. This means that the state of a contract is not saved between runs, limiting the ability to test scenarios that depend on stored data.
