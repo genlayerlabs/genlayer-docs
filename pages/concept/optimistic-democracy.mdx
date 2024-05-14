@@ -15,6 +15,7 @@ Optimistic Democracy relies on a mix of trust and verification to ensure transac
 
 2. **Majority Consensus:** If most validators accept the leader's proposal, the transaction is provisionally accepted. However, this decision is not final yet, allowing for possible appeals during a limited window of time, known as the **Finality Window**.
 
+import { Callout } from 'nextra-theme-docs'
 <Callout>
   If any validator fails to vote within the specified timeframe, they are replaced, and a new validator is selected to cast a vote.
 </Callout>
@@ -31,5 +32,5 @@ Optimistic Democracy relies on a mix of trust and verification to ensure transac
 Here is the graph diagram illustrating the Optimistic Democracy consensus mechanism in GenLayer.
 
 import Image from 'next/image'
-
 <Image src="/optimistic-democracy.png" width={600} height={600} />
+
