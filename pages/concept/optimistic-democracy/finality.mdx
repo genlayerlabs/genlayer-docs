@@ -18,19 +18,24 @@ import Image from 'next/image'
 
 ## Deterministic vs. Non-Deterministic Transactions
 
-In GenLayer, Intelligent Contracts is classified as either deterministic or non-deterministic.
+In GenLayer, Intelligent Contracts are classified as either deterministic or non-deterministic.
 
 ### Deterministic Contracts
-Deterministic contracts have predictable outcomes and can be validated quickly and efficiently. These contracts have a shorter Finality Window because their validation process is straightforward and not subject to appeals. However, it is essential that all interactions with the contract remain deterministic to maintain this efficiency.
+These contracts have a shorter Finality Window because their validation process is straightforward and not subject to appeals. However, it is essential that all interactions with the contract remain deterministic to maintain this efficiency.
 
 ### Non-Deterministic Contracts
-Non-deterministic contracts involve elements like Large Language Model (LLM) calls or web data retrieval, which introduce variability in their outcomes. These contracts require a longer Finality Window to account for potential appeals and re-computation. If a specific transaction within the contract is deterministic but interacts with a non-deterministic part of the contract, it will be treated as non-deterministic. This ensures that any appeals or re-computations of previous transactions are handled consistently, maintaining the integrity of the contract's overall state.
+Non-deterministic contracts involve Large Language Model (LLM) calls or web data retrieval, which introduce variability in their outcomes. These contracts require a longer Finality Window to account for potential appeals and re-computation. 
+
+import { Callout } from 'nextra-theme-docs'
+
+<Callout type="info">
+  If a specific transaction within the contract is deterministic but interacts with a non-deterministic part of the contract, it will be treated as non-deterministic. This ensures that any appeals or re-computations of previous transactions are handled consistently, maintaining the integrity of the contract's overall state.
+</Callout>
+
 
 ## Fast Finality
 
 For scenarios requiring immediate finality, such as emergency decisions in a DAO, it is possible to pay for all validators to validate the transaction immediately. This approach, though more costly, allows for fast finality, bypassing the typical Finality Window.
-
-import { Callout } from 'nextra-theme-docs'
 
 <Callout>
   Fast finality only works if there are no previous non-deterministic transactions still within their Finality Window. Even if your transaction is considered final, if a previous transaction is reverted, your transaction will have to be recomputed as it might depend on the same state.
