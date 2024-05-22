@@ -1,25 +1,27 @@
 ## Intelligent Contract Syntax
 
-Intelligent Contracts extend traditional smart contract capabilities by processing natural language instructions and interfacing with web data. These contracts are written in Python and executed within the GenVM, a specialized virtual environment.
+Unlike conventional contracts, Intelligent Contracts are designed to interact with the web and process natural language instructions, which makes them particularly suited for applications that require dynamic data interaction and complex decision-making processes. These contracts are primarily written in Python and executed within GenVM, GenLayer's specialized secure virtual environment.
 
 import { Callout } from 'nextra-theme-docs'
 
 <Callout emoji="👾">
-  The syntax presented here is a temporary placeholder used in the simulator. For the GenLayer blockchain the final syntax will include specialized keywords that streamline some of the processes currently handled through standard Python code. you can define any number of parameters and include any initialization logic as required by your contract.
+  The syntax presented here is a temporary placeholder used in the simulator. For the GenLayer blockchain the final syntax will include specialized keywords that streamline some of the processes currently handled through standard Python code. You can define any number of parameters and include any initialization logic as required by your contract.
 </Callout>
+
 ## Import
 
 When working with Intelligent Contracts, start by importing the necessary modules:
 
 ```python copy
 import json
-from genvm.contracts.base import icontract
-from genvm.contracts.equivalence_principle import EquivalencePrinciple
+from genvm.base.icontract import IContract
+from genvm.base.equivalence_principle import EquivalencePrinciple
 ```
 
 - The `json` module is used for parsing and manipulating JSON data.
 - The `icontract` module is imported from `genvm.contracts.base` and provides the necessary foundation to create an Intelligent Contract.
-- The `EquivalencePrinciple` is imported from `genvm.contracts.equivalence_principle` and is used to ensure consensus among validators for non-deterministic outputs.
+- The `EquivalencePrinciple` is imported from genvm.contracts.equivalence_principle` and is used to ensure consensus among validators for non-deterministic outputs.
+
 
 ## Defining the Intelligent Contract Class
 The `@icontract` decorator is used to define an Intelligent Contract class in Python, which allows the contract to be recognized within the GenVM environment. 
