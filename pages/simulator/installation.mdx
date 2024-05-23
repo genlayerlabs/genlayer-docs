@@ -10,9 +10,9 @@ Before installing the GenLayer CLI, ensure you have the following prerequisites 
 - [Node.js and Npm](https://docs.npmjs.com/downloading-and-installing-node-js-and-npm/): Needed for the GenLayer CLI tool. Ensure both are updated to their latest versions to avoid compatibility issues.
 
 ## Installation steps
+Get started with GenLayer in just two simple steps:
 
 ### 1. Install GenLayer CLI
-
 Open your terminal or command prompt. Enter the following command to install the GenLayer CLI on your system:
 
 import { Tabs } from 'nextra-theme-docs'
@@ -31,41 +31,41 @@ npx install -g genlayer
 </Tabs>
 
 ### 2. Execute the `init` Command
-
 After installing the CLI, set up your development environment by running:
 
 ```bash copy
 genlayer init
 ```
-When you type `genlayer init` in your terminal and confirm that you want to proceed, the CLI starts the initialization process. Below is a break down of the process:
+This command initiates the setup with 5 validators, prompts you to select your preferred LLM providers, automatically configures your environment, and provides the URL http://localhost:8080/ to access the Simulator's frontend interface.
 
-#### Select LLM Providers
-During the initialization, a prompt appears asking you to select which LLM providers you want to use. These LLM providers are used by validators to process and validate transactions as well as execute intelligent contracts. You can choose from Ollama, OpenAI, and Heurist. You can select one or multiple providers based on your needs and the API keys available to you. Here are the options available:
+#### Detailed Breakdown of the `genlayer init` Command
+Below is a break down of the `genLayer init` process:
 
-- **OpenAI**: This is the fastest and most reliable option for running validators. However, it requires an OpenAI API key as it is a paid service. Ensure you have this key before opting for OpenAI to avoid any setup delays.
+##### Select LLM Providers
+When you run the `genLayer init` command, you'll receive a prompt to select which LLM providers you want to use. These LLM providers are used by validators to process and validate Intelligent Contracts. You can select one or multiple providers based on your needs and the API keys available to you. Here are the options available:
 
-- **Ollama**: This is a free and open source. Ollama is suitable for those who prefer not to use external services. However, it operates significantly slower on most systems, especially those without an optimized Integrated GPU configuration.
-
-- **Heurist**: This is an experimental service that is currently in the testing phase. While Heurist offers free API credits and can be a cost-effective option, it has been noted to fail approximately 10% of the time. If you choose Heurist, prepare for potential inconsistencies and ensure that it fits your tolerance for risk in testing environments.
+- **OpenAI**: Fastest and most reliable option for running validators. However, it requires an OpenAI API key as it is a paid service.
+- **Ollama**: Free and open-source option that runs locally but may perform slower on systems without a robust GPU.
+- **Heurist**: An experimental service in the testing phase. It requires an API key, offers free credits, but may fail about 10% of the time.
 
 <Callout>
   If you have alternative LLM providers you prefer or are using, please let us know via our [Discord channel](https://discord.gg/8Jm4v89VAu) so we can consider integrating them.
 </Callout>
 
-#### Download Docker Containers and Configure Components
-The GenLayer CLI handles the download and setup of various Docker containers necessary for the environment when you run the genlayer init command. This process configures several system components required for executing and managing intelligent contracts. Here’s a breakdown of what the CLI does:
+##### Automated Configuration by the CLI
+After selecting your LLM provider(s), the CLI automatically downloads the necessary Docker containers and sets up the following components:
 
-- **GenVM**: Sets up the core virtual machine environment necessary for executing intelligent contracts.
+- **GenVM**: Installs and configures the virtual machine environment that executes the intelligent contracts.
 
-- **WebRequest Service**: Configures the WebRequest service to handle external HTTP requests made by the contracts. This service is crucial for contracts that need to interact with external APIs or services.
+- **WebRequest Service**: Handles external HTTP requests from contracts, essential for interactions with external APIs.
 
-- **LLM Providers**:  Sets up the selected LLM providers within Docker containers, ensuring they are ready to assist validators in processing and validating transactions and executing intelligent contracts. For example, selecting Ollama triggers the download of an image that includes the necessary software to run Ollama locally.
+- **LLM Providers**: Sets up the selected LLM provider within Docker containers for running the validators
 
-- **PostgreSQL**: Initializes the PostgreSQL database system to store transaction records, user accounts, and contract states. The logs indicate that PostgreSQL initializes its database cluster and sets up necessary configurations.
+- **PostgreSQL**: Initializes a PostgreSQL database for storing transaction records, user account details, and contract states.
 
-- **JsonRPC**: Establishes the JsonRPC server to handle API calls to and from the intelligent contracts. It manages the creation of databases, tables, and account data, as indicated by logs such as `create_db`, `create_tables`, `create_account`, and `fund_account`.
+- **JSON RPC**: Establishes a JSON RPC server for facilitating API calls and managing database operations such as creating accounts and tables.
 
-- **Frontend Interface**: Sets up the frontend interface and provides the local and network addresses http://localhost:8080/ for accessing the GenLayer Simulator's frontend interface. From the Simulator, you can start testing and interacting with your Intelligent Contracts and simulate different scenarios.
+- **Frontend Interface**: aunches the simulator's frontend interface, accessible at http://localhost:8080/, where you can interact with and test your Intelligent Contracts.
 
 import { Callout } from 'nextra-theme-docs'
 
