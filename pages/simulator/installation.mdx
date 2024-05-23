@@ -11,7 +11,7 @@ Before installing the GenLayer CLI, ensure you have the following prerequisites 
 
 ## Installation steps
 
-### Install GenLayer CLI
+### 1. Install GenLayer CLI
 
 Open your terminal or command prompt. Enter the following command to install the GenLayer CLI on your system:
 
@@ -30,52 +30,42 @@ npx install -g genlayer
 </Tabs.Tab>
 </Tabs>
 
-### Execute the `init` Command
+### 2. Execute the `init` Command
 
 After installing the CLI, set up your development environment by running:
 
 ```bash copy
 genlayer init
 ```
-When you type `genlayer init` in your terminal and confirm that you want to proceed, the CLI starts the initialization process. 
-
-Based on the logs you provided, let's clearly delineate the roles and operations of each component during the setup process, and ensure all steps are correctly captured:
-
-### Detailed Explanation of System Components and Initialization Process
+When you type `genlayer init` in your terminal and confirm that you want to proceed, the CLI starts the initialization process. Below is a break down of the process:
 
 #### Select LLM Providers
-During the initialization, a prompt appears asking you to select which LLM providers you want to use. You can choose from Ollama, OpenAI, and Heurist. You can select one or multiple providers based on your needs and the API keys available to you. Here are the options available:
+During the initialization, a prompt appears asking you to select which LLM providers you want to use. These LLM providers are used by validators to process and validate transactions as well as execute intelligent contracts. You can choose from Ollama, OpenAI, and Heurist. You can select one or multiple providers based on your needs and the API keys available to you. Here are the options available:
 
 - **OpenAI**: This is the fastest and most reliable option for running validators. However, it requires an OpenAI API key as it is a paid service. Ensure you have this key before opting for OpenAI to avoid any setup delays.
 
-- **Ollama**: A free, locally run option that does not require an internet connection. Ollama is suitable for those who prefer not to use external services. However, be aware that it operates significantly slower on most systems, especially those without an optimized Integrated GPU (IGPU) configuration. It may not be practical for all Windows users due to the complexities of local GPU configuration.
+- **Ollama**: This is a free and open source. Ollama is suitable for those who prefer not to use external services. However, it operates significantly slower on most systems, especially those without an optimized Integrated GPU configuration.
 
-- **Heurist**: An experimental service that is currently in the testing phase. While Heurist offers free API credits and can be a cost-effective option, it has been noted to fail approximately 10% of the time. If you choose Heurist, prepare for potential inconsistencies and ensure that it fits your tolerance for risk in testing environments.
+- **Heurist**: This is an experimental service that is currently in the testing phase. While Heurist offers free API credits and can be a cost-effective option, it has been noted to fail approximately 10% of the time. If you choose Heurist, prepare for potential inconsistencies and ensure that it fits your tolerance for risk in testing environments.
 
 <Callout>
   If you have alternative LLM providers you prefer or are using, please let us know via our [Discord channel](https://discord.gg/8Jm4v89VAu) so we can consider integrating them.
 </Callout>
 
-#### Download and Configure Docker Images
-The GenLayer CLI will handle the download and setup of the necessary Docker images tailored to the selected LLM providers. For instance, selecting Ollama triggers the download of an image that includes the necessary software to run Ollama within a Docker container.
+#### Download Docker Containers and Configure Components
+the GenLayer CLI handles the download and setup of various Docker containers necessary for the environment. This process configures several system components required for executing and managing intelligent contracts. Here’s a breakdown of what the CLI is doing:
 
-#### Configure System Components
-After downloading the necessary images, the CLI configures various system components within these Docker containers. This includes:
 - **GenVM**: Sets up the core virtual machine environment necessary for executing intelligent contracts.
-
-- **JsonRPC**: Establishes the JsonRPC server to handle API calls to and from the intelligent contracts. It manages the creation of databases, tables, and account data, as indicated by logs such as `create_db`, `create_tables`, `create_account`, and `fund_account`.
-
-- **PostgreSQL**: Initializes the PostgreSQL database system to store transaction records, user accounts, and contract states. The logs indicate that PostgreSQL initializes its database cluster and sets up necessary configurations.
 
 - **WebRequest Service**: Configures the WebRequest service to handle external HTTP requests made by the contracts. This service is crucial for contracts that need to interact with external APIs or services.
 
-- **Frontend Interface**: Sets up the frontend interface, which provides a user-friendly platform for interacting with the intelligent contracts and simulating various scenarios.
+- **LLM Providers**:  Sets up the selected LLM providers within Docker containers, ensuring they are ready to assist validators in processing and validating transactions and executing intelligent contracts. For example, selecting Ollama triggers the download of an image that includes the necessary software to run Ollama locally.
 
-#### Initialize Database and Accounts
-As part of the initialization, the JsonRPC service sets up the PostgreSQL database, creates necessary tables, and configures accounts within the Docker environment. This is essential for the simulator to track transactions and manage the state. The logs show steps like creating databases and tables, and managing accounts, which are crucial for the system's functionality.
+- **PostgreSQL**: Initializes the PostgreSQL database system to store transaction records, user accounts, and contract states. The logs indicate that PostgreSQL initializes its database cluster and sets up necessary configurations.
 
-#### Launch Simulator Frontend Interface
-Finally, once all Docker containers are running and configurations are in place, the CLI provides the loocal and network addresses http://localhost:8080/ for accessing the GenLayer Simulator's frontend interface. From the Simulator, you can start testing and interacting with your Intelligent Contracts and simulate different scenarios.
+- **JsonRPC**: Establishes the JsonRPC server to handle API calls to and from the intelligent contracts. It manages the creation of databases, tables, and account data, as indicated by logs such as `create_db`, `create_tables`, `create_account`, and `fund_account`.
+
+- **Frontend Interface**: Sets up the frontend interface and provides the local and network addresses http://localhost:8080/ for accessing the GenLayer Simulator's frontend interface. From the Simulator, you can start testing and interacting with your Intelligent Contracts and simulate different scenarios.
 
 import { Callout } from 'nextra-theme-docs'
 
