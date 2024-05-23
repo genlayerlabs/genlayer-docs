@@ -36,13 +36,13 @@ After installing the CLI, set up your development environment by running:
 ```bash copy
 genlayer init
 ```
-This command initiates the setup with 5 validators, prompts you to select your preferred LLM providers, automatically configures your environment, and provides the URL http://localhost:8080/ to access the Simulator's frontend interface.
+When you run this command, it initializes the setup with 5 validators, prompts you to select your preferred LLM provider(s), and automatically downloads and configures the necessary Docker containers for the GenLayer environment. Once the setup is complete, you can access the GenLayer Simulator at http://localhost:8080/.
 
-#### Detailed Breakdown of the `genlayer init` Command
-Below is a break down of the `genLayer init` process:
+#### Breakdown of the `genlayer init` Command
+The `genlayer init` command initializes the GenLayer environment with five validators. Validators are part of the Equivalence Principle process responsible for verifying and validating transactions or intelligent contract executions to ensure they adhere to predefined criteria.
 
 ##### Select LLM Providers
-When you run the `genLayer init` command, you'll receive a prompt to select which LLM providers you want to use. These LLM providers are used by validators to process and validate Intelligent Contracts. You can select one or multiple providers based on your needs and the API keys available to you. Here are the options available:
+When you run the `genlayer init` command, you'll receive a prompt to select which LLM providers you want to use. These LLM providers are used by validators to process and validate Intelligent Contracts. You can select one or multiple providers based on your needs and the API keys available to you. Here are the options available:
 
 - **OpenAI**: Fastest and most reliable option for running validators. However, it requires an OpenAI API key as it is a paid service.
 - **Ollama**: Free and open-source option that runs locally but may perform slower on systems without a robust GPU.
