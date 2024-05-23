@@ -39,6 +39,10 @@ genlayer init
 ```
 When you type `genlayer init` in your terminal and confirm that you want to proceed, the CLI starts the initialization process. 
 
+Based on the logs you provided, let's clearly delineate the roles and operations of each component during the setup process, and ensure all steps are correctly captured:
+
+### Detailed Explanation of System Components and Initialization Process
+
 #### Select LLM Providers
 During the initialization, a prompt appears asking you to select which LLM providers you want to use. You can choose from Ollama, OpenAI, and Heurist. You can select one or multiple providers based on your needs and the API keys available to you. Here are the options available:
 
@@ -52,16 +56,26 @@ During the initialization, a prompt appears asking you to select which LLM provi
   If you have alternative LLM providers you prefer or are using, please let us know via our [Discord channel](https://discord.gg/8Jm4v89VAu) so we can consider integrating them.
 </Callout>
 
-#### Download and runs Docker images
-Depending on the LLM providers you choose, the CLI may need to download specific Docker images that are necessary for running these models. For example, if you select Ollama, which runs locally, the CLI might download an image that contains the necessary software to run Ollama within a Docker container.
+#### Download and Configure Docker Images
+The GenLayer CLI will handle the download and setup of the necessary Docker images tailored to the selected LLM providers. For instance, selecting Ollama triggers the download of an image that includes the necessary software to run Ollama within a Docker container.
+
+#### Configure System Components
+After downloading the necessary images, the CLI configures various system components within these Docker containers. This includes:
+- **GenVM**: Sets up the core virtual machine environment necessary for executing intelligent contracts.
+
+- **JsonRPC**: Establishes the JsonRPC server to handle API calls to and from the intelligent contracts. It manages the creation of databases, tables, and account data, as indicated by logs such as `create_db`, `create_tables`, `create_account`, and `fund_account`.
+
+- **PostgreSQL**: Initializes the PostgreSQL database system to store transaction records, user accounts, and contract states. The logs indicate that PostgreSQL initializes its database cluster and sets up necessary configurations.
+
+- **WebRequest Service**: Configures the WebRequest service to handle external HTTP requests made by the contracts. This service is crucial for contracts that need to interact with external APIs or services.
+
+- **Frontend Interface**: Sets up the frontend interface, which provides a user-friendly platform for interacting with the intelligent contracts and simulating various scenarios.
 
 #### Initialize Database and Accounts
+As part of the initialization, the JsonRPC service sets up the PostgreSQL database, creates necessary tables, and configures accounts within the Docker environment. This is essential for the simulator to track transactions and manage the state. The logs show steps like creating databases and tables, and managing accounts, which are crucial for the system's functionality.
 
-As part of the initialization, the CLI may also set up databases, create necessary tables, and configure accounts within the Docker environment. This is crucial for the simulator to track transactions and manage the state.
-
-#### Launches the Simulator frontend interface.
-
-Finally, once all the Docker containers are running and configurations are in place, the CLI typically launches the GenLayer Simulator's frontend interface, which is accessible via a local web address http://localhost:8080/. This interface allows you to interact with your Intelligent Contracts and simulate different scenarios.
+#### Launch Simulator Frontend Interface
+Finally, once all Docker containers are running and configurations are in place, the CLI provides the loocal and network addresses http://localhost:8080/ for accessing the GenLayer Simulator's frontend interface. From the Simulator, you can start testing and interacting with your Intelligent Contracts and simulate different scenarios.
 
 import { Callout } from 'nextra-theme-docs'
 
@@ -77,5 +91,6 @@ Once your environment is set up with genlayer init, you can start the GenLayer S
 genlayer up
 ```
 This command allows you to launch the simulator with a previously initialized environment and configuration. You can use the following options to customize the simulator launch:
-- `--no-reset-accounts`: Use this option to prevent resetting the database of accounts and transactions. This allows you to continue with the existing data without starting afresh.  
+- `--no-reset-accounts`: Use this option to prevent resetting the database of accounts and transactions. This allows you to continue with the existing data without starting afresh. 
+
 - `--reset-validators`: This option removes all current validators and creates new random ones, useful for testing different validator scenarios in development.
