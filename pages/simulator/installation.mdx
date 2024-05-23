@@ -30,21 +30,38 @@ npx install -g genlayer
 </Tabs.Tab>
 </Tabs>
 
-### 2. Initialize the environment
+### 2. Execute the `init` Command
 
-After installing the CLI, set up your development environment:
+After installing the CLI, set up your development environment by running:
 
 ```bash copy
 genlayer init
 ```
+When you type `genlayer init` in your terminal and confirm that you want to proceed, the CLI starts the initialization process. 
 
-This command performs the following actions:
-- Verifies that Docker is installed.
-- Downloads and runs the necessary Docker images.
-- Initializes the database and sets up the required tables and accounts.
-- Launches the Simulator frontend interface.
+#### Select LLM Providers
+During the initialization, a prompt appears asking you to select which LLM providers you want to use. You can choose from Ollama, OpenAI, and Heurist. You can select one or multiple providers based on your needs and the API keys available to you. Here are the options available:
 
-After executing the start command, go to http://localhost:8080/. Here, you can interact with your contracts and test various functionalities within the Simulator environment.
+- OpenAI: This is the fastest and most reliable option for running validators. However, it requires an OpenAI API key as it is a paid service. Ensure you have this key before opting for OpenAI to avoid any setup delays.
+
+- Ollama: A free, locally run option that does not require an internet connection. Ollama is suitable for those who prefer not to use external services. However, be aware that it operates significantly slower on most systems, especially those without an optimized Integrated GPU (IGPU) configuration. It may not be practical for all Windows users due to the complexities of local GPU configuration.
+
+- Heurist: An experimental service that is currently in the testing phase. While Heurist offers free API credits and can be a cost-effective option, it has been noted to fail approximately 10% of the time. If you choose Heurist, prepare for potential inconsistencies and ensure that it fits your tolerance for risk in testing environments.
+
+<Callout>
+  If you have alternative LLM providers you prefer or are using, please let us know via our Discord channel so we can consider integrating them.
+</Callout>
+
+#### Download and runs Docker images
+Depending on the LLM providers you choose, the CLI may need to download specific Docker images that are necessary for running these models. For example, if you select Ollama, which runs locally, the CLI might download an image that contains the necessary software to run Ollama within a Docker container.
+
+#### Initialize Database and Accounts
+
+As part of the initialization, the CLI may also set up databases, create necessary tables, and configure accounts within the Docker environment. This is crucial for the simulator to track transactions and manage the state.
+
+#### Launches the Simulator frontend interface.
+
+Finally, once all the Docker containers are running and configurations are in place, the CLI typically launches the GenLayer Simulator's frontend interface, which is accessible via a local web address http://localhost:8080/. This interface allows you to interact with your Intelligent Contracts and simulate different scenarios.
 
 import { Callout } from 'nextra-theme-docs'
 
@@ -52,7 +69,7 @@ import { Callout } from 'nextra-theme-docs'
   The GenLayer Simulator is installed in your user home folder, making it easily accessible for development and testing purposes.
 </Callout>
 
-### 3. Launching the Simulator with Existing Configuration
+### Launching the Simulator with Existing Configuration
 
 Once your environment is set up with genlayer init, you can start the GenLayer Simulator at any time using the existing configuration by executing:
 
