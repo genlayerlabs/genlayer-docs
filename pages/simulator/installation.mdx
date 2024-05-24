@@ -45,8 +45,8 @@ The `genlayer init` command initializes the GenLayer environment with five valid
 When you run the `genlayer init` command, you'll receive a prompt to select which LLM providers you want to use. These LLM providers are used by validators to process and validate Intelligent Contracts. You can select one or multiple providers based on your needs and the API keys available to you. Here are the options available:
 
 - **OpenAI**: Fastest and most reliable option for running validators. However, it requires an [OpenAI API key](https://platform.openai.com/api-keys) as it is a paid service.
-- **Ollama**: Free and open-source option that runs locally but may perform slower
-- **Heurist**: A decentralised inference provider for open-source AI models. It requires an API key, get free API credits at [https://dev-api-form.heurist.ai/](https://dev-api-form.heurist.ai/) with referral code: _"genlayer"_
+- **Ollama**: Free and open-source option that runs locally but may perform slower than the others.
+- **Heurist**: A decentralised inference provider for open-source AI models. It requires an API key, get free API credits at [https://dev-api-form.heurist.ai/](https://dev-api-form.heurist.ai/) with referral code: _"genlayer"_.
 
 <Callout>
   If you have alternative LLM providers you prefer or are using, please let us know via our [Discord channel](https://discord.gg/8Jm4v89VAu) so we can consider integrating them.
@@ -63,7 +63,7 @@ After selecting your LLM provider(s), the CLI automatically downloads the necess
 
 - **PostgreSQL**: Initializes a PostgreSQL database for storing transaction records, user account details, and contract states.
 
-- **JSON RPC**: Establishes a JSON RPC server for facilitating API calls and managing database operations such as creating accounts and tables.
+- **JSON RPC**: Establishes a JSON RPC server for API calls, managing database operations like creating accounts and tables, and interacts with the simulator to send transactions and call intelligent contracts.
 
 - **Frontend**: Launches the simulator's frontend interface, accessible at http://localhost:8080/, where you can interact with and test your Intelligent Contracts.
 
