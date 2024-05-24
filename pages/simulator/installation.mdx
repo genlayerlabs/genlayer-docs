@@ -39,14 +39,14 @@ genlayer init
 When you run this command, it initializes the setup with 5 validators, prompts you to select your preferred LLM provider(s), and automatically downloads and configures the necessary Docker containers for the GenLayer environment. Once the setup is complete, you can access the GenLayer Simulator at http://localhost:8080/.
 
 #### Breakdown of the `genlayer init` Command
-The `genlayer init` command initializes the GenLayer environment with five validators. Validators are part of the Equivalence Principle process responsible for verifying and validating transactions or intelligent contract executions to ensure they adhere to predefined criteria.
+The `genlayer init` command initializes the GenLayer environment with five validators. Validators are responsible for executing and validating transactions
 
 ##### Select LLM Providers
 When you run the `genlayer init` command, you'll receive a prompt to select which LLM providers you want to use. These LLM providers are used by validators to process and validate Intelligent Contracts. You can select one or multiple providers based on your needs and the API keys available to you. Here are the options available:
 
-- **OpenAI**: Fastest and most reliable option for running validators. However, it requires an OpenAI API key as it is a paid service.
-- **Ollama**: Free and open-source option that runs locally but may perform slower on systems without a robust GPU.
-- **Heurist**: An experimental service in the testing phase. It requires an API key, offers free credits, but may fail about 10% of the time.
+- **OpenAI**: Fastest and most reliable option for running validators. However, it requires an [OpenAI API key](https://platform.openai.com/api-keys) as it is a paid service.
+- **Ollama**: Free and open-source option that runs locally but may perform slower
+- **Heurist**: A decentralised inference provider for open-source AI models. It requires an API key, get free API credits at [https://dev-api-form.heurist.ai/](https://dev-api-form.heurist.ai/) with referral code: _"genlayer"_
 
 <Callout>
   If you have alternative LLM providers you prefer or are using, please let us know via our [Discord channel](https://discord.gg/8Jm4v89VAu) so we can consider integrating them.
@@ -59,7 +59,7 @@ After selecting your LLM provider(s), the CLI automatically downloads the necess
 
 - **WebRequest Service**: Handles external HTTP requests from contracts, essential for interactions with external APIs.
 
-- **LLM Provider(s)**: Sets up the selected LLM provider within Docker containers for running the validators
+- **Ollama-LLM Provider**: If your selected LLM provider is Ollama, it sets up the selected LLM provider within Docker containers for running the validators
 
 - **PostgreSQL**: Initializes a PostgreSQL database for storing transaction records, user account details, and contract states.
 
