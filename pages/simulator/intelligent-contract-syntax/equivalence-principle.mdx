@@ -93,7 +93,13 @@ class PredictionMarket(IContract):
             eq.set(result)
 ```
 
-In the `PredictionMarket` contract, the Equivalence Principle ensures that the results obtained from the web are consistent and reliable. When the contract retrieves game results from the specified URL, the Equivalence Principle block is used to validate these results. The principle specifies that _"The score and the winner have to be exactly the same,"_ meaning that validators will directly compare their outputs to confirm consistency. Within this block, the LLM processes the web data to find the winning team and score, and validators check that the final result adheres to the defined criteria. This process guarantees that the data is accurate and consistent across multiple sources.
+In the `PredictionMarket` contract, the Equivalence Principle is employed twice to manage different aspects of the contract's operation:
+
+1. **Web Data Retrieval:** The first use of the Equivalence Principle occurs during the retrieval of live game results from a sports news website. Here, the principle "The data must be up-to-date and accurately reflect current conditions" guides validators to ensure that the fetched web data is current and correct, reflecting the real-time status of a sports match.
+
+2. **Consensus on LLM Outputs:** After fetching the data, the contract constructs a prompt for an LLM to determine the outcome of a sports game based on the data. This is where the second Equivalence Principle "The score and the winner has to be exactly the same" comes into play. It requires that the output from the LLM—specifically the game's score and winner—be consistent across all validators to ensure no discrepancies. This principle is comparative, meaning validators perform the same task and compare results to check for consistency.
+
+These principles ensure that both the data retrieved from external sources and the interpretations made by the LLM are reliable and agreed upon by multiple validators, reducing the risk of errors or inconsistencies in the contract's execution.
 
 ### Using `call_llm_with_principle`
 
@@ -141,7 +147,8 @@ Respond using ONLY the following format:
 
 ```
 
-In the `WizardOfCoin` contract, the Equivalence Principle ensures consistent decision-making when determining whether to give the coin to an adventurer. The principle states that _"The result['give_coin'] has to be exactly the same,"_ meaning that validators must agree on the same outcome. Within this block, the contract uses an LLM to evaluate the adventurer's request and the wizard's current state. The validators check the LLM's output against the principle to ensure the decision is consistent and accurate. This process maintains the contract's integrity by ensuring all validators reach the same conclusion before updating the state to reflect whether the coin is given away.
+The `call_llm_with_principle` function sends this prompt to an LLM within the context of an Equivalence Principle. This principle, "The result['give_coin'] has to be exactly the same," mandates that the decision on whether to give away the coin (as deduced by the LLM) must be consistent across all validators. This ensures that the outcome (whether to give the coin) remains uniform, irrespective of which validator processes the request.
+
 
 ### Using `get_webpage_with_principle`
 
@@ -170,4 +177,5 @@ class WeatherContract(IContract):
         )
 ```
 
-In the `WeatherContract`, the Equivalence Principle ensures that the weather data retrieved is accurate and up-to-date. The principle specified is _"The data must be up-to-date and accurately reflect current weather conditions,"_ meaning that validators must confirm the data's reliability. Within this block, the contract fetches weather data from a specified URL. Validators then check this data against the principle to ensure it meets the criteria for accuracy and timeliness. This validation process ensures that the weather information used in the contract is consistent and dependable.
+
+The `get_webpage_with_principle` function fetches weather data from the specified URL. Then, the Equivalence Principle _"The data must be up-to-date and accurately reflect current weather conditions."_ is set to confirm that the weather data is not only recent but also a true representation of the actual weather.
