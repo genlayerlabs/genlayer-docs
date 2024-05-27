@@ -1,10 +1,23 @@
-# State Management in Intelligent Contracts
+# Parsing Results and Updating State
 
-State management is a crucial aspect of developing Intelligent Contracts. It involves keeping track of the contract's current status, updating it as needed, and ensuring that these changes are accurately reflected and accessible when required. Proper state management ensures the reliability and consistency of contract operations.
+Once the Intelligent Contract receives a response from an LLM or web data, it needs to parse the result and update its internal state accordingly. This step is crucial for ensuring that the contract behaves as expected based on the received data.
 
-Let's take a look at the example code below:
+### Steps in Parsing Results and Updating State
 
-```python copy
+1. The contract receives a response from an LLM or web data retrieval function.
+2. The response, often in JSON format, is parsed to extract relevant data.
+
+import { Callout } from 'nextra-theme-docs'
+
+<Callout type="info" emoji="ℹ️">
+  While JSON is the recommended output for its convenience, it's not mandatory. You have the flexibility to request the output in any format that best suits your needs.
+</Callout>
+
+3. The extracted data is used to update the contract's internal state variables.
+
+In the **Wizard of Coin** contract, the response from the LLM is in a JSON format.
+
+```python
 import json
 from genvm.base.icontract import IContract
 from genvm.base.equivalence_principle import call_llm_with_principle
@@ -37,9 +50,11 @@ Respond using ONLY the following format:
                 prompt,
                 eq_principle="The result['give_coin'] has to be exactly the same",
             )
+            # Parse the response
             result_clean = result.replace("True", "true").replace("False", "false")
             output = json.loads(result_clean)
 
+            # Update the state based on the parsed result
             if output["give_coin"] is True:
                 self.have_coin = False
 
@@ -48,29 +63,4 @@ Respond using ONLY the following format:
 ```
 
 
-With the example above, we'll look at how state management is handled in the Wizard of Coin contract, focusing on tracking whether the wizard has the coin.
-
-### Initializing State
-
-The state is initialized in the `__init__` method where the contract's initial condition is set. Here, `have_coin` is a boolean indicating whether the wizard currently possesses the coin.
-
-```python
-def __init__(self, have_coin: bool):
-    self.have_coin = have_coin
-```
-
-### Updating State
-State updates occur in response to interactions or internal logic. In the example above, the state is updated within the `ask_for_coin` method based on the LLM's output.
-
-```python
-if output["give_coin"] is True:
-    self.have_coin = False
-```
-
-### Retrieving State
-The current state can be queried to inform decisions or validate conditions within the contract.
-
-```python
-def get_have_coin(self):
-    return self.have_coin
-```
+The response is parsed using the `json.loads` function after cleaning up the boolean values. This step converts the JSON string into a Python dictionary for easy access to the data. Based on the parsed result, the contract updates its internal state. If the `give_coin` key in the response is `True`, the contract updates the `have_coin` variable to `False`, indicating that the wizard no longer has the coin.
