@@ -93,8 +93,7 @@ class PredictionMarket(IContract):
             eq.set(result)
 ```
 
-In the example above, the `PredictionMarket` contract fetches the game results from a specified URL and uses an LLM to determine the winning team. The `EquivalencePrinciple` ensures that the game score and winner are consistent across different validators. The `resolve` method first fetches the webpage data, then processes it through an LLM call, and finally checks if the result meets the specified equivalence principle.
-
+In the `PredictionMarket` contract, the Equivalence Principle ensures that the results obtained from the web are consistent and reliable. When the contract retrieves game results from the specified URL, the Equivalence Principle block is used to validate these results. The principle specifies that _"The score and the winner have to be exactly the same,"_ meaning that validators will directly compare their outputs to confirm consistency. Within this block, the LLM processes the web data to find the winning team and score, and validators check that the final result adheres to the defined criteria. This process guarantees that the data is accurate and consistent across multiple sources.
 
 ### Using `call_llm_with_principle`
 
@@ -141,7 +140,8 @@ Respond using ONLY the following format:
             )
 
 ```
-In the `WizardOfCoin` contract, the prompt instructs the LLM to decide if the wizard should give the coin to the adventurer, providing clear instructions and a structured response format. The function `call_llm_with_principle` integrates the Equivalence Principle directly into the LLM call. The principle here ensures that the wizard should not give away the coin. Validators check if the output from the LLM call adheres to the principle, ensuring that the decision remains consistent across different validators.
+
+In the `WizardOfCoin` contract, the Equivalence Principle ensures consistent decision-making when determining whether to give the coin to an adventurer. The principle states that _"The result['give_coin'] has to be exactly the same,"_ meaning that validators must agree on the same outcome. Within this block, the contract uses an LLM to evaluate the adventurer's request and the wizard's current state. The validators check the LLM's output against the principle to ensure the decision is consistent and accurate. This process maintains the contract's integrity by ensuring all validators reach the same conclusion before updating the state to reflect whether the coin is given away.
 
 ### Using `get_webpage_with_principle`
 
@@ -170,5 +170,4 @@ class WeatherContract(IContract):
         )
 ```
 
-This contract fetches weather data for a specified city directly from a web page. The `get_webpage_with_principle` function retrieves the data from the specified URL without a prompt. It ensures the data is accurate and up-to-date. The Equivalence Principle ensures that the data is up-to-date and accurately reflects current weather conditions. Validators check the data against this principle, ensuring consistency and accuracy.
-
+In the `WeatherContract`, the Equivalence Principle ensures that the weather data retrieved is accurate and up-to-date. The principle specified is _"The data must be up-to-date and accurately reflect current weather conditions,"_ meaning that validators must confirm the data's reliability. Within this block, the contract fetches weather data from a specified URL. Validators then check this data against the principle to ensure it meets the criteria for accuracy and timeliness. This validation process ensures that the weather information used in the contract is consistent and dependable.
