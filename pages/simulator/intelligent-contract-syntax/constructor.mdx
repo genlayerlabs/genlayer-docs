@@ -1,0 +1,37 @@
+# Constructor Method and Parameters in Intelligent Contracts
+
+The constructor method, `__init__`, is a fundamental part of any Intelligent Contract. It is used to initialize the state of the contract and set up any necessary parameters. This method allows you to define the initial conditions and properties that your contract will use throughout its execution.
+
+## Constructor Parameters
+
+Constructor parameters are the inputs required to set up the initial state of your contract. These parameters can be of any type (e.g., integers, strings, booleans) and are passed to the `__init__` method when the contract is instantiated.
+
+```python copy
+from genvm.base.icontract import IContract
+
+class WizardOfCoin(IContract):
+    def __init__(self, have_coin: bool):
+        self.have_coin = have_coin
+```
+
+In this example above, the constructor `__init__` initializes the `have_coin` state variable. The `have_coin` parameter determines whether the wizard currently possesses the coin.
+
+import { Callout } from 'nextra-theme-docs'
+
+<Callout emoji="👾">
+  The GenLayer simulator automatically detects the constructor parameters from your code. When you run your contract in the simulator, it provides a JSON object with the required parameters, making it easy to manage and modify these inputs.
+</Callout>
+
+### Flexibility in the Constructor
+
+The constructor method `__init__` can include any number of parameters, allowing you to define a wide range of initial states and properties for your contract. You can also execute any necessary Python code within the constructor to set up your contract.
+
+```python
+class WizardOfCoin(IContract):
+    def __init__(self, have_coin: bool, coin_value: int, coin_owner: str):
+        self.have_coin = have_coin
+        self.coin_value = coin_value
+        self.coin_owner = coin_owner
+```
+
+In the above code, we have added multiple parameters: `coin_value` and `coin_owner`. This allows the contract to store additional information about the coin's value and its owner.

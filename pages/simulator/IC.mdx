@@ -1,0 +1,226 @@
+# Intelligent Contract Syntax
+
+Intelligent Contracts extend beyond traditional smart contract capabilities by interacting with the web and processing natural language (NLP) instructions. This makes them suitable for applications that require dynamic data interaction and complex decision-making processes. These contracts are written in Python and executed within the GenVM (GenLayer's specialized secure virtual environment).
+
+In this guide, we'll explore the Intelligent Contract syntax using the **Wizard of Coin** example, providing you with the foundational knowledge to create your own Intelligent Contract.
+
+import { Callout } from 'nextra-theme-docs'
+
+<Callout emoji="👾">
+  The syntax presented here is a temporary placeholder used in the simulator. For the GenLayer blockchain, the final syntax will include specialized keywords that streamline some of the processes currently handled through standard Python code.
+</Callout>
+
+## Importing Modules
+Before you start coding your Intelligent Contract, make sure to import the necessary modules. These imports provide the functionalities required for your contract’s execution within the GenLayer environment.
+
+```python
+import json
+from genvm.base.icontract import IContract
+from genvm.base.equivalence_principle import call_llm_with_principle
+```
+
+### Key Imports
+- **`IContract`**: Imported from `genvm.base.icontract`, this is the base class for all Intelligent Contracts on GenLayer. It provides your contract with essential properties and behaviors necessary for effective operation within the GenVM environment.
+
+- **`call_llm_with_principle`**: For our example, we are importing this function from `genvm.base.equivalence_principle`. Its simple and direct for making single LLM calls that adhere to the Equivalence Principle, making outcomes consistent and reliable across different validators.
+
+**Other imports from `genvm.base.equivalence_principle`**
+
+Depending on the specific needs of your Intelligent Contract, you can import any of the following functions from `genvm.base.equivalence_principle`:
+
+  - **`EquivalencePrinciple`**: Ideal for contracts involving multiple non-deterministic operations like multiple calls to the LLMs or . This component helps ensure that all actions conform to a standardized validation of outcomes, crucial for maintaining consistency across various validators.
+
+  - **`get_webpage_with_principle`**: Best suited for simpler contracts focused on web data retrieval.
+
+### Conditional Import
+
+- **`json`**: Import this module only if your contract involves handling JSON data, such as parsing inputs or formatting outputs.
+
+## Defining the Intelligent Contract Class
+
+An Intelligent Contract is defined using a Python class that inherits from `IContract`. This inheritance ensures that the contract integrates smoothly with the GenVM environment.
+
+```python
+class WizardOfCoin(IContract):
+    def __init__(self, have_coin: bool):
+        self.have_coin = have_coin
+```
+
+From the above, the `WizardOfCoin` class models a contract where a wizard controls a magical coin. The constructor method, `__init__`, sets up the initial state of the contract and is called automatically when a new instance of the contract is created. It initializes a state variable `have_coin` to track whether the wizard currently possesses the coin.
+
+<Callout type="info" emoji="ℹ️">
+  In the constructor method `__init__`, you can execute any Python code and add as many parameters as needed in your Intelligent Contract.
+</Callout>
+
+## Crafting Prompts for LLM and Web Browsing Interactions
+
+When developing Intelligent Contracts, one critical functionality is interacting with Large Language Models (LLMs) and accessing web data. This is achieved by sending them specific prompts or queries based on the current needs of the contract or the incoming user requests.
+
+```python
+async def ask_for_coin(self, request: str):
+    prompt = f"""
+    You are a wizard, and you hold a magical coin...
+    Given the adventurer's request: {request}
+    Determine if you should give them the coin.
+
+    Please respond in the following valid JSON format:
+    {{
+     "reasoning": str,
+     "give_coin": bool
+    }}
+    """
+```
+
+In the above, the asynchronous `ask_for_coin` method contains the detailed prompt for the LLM. It needs to be crafted carefully to ensure that the LLM understands exactly what is required amnd provide useful reponse, for example, you need to describe what information you want to get and how you want your responses. 
+
+## Equivalence Principle - Managing Intelligent Contract Operations
+
+The Equivalence Principle is a cornerstone in ensuring that Intelligent Contracts function consistently across various validators when handling non-deterministic outputs like responses from Large Language Models (LLMs) or data retrieved through web browsing. It plays a crucial role in how validators assess and agree on the outcomes proposed by the Leader.
+
+For our demonstration, we use the call_llm_with_principle function, which is a straightforward method for applying the Equivalence Principle to interactions involving LLMs. Here's a look at its implemented:
+
+```python
+result = await call_llm_with_principle(
+    prompt,
+    eq_principle="The result['give_coin'] has to be exactly the same",
+)
+```
+
+The `call_llm_with_principle` function sends the crafted prompt `prompt` to the LLM and retrieves the result from the LLM. Then, the `eq_principle` parameter  specifies the rule that the output from the LLM should consistently follow, in this case, `"The result['give_coin'] has to be exactly the same"`. The Equivalence Principle ensures that the output from the LLM meets the predefined criteria, ensuring consistency across validators.
+
+### Different ways to use the Equivalence Principle
+
+#### Web Data Retrieval
+
+Just as with LLMs, the Equivalence Principle can also be applied to data retrieved from web pages. Here’s how you can apply the Equivalence Principle:
+
+```python
+result = await get_webpage_with_principle(
+    url,
+    eq_principle="The webpage content must be the latest and most accurate",
+)
+```
+
+This function, `get_webpage_with_principle`, ensures that the data fetched from the internet adheres to specified consistency rules, such as retrieving the most current and accurate version of the webpage content. This is crucial when contract decisions depend on real-time data from external sources.
+
+## Multi-step process
+
+Another way to implement the Equivalence Principle is by using the `async with EquivalencePrinciple` function , which is useful if the operation involves several steps that need to be executed under a unified consistency rule.
+
+```python
+async with EquivalencePrinciple(
+        result=final_result,
+        principle="The result['give_coin'] has to be exactly the same",
+        comparative=True
+    ) as eq:
+        result = await eq.call_llm(prompt)
+```
+
+- The `EquivalencePrinciple(...)` sets up the environment where the specified `principle` is enforced throughout the operations performed within the block.
+- The`result=final_result`**: Stores the outcome of the operation in `final_result`, which can then be used outside the context block.
+- **`comparative=True`**: Indicates that the results will be directly compared with results from other validators to ensure consistency. This is essential in environments where multiple validators might interpret data differently.
+
+
+<Callout type="info" emoji="ℹ️">
+  State variables cannot be set or accessed within the Equivalence Principle block as the block operates as a pure function. This ensures consistency of the state when different validators execute the contract.
+</Callout>
+
+### Types of Equivalence Principles
+
+Validators work to reach a consensus on whether the result set by the leader is acceptable, which might involve direct comparison or qualitative evaluation, depending on the contract’s design. If the validators do not reach a consensus due to differing data interpretations or an error in data processing, the result might be challenged or an appeal process might be initiated.
+
+#### Comparative Equivalence Principle
+
+In the Comparative Equivalence Principle, both the leader and the validators perform identical tasks and then directly compare their respective results with the predefined criteria in the Equivalence Principle to ensure consistency and accuracy. This method uses an acceptable margin of error to handle slight variations in results between validators and is suitable for quantifiable outputs. However, since multiple validators perform the same tasks as the leader, it increases computational demands and associated costs.
+
+```python
+async with EquivalencePrinciple(self, final_result, "The result['follower_count'] should not differ by more than 5%", comparative=True) as eq:
+    result = await eq.call_llm(prompt)
+    eq.set(result)
+```
+
+For example, if an intelligent contract is tasked with fetching the follower count of a Twitter account and the Equivalence Principle specifies that _follower counts should not differ by more than 5%_, validators will compare their results to the leader's result to ensure it falls within this margin.
+
+#### Non-Comparative Equivalence Principle
+
+In contrast, the Non-Comparative Equivalence Principle does not require validators to replicate the leader's output, which makes the validation process faster and less costly. Instead, validators assess the accuracy of the leader’s result against the criteria defined in the Equivalence Principle. This method is particularly useful for qualitative outputs like text summaries.
+
+```python
+async with EquivalencePrinciple(self, final_result, "The summary has to have all the key points of the source article", comparative=False) as eq:
+    result = await eq.call_llm(task)
+    eq.set(result)
+```
+
+For example, if an intelligent contract is designed to summarize a news article, the Equivalence Principle specifies that _the summary has to have all the key points of the source article_. Validators evaluate the leader’s summary against these criteria to determine accuracy and completeness.
+
+## Parsing Results
+
+Once a result has been validated and finalized, it can be parsed for easier data handling. In our example, we requested our validator to produce the output in a JSON format, and we use the `json.loads` method to parse it.
+
+```python
+result_clean = result.replace("True", "true").replace("False", "false")
+output = json.loads(result_clean)
+```
+
+The `result_clean` variable stores the cleaned output, replacing uppercase boolean values with lowercase to conform to JSON standards. The `json.loads` method then parses this string into a Python dictionary, making it easy to work with the data programmatically.
+
+<Callout type="info" emoji="ℹ️">
+  While this approach is recommended for its convenience, it's not mandatory. You have the flexibility to request the output in any format that best suits your needs.
+</Callout>
+
+## Result Evaluation
+
+Here, the JSON-formatted result is evaluated to determine if the user's input was recognized. Depending on the outcome, the contract's state is updated, and the complete JSON response is returned, providing detailed information about the evaluation.
+
+```python
+if output["give_coin"]:
+    self.have_coin = False
+
+def get_have_coin(self):
+    return self.have_coin
+```
+
+In the above, the contract checks if the LLM's decision was to give the coin (`if output["give_coin"]`). If true, it updates the `have_coin` state to `False`, indicating the coin has been given away.
+The `get_have_coin` method returns the current state of `have_coin`, allowing external entities to query this state.
+
+## Complete Example Code
+
+Here’s a complete example code that demonstrates the structure and components of an Intelligent Contract:
+
+```python
+import json
+from genvm.base.icontract import IContract
+from genvm.base.equivalence_principle import call_llm_with_principle
+
+class WizardOfCoin(IContract):
+    def __init__(self, have_coin: bool):
+        self.have_coin = have_coin
+
+    async def ask_for_coin(self, request: str):
+        prompt = f"""
+        You are a wizard with a magical coin. An adventurer asks: {request}
+        Determine if you should give them the coin.
+
+        Respond in this JSON format:
+        {{
+         "reasoning": str,
+         "give_coin": bool
+        }}
+        """
+        if self.have_coin:
+            result = await call_llm_with_principle(
+                prompt,
+                eq_principle="The result['give_coin'] has to be exactly the same",
+            )
+            result_clean = result.replace("True", "true").replace("False", "false")
+            output = json.loads(result_clean)
+            if output["give_coin"]:
+                self.have_coin = False
+
+    def get_have_coin(self):
+        return self.have_coin
+```
+
+<Callout type="info" emoji="ℹ️">
+  This example can be adapted and expanded to fit various use cases by modifying the prompts, equivalence principles, and state variables according to your specific requirements.
+</Callout>

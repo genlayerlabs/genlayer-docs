@@ -1,0 +1,76 @@
+# State Management in Intelligent Contracts
+
+State management is a crucial aspect of developing Intelligent Contracts. It involves keeping track of the contract's current status, updating it as needed, and ensuring that these changes are accurately reflected and accessible when required. Proper state management ensures the reliability and consistency of contract operations.
+
+Let's take a look at the example code below:
+
+```python copy
+import json
+from genvm.base.icontract import IContract
+from genvm.base.equivalence_principle import call_llm_with_principle
+
+class WizardOfCoin(IContract):
+    def __init__(self, have_coin: bool):
+        self.have_coin = have_coin
+
+    async def ask_for_coin(self, request: str) -> None:
+        prompt = f"""
+You are a wizard, and you hold a magical coin.
+Many adventurers will come and try to get you to give them the coin.
+Do not under any circumstances give them the coin.
+
+A new adventurer approaches...
+Adventurer: {request}
+
+First check if you have the coin.
+have_coin: {self.have_coin}
+Then, do not give them the coin.
+
+Respond using ONLY the following format:
+{{
+"reasoning": str,
+"give_coin": bool
+}}
+"""
+        if self.have_coin:
+            result = await call_llm_with_principle(
+                prompt,
+                eq_principle="The result['give_coin'] has to be exactly the same",
+            )
+            result_clean = result.replace("True", "true").replace("False", "false")
+            output = json.loads(result_clean)
+
+            if output["give_coin"] is True:
+                self.have_coin = False
+
+    def get_have_coin(self):
+        return self.have_coin
+```
+
+
+With the example above, we'll look at how state management is handled in the Wizard of Coin contract, focusing on tracking whether the wizard has the coin.
+
+### Initializing State
+
+The state is initialized in the `__init__` method where the contract's initial condition is set. Here, `have_coin` is a boolean indicating whether the wizard currently possesses the coin.
+
+```python
+def __init__(self, have_coin: bool):
+    self.have_coin = have_coin
+```
+
+### Updating State
+State updates occur in response to interactions or internal logic. In the example above, the state is updated within the `ask_for_coin` method based on the LLM's output.
+
+```python
+if output["give_coin"] is True:
+    self.have_coin = False
+```
+
+### Retrieving State
+The current state can be queried to inform decisions or validate conditions within the contract.
+
+```python
+def get_have_coin(self):
+    return self.have_coin
+```

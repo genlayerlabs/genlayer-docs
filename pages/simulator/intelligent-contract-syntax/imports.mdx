@@ -1,0 +1,64 @@
+# Imports 
+
+Before you start building your Intelligent Contract, make sure to import the necessary modules. These imports provide the functionalities required for your contract’s execution within the GenLayer environment.
+
+## Import `IContract`
+
+```python
+from genvm.base.icontract import IContract
+```
+This is the base class for all Intelligent Contracts on GenLayer. It equips your contract with essential properties and behaviors that are crucial for effective operation within the GenVM environment.
+
+## Import `EquivalencePrinciple`
+
+```python
+from genvm.base.equivalence_principle import EquivalencePrinciple
+```
+This function is used for handling non-deterministic outputs like responses from multiple LLMs or web. It is suited for more complex or multiple operations within an equivalence principle block, allowing developers to define how different validators can reach a consensus on varying outputs.
+
+For simpler use cases, we have two EquivalencePrinciple abstractions that simplify specific tasks:
+
+- `call_llm_with_principle`
+
+-  `get_webpage_with_principle`
+
+### Import `call_llm_with_principle`
+
+```python
+from genvm.base.equivalence_principle import call_llm_with_principle
+```
+Handles straightforward LLM interactions with an embedded equivalence principle.
+
+### Import `get_webpage_with_principle`
+
+```python
+from genvm.base.equivalence_principle import get_webpage_with_principle
+```
+Manages web data retrieval while ensuring data consistency through an equivalence principle.
+
+import { Callout } from 'nextra-theme-docs'
+
+<Callout type="info" emoji="ℹ️">
+  **Important**: Only import the specific functions your contract needs. For instance:
+  - Use **`call_llm_with_principle`** for straightforward LLM calls.
+  - Use **`get_webpage_with_principle`** for web data retrieval.
+  - Use **`EquivalencePrinciple`** for more complex or multiple operations within an equivalence principle block.
+  You don't need to import all of them unless your contract requires it.
+</Callout>
+
+## Import `json`
+
+```python
+import json
+```
+Essential for parsing and outputting data in JSON format.
+
+## Example Import
+
+For the **Wizard of Coin** example, we imported `IContract` and `call_llm_with_principle` and `json` because our contract involves a simple call to an LLM to decide whether to give the coin.
+
+```python
+import json
+from genvm.base.icontract import IContract
+from genvm.base.equivalence_principle import call_llm_with_principle
+```

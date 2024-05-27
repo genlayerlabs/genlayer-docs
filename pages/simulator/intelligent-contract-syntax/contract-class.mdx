@@ -1,0 +1,16 @@
+## Defining the Intelligent Contract Class
+
+An Intelligent Contract in GenLayer is defined using a Python class that inherits from `IContract`. This ensures your contract integrates smoothly with the GenVM environment, providing the necessary properties and behaviors for execution.
+
+```python
+import json
+from genvm.base.icontract import IContract
+from genvm.base.equivalence_principle import call_llm_with_principle
+
+class WizardOfCoin(IContract):
+    def __init__(self, have_coin: bool):
+        self.have_coin = have_coin
+```
+
+In this example code above, the `WizardOfCoin` class inherits from `IContract`. This class serves as the foundation for the Intelligent Contract, equipping it with the necessary structure and capabilities to function within the GenVM environment.
+
