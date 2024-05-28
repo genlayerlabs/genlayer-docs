@@ -5,15 +5,15 @@ The GenLayer CLI is used to set up the GenLayer Simulator and, in the future, ma
 ## Prerequisites
 Before installing the GenLayer CLI, ensure you have the following prerequisites installed:
 
-- [Docker](https://docs.docker.com/engine/install/): Required to run GenLayer environment. Make sure Docker is running and updated to the latest version.
+- [Docker](https://docs.docker.com/engine/install/): Required to run GenLayer environment. Make sure Docker is not only installed but also actively running and updated to the latest version.
 
 - [Node.js and Npm](https://docs.npmjs.com/downloading-and-installing-node-js-and-npm/): Needed for the GenLayer CLI tool. Ensure both are updated to their latest versions to avoid compatibility issues.
 
 ## Installation steps
+Get started with GenLayer in just two simple steps:
 
 ### 1. Install GenLayer CLI
-
-Open your terminal or command prompt. Enter the following command to install the GenLayer CLI globally on your system:
+Open your terminal or command prompt. Enter the following command to install the GenLayer CLI on your system:
 
 import { Tabs } from 'nextra-theme-docs'
 
@@ -30,21 +30,42 @@ npx install -g genlayer
 </Tabs.Tab>
 </Tabs>
 
-### 2. Initialize the environment
-
-After installing the CLI, set up your development environment:
+### 2. Execute the `init` Command
+After installing the CLI, set up your development environment by running:
 
 ```bash copy
 genlayer init
 ```
+When you run this command, it initializes the setup with 5 validators, prompts you to select your preferred LLM provider(s), and automatically downloads and configures the necessary Docker containers for the GenLayer environment. Once the setup is complete, you can access the GenLayer Simulator at http://localhost:8080/.
 
-This command performs the following actions:
-- Verifies that Docker is installed.
-- Downloads and runs the necessary Docker images.
-- Initializes the database and sets up the required tables and accounts.
-- Launches the Simulator frontend interface.
+#### Breakdown of the `genlayer init` Command
+The `genlayer init` command initializes the GenLayer environment with five validators. Validators are responsible for executing and validating transactions
 
-After executing the start command, go to http://localhost:8080/. Here, you can interact with your contracts and test various functionalities within the Simulator environment.
+##### Select LLM Providers
+When you run the `genlayer init` command, you'll receive a prompt to select which LLM providers you want to use. These LLM providers are used by validators to process and validate Intelligent Contracts. You can select one or multiple providers based on your needs and the API keys available to you. Here are the options available:
+
+- **OpenAI**: Fastest and most reliable option for running validators. However, it requires an [OpenAI API key](https://platform.openai.com/api-keys) as it is a paid service.
+- **Ollama**: Free and open-source option that runs locally but may perform slower than the others.
+- **Heurist**: A decentralised inference provider for open-source AI models. It requires an API key, get free API credits at [dev-api-form.heurist.ai](https://dev-api-form.heurist.ai/) with referral code: _"genlayer"_.
+
+<Callout>
+  If you have alternative LLM providers you prefer or are using, please let us know via our [Discord channel](https://discord.gg/8Jm4v89VAu) so we can consider integrating them.
+</Callout>
+
+##### Automated Configuration by the CLI
+After selecting your LLM provider(s), the CLI automatically downloads the necessary Docker containers and sets up the following components:
+
+- **GenVM**: Installs and configures the virtual machine environment that executes the intelligent contracts.
+
+- **WebRequest Service**: Handles external HTTP requests from contracts, essential for interactions with external APIs.
+
+- **Ollama-LLM Provider**: If your selected LLM provider is Ollama, it sets it up within Docker containers for running the validators.
+
+- **PostgreSQL**: Initializes a PostgreSQL database for storing transaction records, user account details, and contract states.
+
+- **JSON RPC**: Establishes a JSON RPC server for API calls, managing database operations like creating accounts and tables, and interacts with the simulator to send transactions and call intelligent contracts.
+
+- **Frontend**: Launches the simulator's frontend interface, accessible at http://localhost:8080/, where you can interact with and test your Intelligent Contracts.
 
 import { Callout } from 'nextra-theme-docs'
 
@@ -52,7 +73,7 @@ import { Callout } from 'nextra-theme-docs'
   The GenLayer Simulator is installed in your user home folder, making it easily accessible for development and testing purposes.
 </Callout>
 
-### 3. Launching the Simulator with Existing Configuration
+### Launching the Simulator with Existing Configuration
 
 Once your environment is set up with genlayer init, you can start the GenLayer Simulator at any time using the existing configuration by executing:
 
@@ -60,5 +81,6 @@ Once your environment is set up with genlayer init, you can start the GenLayer S
 genlayer up
 ```
 This command allows you to launch the simulator with a previously initialized environment and configuration. You can use the following options to customize the simulator launch:
-- `--no-reset-accounts`: Use this option to prevent resetting the database of accounts and transactions. This allows you to continue with the existing data without starting afresh.  
+- `--no-reset-accounts`: Use this option to prevent resetting the database of accounts and transactions. This allows you to continue with the existing data without starting afresh. 
+
 - `--reset-validators`: This option removes all current validators and creates new random ones, useful for testing different validator scenarios in development.
