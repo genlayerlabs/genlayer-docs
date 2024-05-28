@@ -2,6 +2,12 @@
 
 An Intelligent Contract in GenLayer is defined using a Python class that inherits from `IContract`. This ensures your contract integrates smoothly with the GenVM environment, providing the necessary properties and behaviors for execution.
 
+import { Callout } from 'nextra-theme-docs'
+
+<Callout type="info" emoji="ℹ️">
+  Inheriting from `IContract` is mandatory for all Intelligent Contracts in GenLayer to ensure proper integration and functionality.
+</Callout>
+
 ```python
 import json
 from genvm.base.icontract import IContract
