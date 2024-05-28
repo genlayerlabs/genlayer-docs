@@ -93,13 +93,9 @@ class PredictionMarket(IContract):
             eq.set(result)
 ```
 
-In the `PredictionMarket` contract, the Equivalence Principle is employed twice to manage different aspects of the contract's operation:
+In the `PredictionMarket` contract, the `EquivalencePrinciple` ensures that all validators agree on the final outcome of a match's score and winner. It applies the principle "The score and the winner have to be exactly the same" to validate the final results after retrieving web data about the game and processing it through an LLM.
 
-1. **Web Data Retrieval:** The first use of the Equivalence Principle occurs during the retrieval of live game results from a sports news website. Here, the principle "The data must be up-to-date and accurately reflect current conditions" guides validators to ensure that the fetched web data is current and correct, reflecting the real-time status of a sports match.
-
-2. **Consensus on LLM Outputs:** After fetching the data, the contract constructs a prompt for an LLM to determine the outcome of a sports game based on the data. This is where the second Equivalence Principle "The score and the winner has to be exactly the same" comes into play. It requires that the output from the LLM—specifically the game's score and winner—be consistent across all validators to ensure no discrepancies. This principle is comparative, meaning validators perform the same task and compare results to check for consistency.
-
-These principles ensure that both the data retrieved from external sources and the interpretations made by the LLM are reliable and agreed upon by multiple validators, reducing the risk of errors or inconsistencies in the contract's execution.
+Validators execute these steps independently and only need to agree on the final outcomes, not each other's methods or intermediate results. This approach reduces the need for complex validations at every step, focusing on the end result. It saves resources and simplifies the contract's operations by avoiding detailed validations of each stage of data handling.
 
 ### Using `call_llm_with_principle`
 
@@ -152,7 +148,7 @@ The `call_llm_with_principle` function sends this prompt to an LLM. Then, the Eq
 
 ### Using `get_webpage_with_principle`
 
-`get_webpage_with_principle` is used for tasks that require direct retrieval of web data where the data must be up-to-date and accurate, but does not require additional processing by an LLM. It’s particularly useful when the contract needs to fetch data and immediately use this data within the contract’s logic.
+`get_webpage_with_principle` It is useful when the data fetched does not need to be further extracted, e.g., if you're getting the data from an API. If you're getting data from a normal webpage, you'll usually need to have the next step as an LLM call to extract the data you want.
 
 #### Ideal Scenarios
 - Retrieving real-time or frequently updated data from web sources, such as stock prices, weather conditions, or news updates.
@@ -164,9 +160,10 @@ from genvm.base.icontract import IContract
 from genvm.base.equivalence_principle import get_webpage_with_principle
 
 class WeatherContract(IContract):
-    def __init__(self, city_code: str):
-        self.city_code = city_code
-        self.weather_url = f"https://www.accuweather.com/en/fr/paris/623/weather-forecast/623?city={city_code}"
+    def __init__(self, latitude: float, longitude: float):
+        self.latitude = latitude
+        self.longitude = longitude
+        self.weather_url = f"https://api.open-meteo.com/v1/forecast?latitude={latitude}&longitude={longitude}&current=temperature_2m"
 
     async def fetch_weather_data(self):
         # Directly fetch weather data without a detailed prompt

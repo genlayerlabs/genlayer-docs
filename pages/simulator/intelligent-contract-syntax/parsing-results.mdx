@@ -1,14 +1,16 @@
-# Updating State
+Yes, this version addresses the comment by clearly separating the explanation of parsing results and the example provided. It explains that parsing results is a necessary step that occurs after each call and that what happens next can vary. Here’s an integration of the callout for clarity:
 
-Updating state involves modifying the contract's internal variables based on the parsed results or other inputs. This process ensures that the contract's data remains accurate and reflects the latest interactions or computations.
+## Parsing Results
+
+Parsing results refers to the process of interpreting and extracting useful information from the responses received after each call, whether it be from an LLM or web data. This step is essential to understand and structure the data received, which might be used for further processing, validation, or decision-making.
 
 import { Callout } from 'nextra-theme-docs'
 
 <Callout emoji="ℹ️">
-  Updating state is often implicit and might be done at any point in time, depending on your contract's requirements. This means that after parsing the results, you may or may not choose to update the state based on the parsed data and the specific needs of your contract.
+  Parsing results is something you'll do after every call. But what you do afterwards is up to you, most likely other steps in more complex use cases.
 </Callout>
 
-In our example **Wizard of Coin** contract, we update the state based on the parsed results from the LLM.
+In the **Wizard of Coin** contract, the LLM provides a JSON response indicating whether the wizard should give the coin to the adventurer. The response is then parsed to extract the decision.
 
 ```python
 import json
@@ -48,9 +50,6 @@ Respond using ONLY the following format:
 
             if output["give_coin"]:
                 self.have_coin = False
-
-    def get_have_coin(self):
-        return self.have_coin
 ```
 
-n this example, after the response from the LLM is parsed to determine whether the wizard should give away the coin, the state of the contract is updated accordingly. If the parsed result is `"give_coin": true`, the `have_coin` attribute is set to `False`. This update reflects the new state of the contract and is crucial for maintaining the accuracy of the contract's representation of its assets, ensuring it aligns with the latest interactions and decisions made based on LLM prompt.
+In this example, `result_clean` adjusts the response to ensure proper JSON format (by replacing Python's `True` and `False` with their lowercase JSON equivalents), and `json.loads(result_clean)` converts the JSON string into a Python dictionary.
