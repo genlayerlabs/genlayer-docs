@@ -1,13 +1,11 @@
-Yes, this version addresses the comment by clearly separating the explanation of parsing results and the example provided. It explains that parsing results is a necessary step that occurs after each call and that what happens next can vary. Here’s an integration of the callout for clarity:
-
-## Parsing Results
+# Parsing Results
 
 Parsing results refers to the process of interpreting and extracting useful information from the responses received after each call, whether it be from an LLM or web data. This step is essential to understand and structure the data received, which might be used for further processing, validation, or decision-making.
 
 import { Callout } from 'nextra-theme-docs'
 
 <Callout emoji="ℹ️">
-  Parsing results is something you'll do after every call. But what you do afterwards is up to you, most likely other steps in more complex use cases.
+  Parsing results is something you'll do after every call to an LLM or a web data source. After parsing, what you do with the data is up to you—it could involve updating the contract state, performing additional calculations, or making decisions based on the parsed information.
 </Callout>
 
 In the **Wizard of Coin** contract, the LLM provides a JSON response indicating whether the wizard should give the coin to the adventurer. The response is then parsed to extract the decision.
@@ -52,4 +50,8 @@ Respond using ONLY the following format:
                 self.have_coin = False
 ```
 
-In this example, `result_clean` adjusts the response to ensure proper JSON format (by replacing Python's `True` and `False` with their lowercase JSON equivalents), and `json.loads(result_clean)` converts the JSON string into a Python dictionary.
+In the code above:
+- The `result_clean` variable ensures the response is in proper JSON format by replacing Python's `True` and `False` with their lowercase JSON equivalents.
+- The `json.loads(result_clean)` function converts the JSON string into a Python dictionary, making it easy to access specific fields within the response.
+
+By parsing the results in this manner, the contract can effectively interpret the LLM's decision and take appropriate actions based on the parsed data.

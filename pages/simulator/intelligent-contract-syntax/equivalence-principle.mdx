@@ -148,7 +148,7 @@ The `call_llm_with_principle` function sends this prompt to an LLM. Then, the Eq
 
 ### Using `get_webpage_with_principle`
 
-`get_webpage_with_principle` It is useful when the data fetched does not need to be further extracted, e.g., if you're getting the data from an API. If you're getting data from a normal webpage, you'll usually need to have the next step as an LLM call to extract the data you want.
+`get_webpage_with_principle` is useful when the data fetched is already in a structured and usable format, such as data from an API. In these cases, no further extraction or processing is needed. However, if you're retrieving data from a standard webpage, the data is often unstructured and will usually require an additional step, such as an LLM call, to extract and format the specific information you need.
 
 #### Ideal Scenarios
 - Retrieving real-time or frequently updated data from web sources, such as stock prices, weather conditions, or news updates.

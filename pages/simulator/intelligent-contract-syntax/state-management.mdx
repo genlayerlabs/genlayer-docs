@@ -1,11 +1,11 @@
 # Updating State
 
-Updating state involves modifying the contract's internal variables based on the parsed results or other inputs. This process ensures that the contract's data remains accurate and reflects the latest interactions or computations.
+Updating state refers to modifying the contract's internal variables based on parsed results or other inputs. This process keeps the contract's data accurate and reflective of the latest interactions or computations.
 
 import { Callout } from 'nextra-theme-docs'
 
 <Callout emoji="ℹ️">
-  Updating state is often implicit and might be done at any point in time, depending on your contract's requirements. This means that after parsing the results, you may or may not choose to update the state based on the parsed data and the specific needs of your contract.
+  Updating state can happen at various points depending on your contract's requirements. After parsing the results, you might update the state based on the parsed data or choose not to, depending on the specific needs of your contract. For instance, you may update the state immediately after receiving new information or defer updates until certain conditions are met.
 </Callout>
 
 In our example **Wizard of Coin** contract, we update the state based on the parsed results from the LLM.
@@ -53,4 +53,4 @@ Respond using ONLY the following format:
         return self.have_coin
 ```
 
-n this example, after the response from the LLM is parsed to determine whether the wizard should give away the coin, the state of the contract is updated accordingly. If the parsed result is `"give_coin": true`, the `have_coin` attribute is set to `False`. This update reflects the new state of the contract and is crucial for maintaining the accuracy of the contract's representation of its assets, ensuring it aligns with the latest interactions and decisions made based on LLM prompt.
+In this example, after the response from the LLM is parsed to determine whether the wizard should give away the coin, the state of the contract is updated accordingly. If the parsed result is `"give_coin": true`, the `have_coin` attribute is set to `False`. This update ensures that the contract accurately reflects the latest interaction and decision, maintaining the integrity of its state based on the LLM's prompt.
