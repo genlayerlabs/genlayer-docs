@@ -1,26 +1,27 @@
-# Deploying a Contract
+# Set Constructor Parameters and Deploy
 
-By deploying your Intelligent Contract to the GenLayer Simulator, you can test and interact with your contract within a controlled environment.
+Once you have loaded your Intelligent Contract into the GenLayer Simulator, the next step is to set the constructor parameters and deploy it. The constructor parameters are essential inputs that initialize the state of your contract.
 
-## Deployment Steps
+## Setting Constructor Parameters
 
-To deploy your contract within the simulator, follow these steps:
+1. Once you have run your Intelligent Contract, you will see the **Constructor Parameters** section on the left-hand pane. The constructor parameters are usually [detected based on the parameters included in your code](#detecting-constructor-parameters).
 
-1. Navigate to the **Your Contracts** section of the navigation pane and select an existing contract or create a new one by clicking the **+** or upload icon.
+2. If the parameters are not automatically populated or if you need to adjust them, you can manually input the parameters. Click on the JSON button to write raw JSON; otherwise, you can use the fields provided.
 
 import Image from 'next/image'
  
-<Image src="/your-contract.png" alt="Deploy Contract" width={700} height={700} />
+<Image src="/constructor-parameter.png" alt="Node Log" width={700} height={700} />
 
-2. Enter your contract code in the text editor and click **Run and Debug** icon.
+## Detecting Constructor Parameters
 
-3. Provide a valid JSON for your contract's constructor parameters. These parameters define the initial conditions under which the contract will start functioning. Ensure that the keys in the JSON object match the variables expected by the contract's constructor.
+The GenLayer simulator automatically detects the constructor parameters from your code. It analyzes your `__init__` method to identify the parameters and their types. This automatic detection ensures that you have the correct inputs for initializing your contract. It’s important to have clear type annotations for each parameter (e.g., `str`, `bool`, `int`, `list`) to facilitate accurate detection.
 
-4. Click the **Deploy Intelligent Contract** button to deploy your contract to the simulated blockchain environment.
- 
+## Deploying the Contract
 
-<Image src="/simulator-deploy.png" alt="Deploy Contract" width={900} height={900} />
+After setting the constructor parameters, click the **Deploy** button to deploy your contract.
 
-Once your contract is deployed, the UI will display the contract address in the **Current Intelligent Contract State** section. With the contract now deployed, you are ready to invoke its functions and execute transactions as part of your testing process.
+<Image src="/deploy-constructor-parameter copy.png" alt="Node Log" width={700} height={700} />
 
-Keep an eye on the logs logs output during the deployment for any execution notes or errors. If you run into issues during the deployment, review the logs for detailed error messages.
+Once completed, you will see the current state of your Intelligent Contract displayed.
+
+Next, proceed to execute your transactions and interact with the deployed contract.
