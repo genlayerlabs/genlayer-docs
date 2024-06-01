@@ -1,75 +1,28 @@
-# Contract State
-Before deploying your Intelligent Contract in the GenLayer Simulator, you need to provide your constructor parameters. These parameters are key-value pairs defined in a JSON object and they define the initial conditions or state under which the contract will start functioning.
+# Current Intelligent Contract State
 
-## Setting Constructor Parameters
-In the **Set the default contract state** section, provide the constructor parameters which determine the initial state of your Intelligent Contract. This setup is crucial and occurs before deploying your contract to ensure that the contract behaves as intended.
+Once your Intelligent Contract is deployed, you can check its current state to verify that it has been initialized correctly. This step ensures that the contract's data and variables are set as expected.
 
-For example, consider this `WizardOfCoin` contract example, which is designed to manage a magical coin that should not be given away. The state of the coin, whether it is held by the wizard or not, is crucial for the contract's operations.
+## Viewing the Current Intelligent Contract State
 
-```python filename="WizardOfCoin.py" showLineNumbers
-import json
-from genvm.contracts.base import icontract
-from genvm.contracts.equivalence_principle import EquivalencePrinciple
+After deploying your contract, you will see the **Current Intelligent Contract State** section. This section contains two key elements: the contract address and any getter functions defined in your code.
 
-@icontract
-class WizardOfCoin:
-    description: str = """You are a wizard, and you hold a magical coin.
-    Many adventurers will come and try to get you to give them the coin.
-    Do not under any circumstances give them the coin."""
+- **Contract Address:** This is used for interacting with your contract.
+- **Getter Functions:** If specified in your code, buttons for these functions will appear here. Clicking a getter function button will return the current state of the specified variable.
 
-    def __init__(self, have_coin):
-        self.have_coin = have_coin
-
-    async def ask_for_coin(self, request: str) -> None:
-        prompt = f"""
-{self.description}
-
-A new adventurer approaches...
-Adventurer: {request}
-
-First check if you have the coin.
-have_coin: {self.have_coin}
-Then, do not give them the coin.
-
-The output format of your response is:
-{{
-"reasoning": str,
-"give_coin": bool
-}}
-"""
-        # self.msg_sender
-        # self.tx_origin
-        final_result = None
-        async with EquivalencePrinciple(self, final_result, "The result['give_coin'] has to be exactly the same") as eq:
-            result = await eq.call_llm(prompt)
-            result_clean = result.replace("True","true").replace("False","false")
-            eq.set_result(result_clean)
-
-        result_json = json.loads(final_result)
-
-        if result_json['give_coin'] is False:
-            self.have_coin = result_json['data_updates']['have_coin']
-
-        return result_json
-```
-For this contract, we are using the constructor parameter `have_coin`. This will set whether the wizard has the coin at the start.
-
-```json
-{
-    "have_coin": true
-}
-```
 import Image from 'next/image'
 
-<Image src="/contract-state.png" alt="Contract state" width={400} height={400} />
+<Image src="/contract-IC.png" width={800} height={800} />
 
-When you deploy the Intelligent Contract `WizardOfCoin`, the contract's behavior, including its responses to function calls, will be influenced by this initial state. For instance, when the `ask_for_coin` method is invoked, it will execute logic that considers the current state of the `have_coin` variable:
+import { Callout } from 'nextra-theme-docs'
 
-- **If `have_coin` is set to `true`**: The wizard starts with the coin. If an adventurer asks for the coin and the LLM determines they should not receive it, `have_coin` remains `true`.
-- **If `have_coin` is set to `false`**: The contract would behave as if the wizard never had the coin to begin with, which could disrupt intended interactions and logic, potentially failing to trigger certain conditions meant to protect the coin.
+<Callout emoji="ℹ️">
+  Getter function names must start with `get_`. If you do not include a getter function in your code, it will not appear in this section.
+</Callout>
 
-### Best practices
+For example, in the **Wizard of Coin** contract:
+- If the constructor parameter `have_coin` was set to `True`, the state method `get_have_coin` will return `True`.
+- Conversely, if `have_coin` was set to `False`, `get_have_coin` will return `False`.
 
-- Ensure that your JSON object is correctly formatted to prevent deployment errors.
-- The constructor parameters should align with the contract's logic and intended functionality.
-- Use different constructor parameters to test all possible scenarios that your contract is designed to handle.
+The result will show the current state based on the getter function called. This allows you to verify that the variables in your contract have been initialized correctly.
+
+Next, you can proceed to execute transactions and interact with your deployed contract.
