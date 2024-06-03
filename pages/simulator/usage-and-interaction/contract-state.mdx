@@ -7,7 +7,7 @@ Once your Intelligent Contract is deployed, you can check its current state to v
 After deploying your contract, you will see the **Current Intelligent Contract State** section. This section contains two key elements: the contract address and any getter functions defined in your code.
 
 - **Contract Address:** This is used for interacting with your contract.
-- **Getter Functions:** If specified in your code, buttons for these functions will appear here. Clicking a getter function button will return the current state of the specified variable.
+- **Getter Functions:** This returns the current state of the specified constructor paramter.
 
 import Image from 'next/image'
 
@@ -23,6 +23,6 @@ For example, in the **Wizard of Coin** contract:
 - If the constructor parameter `have_coin` was set to `True`, the state method `get_have_coin` will return `True`.
 - Conversely, if `have_coin` was set to `False`, `get_have_coin` will return `False`.
 
-The result will show the current state based on the getter function called. This allows you to verify that the variables in your contract have been initialized correctly.
+The result will show the current state based on the getter function is called. This allows you to verify that the variables in your contract have been initialized correctly.
 
 Next, you can proceed to execute transactions and interact with your deployed contract.
