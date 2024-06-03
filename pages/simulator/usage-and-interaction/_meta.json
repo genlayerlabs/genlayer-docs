@@ -1,8 +1,8 @@
 {
     "loading-contract": "",
     "deploying-contract": "",
-    "initiating-transaction": "",
     "contract-state": "",
+    "execute-transaction": "",
     "monitoring-node-logs": "",
     "validators": ""
   }
