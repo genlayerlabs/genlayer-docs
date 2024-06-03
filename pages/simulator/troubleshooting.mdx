@@ -1,0 +1,68 @@
+# Troubleshooting
+
+If you encounter any issues with the simulator, here are some detailed steps to help you resolve common problems:
+
+## Problem: Frontend Not Loading Correctly
+**Cause:** The frontend may not load correctly due to caching issues or an outdated version of the contract stored in your browser.
+
+**Solution:**
+- **Refresh Frontend:** Simply reload the page in your browser.
+- **Clear Cache:** Clear your browser's cache by clicking on the lock icon to the left of your address bar -> Cookies and site data -> Manage -> Remove all local data.
+
+## Problem: Port Conflicts
+**Cause:** The simulator may fail to start if some ports required for its operation are already in use by other applications.
+
+**Ports Used:**
+- **Frontend:** 8080 (used for the frontend)
+- **Ollama:** 11434 (used for Ollama)
+- **JSON-RPC Server:** 4000 (used for the JSON-RPC server)
+- **GenVM:** 6678 (used for GenVM)
+
+**Solution:**
+- **Identify Processes:** Use the appropriate command based on your operating system to identify processes using the required ports. Replace `<PORT_NUMBER>` with the specific port number.
+   - **Linux / MacOS:**
+     ```bash
+     lsof -i :<PORT_NUMBER>
+     ```
+   - **Windows:**
+     ```cmd
+     netstat -aon | findstr :<PORT_NUMBER>
+     ```
+- **Kill Processes:** Use the following command to kill the process using the port. Replace `<PID>` with the Process ID obtained from the previous step.
+   - **Linux / MacOS:**
+     ```bash
+     kill -9 <PID>
+     ```
+   - **Windows:**
+     ```cmd
+     taskkill /PID <PID> /F
+     ```
+
+## Problem: Docker not Running
+**Cause:** The Genlayer Simulator relies on Docker for managing containers and images. If Docker is not running, the simulator cannot function properly.
+
+**Solution:**
+- Ensure that Docker (or Docker Desktop) is running on your system. You can check this by running:
+  ```bash
+  docker info
+  ```
+- If Docker is not running, start Docker Desktop or the Docker daemon on your system.
+
+## Problem: Display Not Correct
+**Cause:** The code section or other UI elements may not display correctly due to screen size limitations.
+
+**Solution:**
+- Resize your screen to accommodate the UI elements properly. This can help improve the visibility and layout of the simulator.
+
+## Problem: Simulator Not Responding or Throwing Errors
+**Cause:** Sometimes, the simulator may become unresponsive or throw errors due to various reasons, such as conflicting processes or corrupted containers.
+
+**Solution:**
+- Perform a fresh start by stopping and removing all containers, as well as removing all images:
+  ```bash
+  docker stop $(docker ps -aq)
+  docker rm $(docker ps -aq)
+  docker rmi $(docker images -q)
+  ```
+
+By following these steps, you can resolve common issues and ensure a smooth experience while working with the GenLayer Simulator.
