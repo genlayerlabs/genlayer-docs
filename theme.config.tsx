@@ -7,7 +7,7 @@ import Logo from './components/icon'
 const config: DocsThemeConfig = {
   logo: <Logo />,
   project: {
-    link: 'https://github.com/yeagerai/genlayer-docs',
+    link: 'https://github.com/yeagerai/genlayer-simulator',
   },
   chat: {
     icon: <TelegramIcon />,
@@ -25,7 +25,7 @@ const config: DocsThemeConfig = {
       openGraph: {
         type: 'website',
         locale: 'en_IE',
-        url: 'https://genlayer-docs.netlify.app/' + asPath,
+        url: 'https://docs.genlayer.com/' + asPath,
         site_name: 'GenLayer Documentation',
       },
       additionalLinkTags: [
