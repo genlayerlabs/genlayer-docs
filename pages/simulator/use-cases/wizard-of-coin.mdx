@@ -86,6 +86,4 @@ When the `ask_for_coin` method is executed:
 - **Wizard Has the Coin (`have_coin` is `True`)**: The LLM is guided to not give away the coin, ensuring the wizard retains the coin regardless of the request. The JSON response will reflect this decision, showing reasoning for denying the request.
 - **Wizard Does Not Have the Coin (`have_coin` is `False`)**: The wizard starts without the coin and cannot give away what it does not possess. The JSON response will indicate that the wizard cannot give the coin because it does not have it.
 
-This process ensures that every request is processed correctly and consistently, maintaining the integrity of the wizard's decision-making process. You can view the logs to see detailed information about the contract interaction.
-
-Additionally, click on the getter function `get_have_coin()` to confirm whether the wizard still holds the coin, ensuring the contract's logic has been correctly executed. You can view the logs to see detailed information about the contract interaction.
+You can view the logs to see detailed information about the contract interaction.
