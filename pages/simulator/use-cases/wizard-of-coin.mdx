@@ -83,7 +83,7 @@ When the `ask_for_coin` method is executed:
 
 ### Handling Different Scenarios
 
-- **Wizard Has the Coin (`have_coin` is `True`)**: The LLM is guided to not give away the coin, ensuring the wizard retains the coin regardless of the request. However, with a carefully crafted or deceptive request you can trick the LLM into giving the coin. The JSON response will reflect the reasoning behind the decision.
+- **Wizard Has the Coin (`have_coin` is `True`)**: The LLM is guided to not give away the coin, ensuring the wizard retains the coin regardless of the request. However, with a carefully crafted or deceptive request you can trick the LLM into giving the coin.
 - **Wizard Does Not Have the Coin (`have_coin` is `False`)**: The wizard starts without the coin and cannot give away what it does not possess. The JSON response will indicate that the wizard cannot give the coin because it does not have it.
 
 You can view the logs to see detailed information about the contract interaction.
