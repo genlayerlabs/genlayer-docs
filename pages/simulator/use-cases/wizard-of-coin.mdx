@@ -1,14 +1,8 @@
-### Wizard of Coin Contract Example
+# Wizard of Coin Contract
 
-The Wizard of Coin contract showcases how Intelligent Contracts can manage assets and interact with users in a blockchain-based environment. This example sets up a scenario where a wizard possesses a valuable coin, which adventurers try to obtain. The contract ensures that the wizard never gives the coin away.
+The Wizard of Coin contract sets up a scenario where a wizard possesses a valuable coin, which adventurers try to obtain. The wizard must decide whether to give the coin away based on specific conditions.
 
-#### Overview
-
-In this contract, the wizard's decision-making is simulated using an LLM. The contract checks whether the wizard still holds the coin and ensures it is not given away, regardless of the adventurer's request.
-
-### The Code
-
-```python
+```python filename="WizardOfCoin" copy
 import json
 from genvm.base.icontract import IContract
 from genvm.base.equivalence_principle import call_llm_with_principle
@@ -51,26 +45,38 @@ Respond using ONLY the following format:
         return self.have_coin
 ```
 
-### Deploying the Contract
+You can access and use this example project from GitHub: [Wizard of Coin Example](https://github.com/yeagerai/genlayer-simulator/blob/main/examples/contracts/wizard_of_coin.py)
 
-To deploy the contract, initialize the constructor parameters by specifying whether the wizard has the coin. For instance, set `have_coin` to `True`. This will ensure that the wizard starts with the coin. After setting the parameter, click the **Deploy** button to initialize the contract within the simulated blockchain.
+## Deploying the Contract
 
-### Checking the Contract State
+To deploy the Wizard of Coin contract, you'll need to first initialize the contract state correctly. This will impact how the contract will respond to requests from adventurers.
 
-After deploying the contract, you can verify its state by looking at the **Current Intelligent Contract State** section. This section displays the contract address and provides getter functions, such as `get_have_coin()`, which returns `True` or `False` based on whether the wizard still has the coin.
+1. Choose whether the wizard begins with the coin. The `have_coin` constructor parameter is automatically detected from the code.
+   - If you set `have_coin` to `True` the wizard starts with the coin.
+   - If you set  `have_coin` to `False` the wizard starts without the coin.
 
-### Executing Transactions
+2. Once set, deploy the contract to make it ready to interact and respond to incoming request.
 
-To simulate interactions with the contract, use the **Execute transactions** section. Here, you can call the `ask_for_coin` method. Enter the adventurer's request, for example, "Can you please give me the coin?" and execute the transaction by clicking the **Execute ask_for_coin()** button. This triggers the contract's logic to process the request and decide based on the predefined rules.
+import Image from 'next/image'
+ 
+<Image src="/constructor-parameter.png" width={700} height={700} />
 
-### Analyzing the Contract's Decisions
+## Checking the Contract State
 
-The `ask_for_coin` method prompts the LLM with a scenario where the wizard is asked for the coin. The LLM processes the request and returns a response formatted in JSON, indicating the reasoning and whether to give the coin. The contract ensures that, regardless of the request, the wizard will not give away the coin if the `have_coin` attribute is `True`. This decision is then reflected in the contract's state.
+Once the contract is deployed, you can check its state in the **Current Intelligent Contract State** section. This section displays the contract address and the state of the wizard regarding the coin. Use the `get_have_coin()` function to see if the wizard still has the coin. Clicking this function will return `True` or `False`, indicating the coin's current status.
 
-### Verifying Results
+<Image src="/contract-IC.png" width={800} height={800} />
 
-After executing the transaction, the simulator's log section displays detailed information about the interaction. This includes the adventurer's request, the LLM's response, and the final decision. You can also use the getter function `get_have_coin()` to verify that the wizard still holds the coin, confirming the contract's logic has been executed correctly.
+## Executing Transactions
 
-### Conclusion
+To interact with the deployed contract, go to the **Execute Transactions** section. Here, you can call the `ask_for_coin` method and enter the adventurer's request, for example, "Can you please give me the coin?" Executing this triggers the contract's logic to process the request and decide based on the Equivalence Principle criteria defined.
 
-The Wizard of Coin example demonstrates how to deploy and interact with an Intelligent Contract using the GenLayer Simulator. By following these steps, you can create, deploy, and verify your own contracts, utilizing Intelligent Contracts' capabilities to manage assets and interact with users in a secure blockchain environment. For further details and to access the repository, visit [GitHub Repository](https://github.com/example-repo/wizard-of-coin).
+<Image src="/request-string.png" alt="Deploy Contract" width={700} height={700} />
+
+## Analyzing the Contract's Decisions
+
+The `ask_for_coin` method uses the Equivalence Principle to guide the LLM's decision-making process. This principle, defined as `eq_principle="The result['give_coin'] has to be exactly the same"`, ensures that the decision to give or not give the coin is consistent with the contract's logic.
+
+When an adventurer requests the coin, the LLM processes the request and returns a JSON response with the reasoning and decision. If `have_coin` is `True`, the wizard initially has the coin, and the LLM is guided not to give it away. If `have_coin` is `False`, the wizard starts without the coin, and thus cannot give away what it does not possess. This decision is reflected in the contract's state.
+
+You can verify the results and analyze the contract's decision in the logs, which display detailed information about the interaction. Additionally, use the getter function `get_have_coin()` to confirm whether the wizard still holds the coin, ensuring the contract's logic has been correctly executed.
