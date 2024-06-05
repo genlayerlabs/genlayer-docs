@@ -103,9 +103,18 @@ To interact with the deployed contract, go to the **Execute Transactions** secti
 
 ## Analyzing the Contract's Decisions
 
-You can verify the results and analyze the contract's decision in the logs, which display detailed information about the interaction.
+## Analyzing the Contract's Decisions
 
-The `resolve` method uses the Equivalence Principle to guide the decision-making process. This principle, defined as `eq_principle="The score and the winner has to be exactly the same"`, ensures that the decision regarding the game's outcome is consistent and accurate across all validators.
+When the `resolve` method is executed:
 
-When the game data is retrieved from the URL, the LLM processes it and returns a JSON response with the score and the winner. 
+- The LLM retrieves the game data from the specified URL.
+- It validates the game's outcome according to the Equivalence Principle defined in the code.
+- Finally, it returns a JSON response that includes the game's score and the winner.
 
+### Handling Different Scenarios
+
+- If the game has started but not finished, the JSON response will indicate the game is not resolved yet.
+- If the game has finished, the JSON response will include the final score and the winning team.
+- If the game hasn't started, the JSON response will indicate this status.
+
+This process ensures that every game's outcome is processed correctly and consistently, maintaining the integrity of the prediction market. You can view the logs to see detailed information about the contract interaction. You can view the logs to see detailed information about the contract interaction.

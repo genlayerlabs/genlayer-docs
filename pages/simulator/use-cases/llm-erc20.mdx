@@ -90,8 +90,15 @@ To interact with the deployed contract, go to the **Execute Transactions** secti
 
 When the `transfer` method is executed:
 
-- The LLM processes the transaction details. 
-- It then validates the transaction according to the Equivalence Principle written in the contract.
+- The LLM processes the transaction details.
+- It then validates the transaction according to the Equivalence Principle defined in the code.
 - Finally, it returns a JSON response that includes the transaction status and the updated balances.
 
-This process ensures that every transaction is processed correctly and consistently, maintaining the integrity of the token system. You can view the logs to which displays detailed information about the contract interaction.
+### Handling Different Scenarios
+
+- **Valid Transactions**: If the sender has enough balance, the transaction is successful. The sender's balance decreases by the amount sent, and the receiver's balance increases by the same amount. The total sum of all balances remains unchanged.
+- **Invalid Transactions**: If the sender does not have enough balance, the transaction fails. The balances remain unchanged, and the JSON response includes an error message.
+
+This process ensures that every transaction is processed correctly and consistently, maintaining the integrity of the token system. You can view the logs to see detailed information about the contract interaction.
+
+Additionally, you can use the getter functions `get_balances()` to see the balances of all users and `get_balance_of(address)` to check the balance of a specific user, ensuring the contract's logic has been correctly executed. You can view the logs to see detailed information about the contract interaction.
