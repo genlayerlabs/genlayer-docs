@@ -1,61 +1,95 @@
-## Use Case: ERC-20 Token Contract
+# ERC-20 Token Contract
 
-The ERC-20 Token Contract demonstrates how to create and manage a token on the GenLayer platform. This example will guide you through deploying, interacting with, and verifying the ERC-20 token contract using the GenLayer Simulator.
+The ERC-20 Token Contract sets up a scenario to manage token transactions between users, ensuring that each transaction is valid and updating balances accordingly. The contract uses the Equivalence Principle to maintain consistency and accuracy.
 
-### Contract Overview
-
-The ERC-20 Token Contract allows you to create a custom token with a specified total supply. The contract includes standard ERC-20 functions such as transferring tokens and checking balances.
-
-### Understanding the Code
-
-Here is the code for the ERC-20 Token Contract:
-
-```python
+```python filename="llmErc20" copy
 import json
 from genvm.base.icontract import IContract
+from genvm.base.equivalence_principle import EquivalencePrinciple
 
-class ERC20Token(IContract):
-    def __init__(self, total_supply: int):
-        self.total_supply = total_supply
+class LlmErc20(IContract):
+    def __init__(self, total_supply: int) -> None:
         self.balances = {}
+        self.balances[contract_runner.from_address] = total_supply
 
-    def initialize(self, address: str):
-        self.balances[address] = self.total_supply
+    async def transfer(self, amount: int, to_address: str) -> None:
+        prompt = f"""
+You keep track of transactions between users and their balance in coins. 
+The current balance for all users in JSON format is:
+{json.dumps(self.balances)}
+The transaction to compute is: {{
+sender: "{contract_runner.from_address}",
+recipient: "{to_address}",
+amount: {amount},
+}}
 
-    def transfer(self, from_address: str, to_address: str, amount: int):
-        if self.balances.get(from_address, 0) >= amount:
-            self.balances[from_address] -= amount
-            self.balances[to_address] = self.balances.get(to_address, 0) + amount
+For every transaction, validate that the user sending the Coins has 
+enough balance. If any transaction is invalid, it shouldn't be processed. 
+Update the balances based on the valid transactions only.
+Given the current balance in JSON format and the transaction provided, 
+please provide the result of your calculation with the following format:
+{{
+transaction_success: bool,          // Whether the transaction was successful
+transaction_error: str,             // Empty if transaction is successful
+updated_balances: object<str, int>  // Updated balances after the transaction
+}}
+It is mandatory that you respond with only the JSON output object, nothing 
+else whatsoever. Don't include any other words or characters, your 
+output must be only the JSON object"""
+        print(prompt)
+        final_result = {}
+        async with EquivalencePrinciple(
+            result=final_result,
+            principle="""The new_balance of the sender should have decreased 
+            in the amount sent and the new_balance of the receiver should have
+            increased by the amount sent. Also, the total sum of all balances
+            should have remain the same before and after the transaction""",
+            comparative=True,
+        ) as eq:
+            result = await eq.call_llm(prompt)
+            result_clean = result.replace("True", "true").replace("False", "false")
+            eq.set(result_clean)
 
+        result_json = json.loads(final_result["output"])
+        self.balances = result_json["updated_balances"]
+
+    def get_balances(self) -> dict[str, int]:
+        return self.balances
+    
     def get_balance_of(self, address: str) -> int:
         return self.balances.get(address, 0)
-    
-    def get_balances(self):
-        return self.balances
 ```
 
-### Deploying the Contract
+You can access and use this example project from GitHub: [ERC-20 Token Contract Example](https://github.com/yeagerai/genlayer-simulator/blob/main/examples/contracts/erc20_token.py)
 
-To deploy the contract, start by initializing it with the desired total supply of your token. For example, set the `total_supply` parameter to 1000. Once you have set the parameter, click on the **Deploy** button to deploy the contract within the simulated blockchain environment.
+## Deploying the Contract
 
-### Checking Contract State
+To deploy the ERC-20 Token contract, you'll need to initialize the contract state correctly. This will impact how the contract will handle token transactions.
 
-After deploying the contract, you can check its state to ensure it has been initialized correctly. The **Current Intelligent Contract State** section will display the contract address and provide buttons for getter functions defined in your code.
+1. Provide the total supply of the tokens. The `total_supply` constructor parameter is automatically detected from the code. For example, you might set `total_supply` to 1000.
 
-To check the token balance for a specific address, use the `get_balance_of` button and provide the address. To see the balances of all addresses, click on the `get_balances` button.
+2. Once the total supply is set, deploy the contract to make it ready to interact and process token transactions.
 
-### Executing Transactions
+import Image from 'next/image'
 
-To transfer tokens, go to the **Execute Transactions** section and select the `transfer` method. Provide the necessary parameters: `from_address`, `to_address`, and `amount`. Click on the **Execute transfer()** button to perform the transaction. 
+<Image src="/erc-token-deploy.png" width={700} height={700} />
 
-### Analyzing the Contract's Decisions
+## Checking the Contract State
 
-The contract's logic ensures that token transfers only occur if the sender has a sufficient balance. This prevents unauthorized or erroneous transfers that could disrupt the token's integrity. By using the transfer method, the contract maintains accurate and up-to-date records of token balances.
+Once the contract is deployed, you can check its state in the **Current Intelligent Contract State** section. This section displays the contract address and the current account. Use the `get_balances()` function to see the balances of all users, and the `get_balance_of(address)` function to see the balance of a specific user.
 
-### Verifying Results
+<Image src="/erc-token-contract-state.png" width={500} height={500} />
 
-The logs section will display details of the transactions, showing whether the transfer was successful and the updated balances. Use the getter functions again to verify that the balances have been updated correctly after the transaction.
+## Executing Transactions
 
-### Summary
+To interact with the deployed contract, go to the **Execute Transactions** section. Here, you can call the `transfer` method to process a token transfer. This triggers the contract's logic to validate the transaction and update balances based on the Equivalence Principle criteria defined.
 
-This guide helps you deploy and interact with an ERC-20 Token Contract on the GenLayer Simulator. It demonstrates fundamental token management operations, including deploying the contract, checking balances, and transferring tokens. Use these principles to create, modify, and deploy your own Intelligent Contracts.
+<Image src="/erc-token-execute-transaction.png" alt="Execute Transactions" width={500} height={500} />
+
+## Analyzing the Contract's Decisions
+
+You can verify the results and analyze the contract's decision in the logs, which display detailed information about the interaction.
+
+The `transfer` method uses the Equivalence Principle to guide the decision-making process. This principle, defined as `eq_principle="The new_balance of the sender should have decreased in the amount sent and the new_balance of the receiver should have increased by the amount sent. Also, the total sum of all balances should have remained the same before and after the transaction"`, ensures that the transactions are processed accurately and consistently.
+
+When a transfer is executed, the LLM processes it and returns a JSON response with the transaction status and updated balances.
