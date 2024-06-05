@@ -88,8 +88,10 @@ To interact with the deployed contract, go to the **Execute Transactions** secti
 
 ## Analyzing the Contract's Decisions
 
-You can verify the results and analyze the contract's decision in the logs, which display detailed information about the interaction.
+When the `transfer` method is executed:
 
-The `transfer` method uses the Equivalence Principle to guide the decision-making process. This principle, defined as `eq_principle="The new_balance of the sender should have decreased in the amount sent and the new_balance of the receiver should have increased by the amount sent. Also, the total sum of all balances should have remained the same before and after the transaction"`, ensures that the transactions are processed accurately and consistently.
+- The LLM processes the transaction details. 
+- It then validates the transaction according to the Equivalence Principle written in the contract.
+- Finally, it returns a JSON response that includes the transaction status and the updated balances.
 
-When a transfer is executed, the LLM processes it and returns a JSON response with the transaction status and updated balances.
+This process ensures that every transaction is processed correctly and consistently, maintaining the integrity of the token system. You can view the logs to which displays detailed information about the contract interaction.
