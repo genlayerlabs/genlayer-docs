@@ -1,20 +1,29 @@
-### Prediction Market Contract Example
+# Prediction Market Contract
 
-The Prediction Market contract demonstrates how Intelligent Contracts can interact with real-world data to make informed decisions. This example uses a football match to illustrate the process.
+The Prediction Market contract sets up a scenario to determine the outcome of a football game between two teams. The contract uses the Equivalence Principle to ensure accurate and consistent decision-making based on the game's resolution data.
 
-#### Overview
-
-In this contract, we aim to determine the result of a football match by fetching data from an external source (BBC Sport) and processing it using an LLM. The contract is initialized with details of the match, including the game date and the teams involved.
-
-### The Code
-
-```python
+```python filename="PredictionMarket" copy
 import json
 from genvm.base.equivalence_principle import EquivalencePrinciple
 from genvm.base.icontract import IContract
 
 class PredictionMarket(IContract):
     def __init__(self, game_date: str, team1: str, team2: str):
+        """
+        Initializes a new instance of the prediction market with the specified game date and teams.
+
+        Args:
+            game_date (str): The date of the game in the format 'YYYY-MM-DD'.
+            team1 (str): The name of the first team.
+            team2 (str): The name of the second team.
+
+        Attributes:
+            has_resolved (bool): Indicates whether the game's resolution has been processed. Default is False.
+            game_date (str): The date of the game.
+            resolution_url (str): The URL to the game's resolution on BBC Sport.
+            team1 (str): The name of the first team.
+            team2 (str): The name of the second team.
+        """
         self.has_resolved = False
         self.game_date = game_date
         self.resolution_url = 'https://www.bbc.com/sport/football/scores-fixtures/' + game_date
@@ -22,8 +31,9 @@ class PredictionMarket(IContract):
         self.team2 = team2
 
     async def resolve(self) -> None:
+
         if self.has_resolved:
-           return "Already resolved"
+            return "Already resolved"
 
         final_result = {}
         async with EquivalencePrinciple(
@@ -47,7 +57,7 @@ class PredictionMarket(IContract):
 
             Respond with the following JSON format:
             {{
-                "score": str, // The score with numbers only, e.g, "1:2", or "-" if the game is not resolved yet
+                "score": str, // The score with numbers only, e.g., "1:2", or "-" if the game is not resolved yet
                 "winner": int, // The number of the winning team, 0 for draw, or -1 if the game is not yet finished
             }}
             """
@@ -65,26 +75,37 @@ class PredictionMarket(IContract):
         return result_json
 ```
 
-### Initializing and Deploying the Contract
+You can access and use this example project from GitHub: [Prediction Market Example](https://github.com/yeagerai/genlayer-simulator/blob/main/examples/contracts/football_prediction_market.py)
 
-To deploy the contract, begin by setting the constructor parameters `game_date`, `team1`, and `team2` in the format provided in the code. For example, you might set `game_date` to "2024-06-05", `team1` to "Brazil", and `team2` to "Jamaica". Then, click on the **Deploy** button to initialize the contract in the simulator. This step sets up the contract with the initial game details.
+## Deploying the Contract
 
-### Checking the Contract State
+To deploy the Prediction Market contract, you'll need to initialize the contract state correctly. This will impact how the contract will respond to the game's resolution.
 
-The current state of the contract can be viewed in the **Current Intelligent Contract State** section. This section will show the contract's address and provide getter functions, if defined. For instance, the `get_have_coin` function is a getter function that can be called to check whether the coin is still held by the wizard.
+1. Provide the game date and the names of the two teams. The `game_date`, `team1`, and `team2` constructor parameters are automatically detected from the code. For example, you might set `game_date` to "2024-06-05", `team1` to "Brazil", and `team2` to "Jamaica".
 
-### Executing Transactions
+2. Once the game details are set, deploy the contract to make it ready to interact and resolve the game results.
 
-To interact with the contract and execute transactions, use the **Execute transactions** section. Select the method `resolve()` from the dropdown menu. Then click the **Execute resolve()** button to run the `resolve()` method. This method will fetch the game data and process it to determine the match result.
+import Image from 'next/image'
 
-### Analyzing the Contract's Decisions
+<Image src="/predicton-deploy.png" width={700} height={700} />
 
-The `resolve()` method works by fetching the game data from the provided URL, using an LLM to process the data and extract the match result, and validating the result using the Equivalence Principle to ensure consistency among validators. If the game has not been resolved yet, the method will return a message indicating this. Once the game is resolved, the state of the contract is updated with the match result.
+## Checking the Contract State
 
-### Verifying Results
+Once the contract is deployed, you can check its state in the **Current Intelligent Contract State** section. This section displays the contract address and the current account.
 
-After executing the transaction, you can verify the results by checking the logs and the contract state. The simulator's log section provides details about the transaction, including the fetched data and the processing results. Additionally, you can use the getter function to check the updated state of the contract, ensuring that the match result has been correctly processed and stored.
+<Image src="/prediction-contract-state.png" width={800} height={800} />
 
-### Conclusion
+## Executing Transactions
 
-This example demonstrates how to deploy and interact with an Intelligent Contract in the GenLayer Simulator. By following these steps, you can create, deploy, and verify your own contracts, utilizing the powerful capabilities of Intelligent Contracts to interact with real-world data. For more details and to access the repository, visit [GitHub Repository](https://github.com/example-repo/prediction-market).
+To interact with the deployed contract, go to the **Execute Transactions** section. Here, you can call the `resolve` method to process the game's result. This triggers the contract's logic to retrieve the game's data and determine the outcome based on the Equivalence Principle criteria defined.
+
+<Image src="/prediction-resolve.png" alt="Execute Transactions" width={700} height={700} />
+
+## Analyzing the Contract's Decisions
+
+You can verify the results and analyze the contract's decision in the logs, which display detailed information about the interaction.
+
+The `resolve` method uses the Equivalence Principle to guide the decision-making process. This principle, defined as `eq_principle="The score and the winner has to be exactly the same"`, ensures that the decision regarding the game's outcome is consistent and accurate across all validators.
+
+When the game data is retrieved from the URL, the LLM processes it and returns a JSON response with the score and the winner. 
+

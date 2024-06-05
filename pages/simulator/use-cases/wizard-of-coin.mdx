@@ -75,8 +75,8 @@ To interact with the deployed contract, go to the **Execute Transactions** secti
 
 ## Analyzing the Contract's Decisions
 
-The `ask_for_coin` method uses the Equivalence Principle to guide the LLM's decision-making process. This principle, defined as `eq_principle="The result['give_coin'] has to be exactly the same"`, ensures that the decision to give or not give the coin is consistent with the contract's logic.
+You can verify the results and analyze the contract's decision in the logs, which display detailed information about the interaction. The `ask_for_coin` method uses the Equivalence Principle to guide the LLM's decision-making process. This principle, defined as `eq_principle="The result['give_coin'] has to be exactly the same"`, ensures that the decision to give or not give the coin is consistent with the contract's logic.
 
 When an adventurer requests the coin, the LLM processes the request and returns a JSON response with the reasoning and decision. If `have_coin` is `True`, the wizard initially has the coin, and the LLM is guided not to give it away. If `have_coin` is `False`, the wizard starts without the coin, and thus cannot give away what it does not possess. This decision is reflected in the contract's state.
 
-You can verify the results and analyze the contract's decision in the logs, which display detailed information about the interaction. Additionally, use the getter function `get_have_coin()` to confirm whether the wizard still holds the coin, ensuring the contract's logic has been correctly executed.
+Also, click on the getter function `get_have_coin()` to confirm whether the wizard still holds the coin, ensuring the contract's logic has been correctly executed.
