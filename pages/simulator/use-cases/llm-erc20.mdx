@@ -1,0 +1,61 @@
+## Use Case: ERC-20 Token Contract
+
+The ERC-20 Token Contract demonstrates how to create and manage a token on the GenLayer platform. This example will guide you through deploying, interacting with, and verifying the ERC-20 token contract using the GenLayer Simulator.
+
+### Contract Overview
+
+The ERC-20 Token Contract allows you to create a custom token with a specified total supply. The contract includes standard ERC-20 functions such as transferring tokens and checking balances.
+
+### Understanding the Code
+
+Here is the code for the ERC-20 Token Contract:
+
+```python
+import json
+from genvm.base.icontract import IContract
+
+class ERC20Token(IContract):
+    def __init__(self, total_supply: int):
+        self.total_supply = total_supply
+        self.balances = {}
+
+    def initialize(self, address: str):
+        self.balances[address] = self.total_supply
+
+    def transfer(self, from_address: str, to_address: str, amount: int):
+        if self.balances.get(from_address, 0) >= amount:
+            self.balances[from_address] -= amount
+            self.balances[to_address] = self.balances.get(to_address, 0) + amount
+
+    def get_balance_of(self, address: str) -> int:
+        return self.balances.get(address, 0)
+    
+    def get_balances(self):
+        return self.balances
+```
+
+### Deploying the Contract
+
+To deploy the contract, start by initializing it with the desired total supply of your token. For example, set the `total_supply` parameter to 1000. Once you have set the parameter, click on the **Deploy** button to deploy the contract within the simulated blockchain environment.
+
+### Checking Contract State
+
+After deploying the contract, you can check its state to ensure it has been initialized correctly. The **Current Intelligent Contract State** section will display the contract address and provide buttons for getter functions defined in your code.
+
+To check the token balance for a specific address, use the `get_balance_of` button and provide the address. To see the balances of all addresses, click on the `get_balances` button.
+
+### Executing Transactions
+
+To transfer tokens, go to the **Execute Transactions** section and select the `transfer` method. Provide the necessary parameters: `from_address`, `to_address`, and `amount`. Click on the **Execute transfer()** button to perform the transaction. 
+
+### Analyzing the Contract's Decisions
+
+The contract's logic ensures that token transfers only occur if the sender has a sufficient balance. This prevents unauthorized or erroneous transfers that could disrupt the token's integrity. By using the transfer method, the contract maintains accurate and up-to-date records of token balances.
+
+### Verifying Results
+
+The logs section will display details of the transactions, showing whether the transfer was successful and the updated balances. Use the getter functions again to verify that the balances have been updated correctly after the transaction.
+
+### Summary
+
+This guide helps you deploy and interact with an ERC-20 Token Contract on the GenLayer Simulator. It demonstrates fundamental token management operations, including deploying the contract, checking balances, and transferring tokens. Use these principles to create, modify, and deploy your own Intelligent Contracts.
