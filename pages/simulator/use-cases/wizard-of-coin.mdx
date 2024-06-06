@@ -83,7 +83,8 @@ When the `ask_for_coin` method is executed:
 
 ### Handling Different Scenarios
 
-- **Wizard Has the Coin (`have_coin` is `True`)**: The LLM is guided to not give away the coin, ensuring the wizard retains the coin regardless of the request. However, with a carefully crafted or deceptive request you can trick the LLM into giving the coin.
-- **Wizard Does Not Have the Coin (`have_coin` is `False`)**: The wizard starts without the coin and cannot give away what it does not possess. The JSON response will indicate that the wizard cannot give the coin because it does not have it.
+- **Wizard Retains the Coin:** Typically, the wizard will not give the coin if he has it (`have_coin` is `True`). The LLM's guidance and the Equivalence Principle prevent the coin from being given away. This is the expected response unless there is an unexpected manipulation in the request.
+- **Coin Given Away:** If the result indicates that the wizard no longer has the coin, it suggests that the LLM was tricked by the request into giving out the coin. 
+- **Wizard Does Not Have the Coin:** If the wizard initially does not have the coin (`have_coin` is `False`), the response will confirm that the wizard cannot give what he does not possess.
 
 You can view the logs to see detailed information about the contract interaction.
