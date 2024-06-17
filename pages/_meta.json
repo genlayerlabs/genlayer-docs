@@ -1,14 +1,16 @@
 {
-  "index": "What is GenLayer",
-  "simulator": "Simulator",
+  "index": "🤖 What is GenLayer",
+  "simulator": "🕹️ Simulator",
   "about": {
     "title": "About",
     "type": "page"
   },
-  "concept": "Concepts",
+  "concept": "🧠 Concepts",
+  "ideas": "💡 Build with GenLayer",
   "command-line-options": {
     "display": "hidden"
   },
+  "glossary": "📖 Glossary",
   "contact": {
     "title": "Contact ↗",
     "type": "page",
