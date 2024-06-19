@@ -16,10 +16,5 @@
     "type": "page",
     "href": "https://twitter.com/GenLayer",
     "newWindow": true
-  },
-  "GenLayer JSON-RPC API": {
-    "title": "JSON-RPC API ↗",
-    "href": "https://genlayer.stoplight.io/docs/json-rpc/branches/main/me4ymlnar7bmq-gen-layer-json-rpc-operations",
-    "newWindow": true
   }
 }
