@@ -1,43 +1,62 @@
-# Introduction 
-Welcome to GenLayer!
-The Intelligence Layer of the Internet
+# Overview
 
 import { Callout } from 'nextra-theme-docs'
 
-<Callout>
-    To start building or testing how Intelligent Contracts work within GenLayer, explore the [GenLayer Simulator](/simulator/) - an interactive sandbox designed to replicate the GenLayer network's execution environment.
-</Callout>
-## 🔎 What is GenLayer?
+<Callout emoji="ℹ️">
+  GenLayer - Building AI-Powered smart contract that can natively access the internet and process natural language
+</Callout> 
 
-GenLayer is a new kind of decentralized blockchain platform that introduces the concept of **Intelligent Contracts**. These are an evolution of smart contracts that, in addition to having the capabilities of traditional smart contracts, are also able to process Natural Language Instructions and access the internet. The intention behind GenLayer is to overcome the limitations of current smart contract platforms by providing more advanced functionalities.
+# Quick Links
+import { Card, Cards } from 'nextra-theme-docs'
 
-## Why you should use GenLayer
+<Cards>
+  <Card title="🧨 Build and deploy Intelligent Contract on the Simulator" href="/simulator" />
+  <Card title="📚 Learn the concepts behind GenLayer" href="/concept" />
+</Cards>
 
-- **AI integration**: Intelligent Contracts on GenLayer can understand and process instructions in natural language, reducing the complexity and technical barriers traditionally associated with writing smart contracts. 
-  
-- **Internet Access**: Intelligent Contracts can uniquely access and analyze data from the internet. This enables real-time, informed decision-making based on global events like stock prices, weather data, and news updates, etc. Thereby, transforming static contracts into dynamic, web-aware entities.
+## What is GenLayer?
+GenLayer is a blockchain platform that revolutionizes the concept of smart contracts by making them more intelligent and connected. Traditional smart contracts are limited to executing predefined code without the ability to interact with external data. GenLayer introduces **Intelligent Contracts**, which not only execute code but also understand natural language and access real-time internet data. This makes them more dynamic, versatile, and capable of handling a wide range of real-world applications.
 
-- **Unique Consensus Algorithm**: Our consensus mechanism **Optimistic Democracy** enables GenLayer handle non-deterministic instructions, such as interpreting natural language and fetching web data, with fairness and transparency. By distributing the decision-making process across a randomly selected pool of validators, it decentralizes LLMs decisions, ensuring that no single entity controls the outcomes. This is the best way to bring AI onchain, allowing it to operate with enhanced security and reduced risk of fraud or bias in AI-driven decisions.
+## Why Are We Building This?
+We built GenLayer to address the inherent limitations of traditional smart contracts. While they have automated digital agreements and made them more efficient, they are limited by their inability to interact with external data or process natural language. Our goal was to create a platform that could overcome these limitations, making contracts more versatile and useful in a broader range of applications.
 
-- **Python-Based Development**: GenLayer uses Python, a simple and widely-used programming language. This makes it easier for more people to start building blockchain applications quickly.
+## Where Did We Get the Idea?
+The idea for GenLayer came from observing the limitations of existing smart contract platforms. Traditional smart contracts are powerful but rigid, unable to adapt to changing conditions or understand human language. Our team of blockchain and AI experts saw an opportunity to integrate advanced AI capabilities and real-time internet data into smart contracts, creating a more flexible and powerful tool for developers and users alike.
 
-- **Interoperability with Existing Systems**: GenLayer’s ability to interact seamlessly with other blockchain platforms and traditional web services opens up possibilities for creating hybrid systems that leverage the strengths of both decentralized and centralized technologies.
+## Why You Should Use GenLayer
+- **AI Integration**: Intelligent Contracts on GenLayer can understand and **process instructions in natural language**, reducing the complexity and technical barriers traditionally associated with writing smart contracts.
+- **Internet Access**: Intelligent Contracts can uniquely **access and analyze data from the internet**. This enables real-time, informed decision-making based on global events like stock prices, weather data, and news updates, transforming static contracts into dynamic, web-aware entities.
+- **Unique Consensus Algorithm - Optimistic Democracy**: Our consensus mechanism, **Optimistic Democracy**, enables GenLayer to handle **non-deterministic operations**, such as interpreting natural language and fetching web data, with fairness and transparency. By distributing the decision-making process across a randomly selected pool of validators, it decentralizes decisions, ensuring that no single entity controls the outcomes. This enhances security and reduces the risk of fraud or bias in AI-driven decisions.
 
-## Core features of GenLayer
+import Image from 'next/image'
 
-- **Intelligent Contracts**: Contracts that can understand and process instructions in natural language, which allows them to interact with and read data from the web, making them more versatile than traditional smart contracts.
+![Hello](/consensus.png)
 
-- **GenVM**: This is the Python-based execution environment of GenLayer, which is responsible for the deployment, interaction, and state persistence of Intelligent Contracts. It operates within a secure sandbox to maintain security and integrity.
+- **Python-Based Development**: GenLayer uses Python, a widely-known and versatile programming language, making it easier for more people to start building blockchain applications quickly. Python’s readability and extensive libraries facilitate rapid development and innovation within the GenLayer ecosystem.
+- **GenVM**: The **GenVM** is the Python-based execution environment of GenLayer, responsible for the deployment, interaction, and state persistence of Intelligent Contracts. It operates within a secure sandbox to maintain security and integrity.
+- **Interoperability with Existing Systems**: GenLayer interacts seamlessly with other blockchain platforms and traditional web services, opening up possibilities for creating hybrid systems that leverage the strengths of both decentralized and centralized technologies.
+- **Robust Security Framework**: GenLayer employs security measures such as prompt injection mitigation, greyboxing, and strategies to counter universal attacks, providing a secure environment for developing and deploying contracts. This ensures that developers can build applications with confidence, knowing the platform protects against various security threats.
 
-- **Optimistic Democracy**: GenLayer's consensus mechanism that uses a set of validators which can leverage Large Language Models (LLMs) to reach decisions on transactions. This system randomly selects validators to review and validate transactions, promoting efficiency and security.
+## Differences Between Traditional Smart Contracts and Intelligent Contracts
 
-- **Non-Deterministic Operations**: GenLayer supports operations that may have different outcomes upon different executions, which is a significant departure from traditional blockchain systems that rely on deterministic transactions.
+| Feature                        | Traditional Smart Contracts | Intelligent Contracts         |
+|-------------------------------|----------------------------|------------------------------|
+| **Self-Enforcing**            | Yes                        | Yes                          |
+| **Internet Access**           | No                         | Yes                          |
+| **Cost**                      | Cheap                      | Cheap                        |
+| **Speed**                     | Fast                       | Fast                         |
+| **Language Processing**       | Limited Code               | Natural Language + Code      |
+| **Flexibility**               | Deterministic Operations   | Non-Deterministic Operations |
+| **Real-Time Data**            | No                         | Yes                          |
+| **User Accessibility**        | Requires Coding Knowledge  | Natural Language Friendly    |
+| **Adaptability**              | Limited                    | High                         |
 
+## Security Layer for GenLayer
 
-## Get started with GenLayer
-Ready to build your first Intelligent Contract? Get started by using our [GenLayer Simulator](/simulator). The GenLayer Simulator provides an interactive development environment for testing and refining Intelligent Contracts within GenLayer. It replicates the network's behavior, including validators and the execution environment, enabling you to identify and resolve issues in a controlled setting.
+GenLayer ensures the security of Intelligent Contracts through several key strategies:
 
-- [Setup and installation](/simulator/installation)
-- [Usage and interaction](/simulator/usage-and-interaction)
-- [Intelligent Contract syntax](/simulator/intelligent-contract-syntax)
-- [Use cases examples](/simulator/use-cases)
+- **Prompt Injection Mitigation**: This strategy protects against attempts to manipulate inputs by restricting user inputs to essential data, ensuring secure contract logic, and incorporating human review steps for critical operations. For example, you can design your Intelligent Contracts to only accept specific, predefined data formats, preventing malicious or unexpected commands from being processed.
+- **Greyboxing**: In GenLayer, we use greyboxing to enhance security by creating controlled environments for each validator. Each validator operates its AI models within a uniquely configured greybox environment. This customization makes it more difficult for attackers to perform successful universal attacks, as they cannot predict the specific defensive mechanisms employed by each validator. This setup ensures that inputs are rigorously filtered, outputs are restricted, and any suspicious activity is continuously monitored and addressed.
+- **Mitigating Universal Attacks**: GenLayer increases resilience against broad attacks by randomly selecting validators for transaction review and implementing additional verification checks to ensure integrity. For example, after a transaction is proposed by one validator, other validators independently verify the outcome, making it difficult for an attacker to predict and manipulate the entire validation process.
+
+For detailed information on these security measures we take to mitigate against data leaks and manipulation, visit our [Risks and Security](/concept/risks-and-security).
