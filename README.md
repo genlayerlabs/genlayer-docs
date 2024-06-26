@@ -10,4 +10,4 @@ This repo contains technical documentation for the [GenLayer project](https://ge
 
 ## License
 
-This project is licensed under the MIT License.
+This project is licensed under the [MIT License](https://github.com/yeagerai/genlayer-docs/blob/main/LICENSE).
