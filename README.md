@@ -10,4 +10,4 @@ This repo contains technical documentation for the [GenLayer project](https://ge
 
 ## License
 
-This project is licensed under the MIT License.
+This project is licensed under the [MIT License](/license).
