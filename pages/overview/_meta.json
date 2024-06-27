@@ -1,5 +1,7 @@
 {
-    "architecture": "",
+    "architecture": {
+        "display": "hidden"
+      },
     "comparison": "What Makes GenLayer Different",
     "use-cases": "",
     "risks-and-security": ""

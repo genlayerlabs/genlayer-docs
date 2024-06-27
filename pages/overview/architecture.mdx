@@ -1,34 +1,10 @@
-# GenLayer Protocol Architecture
+# GenLayer Architecture
 
 The architecture of the GenLayer Protocol is designed to facilitate a seamless flow of transactions while ensuring high security, efficiency, and the ability to execute Intelligent Contracts. 
 
+## Components of GenLayer
+
 ![GenLayer Protocol Architecture](/genlayer-protocol.png)
-
-## Key components
-
-1. **External Users/DApps**: The starting point for transactions, which can be initiated by either External owned accounts(EOA), Ethereum, Arbitrium or DApps or from various blockchain networks, through interoperability protocols like [LayerZero](https://layerzero.network/) and [Axelar](https://www.axelar.network/).
-   
-2. **JSON-RPC Interface**: Facilitates communication between external users/DApps and the GenLayer network, acting as the transaction entry point.
-
-3. **Rollup Full Node**: Receives transactions from the JSON-RPC interface, syncing, and storing them before they are processed. It can be hosted on third-party services like [Infura](https://www.infura.io/) to ensure scalability and reliability. This links with the Rollup (Sequencer) Consensus.sol
-
-4. **Rollup (Sequencer) Consensus.sol**: A Solidity smart contract that manages the consensus mechanism. It handles the selection of leader validators, gas calculations, and other consensus-related tasks. 
-
-5. **GenLayer Validator(s) Node (Write)**: A complex component responsible for the actual processing of transactions and execution of Intelligent Contracts. There are usually multiple validators but one is chosen as the leader It includes:
-    - **Rollup Full Node**: For transaction data storage. this inside the validator links with this Rollup (Sequencer) Consensus.sol(outside the validator) Within the chosen GenLayer validator node, the transaction enters the internal rollup node. Here, it's stored in the Transaction DB (mempool), awaiting further action. The internal rollup node technology can vary, being based on existing solutions like Optimism, Arbitrum, or Polygon.
-    - **Golang Node Code**: Translates transaction data into a format understandable by the GenVM. The transaction input stored in the Transaction DB is a JSON block containing all necessary information and it cannot be directly understood by the GenLayer's Virtual Machine (GenVM). To bridge this gap, the validation node utilizes Golang node code to translate the JSON block into a format that can be understood by GenVM. 
-    - **GenLayer DB**: Stores the translated transaction data, maintaining the protocol's state.
-    - **JSON-RPC Interface**: Used for internal communication.
-    - **GenVM (WASM based)**: Executes Intelligent Contracts using a csutom python-syntax language, allowing interactions with external data sources(www) and LLM (open ai, ollama etc).
-
-6. Once a transaction has been executed by the GenVM, the transaction output is generated. This output includes the result of the contract execution, any state changes within the GenLayer network, and necessary metadata.
-
-The transaction output is then persisted in the GenLayer DB and then synced back to the rollup full node within the validator node. The Optimistic Democracy mechanism initially accepts the output proposed by a transaction's leader, assuming it's correct unless challenged during a designated period. If challenged, the output undergoes a review by additional validators to confirm its accuracy before finalization on the blockchain.
-
-The transaction output is eventually stored in a data availability network such as Celestia or Ethereum aside the validator node using the Rollup (Sequencer) Consensus.sol
-
-
-
 
 ## Transaction flow
 
