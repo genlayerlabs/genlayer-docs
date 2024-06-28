@@ -24,7 +24,7 @@ const config: DocsThemeConfig = {
         <a href="https://x.com/GenLayer" style={{ marginRight: 10 }}>
           <TwitterLogo />
         </a>
-        <a href="https://discord.com/invite/genlayer" style={{ marginRight: 10 }}>
+        <a href="https://discord.gg/8Jm4v89VAu" style={{ marginRight: 10 }}>
           <DiscordIcon />
         </a>
       </div>
