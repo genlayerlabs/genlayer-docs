@@ -1,24 +1,23 @@
-# GenLayer Unique model
+# GenLayer's Unique Model
 
-What sets GenLayer apart is that the **Optimistic Democracy Mechanism**. GenLayer’s Optimistic Execution model, powered by the Equivalence Principle and the appeal process, offers a robust solution for reaching consensus on subjective and non-deterministic transactions. 
+GenLayer stands out with its **Optimistic Democracy Mechanism**. This mechanism leverages Optimistic Execution, the Equivalence Principle, and a structured appeal process to reach consensus on subjective and non-deterministic transactions.
 
-By combining Intelligent Contracts, multiple LLM-based validators, and the Optimistic Democracy mechanism, GenLayer is distinguishes itself from other blockchain projects.
+By combining Intelligent Contracts, multiple LLM-based validators, and the Optimistic Democracy mechanism, GenLayer differentiates itself from other blockchain projects.
 
 import Image from 'next/image'
 
 ![](/consensus.png)
 
-## Optimistic Democracy Mechanism
+## How the Optimistic Democracy Mechanism Work
 
-GenLayer’s approach to transaction validation is optimistic, meaning that not every validator is required to validate every transaction. By default, a randomly selected group of five validators is assigned to verify each transaction. However, developers in GenLayer are the ones making the magic work. They can increase the minimum number of validators they want for their specific project, allowing them to achieve higher security guarantees while increasing the cost of transactions.
+GenLayer’s transaction validation approach is optimistic, meaning that not every validator is required to validate every transaction. By default, a randomly selected group of five validators is assigned to verify each transaction. However, developers in GenLayer can adjust the number of validators for their specific projects, allowing for higher security guarantees while increasing transaction costs.
 
-When a transaction is submitted to the network, one of the selected validators is chosen as the leader. The leader executes the transaction and proposes an output, which the other validators then evaluate using the Equivalence Principles set by the developer. Reaching a consensus within the determined equivalence principle is guaranteed, as the number of validators is always odd.
+When a transaction is submitted to the network, one of the selected validators is chosen as the leader. The leader executes the transaction and proposes an output, which the other validators then evaluate using the Equivalence Principles set by the developer. The number of validators is always odd, ensuring a consensus is reached.
 
 ![Consensus](/consensus-model.jpg)
 
-Each validator independently processes the transaction, comparing their outputs for each non-deterministic call to the leader’s proposals. If a majority of the validators agree with the leader’s outputs, the transaction is considered valid. This process ensures that even though the outputs may not be identical, they are equivalent within the context of the project’s requirements.
+Each validator processes the transaction independently, comparing their outputs for each non-deterministic call to the leader’s proposals. If a majority of the validators agree with the leader’s outputs, the transaction is considered valid. This ensures that while the outputs may not be identical, they are equivalent within the project’s requirements.
 
-Once a transaction has gone through the Optimistic Execution process and any necessary appeals, it reaches a state of Finality. In Ethereum, for example, finality is typically reached within 6–12 minutes after a transaction is included in a block. GenLayer’s main purpose is not fast finality, as validation significantly differs from Ethereum block validation. It can take up to several hours to leave time for appeals, which makes the system more reliable.
+Once a transaction has gone through the Optimistic Execution process and any necessary appeals, it reaches a state of Finality. Unlike Ethereum, where finality is typically reached within 6–12 minutes, GenLayer allows for a more extended validation period to accommodate appeals, enhancing reliability.
 
-More detailed information is in the [concept section](/concept)
-
+For more detailed information, refer to the [concept section](/concept).
