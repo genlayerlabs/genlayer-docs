@@ -1,21 +1,30 @@
-import React from 'react'
-import { DocsThemeConfig } from 'nextra-theme-docs'
-import { useRouter } from 'next/router'
-import TelegramIcon from './components/telegram'
-import Logo from './components/icon'
+import React from 'react';
+import { DocsThemeConfig } from 'nextra-theme-docs';
+import { useRouter } from 'next/router';
+import TelegramIcon from './components/telegram';
+import Logo from './components/icon';
+import TwitterLogo from './components/twitter';
 
 const config: DocsThemeConfig = {
   logo: <Logo />,
   project: {
     link: 'https://github.com/yeagerai/genlayer-simulator',
   },
-  chat: {
-    icon: <TelegramIcon />,
-    link: 'https://t.me/genlayer',
-  },
   docsRepositoryBase: 'https://github.com/yeagerai/genlayer-docs',
   footer: {
     text: 'GenLayer Documentation',
+  },
+  navbar: {
+    extraContent: (
+      <div style={{ display: 'flex', alignItems: 'center' }}>
+        <a href="https://t.me/genlayer" style={{ marginRight: 10 }}>
+          <TelegramIcon />
+        </a>
+        <a href="https://x.com/GenLayer" style={{ marginRight: 10 }}>
+          <TwitterLogo />
+        </a>
+      </div>
+    ),
   },
   useNextSeoProps: () => {
     const { asPath } = useRouter();
@@ -39,7 +48,7 @@ const config: DocsThemeConfig = {
         },
         {
           property: 'og:description',
-          content: ' GenLayer the intelligence layer of the internet - Documentation.'
+          content: 'GenLayer the intelligence layer of the internet - Documentation.'
         },
         {
           property: 'og:image',
@@ -48,6 +57,6 @@ const config: DocsThemeConfig = {
       ]
     }
   }
-}
+};
 
-export default config
+export default config;
