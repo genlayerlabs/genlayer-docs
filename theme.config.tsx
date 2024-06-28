@@ -4,6 +4,7 @@ import { useRouter } from 'next/router';
 import TelegramIcon from './components/telegram';
 import Logo from './components/icon';
 import TwitterLogo from './components/twitter';
+import DiscordIcon from './components/discord';
 
 const config: DocsThemeConfig = {
   logo: <Logo />,
@@ -22,6 +23,9 @@ const config: DocsThemeConfig = {
         </a>
         <a href="https://x.com/GenLayer" style={{ marginRight: 10 }}>
           <TwitterLogo />
+        </a>
+        <a href="https://discord.com/invite/genlayer" style={{ marginRight: 10 }}>
+          <DiscordIcon />
         </a>
       </div>
     ),
