@@ -4,7 +4,7 @@ The Equivalence Principle is a core concept in GenLayer's Intelligent Contract f
 
 The Equivalence Principle involves multiple validators randomly selected to determine whether different outputs from non-deterministic operations (like LLM responses) can be considered equivalent. One validator acts as the leader, proposing the output, while others validate it.
 
-## Types of Equivalence Principles
+## Equivalence Principles Comparative Options
 Validators work to reach a consensus on whether the result set by the leader is acceptable, which might involve direct comparison or qualitative evaluation, depending on the contract’s design. If the validators do not reach a consensus due to differing data interpretations or an error in data processing, the result might be challenged or an appeal process might be initiated.
 
 ### Comparative Equivalence Principle
@@ -38,11 +38,13 @@ Here’s how you can use different approaches to integrate this principle effect
 
 ### Using `EquivalencePrinciple`
 
-Use the `EquivalencePrinciple` directly when your task involves complex operations, requires multiple LLM calls, or needs to combine different types of operations (like data fetching and processing). This method is suitable when you need detailed control over how the outputs are validated and when each step of the process might require its own set of validations.
+The `EquivalencePrinciple` is ideal for contracts that involve complex operations, such as making multiple LLM calls or performing various tasks like data fetching and processing. This function gives you detailed control over how the outputs are validated. Depending on how you want the validators to work, you can choose between the **comparative** or **non-comparative** Equivalence principle options.
 
 #### Ideal Scenarios
 - Complex decision-making processes that might require fetching and processing large amounts of data.
+
 - Situations where outputs from different operations need to be cross-validated against each other.
+
 - Tasks that involve sequential steps where each step might affect the outcome of the next.
 
 ```python copy
@@ -99,10 +101,11 @@ Validators execute these steps independently and only need to agree on the final
 
 ### Using `call_llm_with_principle`
 
-`call_llm_with_principle` is an abstraction that simplifies the development process when only a single LLM call is needed. It is best used when the task is straightforward and requires only one piece of logic to be validated against the Equivalence Principle.
+The `call_llm_with_principle` function is an abstraction from the `EquivalencePrinciple`, used for contracts that require a single LLM call. It simplifies the validation process, allowing you to focus on the core logic of your contract. You can only use the **non-comparative** equivalence principle option with this function.
 
 #### Ideal Scenarios
 - Single query tasks where one question is asked, and a simple, direct answer is expected.
+
 - Operations where the input is well-defined and the output requires minimal post-processing.
 
 ```python copy
@@ -139,6 +142,8 @@ Respond using ONLY the following format:
             result = await call_llm_with_principle(
                 prompt,
                 eq_principle="The result['give_coin'] has to be exactly the same",
+                comparative=False
+
             )
 
 ```
@@ -148,10 +153,12 @@ The `call_llm_with_principle` function sends this prompt to an LLM. Then, the Eq
 
 ### Using `get_webpage_with_principle`
 
-`get_webpage_with_principle` is useful when the data fetched is already in a structured and usable format, such as data from an API. In these cases, no further extraction or processing is needed. However, if you're retrieving data from a standard webpage, the data is often unstructured and will usually require an additional step, such as an LLM call, to extract and format the specific information you need.
+The `get_webpage_with_principle` function is an abstraction from the `EquivalencePrinciple`, used to retrieve data from webpages. It operates without the comparative option, as ensuring the accuracy of data fetched from web sources requires direct verification by validators or an LLM to extract and format the specific information you need.
+
 
 #### Ideal Scenarios
 - Retrieving real-time or frequently updated data from web sources, such as stock prices, weather conditions, or news updates.
+
 - Situations where the integrity and timeliness of the data are critical, and the data is used directly without further interpretation or processing.
 
 ```python copy
@@ -170,7 +177,6 @@ class WeatherContract(IContract):
         weather_data = await get_webpage_with_principle(
             self.weather_url,
             eq_principle="The data must be up-to-date and accurately reflect current weather conditions",
-            comparative=False
         )
 ```
 
