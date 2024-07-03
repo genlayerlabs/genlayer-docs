@@ -1,9 +1,7 @@
 {
-    "architecture": {
-        "display": "hidden"
-      },
+    "what-is-genlayer": "What is GenLayer?",
     "comparison": "What are Intelligent Contracts?",
-    "genlayer-different": "GenLayer Unique model",
+    "genlayer-different": "Optimistic Consensus",
     "use-cases": "",
     "risks-and-security": ""
 
