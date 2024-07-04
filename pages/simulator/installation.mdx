@@ -14,32 +14,31 @@ Before installing the GenLayer CLI, ensure you have the following prerequisites 
 import { Steps } from 'nextra-theme-docs'
 
 <Steps>
-### Install GenLayer CLI
 
+### Install GenLayer CLI
 Open your terminal or command prompt. Enter the following command to install the GenLayer CLI on your system:
 
-import { Tabs } from 'nextra-theme-docs'
-
-<Tabs items={['npm', 'npx']}>
- <Tabs.Tab>
 ```bash copy
 npm install -g genlayer
 ```
-</Tabs.Tab>
- <Tabs.Tab>
-```bash copy
-npx install -g genlayer
-```
-</Tabs.Tab>
-</Tabs>
 
 ### Execute the `genlayer init` Command
-
 After installing the CLI, set up your development environment by running:
 
+import { Tabs } from 'nextra-theme-docs'
+
+<Tabs items={['without npx', 'with npx']}>
+ <Tabs.Tab>
 ```bash copy
 genlayer init
 ```
+</Tabs.Tab>
+ <Tabs.Tab>
+```bash copy
+npx genlayer init
+```
+</Tabs.Tab>
+</Tabs>
 
 When you run this command, it initializes the setup with 5 validators, prompts you to select your preferred LLM provider(s), and automatically downloads and configures the necessary Docker containers for the GenLayer environment. Once the setup is complete, you can access the GenLayer Simulator at [http://localhost:8080/](http://localhost:8080/).
 </Steps>
@@ -51,10 +50,10 @@ You can use the following options with the `genlayer init` command to customize 
 
 Example:
 ```bash copy
-genlayer init --numValidators 10 --branch dev
+genlayer init --numValidators 10 --branch staging
 ```
 
-## Breakdown of the `genlayer init` Command
+### Breakdown of the `genlayer init` Command
 The `genlayer init` command initializes the GenLayer environment with the specified number of validators. Validators are responsible for executing and validating transactions.
 
 #### Select LLM Providers
@@ -77,7 +76,7 @@ After selecting your LLM provider(s), the CLI automatically downloads the necess
 - **WebRequest Service**: Handles external HTTP requests from contracts, essential for interactions with external APIs.
 - **Ollama-LLM Provider**: If your selected LLM provider is Ollama, it sets it up within Docker containers for running the validators.
 - **PostgreSQL**: Initializes a PostgreSQL database for storing transaction records, user account details, and contract states.
-- **JSON RPC**: Establishes a JSON RPC server for API calls, managing database operations like creating accounts and tables, and interacts with the simulator to send transactions and call intelligent contracts.
+- **JSON RPC**: Establishes a JSON RPC server for API calls, managing validators.
 - **Frontend**: Launches the simulator's frontend interface, accessible at [http://localhost:8080/](http://localhost:8080/), where you can interact with and test your Intelligent Contracts.
 
 <Callout>
@@ -94,12 +93,13 @@ genlayer up
 
 This command allows you to launch the simulator with a previously initialized environment and configuration. You can use the following options to customize the simulator launch:
 
-- **`--no-reset-accounts`**: Use this option to prevent resetting the database of accounts and transactions. This allows you to continue with the existing data without starting afresh.
 - **`--reset-validators`**: This option removes all current validators and creates new random ones, useful for testing different validator scenarios in development.
 - **`--numValidators <number>`**: Specify the number of validators to start, defaulting to 5.
 - **`--branch <branch>`**: Specify the branch from which to start the GenLayer Simulator, defaulting to "main".
 
 Example:
 ```bash copy
-genlayer up --reset-validators --numValidators 10 --branch develop
+genlayer up --reset-validators --numValidators 10 --branch staging
 ```
+
+By following this structured approach, users can clearly understand the installation process and how to customize their setup with the available options.
