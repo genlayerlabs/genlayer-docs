@@ -2,20 +2,16 @@
   "index": "🤖 Welcome to GenLayer Docs",
   "overview": "☄️ Overview",
   "simulator": "🕹️ Simulator",
-  "about": {
-    "title": "About",
-    "type": "page"
-  },
   "concept": "🧠 Concepts",
   "ideas": "💡 Build with GenLayer",
   "command-line-options": {
     "display": "hidden"
   },
   "glossary": "📖 Glossary",
-  "contact": {
-    "title": "Contact ↗",
+  "blog": {
+    "title": "Blog 📚",
     "type": "page",
-    "href": "https://twitter.com/GenLayer",
+    "href": "https://blog.genlayer.com/",
     "newWindow": true
   }
 }
