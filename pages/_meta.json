@@ -1,8 +1,21 @@
 {
   "index": "🤖 Welcome to GenLayer Docs",
   "overview": "☄️ Overview",
-  "simulator": "🕹️ Simulator",
-  "concept": "🧠 Concepts",
+  "-- Simulator": {
+    "type": "separator",
+    "title": "Simulator"
+  },
+  "simulator": "🕹️ Get Started",
+  "-- Concept": {
+    "type": "separator",
+    "title": "Concepts"
+  },
+  "concept": "🧠 Learn the Fundamentals",
+  "-- ideas": {
+    "type": "separator",
+    "title": "Ideas"
+  },
+
   "ideas": "💡 Build with GenLayer",
   "command-line-options": {
     "display": "hidden"
