@@ -1,7 +1,7 @@
 {
   "index": "🤖 Welcome to GenLayer Docs",
   "overview": "☄️ Overview",
-  "-- Simulator": {
+  "-- simulator": {
     "type": "separator",
     "title": "Simulator"
   },
