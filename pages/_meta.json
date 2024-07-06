@@ -20,7 +20,11 @@
   "command-line-options": {
     "display": "hidden"
   },
-  "glossary": "📖 Glossary",
+  "-- glossary": {
+    "type": "separator",
+    "title": "Glossary"
+  },
+  "glossary": "📖 Terminology",
   "blog": {
     "title": "Blog 📚",
     "type": "page",
