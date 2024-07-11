@@ -1,48 +1,82 @@
+import CustomCard from '/components/card.tsx';
+import { Card, Cards } from 'nextra-theme-docs'
+
 # Welcome to GenLayer docs 
 GenLayer is a decentralized blockchain platform designed to execute AI-powered smart contracts called **Intelligent Contracts** that uses AI models to search the web and process natural language instructions.
 
 ## What makes GenLayer different
+<Cards num={2}>
+  <Card title="Access web data directly" href="/overview/what-is-genlayer" />
+  <Card title="Process natural language " href="/simulator" />
+  <Card title="Optimistic Democracy" href="/ideas" />
+  <Card title="Developer friendly" href="/concept" />
+</Cards>
 
-import { Card, Cards } from 'nextra-theme-docs'
+## LLM and inference providers
+<Cards num={3}>
+  <Cards.Card
+    image
+    title="Open AI"
+    href="/docs/docs-theme/start"
+  >
+    <>![Open AI](/openai.png)</>
+  </Cards.Card>
+  <Cards.Card image title="Ollama" href="/docs/blog-theme/start">
+    <>![Ollama](/llama.png)</>
+  </Cards.Card>
+    <Cards.Card image title="Heurist" href="/docs/blog-theme/start">
+    <>![heurist](/heurist.png)</>
+  </Cards.Card>
+</Cards>
 
+## Find your way in the docs
 <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, minmax(0, 1fr))', gap: '1rem' }}>
   <CustomCard
-    title="Access web data directly"
-    description="This is the description for card 1"
-    href="#"
+    arrow
+    title=" What is GenLayer"
+    description="An introduction to GenLayer and its core functionalities. Learn what sets GenLayer apart"
+    href="/overview/what-is-genlayer"
   />
   <CustomCard
-    title="🔄 Process natural language"
-    description="This is the description for card 2"
-    href="#"
+    arrow
+    title="Run Intelligent Contract on the simulator"
+    description="Step-by-step guide to building and deploying your first Intelligent Contract using our simulator"
+    href="/simulator"
   />
   <CustomCard
-    title="🧠 Optimistic democracy consensus"
-    description="This is the description for card 3"
-    href="#"
+    arrow
+    title="Build with GenLayer - Ideas"
+    description="Innovative ideas and use cases to inspire your projects with GenLayer."
+    href="/ideas"
   />
   <CustomCard
-    title="🐍 Developer friendly"
-    description="This is the description for card 4"
-    href="#"
+    arrow
+    title="Learn the concepts behind GenLayer"
+    description="Detailed explanations of the underlying concepts and technologies powering GenLayer."
+    href="/concepts"
   />
 </div>
 
-## Find your way in the docs
+## Explore More
 
-<Cards num={1}>
-  <Card arrow title="What is GenLayer" href="/overview/what-is-genlayer" />
-  <Card arrow title="Build and deploy Intelligent Contract on the simulator" href="/simulator" />
-  <Card arrow title="Build with GenLayer - Ideas" href="/ideas" />
-  <Card arrow title="Learn the concepts behind GenLayer" href="/concept" />
-</Cards>
+<details open>
+  <summary>
+    <b>Join the Community</b>
+  </summary>
+  We welcome contributions of all types. To get started, read our [Contributing Guide](https://github.com/yeagerai/genlayer-simulator/blob/main/CONTRIBUTING.md) and file an issue for either a bug or enhancement.
+</details>
 
-## Contributing
-We welcome contributions of all types. To get started, read our [Contributing Guide](https://github.com/yeagerai/genlayer-simulator/blob/main/CONTRIBUTING.md) and file an issue for either a bug or enhancement.
+<details open>
+  <summary>
+    <b>Get in Touch</b>
+  </summary>
+  Join the GenLayer community in our [Discord](https://discord.gg/8Jm4v89VAu) and [Telegram](https://t.me/genlayer) to ask for help, as well as share your feedback or showcase what you have built with GenLayer!
+</details>
 
-## Questions?
-Join the GenLayer community in our [Discord](https://discord.gg/8Jm4v89VAu) and [Telegram](https://t.me/genlayer) to ask for help, as well as share your feedback or showcase what you have built with GenLayer!
-
-
-import CustomCard from '/components/card.tsx';
+<details open>
+  <summary>
+    <b>Join Us</b>
+  </summary>
+  We are hiring! If you are passionate about blockchain technology and want to be part of an innovative team, check out our [career opportunities](https://apply.workable.com/yeager-dot-a-i/) and join us in shaping the future of decentralized applications.
+</details>
 

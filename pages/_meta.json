@@ -6,20 +6,28 @@
     "title": "🕹️ Simulator"
   },
   "simulator": "Get Started",
+
+  "-- connections": {
+    "type": "separator",
+    "title": "Connections"
+  },
+
+  "connections": "Integrations",
+
   "-- Concept": {
     "type": "separator",
     "title": "🧠 Concepts"
   },
+
   "concept": "Fundamentals",
+
   "-- ideas": {
     "type": "separator",
     "title": "💡 Ideas"
   },
 
   "ideas": "Build with GenLayer",
-  "command-line-options": {
-    "display": "hidden"
-  },
+ 
   "-- glossary": {
     "type": "separator",
     "title": "📖 Glossary"
