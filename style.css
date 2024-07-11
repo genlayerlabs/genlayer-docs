@@ -1,0 +1,58 @@
+body {
+  font-family: 'SF Pro Text', 'SF Pro Icons', 'Helvetica Neue', 'Helvetica',
+    'Arial', sans-serif;
+  padding: 20px 20px 60px;
+  max-width: 680px;
+  margin: 0 auto;
+}
+
+.home-content p {
+  margin-top: 1.5em;
+  line-height: 1.75em;
+}
+
+.home-content a {
+  --tw-ring-color: hsl(var(--nextra-primary-hue) var(--nextra-primary-saturation) 50% / 0.3);
+  --tw-text-opacity: 1;
+  text-underline-position: under;
+  text-decoration-line: underline;
+  text-decoration-thickness: from-font;
+  color: hsl(var(--nextra-primary-hue) var(--nextra-primary-saturation) 50% / var(--tw-text-opacity));
+}
+
+figcaption {
+  font-size: 0.85rem;
+  line-height: 1.5rem;
+  display: block;
+  text-align: center;
+  margin-top: 0.5rem;
+}
+
+
+@media screen and (max-width: 1200px) {
+  .home-content .hide-medium {
+    display: none;
+  }
+}
+
+@media screen and (max-width: 720px) {
+  .home-content p {
+    font-size: 0.9rem;
+  }
+  .home-content .hide-small {
+    display: none;
+  }
+}
+
+.custom-card-container {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 1rem;
+}
+
+.custom-card {
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  height: 100%;
+}
