@@ -18,6 +18,7 @@
   },
   "homepage": "https://github.com/yeagerai/genlayer-docs#readme",
   "dependencies": {
+    "mermaid": "^10.9.1",
     "next": "^13.5.6",
     "nextra": "latest",
     "nextra-theme-docs": "latest",
