@@ -11,6 +11,8 @@ Optimistic Democracy is the consensus method used by GenLayer to validate transa
 
 Optimistic Democracy relies on a mix of trust and verification to ensure transaction integrity:
 
+![](/optimistic-democracy-concept.png)
+
 1. **Initial Validation:** When a transaction is submitted, a small group of randomly selected validators checks its validity. One is chosen as the leader. The leader executes the transaction, and the other validators assess the leader's proposal using the Equivalence Principle.
 
 2. **Majority Consensus:** If most validators accept the leader's proposal, the transaction is provisionally accepted. However, this decision is not final yet, allowing for possible appeals during a limited window of time, known as the **Finality Window**.
@@ -28,8 +30,5 @@ import { Callout } from 'nextra-theme-docs'
 5. **Escalating Appeals:** If the appealing party is still not satisfied, the process can escalate, with each round involving more validators. Each round doubles the number of validators. A new leader is only chosen if the transaction is overturned.
 
 6. **Final Decision:** The appeals process continues until a majority consensus is reached or until all validators have participated. The final decision is recorded, and the transaction's state is updated accordingly. If the appealing party is correct, they receive a reward for their efforts, while incorrect appellants lose their bond.
-
-## Diagram of the Optimistic Democracy
-Here is the graph diagram illustrating the Optimistic Democracy consensus mechanism in GenLayer.
 
 
