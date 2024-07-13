@@ -1,15 +1,18 @@
-### OpenAI
+# OpenAI
 
-OpenAI is an LLM provider that GenLayer uses as validators for validating and processing intelligent contracts. This LLM provider provides language models that are used to understand and generate human-like text, which is critical for interpreting complex contract language and ensuring that contracts are executed correctly. The use of OpenAI's models helps maintain high accuracy and reliability in contract validation within the GenLayer ecosystem.
+OpenAI is an LLM provider that provides fast and reliable AI models used by validators to process and validate Intelligent Contracts.
 
-## Why we use OpenAI?
+## Setup during `genlayer init`
 
-1. **High Performance**: OpenAI's models are optimized for speed and accuracy, making them ideal for the heavy processing demands of GenLayer.
-2. **Reliability**: As a paid service, OpenAI provides consistent performance and dedicated support, crucial for maintaining the robustness of GenLayer operations.
-3. **Versatility**: The models can handle a wide range of tasks, from generating text to understanding context and intent, essential for intelligent contract validation.
+When you run the `genlayer init` command, you will be prompted to select the LLM providers you want to use. If you choose OpenAI, you will need to provide an [API key](https://openai.com/api/) during the setup process. This key is necessary to authenticate and access OpenAI's services.
 
-## Setup during GenLayer Initialization
+Set the OpenAI API key when prompted:
 
-When you run the `genlayer init` command, you will be prompted to select the LLM providers you want to use. If you choose OpenAI, you will need to provide an [API key](https://openai.com/api/) during the setup process. This key is necessary to authenticate and access OpenAI's services. Here are the steps involved:
+```shell
+OPENAIKEY=your_openai_api_key
+```
 
-By selecting OpenAI, you ensure fast and reliable validation of intelligent contracts, leveraging one of the most advanced language models available. This setup allows GenLayer to maintain high standards in contract processing and execution.
+### Troubleshooting Tips
+
+- **Missing API Key**: Ensure that you enter the `OPENAIKEY` when prompted during the initialization process.
+- **Incorrect Configuration**: Verify that the API key you entered is valid and that you have selected the correct provider during initialization.
