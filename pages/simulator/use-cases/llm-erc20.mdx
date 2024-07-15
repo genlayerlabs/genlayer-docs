@@ -36,7 +36,7 @@ updated_balances: object<str, int>  // Updated balances after the transaction
 It is mandatory that you respond with only the JSON output object, nothing 
 else whatsoever. Don't include any other words or characters, your 
 output must be only the JSON object"""
-        print(prompt)
+
         final_result = {}
         async with EquivalencePrinciple(
             result=final_result,
