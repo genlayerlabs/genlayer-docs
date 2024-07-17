@@ -20,20 +20,18 @@ import Image from 'next/image'
 
 ## Viewing Transaction Results
 
-Once you execute a transaction, your transaction is will asynchronously progress through various states until it is finalized by the consensus mechanism. This ensures that all nodes in the network have a consistent view of the transaction status.
+Once you execute a transaction, it will asynchronously progress through various states until it is finalized by the consensus mechanism. This ensures that all nodes in the network have a consistent view of the transaction status.
+
 For example, after initiating the `ask_for_coin` method, you might see the transaction states such as "Pending", "Committing", and "Finalized" as shown below:
 
 <Image src="/async-transactions.png" alt="Transaction States" width={700} height={500} />
 
 You can continue interacting with your Intelligent Contract by executing additional transactions or checking the state again to see how it has changed.
 
-Once finalized the result will be displayed, showing the output of the method called. This allows you to verify that the method has executed correctly and to see the effect of the transaction on your contract's state.
+Once finalized, the result will be displayed showing the output of the method called. This allows you to verify that the method has executed correctly and to see the effect of the transaction on your contract's state.
 
 ## Viewing Current Account Address
 
 You can also view your current account address in the **Execute Transactions** section. This address is used to interact with your contract and is displayed under **Current Account**.
 
 <Image src="/current-account-address.png" alt="Transaction States" width={500} height={300} />
-
-
-
