@@ -4,5 +4,6 @@
     "contract-state": "",
     "execute-transaction": "",
     "monitoring-node-logs": "",
-    "validators": ""
+    "validators": "",
+    "reset-storage": ""
   }
