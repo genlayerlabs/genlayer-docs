@@ -1,0 +1,24 @@
+# Reset Stimulator Storage
+Resetting the simulator storage in GenLayer Simulator restores all default example intelligent contracts and removes any custom contracts that have been added. This feature is especially useful for developers when migrating to newer versions of the simulator, ensuring a fresh start with the latest updates.
+
+import Image from 'next/image'
+
+## How to reset storage
+
+1. On the left sidebar, click on the **Settings** icon to open the settings menu.
+
+2. In the settings menu, go to **Simulator Storage** section and click on the **Reset Storage** button.
+
+ <Image src="/reset.png" width={500} height={400} />
+
+3. A confirmation dialog will appear, listing all the intelligent contracts that will be removed upon resetting.
+
+<Image src="/reset-stimulator.png" width={500} height={400} /> 
+
+import { Callout } from 'nextra-theme-docs'
+
+<Callout>
+  If you want to preserve any of the contract, make sure to copy them in the files section.
+</Callout> 
+
+4. Click on the **Reset** button in the confirmation dialog to complete the process. This will restore all example contracts and remove any custom ones, giving you a clean slate to work with.
