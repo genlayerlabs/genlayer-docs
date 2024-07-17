@@ -1,22 +1,22 @@
 /* Default responsive container */
-.responsive-container {
+.responsive-video-container {
     padding-bottom: 56.25%; /* 16:9 aspect ratio */
-  }
-  
-  .responsive-iframe {
+}
+
+.responsive-iframe {
     position: absolute;
     top: 0;
     left: 0;
     width: 100%;
     height: 100%;
-  }
+}
 
-  .-nx-mx-6 {
+.-nx-mx-6 {
     margin-left: 0 !important;
     margin-right: 0 !important;
 }
 
-  @media (min-width: 768px) {
+@media (min-width: 768px) {
     .md\:-nx-mx-8 {
         margin-left: 0 !important;
         margin-right: 0 !important;
@@ -25,7 +25,7 @@
 
 @media only screen and (min-width: 1536px) {
     .\32 xl\:-nx-mx-24 {
-      margin-left: 0 !important;
-      margin-right: 0 !important;
+        margin-left: 0 !important;
+        margin-right: 0 !important;
     }
-  }
+}
