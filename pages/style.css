@@ -1,11 +1,6 @@
 /* Default responsive container */
 .responsive-container {
-    position: relative;
     padding-bottom: 56.25%; /* 16:9 aspect ratio */
-    height: 0;
-    overflow: hidden;
-    max-width: 100%;
-    margin: 0 auto;
   }
   
   .responsive-iframe {
@@ -15,43 +10,14 @@
     width: 100%;
     height: 100%;
   }
-  
-  /* Extra small devices (phones, 600px and down) */
-  @media only screen and (max-width: 600px) {
-    .responsive-container {
-      padding-bottom: 56.25%; /* Maintain aspect ratio */
+
+  @media (min-width: 768px) {
+    .md\:-nx-mx-8 {
+        margin-left: 0 !important;
+        margin-right: 0 !important;
     }
-  }
-  
-  /* Small devices (portrait tablets and large phones, 600px and up) */
-  @media only screen and (min-width: 600px) {
-    .responsive-container {
-      padding-bottom: 56.25%; /* Maintain aspect ratio */
-    }
-  }
-  
-  /* Medium devices (landscape tablets, 768px and up) */
-  @media only screen and (min-width: 768px) {
-    .responsive-container {
-      padding-bottom: 56.25%; /* Maintain aspect ratio */
-    }
-  }
-  
-  /* Large devices (laptops/desktops, 992px and up) */
-  @media only screen and (min-width: 992px) {
-    .responsive-container {
-      padding-bottom: 56.25%; /* Maintain aspect ratio */
-    }
-  }
-  
-  /* Extra large devices (large laptops and desktops, 1200px and up) */
-  @media only screen and (min-width: 1200px) {
-    .responsive-container {
-      padding-bottom: 56.25%; /* Maintain aspect ratio */
-    }
-  }
-  
-/* Extra extra large devices (large desktops, 1536px and up) */
+}
+
 @media only screen and (min-width: 1536px) {
     .\32 xl\:-nx-mx-24 {
       margin-left: 0 !important;
