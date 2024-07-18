@@ -11,6 +11,14 @@
     "title": "🧠 Concepts"
   },
   "concept": "Fundamentals",
+
+  "-- connections": {
+    "type": "separator",
+    "title": "🤝 Connections"
+  },
+
+  "providers": "Providers",
+
   "-- ideas": {
     "type": "separator",
     "title": "💡 Ideas"
