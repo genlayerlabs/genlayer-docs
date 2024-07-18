@@ -17,7 +17,8 @@
     "title": "🤝 Connections"
   },
 
-  "partners": "Partners",
+  "providers": "Providers",
+   "partners": "Partners",
 
   "-- ideas": {
     "type": "separator",
