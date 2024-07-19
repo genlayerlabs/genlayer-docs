@@ -18,6 +18,7 @@
   },
 
   "providers": "Providers",
+   "partners": "Partners",
 
   "-- ideas": {
     "type": "separator",
