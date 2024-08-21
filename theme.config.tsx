@@ -34,12 +34,22 @@ const config: DocsThemeConfig = {
     const { asPath } = useRouter();
     const isHomePage = asPath === '/';
     return {
-      titleTemplate: isHomePage ? '%s | GenLayer Documentation' : '%s | Detailed GenLayer Documentation',
+      titleTemplate: isHomePage ? 'GenLayer the intelligence layer of the internet - Documentation' : '%s | GenLayer Documentation',
       openGraph: {
         type: 'website',
         locale: 'en_IE',
         url: 'https://docs.genlayer.com/' + asPath,
         site_name: 'GenLayer Documentation',
+        title: 'GenLayer the intelligence layer of the internet - Documentation',
+        description: 'GenLayer the intelligence layer of the internet - Documentation.',
+        images: [
+          {
+            url: './components/icon.js',
+            width: 150,
+            height: 55,
+            alt: 'GenLayer Logo'
+          }
+        ],
       },
       additionalLinkTags: [
         { rel: 'icon', href: './components/icon' },
@@ -59,7 +69,7 @@ const config: DocsThemeConfig = {
           content: './components/icon'
         }
       ]
-    }
+    };
   }
 };
 
