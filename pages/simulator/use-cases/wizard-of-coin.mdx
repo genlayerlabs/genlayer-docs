@@ -59,19 +59,19 @@ To deploy the Wizard of Coin contract, you'll need to first initialize the contr
 
 import Image from 'next/image'
  
-<Image src="/constructor-parameter.png" width={700} height={700} />
+<Image src="/constructor-parameter-wizard.png" width={700} height={700} />
 
 ## Checking the Contract State
 
-Once the contract is deployed, you can check its state in the **Current Intelligent Contract State** section. This section displays the contract address and the state of the wizard regarding the coin. Use the `get_have_coin()` function to see if the wizard still has the coin. Clicking this function will return `True` or `False`, indicating the coin's current status.
+Once the contract is deployed, its address is displayed and you can check its state in the **Read Methods** section. Use the `get_have_coin()` function to see if the wizard still has the coin. Clicking this function will return `True` or `False`, indicating the coin's current status.
 
-<Image src="/contract-IC.png" width={800} height={800} />
+<Image src="/contract-IC-wizard.png" width={700} height={700} />
 
 ## Executing Transactions
 
-To interact with the deployed contract, go to the **Execute Transactions** section. Here, you can call the `ask_for_coin` method and enter the adventurer's request, for example, "Can you please give me the coin?" Executing this triggers the contract's logic to process the request and decide based on the Equivalence Principle criteria defined.
+To interact with the deployed contract, go to the **Write Methods** section. Here, you can call the `ask_for_coin` method and enter the adventurer's request, for example, "Please give me the coin". Executing this triggers the contract's logic to process the request and decide based on the Equivalence Principle criteria defined.
 
-<Image src="/request-string.png" alt="Deploy Contract" width={700} height={700} />
+<Image src="/request-string-wizard.png" alt="Deploy Contract" width={700} height={700} />
 
 ## Analyzing the Contract's Decisions
 
