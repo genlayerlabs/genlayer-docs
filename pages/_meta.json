@@ -1,39 +1,12 @@
 {
-  "index": "🤖 Welcome to GenLayer Docs",
+  "index": "Welcome to GenLayer",
   "overview": "Overview",
-  "-- simulator": {
-    "type": "separator",
-    "title": "🕹️ Simulator"
-  },
-  "simulator": "Get Started",
-  "-- Concept": {
-    "type": "separator",
-    "title": "🧠 Concepts"
-  },
+  "simulator": "Simulator",
+  "command-line-options": "GenLayer CLI",
   "concept": "Fundamentals",
-
-  "-- connections": {
-    "type": "separator",
-    "title": "🤝 Connections"
-  },
-
-  "providers": "Providers",
-   "partners": "Partners",
-
-  "-- ideas": {
-    "type": "separator",
-    "title": "💡 Ideas"
-  },
-
   "ideas": "Build with GenLayer",
-  "command-line-options": {
-    "display": "hidden"
-  },
-  "-- glossary": {
-    "type": "separator",
-    "title": "📖 Glossary"
-  },
-  "glossary": "Terminology",
+  "partners": "Partners",
+  "glossary": "Glossary",
   "blog": {
     "title": "Blog 📚",
     "type": "page",
