@@ -1,0 +1,31 @@
+# Current Intelligent Contract State
+
+Once your Intelligent Contract is deployed, you can check its current state to verify that it has been initialized correctly. This step ensures that the contract's data and variables are set as expected.
+
+## Viewing the Current Intelligent Contract State
+
+After deploying your contract, you will now see:
+
+- **Contract Address:** This is used for interacting with your contract.
+- **Read Methods:** These return information on the current state of the contract.
+
+import Image from 'next/image'
+
+<Image src="/contract-IC.png" width={700} height={700} />
+
+import { Callout } from 'nextra-theme-docs'
+
+<Callout emoji="ℹ️">
+  Getter function names must start with `get_`. If you do not include a getter function in your code, it will not appear in this section.
+</Callout>
+
+For example, in the **Storage** contract:
+- If the constructor parameter `initial_storage` was set to `hello`, the state method `get_storage` will return `hello`.
+
+The result will show the current state based on the getter function called. This allows you to verify that the variables in your contract have been initialized correctly and that they change when transactions are executed.
+
+<Callout>
+  When the contract state changes, you can always come back and refresh the state by calling these getter functions to see the most current state of your Intelligent Contract.
+</Callout>
+
+With the state verified, you can now execute transactions and interact with your deployed contract.
