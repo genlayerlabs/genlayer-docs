@@ -1,3 +1,5 @@
+import { Callout } from 'nextra-theme-docs'
+
 # Optimistic Democracy
 
 Optimistic Democracy is the consensus method used by GenLayer to validate transactions and operations of Intelligent Contracts. This approach is especially good at handling unpredictable outcomes from transactions involving web data or AI models, which is important for keeping the network reliable and secure.
@@ -16,8 +18,6 @@ Optimistic Democracy relies on a mix of trust and verification to ensure transac
 1. **Initial Validation:** When a transaction is submitted, a small group of randomly selected validators checks its validity. One is chosen as the leader. The leader executes the transaction, and the other validators assess the leader's proposal using the Equivalence Principle.
 
 2. **Majority Consensus:** If most validators accept the leader's proposal, the transaction is provisionally accepted. However, this decision is not final yet, allowing for possible appeals during a limited window of time, known as the **Finality Window**.
-
-import { Callout } from 'nextra-theme-docs'
 
 <Callout>
   If any validator fails to vote within the specified timeframe, they are replaced, and a new validator is selected to cast a vote.
