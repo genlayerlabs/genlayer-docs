@@ -14,7 +14,7 @@ Sending value refers to transferring the native GEN token from one account to an
 Calling a contract function is the process of invoking a specific method within an existing Intelligent Contract. This could involve anything from querying data stored within the contract to executing more complex operations like transferring tokens or interacting with other contracts. Each function call is a transaction that modifies the contract’s state based on the inputs provided.
 
 ## Transaction Processing
-In GenLayer, transactions are processed through a carefully managed queue system that ensures fairness and orderliness. Here’s how transactions transition through different statuses:
+In GenLayer, transactions are processed through an account-based queue system that ensures orderliness. Here’s how transactions transition through different statuses:
 
 #### 1. Pending
 When a transaction is first submitted, it enters the pending state. This means it has been received by the network but is waiting to be processed. Transactions are queued per account, ensuring that each account's transactions are processed in the order they were submitted.
@@ -41,4 +41,11 @@ If the transaction fails to reach consensus after all voting rounds, it enters t
 A transaction can be canceled by the user or by the system if it fails to meet certain criteria (e.g., insufficient funds). Once canceled, the transaction is removed from the processing queue and will not be executed.
 
 ## Transaction encoding, serialization, and signing
-In GenLayer, all three types of transactions needs to be properly encoded, serialized, and signed on the client-side. This process ensures that the transaction data is packaged into a relieable cross-platform efficient format, and securely signed using the sender's private key to verify the sender's identity. Once prepared, the transaction is sent to the network via the send_raw_transaction method on the RPC Server. This method performs the inverse process: it decodes and deserializes the transaction data, and then verifies the signature to ensure its authenticity. By handling all transaction types through send_raw_transaction, GenLayer ensures that transactions are processed securely and efficiently while maintaining compatibility with Ethereum’s specification.
+In GenLayer, all three types of transactions needs to be properly encoded, serialized, and signed on the client-side. This process ensures that the transaction data is packaged into a relieable cross-platform efficient format, and securely signed using the sender's private key to verify the sender's identity. 
+
+Once prepared, the transaction is sent to the network via the `send_raw_transaction` method on the RPC Server. This method performs the inverse process: it decodes and deserializes the transaction data, and then verifies the signature to ensure its authenticity. By handling all transaction types through `send_raw_transaction`, GenLayer ensures that transactions are processed securely and efficiently while maintaining compatibility with Ethereum’s specification.
+
+## Transaction execution
+Once a transaction is received and properly verified by the `send_raw_transaction` method on the RPC server, it is stored with a PENDING status and its hash is returned as the RPC method response. This means that the transaction has been validated for authenticity and format, but it has not yet been executed. From this point, the transaction enters the GenLayer consensus mechanism, where it is picked up for execution by the network's validators according to the consensus rules.
+
+As the transaction progresses through various stages—such as proposing, committing, and revealing—its status is updated accordingly. Throughout this process, the current status and output of the transaction can be queried by the user. This is done by calling the `get_transaction_by_hash` method on the RPC server, which retrieves the transaction’s details based on its unique hash. This method allows users to track the transaction’s journey from submission to finalization, providing transparency and ensuring that they can monitor the outcome of their transactions in real-time.
