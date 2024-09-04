@@ -6,6 +6,6 @@
   "use-cases": "Examples",
   "limitations": "",
   "development-tips": "Development tips",
-  "run-github-ngrok": "",
+  "run-github-ngrok": "Running GenLayer Simulator on GitHub Actions and exposing it via Ngrok",
   "troubleshooting": ""
 }
