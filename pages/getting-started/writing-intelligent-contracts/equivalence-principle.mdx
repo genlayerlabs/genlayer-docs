@@ -1,3 +1,5 @@
+import { Callout } from 'nextra-theme-docs'
+
 # Managing Intelligent Contract Operations with the Equivalence Principle
 
 The Equivalence Principle is a core concept in GenLayer's Intelligent Contract framework. It ensures consistency and reliability when handling non-deterministic outputs, such as responses from Large Language Models (LLMs) or web data retrieval, by establishing a standard for validators to agree on the correctness of these outputs.
@@ -144,7 +146,6 @@ Respond using ONLY the following format:
                 prompt,
                 eq_principle="The result['give_coin'] has to be exactly the same",
                 comparative=False
-
             )
 
 ```
@@ -154,7 +155,32 @@ The `call_llm_with_principle` function sends this prompt to an LLM. Then, the Eq
 
 ### Using `get_webpage_with_principle`
 
-The `get_webpage_with_principle` is an abstraction from the `EquivalencePrinciple` function, used to retrieve data from webpages. For this function, only the **Comparative** Equivalence principle option is used. Validators will perform similar tasks and compare their results with the leader's result to ensure that the data fetched from the web source meets the condition defined in the Equivalence Principle.
+The `get_webpage_with_principle` is an abstraction from the `EquivalencePrinciple` function, used to retrieve data from webpages. Validators will perform similar tasks and compare their results with the leader's result to ensure that the data fetched from the web source meets the condition defined in the Equivalence Principle.
+
+#### Format of the webpage data
+You can get the webpage data as text or as HTML by specifying the format parameter `format="text"` or `format="html"` as follows:
+
+##### Example 1: Getting the webpage data as text
+```python copy
+weather_data = await get_webpage_with_principle(
+    self.weather_url,
+    eq_principle="The data must be up-to-date and accurately reflect current weather conditions",        
+    format="text",
+)
+```
+
+##### Example 2: Getting the webpage data as HTML
+```python copy
+weather_data = await get_webpage_with_principle(
+    self.weather_url,
+    eq_principle="The data must be up-to-date and accurately reflect current weather conditions",        
+    format="html",
+)
+```
+
+<Callout type="info">
+    Note that the get_webpage_with_principle doesn't require the comparative option. All the validators will request the same data from the web source.
+</Callout>
 
 #### Ideal Scenarios
 - Retrieving real-time or frequently updated data from web sources, such as stock prices, weather conditions, or news updates.
@@ -177,8 +203,6 @@ class WeatherContract(IContract):
         weather_data = await get_webpage_with_principle(
             self.weather_url,
             eq_principle="The data must be up-to-date and accurately reflect current weather conditions",        
-            comparative=True
-
         )
 ```
 
