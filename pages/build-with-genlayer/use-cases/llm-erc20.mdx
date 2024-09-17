@@ -1,3 +1,6 @@
+import Image from 'next/image'
+import { Callout } from 'nextra-theme-docs'
+
 # ERC-20 Token Contract Documentation
 The ERC-20 Token Contract sets up a scenario to manage token transactions between users, ensuring that each transaction is valid and updating balances accordingly. The contract uses the Equivalence Principle to maintain consistency and accuracy.
 
@@ -76,8 +79,6 @@ output must be only the JSON object"""
   - `get_balances()`: Returns the balances of all users.
   - `get_balance_of(address)`: Returns the balance of a specific user given their address.
 
-import { Callout } from 'nextra-theme-docs'
-
 <Callout emoji="👾">
   You can view this code on our [GitHub](https://github.com/yeagerai/genlayer-simulator/blob/main/examples/contracts/llm_erc20.py).
 </Callout>
@@ -89,7 +90,7 @@ To deploy the ERC-20 Token contract, you need to initialize the contract state c
 1. **Set Total Supply**: Provide the total supply of tokens. The `total_supply` constructor parameter is detected from the code. For example, you might set `total_supply` to 1000.
 2. **Deploy the Contract**: Once the total supply is set, deploy the contract to make it ready to interact and process token transactions.
 
-import Image from 'next/image'
+
 
 <Image src="/erc-token-deploy.png" width={700} height={700} />
 

@@ -1,39 +1,14 @@
 {
-  "index": "🤖 Welcome to GenLayer Docs",
+  "index": "Welcome to GenLayer",
   "overview": "Overview",
-  "-- simulator": {
-    "type": "separator",
-    "title": "🕹️ Simulator"
-  },
-  "simulator": "Get Started",
-  "-- Concept": {
-    "type": "separator",
-    "title": "🧠 Concepts"
-  },
-  "concept": "Fundamentals",
-
-  "-- connections": {
-    "type": "separator",
-    "title": "🤝 Connections"
-  },
-
-  "providers": "Providers",
-   "partners": "Partners",
-
-  "-- ideas": {
-    "type": "separator",
-    "title": "💡 Ideas"
-  },
-
-  "ideas": "Build with GenLayer",
-  "command-line-options": {
-    "display": "hidden"
-  },
-  "-- glossary": {
-    "type": "separator",
-    "title": "📖 Glossary"
-  },
-  "glossary": "Terminology",
+  "getting-started": "Getting started",
+  "build-with-genlayer": "Build with GenLayer",
+  "core-concepts": "Core concepts",
+  "advanced-features": "Advanced features",
+  "secutiry-and-best-practices": "Security and Best Practices",
+  "partners": "Partners",
+  "glossary": "Glossary",
+  "references": "References",
   "blog": {
     "title": "Blog 📚",
     "type": "page",
