@@ -1,10 +1,12 @@
+import Image from 'next/image'
+
 # Accessing and Configuring Validators
 
-In the GenLayer Simulator, validators are essential for achieving consensus and validating transactions through a process known as [Optimistic Democracy](/concept/optimistic-democracy). When you initialize the simulator based on your selected LLM provider(s), you are provided with 5 default validators.
+In the GenLayer Simulator, validators are essential for achieving consensus and validating transactions through a process known as [Optimistic Democracy](/core-concepts/optimistic-democracy). When you initialize the simulator based on your selected LLM provider(s), you are provided with 5 default validators.
 
 1. **Leaders:** Within this consensus model, one validator is selected as the leader for each transaction. The leader's role is to propose how a transaction should be executed based on the transaction data and the Intelligent Contract's logic.
 
-2. **Validators:** After the leader proposes a transaction execution, other validators are responsible for reviewing and validating the proposal. They use the [Equivalence Principle](/concept/optimistic-democracy/equivalence-principle) to determine if the leader’s proposal meets the required standards.
+2. **Validators:** After the leader proposes a transaction execution, other validators are responsible for reviewing and validating the proposal. They use the [Equivalence Principle](/core-concepts/optimistic-democracy/equivalence-principle) to determine if the leader’s proposal meets the required standards.
 
 These validators can be modified to suit your Intelligent Contract's requirements.
 
@@ -16,9 +18,7 @@ To access and manage validators, follow these steps:
 
 2. In the settings page, you will see the **Validators** section. This section lists all the validators currently configured in the simulator along with their models and providers.
 
-import Image from 'next/image'
-
-   <Image src="/validators-config.png" width={700} height={700} />
+<Image src="/validators-config.png" width={700} height={700} />
 
 ## Configuring Validators
 
