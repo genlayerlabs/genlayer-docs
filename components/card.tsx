@@ -8,6 +8,7 @@ interface CustomCardProps {
   description?: string;
   href: string;
   num?: number;
+  target?: string;
 }
 
 const classes = {
@@ -27,7 +28,7 @@ const arrowEl = (
   <span className="nx-transition-transform nx-duration-75 group-hover:nx-translate-x-[2px]">→</span>
 );
 
-const CustomCard: React.FC<CustomCardProps> = ({ arrow, title, description, href, num = 3 }) => {
+const CustomCard: React.FC<CustomCardProps> = ({ arrow, title, description, href, num = 3, target = "" }) => {
   const animatedArrow = arrow ? arrowEl : null;
 
   const gridColsClass = `grid grid-cols-${num} gap-4`;
@@ -36,6 +37,7 @@ const CustomCard: React.FC<CustomCardProps> = ({ arrow, title, description, href
     <div className={gridColsClass}>
       <NextLink
         href={href}
+        target={target}
         className={cn(
           classes.card,
           "nx-bg-transparent nx-shadow-sm dark:nx-border-neutral-800 hover:nx-bg-slate-50 hover:nx-shadow-md dark:hover:nx-border-neutral-700 dark:hover:nx-bg-neutral-900"

@@ -1,337 +1,251 @@
-# JSON-RPC API
+# JSON-RPC API Documentation
 
-**Local Development Server**: Accessible at `http://127.0.0.1:4000/api`, this server allows for local testing and development.
+This document describes the JSON-RPC methods available in the simulator.
 
-## Methods
-The GenLayer JSON-RPC uses a single endpoint (`/api`). Multiple operations are performed through this endpoint by specifying different "method" values within the request body.
+## Simulator Methods
 
-### `create_db`
+### sim_clearDbTables
 
-**Description**: Initializes the database.
+Clears specified database tables.
 
-**Parameters**: None
+**Parameters:**
+- `tables`: An array of table names to clear.
 
-**Example Request**:
-```json
-{
-  "jsonrpc": "2.0",
-  "method": "create_db",
-  "params": [],
-  "id": 1
-}
-```
+**Returns:** None
+<br />
+<hr />
+### sim_fundAccount
 
-**Example Response**:
-```json
-{
-  "jsonrpc": "2.0",
-  "id": 1,
-  "result": {
-    "data": "Database created successfully"
-  }
-}
-```
+Funds an account with a specified amount.
 
-### `create_tables`
+**Parameters:**
+- `account_address`: The address of the account to fund.
+- `amount`: The amount to fund the account with.
 
-**Description**: Creates necessary tables in the database.
+**Returns:** Transaction hash (string)
+<br />
+<hr />
+### sim_getProvidersAndModels
 
-**Parameters**: None
+Retrieves all providers and models.
 
-**Example Request**:
-```json
-{
-  "jsonrpc": "2.0",
-  "method": "create_tables",
-  "params": [],
-  "id": 2
-}
-```
+**Parameters:** None
 
-**Example Response**:
-```json
-{
-  "jsonrpc": "2.0",
-  "id": 2,
-  "result": {
-    "data": "Tables created successfully"
-  }
-}
-```
+**Returns:** An array of provider and model objects.
+<br />
+<hr />
+### sim_resetDefaultsLlmProviders
 
-### `create_account`
+Resets LLM providers to default settings.
 
-**Description**: Registers a new account.
+**Parameters:** None
 
-**Parameters**: None
+**Returns:** None
+<br />
+<hr />
+### sim_addProvider
 
-**Example Request**:
-```json
-{
-  "jsonrpc": "2.0",
-  "method": "create_account",
-  "params": [],
-  "id": 3
-}
-```
+Adds a new LLM provider.
 
-**Example Response**:
-```json
-{
-  "jsonrpc": "2.0",
-  "id": 3,
-  "result": {
-    "account_id": "0x12345",
-    "message": "Account created successfully"
-  }
-}
-```
+**Parameters:**
+- `provider`: Provider name.
+- `model`: Model name.
+- `config`: Provider configuration.
+- `plugin`: Plugin name.
+- `plugin_config`: Plugin configuration.
 
-### `fund_account`
+**Returns:** Provider ID (integer)
+<br />
+<hr />
+### sim_updateProvider
 
-**Description**: Adds funds to a specified account.
+Updates an existing LLM provider.
 
-**Parameters**:
-- `address` (string): The account address to fund.
-- `amount` (integer): The amount to fund.
+**Parameters:**
+- `id`: Provider ID to update.
+- `provider`: Updated provider name.
+- `model`: Updated model name.
+- `config`: Updated provider configuration.
+- `plugin`: Updated plugin name.
+- `plugin_config`: Updated plugin configuration.
 
-**Example Request**:
-```json
-{
-  "jsonrpc": "2.0",
-  "method": "fund_account",
-  "params": ["0x12345", 100],
-  "id": 4
-}
-```
+**Returns:** None
+<br />
+<hr />
+### sim_deleteProvider
 
-**Example Response**:
-```json
-{
-  "jsonrpc": "2.0",
-  "id": 4,
-  "result": {
-    "balance": 200,
-    "message": "Account funded successfully"
-  }
-}
-```
+Deletes an LLM provider.
 
-### `send_transaction`
+**Parameters:**
+- `id`: Provider ID to delete.
 
-**Description**: Transfers currency between accounts.
+**Returns:** None
+<br />
+<hr />
+### sim_createValidator
 
-**Parameters**:
-- `from_account` (string): The account sending the currency.
-- `to_account` (string): The account receiving the currency.
-- `amount` (integer): The amount to transfer.
+Creates a new validator.
 
-**Example Request**:
-```json
-{
-  "jsonrpc": "2.0",
-  "method": "send_transaction",
-  "params": {
-    "from_account": "0xABC123",
-    "to_account": "0xDEF456",
-    "amount": 250
-  },
-  "id": 5
-}
-```
+**Parameters:**
+- `stake`: Validator's stake amount.
+- `provider`: LLM provider name.
+- `model`: LLM model name.
+- `config`: (Optional) Provider configuration.
+- `plugin`: (Optional) Plugin name.
+- `plugin_config`: (Optional) Plugin configuration.
 
-**Example Response**:
-```json
-{
-  "jsonrpc": "2.0",
-  "id": 5,
-  "result": {
-    "transaction_id": "0x789abc",
-    "message": "Transaction successful"
-  }
-}
-```
+**Returns:** Validator details (object)
+<br />
+<hr />
+### sim_createRandomValidator
 
-### `deploy_intelligent_contract`
+Creates a random validator.
 
-**Description**: Deploys a new contract.
+**Parameters:**
+- `stake`: Validator's stake amount.
 
-**Parameters**:
-- `from_account` (string): The account deploying the contract.
-- `contract_code` (string): The path to the contract code.
-- `initial_state` (string): The initial state of the contract.
-- `class_name` (string): The class name of the contract.
+**Returns:** Validator details (object)
+<br />
+<hr />
+### sim_createRandomValidators
 
-**Example Request**:
-```json
-{
-  "jsonrpc": "2.0",
-  "method": "deploy_intelligent_contract",
-  "params": ["0xABC123", "path/to/contract code", "{}", "MyContract"],
-  "id": 6
-}
-```
+Creates multiple random validators.
 
-**Example Response**:
-```json
-{
-  "jsonrpc": "2.0",
-  "id": 6,
-  "result": {
-    "contract_address": "0xDef456",
-    "message": "Contract deployed successfully"
-  }
-}
-```
+**Parameters:**
+- `count`: Number of validators to create.
+- `min_stake`: Minimum stake amount.
+- `max_stake`: Maximum stake amount.
+- `limit_providers`: (Optional) Array of allowed provider names.
+- `limit_models`: (Optional) Array of allowed model names.
 
-### `call_contract_function`
+**Returns:** Array of validator details (objects)
+<br />
+<hr />
+### sim_updateValidator
 
-**Description**: Executes a function on a deployed contract.
+Updates an existing validator.
 
-**Parameters**:
-- `from_account` (string): The account calling the function.
-- `contract_address` (string): The contract address.
-- `function` (string): The function to call.
-- `args` (array): The arguments for the function.
+**Parameters:**
+- `validator_address`: Address of the validator to update.
+- `stake`: Updated stake amount.
+- `provider`: Updated LLM provider name.
+- `model`: Updated LLM model name.
+- `config`: (Optional) Updated provider configuration.
+- `plugin`: (Optional) Updated plugin name.
+- `plugin_config`: (Optional) Updated plugin configuration.
 
-**Example Request**:
-```json
-{
-  "jsonrpc": "2.0",
-  "method": "call_contract_function",
-  "params": ["0xABC123", "0xDEF456", "increaseCount", ["10"]],
-  "id": 7
-}
-```
+**Returns:** Updated validator details (object)
+<br />
+<hr />
+### sim_deleteValidator
 
-**Example Response**:
-```json
-{
-  "jsonrpc": "2.0",
-  "id": 7,
-  "result": {
-    "output": "Function output here",
-    "message": "Function called successfully"
-  }
-}
-```
+Deletes a validator.
 
-### `count_validators`
+**Parameters:**
+- `validator_address`: Address of the validator to delete.
 
-**Description**: Counts the number of active validators.
+**Returns:** Deleted validator address (string)
+<br />
+<hr />
+### sim_deleteAllValidators
 
-**Parameters**: None
+Deletes all validators.
 
-**Example Request**:
-```json
-{
-  "jsonrpc": "2.0",
-  "method": "count_validators",
-  "params": [],
-  "id": 8
-}
-```
+**Parameters:** None
 
-**Example Response**:
-```json
-{
-  "jsonrpc": "2.0",
-  "id": 8,
-  "result": {
-    "count": 10,
-    "message": "Validators counted successfully"
-  }
-}
-```
+**Returns:** Array of remaining validators (should be empty)
+<br />
+<hr />
+### sim_getAllValidators
 
-### `create_random_validators`
+Retrieves all validators.
 
-**Description**: Adds a specified number of validators with random stakes.
+**Parameters:** None
 
-**Parameters**:
-- `count` (integer): Number of validators to create.
-- `min_stake` (integer): Minimum stake for a validator.
-- `max_stake` (integer): Maximum stake for a validator.
+**Returns:** Array of validator details (objects)
+<br />
+<hr />
+### sim_getValidator
 
-**Example Request**:
-```json
-{
-  "jsonrpc": "2.0",
-  "method": "create_random_validators",
-  "params": [5, 100, 500],
-  "id": 9
-}
-```
+Retrieves a specific validator.
 
-**Example Response**:
-```json
-{
-  "jsonrpc": "2.0",
-  "id": 9,
-  "result": {
-    "validators": [
-      {"id": "validator1", "stake": 150},
-      {"id": "validator2", "stake": 200}
-    ],
-    "message": "Validators created successfully"
-  }
-}
-```
+**Parameters:**
+- `validator_address`: Address of the validator to retrieve.
 
-### `delete_all_validators`
+**Returns:** Validator details (object)
+<br />
+<hr />
+### sim_countValidators
 
-**Description**: Removes all validators.
+Counts the number of validators.
 
-**Parameters**: None
+**Parameters:** None
 
-**Example Request**:
-```json
-{
-  "jsonrpc": "2.0",
-  "method": "delete_all_validators",
-  "params": [],
-  "id": 10
-}
-```
+**Returns:** Number of validators (integer)
 
-**Example Response**:
-```json
-{
-  "jsonrpc": "2.0",
-  "id": 10,
-  "result": {
-    "message": "All validators deleted successfully"
-  }
-}
-```
+## GenLayer Specific Methods
 
-### `get_last_contracts`
+### gen_getContractSchema
 
-**Description**: Retrieves the most recent contracts deployed.
+Retrieves the schema for a deployed contract.
 
-**Parameters**:
-- `count` (integer): Number of contracts to retrieve.
+**Parameters:**
+- `contract_address`: Address of the deployed contract.
 
-**Example Request**:
-```json
-{
-  "jsonrpc": "2.0",
-  "method": "get_last_contracts",
-  "params": [5],
-  "id": 11
-}
-```
+**Returns:** Contract schema (object)
+<br />
+<hr />
+### gen_getContractSchemaForCode
 
-**Example Response**:
-```json
-{
-  "jsonrpc": "2.0",
-  "id": 11,
-  "result": [
-    {"contract_address": "0xContractAddress1", "deploy_time": "2021-07-20T15:04:05Z"},
-    {"contract_address": "0xContractAddress2", "deploy_time": "2021-07-19T12:00:00Z"}
-  ],
-  "message": "Last contracts retrieved successfully"
-}
-```
+Retrieves the schema for given contract code.
 
+**Parameters:**
+- `contract_code`: The contract code to analyze.
+
+**Returns:** Contract schema (object)
+
+## Ethereum-compatible Methods
+
+### eth_getBalance
+
+Retrieves the balance of an account.
+
+**Parameters:**
+- `account_address`: The address of the account.
+- `block_tag`: (Optional) The block number or tag (default: "latest").
+
+**Returns:** Account balance (integer)
+<br />
+<hr />
+### eth_getTransactionByHash
+
+Retrieves transaction details by hash.
+
+**Parameters:**
+- `transaction_hash`: The hash of the transaction.
+
+**Returns:** Transaction details (object)
+<br />
+<hr />
+### eth_call
+
+Executes a new message call without creating a transaction.
+
+**Parameters:**
+- `params`: An object containing:
+  - `to`: The address of the contract to call.
+  - `from`: (Optional) The address the call is made from.
+  - `data`: The call data.
+- `block_tag`: (Optional) The block number or tag (default: "latest").
+
+**Returns:** The return value of the executed contract method
+<br />
+<hr />
+### eth_sendRawTransaction
+
+Sends a signed transaction.
+
+**Parameters:**
+- `signed_transaction`: The signed transaction data.
+
+**Returns:** Transaction hash (string)
