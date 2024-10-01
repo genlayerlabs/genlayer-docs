@@ -1,3 +1,5 @@
 {
-  "vector-store": ""
+  "vector-store": "Vector Store",
+  "custom-plugins": "Adding LLM Providers Plugins",
+  "customizing-llm-providers": "Customizing LLM Providers"
 }

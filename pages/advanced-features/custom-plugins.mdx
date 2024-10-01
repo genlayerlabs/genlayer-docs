@@ -1,0 +1,46 @@
+# Adding LLM Providers Plugins
+
+> **Note:** This section is intended for advanced users who want to integrate new LLM provider plugins.
+
+The GenLayer Simulator interacts with multiple LLM providers.
+We currently support the following providers out of the box:
+
+- [OpenAI](https://platform.openai.com/)
+- [Anthropic](https://www.anthropic.com/)
+- [Ollama](https://ollama.com/)
+- [Heuristai](https://heurist.ai/)
+
+In addition to these providers, you can also add your own custom providers.
+
+## Adding a new LLM Provider Plugin
+
+To add a new LLM provider plugin, you need to implement the `Plugin` protocol from [here](https://github.com/yeagerai/genlayer-simulator/blob/main/backend/node/genvm/llms.py).
+
+```python
+class Plugin(Protocol):
+    def __init__(self, plugin_config: dict): ...
+
+    async def call(
+        self,
+        node_config: dict,
+        prompt: str,
+        regex: Optional[str],
+        return_streaming_channel: Optional[asyncio.Queue],
+    ) -> str: ...
+
+    def is_available(self) -> bool: ...
+
+    def is_model_available(self, model: str) -> bool: ...
+```
+
+And register it in the `llms.py` file under the `get_llm_provider` function.
+
+## Updating the JSON Schema
+
+You also need to update the [JSON schema](https://json-schema.org/) in the [`providers_schema.json`](https://github.com/yeagerai/genlayer-simulator/blob/main/backend/node/create_nodes/providers_schema.json) file to include your new provider and its configuration options.
+
+The schema is used to validate the configuration options for each provider.
+
+## Creating a new Validator with the new Provider
+
+Refer to [this section](/advanced-features/customizing-llm-providers) for more details.
