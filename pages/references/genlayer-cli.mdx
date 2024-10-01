@@ -7,7 +7,7 @@ Each command includes syntax, usage information, and examples to help you effect
 General syntax for using the GenLayer CLI:
 
 ```bash
-genlayer [global options] command [command options] [arguments...]
+genlayer command [command options] [arguments...]
 ```
 
 ## Commands and usage
@@ -18,10 +18,15 @@ Prepares and verifies your environment to run the GenLayer simulator.
 
 ```bash
 USAGE:
-   genlayer init
+   genlayer init [options]
+
+OPTIONS:
+   --numValidators <numValidators>  Number of validators (default: "5")
+   --branch <branch>                Branch to use (default: "main")
 
 EXAMPLES:
    genlayer init
+   genlayer init --numValidators 10 --branch develop
 ```
 
 ### Start GenLayer environment
@@ -30,82 +35,15 @@ Launches the GenLayer environment and the simulator, initializing a fresh set of
 
 ```bash
 USAGE:
-   genlayer up [--no-restart <sessionId>]
+   genlayer up [options]
+
+OPTIONS:
+   --reset-validators               Remove all current validators and create new random ones (default: false)
+   --numValidators <numValidators>  Number of validators (default: "5")
+   --branch <branch>                Branch to use (default: "main")
 
 EXAMPLES:
    genlayer up
-   genlayer up --no-restart session123
-```
-{/* 
-### Fund account
-
-Adds tokens to an account identified by the given address.
-
-```bash
-USAGE:
-   genlayer fund-account --to <address> [--from <address>] --amount <amount>
-
-EXAMPLES:
-   genlayer fund-account --to 0xABC123 --from 0xDEF456 --amount 1000
+   genlayer up --reset-validators --numValidators 8 --branch feature-branch
 ```
 
-### Send transaction
-
-Transfers tokens from one account to another.
-
-```bash
-USAGE:
-   genlayer send --to <address> [--from <address>]
-
-EXAMPLES:
-   genlayer send --to 0x789 --from 0x456
-```
-
-### Deploy contract
-
-Deploys an Intelligent Contract from a specified file.
-
-```bash
-USAGE:
-   genlayer deploy-contract <path-to-file> [--from-account <address>]
-
-EXAMPLES:
-   genlayer deploy-contract path/to/contract.py --from-account 0xABC123
-```
-
-### Call contract function
-
-Invokes a function of a deployed Intelligent Contract.
-
-```bash
-USAGE:
-   genlayer contract --address <contract-address> --function <function-name> [--args [arg1, arg2, ...]] [--from <address>]
-
-EXAMPLES:
-   genlayer contract --address 0xDEF456 --function "increaseCount" --args [10] --from 0xABC123
-```
-
-### Get validators count
-
-Retrieves the number of validators currently active in the GenLayer environment.
-
-```bash
-USAGE:
-   genlayer validators
-
-EXAMPLES:
-   genlayer validators
-```
-
-### Get account balance
-
-Displays the balance of a specified account.
-
-```bash
-USAGE:
-   genlayer account --address <address>
-
-EXAMPLES:
-   genlayer account --address 0x789
-```
- */}

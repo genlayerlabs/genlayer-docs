@@ -1,0 +1,296 @@
+import CustomCard from '../components/card'
+
+# Getting Started with GenLayer
+
+Welcome to the GenLayer getting started guide. This guide will help you set up the GenLayer environment, write your first Intelligent Contract, deploy it, and interact with it using the GenLayer Simulator. You'll also learn how to use the [genlayer-project-boilerplate](https://github.com/yeagerai/genlayer-project-boilerplate/) to write end-to-end tests and build a frontend dApp with GenLayerJS.
+
+## Table of Contents
+1. [Installation of the GenLayer CLI](#installation-of-the-genlayer-cli)
+2. [Launching the GenLayer Simulator](#launching-the-genlayer-simulator)
+3. [Writing Intelligent Contracts](#writing-intelligent-contracts)
+4. [Deploying and Interacting with Intelligent Contracts](#deploying-and-interacting-with-intelligent-contracts)
+5. [Writing End-to-End Tests with genlayer-project-boilerplate](#writing-end-to-end-tests-with-genlayer-project-boilerplate)
+6. [Building a Frontend dApp with GenLayerJS](#building-a-frontend-dapp-with-genlayerjs)
+
+## Installation of the GenLayer CLI
+
+The GenLayer CLI is used to set up the GenLayer Simulator and, in the future, mainnet and testnet environments.
+
+### Prerequisites
+Ensure you have the following installed and updated:
+<br/>
+<div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, minmax(0, 1fr))', gap: '1rem' }}>
+  <CustomCard
+    arrow
+    title="Docker version 26+"
+    description="Required to run the GenLayer environment"
+    href="https://docs.docker.com/get-docker/"
+    target="_blank"
+  />
+  <CustomCard
+    arrow
+    title="Node.js version 18+"
+    description="Needed for the GenLayer CLI tool"
+    href="https://nodejs.org/en/download/"
+    target="_blank"
+  />
+</div>
+
+### Installation Steps
+
+1. **Install GenLayer CLI**
+
+   Open your terminal and run:
+
+   ```bash
+   npm install -g genlayer
+   ```
+
+2. **Initialize GenLayer Environment**
+
+   Run the following command to set up your development environment:
+
+   ```bash
+   genlayer init
+   ```
+
+   During initialization, you'll be prompted to select your preferred LLM provider(s) and enter any required API keys.
+
+   Example:
+
+   ```bash
+   genlayer init
+   ```
+
+   **Optional Initialization Parameters**
+
+   You can customize the initialization with the following options:
+
+   - `--numValidators <number>`: Specify the number of validators (default is 5).
+   - `--branch <branch>`: Specify the branch of the GenLayer Simulator to use (default is "main").
+
+   Example:
+
+   ```bash
+   genlayer init --numValidators 3 --branch staging
+   ```
+
+## Launching the GenLayer Simulator
+
+After initializing the environment, you can start the simulator by running:
+
+```bash
+genlayer up
+```
+
+This command launches the GenLayer Simulator using your existing configuration.
+
+**Optional Parameters:**
+- `--reset-validators`: Removes all current validators and creates new ones.
+- `--numValidators <number>`: Specify the number of validators to start.
+- `--branch <branch>`: Specify the branch to start the GenLayer Simulator from.
+
+Example:
+
+```bash
+genlayer up --reset-validators --numValidators 3 --branch staging
+```
+
+Once the simulator is running, access it at http://localhost:8080/.
+
+## Writing Intelligent Contracts
+
+Intelligent Contracts in GenLayer are written in Python and extend the `IContract` base class. They can process natural language inputs and interact with web data.
+
+### Creating a Simple Intelligent Contract
+
+1. **Define Your Contract Class**
+```python
+  from genlayer import IContract
+
+  class SimpleContract(IContract):
+      def __init__(self, initial_value):
+          self.value = initial_value
+```
+
+2. **Add Contract Methods**
+
+Add methods to interact with the contract:
+```python
+  def get_value(self):
+      return self.value
+
+  def set_value(self, new_value):
+      self.value = new_value
+```
+
+3. **Using LLMs and the Equivalence Principle**
+
+If you need to process natural language or web data:
+```python
+  def process_input(self, user_input):
+      prompt = f"""
+      ...
+      User input: {user_input}
+      ...
+      """ 
+      result = await call_llm_with_principle(
+          prompt,
+          eq_principle="Example principle",
+      )
+```
+
+## Deploying and Interacting with Intelligent Contracts
+
+### Deploying the Contract
+
+1. **Load Your Contract**
+<br/>In the GenLayer Simulator, navigate to the Contracts section and upload your contract file.
+
+2. **Set Constructor Parameters**
+<br/>The simulator will automatically detect constructor parameters. Provide the required values.
+
+3. **Deploy the Contract**
+<br/>Navigate to the Run and Deploy section and click the "Deploy" button. Upon successful deployment, the contract address will be displayed.
+
+### Interacting with the Contract
+
+1. **Read Methods**
+<br/>View the current state of the contract using Read Methods. These are methods that return data without modifying the state.
+
+2. **Write Methods**
+<br/>Execute Write Methods to interact with your contract. Provide any required input parameters.
+
+3. **Transaction Logs**
+<br/>Monitor transactions and validator consensus via the Node Logs at the bottom of the simulator.
+
+## Writing End-to-End Tests with genlayer-project-boilerplate
+
+The [genlayer-project-boilerplate](https://github.com/yeagerai/genlayer-project-boilerplate/) provides a starting point for writing end-to-end (e2e) tests for your Intelligent Contracts.
+
+### Setting Up the Boilerplate
+
+1. **Clone the Repository**
+
+```bash
+  git clone https://github.com/yeagerai/genlayer-project-boilerplate.git
+```
+
+2. **Install Dependencies**
+<br/>Navigate to the project directory and install the required packages:
+
+```bash
+  cd genlayer-project-boilerplate
+  npm install
+```
+
+3. **Configure Environment**
+<br/>Ensure the GenLayer Simulator is running. Update the configuration files if necessary.
+
+### Writing E2E Tests
+
+1. **Create Test Files**
+<br/>In the `test` directory, create test files using your pytest as a testing framework.
+
+2. **Example Test**
+   
+```python
+  import pytest
+  from genlayer import GenLayer, Account
+
+  def test_simple_contract():
+      # Account
+      account_1 = create_new_account()
+      # Validators
+      result = post_request_localhost(
+          payload("sim_createRandomValidators", 5, 8, 12, ["openai"], ["gpt-4o"])
+      ).json()
+
+      # Deploy contract
+      contract_code = open("contracts/my_contract.py", "r").read()
+      contract_address, transaction_response_deploy = deploy_intelligent_contract(
+        account_1,
+        contract_code,
+        "{value = 10}",
+      )
+      
+      # Test initial state
+      initial_value = call_contract_method(
+        contract_address, account_1, "get_value", []
+      )
+      assert initial_value == 10
+      
+      # Test state change
+      send_transaction_response = send_transaction(
+        account_1,
+        contract_address,
+        "set_value",
+        ["20"],
+      )
+      
+      # Test updated state
+      updated_value = call_contract_method(
+        contract_address, account_1, "get_value", []
+      )
+      assert updated_value == 20
+   ```
+
+**Note on Deployment**: For deployment, developers should currently use the GenLayer Simulator UI. Deploying through the CLI is not yet supported.
+
+## Building a Frontend dApp with GenLayerJS
+
+You can build a frontend decentralized application (dApp) that interacts with your Intelligent Contract using GenLayerJS, a JavaScript SDK for GenLayer.
+
+### Installing GenLayerJS
+
+```bash
+  npm install genlayer-js
+```
+
+### Connecting to GenLayer
+
+```javascript
+  import { createClient } from 'genlayer-js';
+  const client = createClient(config);
+```
+
+### Interacting with Contracts
+
+1. **Read from a Contract**
+
+```javascript
+  const value = await client.readContract({
+      address: contractAddress,
+      functionName: "get_value",
+      args: [],
+  });
+```
+
+2. **Update Contract State**
+
+```javascript
+  const txHash = await client.writeContract({
+      address: contractAddress,
+      functionName: "set_value",
+      args: [newValue],
+  });
+  const receipt = await client.waitForTransactionReceipt({
+    hash: txHash,
+    status: "FINALIZED",
+  });
+```
+
+### Running the Frontend
+
+Ensure your frontend application is configured to connect to the GenLayer Simulator's RPC endpoint (http://localhost:4000/api).
+
+Start your frontend application:
+
+```bash
+  npm run dev
+```
+
+## Conclusion
+
+You've now set up the GenLayer environment, written and deployed an Intelligent Contract, and interacted with it through both the simulator and a frontend dApp using GenLayerJS. Explore further by customizing your contracts, writing more comprehensive tests, and enhancing your dApp's functionality.
+
