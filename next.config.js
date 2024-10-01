@@ -41,6 +41,51 @@ const nextConfig = withNextra({
         destination: "/core-concepts/intelligent-contracts",
         permanent: true,
       },
+      {
+        source: "/concept",
+        destination: "/core-concepts",
+        permanent: true,
+      },
+      {
+        source: "/concept/optimistic-democracy/slashing",
+        destination: "/core-concepts/optimistic-democracy/slashing",
+        permanent: true,
+      },
+      {
+        source: "/simulator/usage-and-interaction/execute-transaction",
+        destination: "/genlayer-stack/genlayer-simulator/execute-transaction",
+        permanent: true,
+      },
+      {
+        source: "/simulator/intelligent-contract-syntax/constructor",
+        destination: "/core-concepts/intelligent-contracts/constructor",
+        permanent: true,
+      },
+      {
+        source: "/simulator/intelligent-contract-syntax/contract-class",
+        destination: "/core-concepts/intelligent-contracts/contract-class",
+        permanent: true,
+      },
+      {
+        source: "/simulator/intelligent-contract-syntax",
+        destination: "/core-concepts/intelligent-contracts",
+        permanent: true,
+      },
+      {
+        source: "/concept/optimistic-democracy/staking",
+        destination: "/core-concepts/optimistic-democracy/staking",
+        permanent: true,
+      },
+      {
+        source: "/simulator/installation",
+        destination: "/getting-started",
+        permanent: true,
+      },
+      {
+        source: "/overview/risks-and-security/universal-attacks",
+        destination: "/security-and-best-practices/universal-attacks",
+        permanent: true,
+      },
     ];
   },
 });
