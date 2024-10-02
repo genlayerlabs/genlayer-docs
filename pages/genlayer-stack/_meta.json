@@ -1,7 +1,5 @@
 {
   "genlayer-cli": "GenLayer CLI",
   "genlayer-simulator": "GenLayer Simulator",
-  "genlayer-js": "GenLayerJS",
-  "genlayer-node": "GenLayer Node",
-  "marvin": "Marvin"
+  "genlayer-js": "GenLayerJS"
 }
