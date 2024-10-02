@@ -1,0 +1,23 @@
+# Validators and Validator Roles
+
+## Overview
+
+Validators are essential participants in the GenLayer network. They are responsible for validating transactions and maintaining the integrity and security of the blockchain. Validators play a crucial role in the Optimistic Democracy consensus mechanism, ensuring that both deterministic and non-deterministic transactions are processed correctly.
+
+## Key Responsibilities
+
+- **Transaction Validation**: Validators verify the correctness of transactions proposed by the leader, using mechanisms like the Equivalence Principle for non-deterministic operations.
+- **Leader Selection**: Validators participate in the process of randomly selecting a leader for each transaction, ensuring fairness and decentralization.
+- **Consensus Participation**: Validators cast votes on proposed transaction outcomes, contributing to the consensus process.
+- **Staking and Incentives**: Validators stake tokens to earn the right to validate transactions and receive rewards based on their participation and correctness.
+
+## Validator Selection and Roles
+
+- **Leader Validator**: For each transaction, a leader is randomly selected among the validators. The leader is responsible for executing the transaction and proposing the result to other validators.
+- **Consensus Validators**: Other validators assess the leader's proposed result and vote to accept or reject it based on predefined criteria.
+
+## Becoming a Validator
+
+- **Staking Requirement**: Participants must stake a certain amount of tokens to become validators.
+- **Validator Configuration**: Validators must configure their nodes with the appropriate LLM providers and models, depending on the network's requirements.
+- **Reputation and Slashing**: Validators must act honestly to avoid penalties such as slashing of their staked tokens.
