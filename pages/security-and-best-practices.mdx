@@ -1,9 +1,23 @@
-# Secutiry and best practices
 import { Card, Cards } from 'nextra-theme-docs'
 
-<Cards>
-  <Card title="Prompt Injection" href="/security-and-best-practices/prompt-injection" />
-  <Card title="Universal Attacks" href="/security-and-best-practices/universal-attacks"/>
-  <Card title="Grey Boxing" href="/security-and-best-practices/grey-boxing"/>
+# Security and Best Practices
+Security is fundamental to the GenLayer platform, encompassing aspects such as transaction validation, consensus mechanisms, validator behavior, and contract execution.
 
-</Cards>
+## Key Components
+
+- **Consensus Security**: The Optimistic Democracy mechanism ensures secure handling of both deterministic and non-deterministic transactions.
+- **Validator Behavior**: Validators are incentivized to act honestly through staking and are penalized for malicious behavior via slashing.
+- **Contract Security**: Intelligent Contracts must be carefully designed to prevent vulnerabilities such as prompt injection and unauthorized access.
+
+## Security Mechanisms
+
+- **Slashing and Penalties**: Malicious validators can lose their staked tokens if they attempt to manipulate transactions.
+- **Appeals Process**: Provides a way to correct incorrect transaction validations and resolve disputes.
+- **Equivalence Principle**: Ensures reliable consensus on non-deterministic outputs.
+
+## Best Practices
+
+- **Secure Coding**: Developers should follow best practices in writing contracts, including input validation and error handling.
+- **Validator Configuration**: Proper validator setup reduces the risk of misconfiguration and security breaches.
+- **Regular Audits**: Continuous review and auditing of contracts and network components enhance security.
+

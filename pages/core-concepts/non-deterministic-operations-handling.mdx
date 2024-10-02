@@ -1,0 +1,20 @@
+# Non-Deterministic Operations Handling
+
+## Overview
+
+GenLayer extends traditional smart contracts by allowing Intelligent Contracts to perform non-deterministic operations, such as interacting with Large Language Models (LLMs) and accessing web data. Handling the variability inherent in these operations is crucial for maintaining consensus across the network.
+
+## Challenges
+
+- **Variability of Outputs**: Non-deterministic operations can produce different outputs when executed by different validators.
+- **Consensus Difficulty**: Achieving consensus on varying outputs requires specialized mechanisms.
+
+## Solutions in GenLayer
+
+- **Equivalence Principle**: Validators assess whether different outputs are equivalent based on predefined criteria, allowing for consensus despite variability.
+- **Optimistic Democracy**: The consensus mechanism accommodates non-deterministic operations by allowing provisional acceptance of transactions and providing an appeals process.
+
+## Developer Considerations
+
+- **Defining Equivalence Criteria**: Developers must specify what constitutes equivalent outputs in their Intelligent Contracts.
+- **Testing and Validation**: Thorough testing is essential to ensure that non-deterministic operations behave as expected in the consensus process.
