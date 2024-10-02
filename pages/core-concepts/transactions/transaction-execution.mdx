@@ -1,0 +1,36 @@
+## Transaction execution
+Once a transaction is received and properly verified by the `eth_sendRawTransaction` method on the RPC server, it is stored with a PENDING status and its hash is returned as the RPC method response. This means that the transaction has been validated for authenticity and format, but it has not yet been executed. From this point, the transaction enters the GenLayer consensus mechanism, where it is picked up for execution by the network's validators according to the consensus rules.
+
+As the transaction progresses through various stages—such as proposing, committing, and revealing—its status is updated accordingly. Throughout this process, the current status and output of the transaction can be queried by the user. This is done by calling the `eth_getTransactionByHash` method on the RPC server, which retrieves the transaction’s details based on its unique hash. This method allows users to track the transaction’s journey from submission to finalization, providing transparency and ensuring that they can monitor the outcome of their transactions in real-time.
+
+### Transaction Status Transitions
+
+- **[*] → Pending**: New transaction submitted by EOA user or internally when processing messages from `proposeReceipt()`.
+
+- **[*] → OutOfFee**: Transaction submitted internally lacks sufficient GEN for fees.
+
+- **OutOfFee → Pending**: Transaction fee params topped up, satisfying fee restrictions.
+
+- **Pending → Proposing**: Transaction moved to proposing stage, leader and voters selected.
+
+- **Proposing → Committing**: Leader proposes transaction receipt, validators commit votes and prices.
+
+- **Committing → Revealing**: All validators committed, now revealing votes and price estimates.
+
+- **Revealing → Accepted**: Majority agrees with proposed receipt.
+
+- **Revealing → Rejected**: Consensus on transaction being malformed, failed, or too resource-intensive.
+
+- **Revealing → Proposing**: No majority, leader rotated, transaction returns to proposing.
+
+- **Revealing → Undetermined**: No consensus after all leader rotations.
+
+- **Accepted → Finalized**: Appeal window passes without appeals, transaction finalized.
+
+- **Accepted → Appealed**: Transaction appealed within appeal window.
+
+- **Appealed → Accepted/Rejected**: Appeals on subsequent transactions canceled, reverting to previous state.
+
+- **Appealed → Proposing**: Pre-voting shows disagreement, returns to proposing with new leader/voters.
+
+- **Undetermined → Proposing**: Appealed undetermined transaction returns to proposing, affecting subsequent transactions.
