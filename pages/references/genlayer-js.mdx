@@ -1,0 +1,139 @@
+# GenLayerJS SDK Reference
+
+This document describes the key components and methods available in the GenLayerJS SDK for interacting with the GenLayer network.
+
+## Client Creation
+
+### createClient
+
+Creates a new GenLayer client instance.
+```typescript
+import { createClient } from 'genlayer-js';
+const client = createClient({
+  network: simulator,
+  account: account, // Optional: Use this account for subsequent calls
+});
+```
+
+**Parameters:**
+- `network`: The network configuration (e.g., simulator)
+- `account`: (Optional) Sets an account to be used in subsequent calls
+
+**Returns:** A GenLayer client instance
+
+## Transaction Handling
+
+### getTransaction
+
+Retrieves transaction details by hash.
+
+```typescript
+const transaction = await client.getTransaction({ hash: transactionHash });
+```
+
+**Parameters:**
+- `hash`: The transaction hash
+
+**Returns:** Transaction details object
+<br/>
+<hr/>
+### waitForTransactionReceipt
+
+Waits for a transaction receipt.
+
+```typescript
+const receipt = await client.waitForTransactionReceipt({
+  hash: transactionHash,
+  status: 'FINALIZED', // or 'ACCEPTED'
+});
+```
+
+**Parameters:**
+- `hash`: The transaction hash
+- `status`: The desired transaction status ('FINALIZED' or 'ACCEPTED')
+
+**Returns:** Transaction receipt object
+
+## Contract Interaction
+
+### readContract
+
+Reads data from a deployed contract.
+```typescript
+const result = await client.readContract({
+  address: contractAddress,
+  functionName: 'get_complete_storage',
+  args: [],
+});
+```
+
+
+**Parameters:**
+- `address`: The contract address
+- `functionName`: The name of the function to call
+- `args`: An array of arguments for the function call
+
+**Returns:** The result of the contract function call
+<br/>
+<hr/>
+### writeContract
+
+Writes data to a deployed contract.
+```typescript
+const transactionHash = await client.writeContract({
+  address: contractAddress,
+  functionName: 'storeData',
+  args: ['new_data'],
+  value: 0, // Optional: amount of native token to send with the transaction
+});
+```
+
+
+**Parameters:**
+- `address`: The contract address
+- `functionName`: The name of the function to call
+- `args`: An array of arguments for the function call
+- `value`: (Optional) Amount of native token to send with the transaction
+
+**Returns:** The transaction hash
+
+## Account Management
+
+### generatePrivateKey
+
+Generates a new private key.
+```typescript
+import { generatePrivateKey } from 'genlayer-js';
+const privateKey = generatePrivateKey();
+```
+
+**Parameters:** None
+
+**Returns:** A new private key as string
+<br/>
+<hr/>
+### createAccount
+
+Creates a new account, optionally using a provided private key.
+```typescript
+import { createAccount } from 'genlayer-js';
+const account = createAccount();
+// Or with a specific private key:
+const accountWithKey = createAccount('0x1234...'); // Replace with actual private key
+```
+
+**Parameters:**
+- `accountPrivateKey`: (Optional) A string representing the private key
+
+**Returns:** A new account object
+
+## Chain Information
+
+### simulator
+
+Provides configuration for the GenLayer simulator network.
+```typescript
+import { simulator } from 'genlayer-js/chains';
+```
+**Usage:** Used when creating a client to specify the network
+
