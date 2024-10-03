@@ -1,29 +1,31 @@
-# Adding LLM Providers Plugins
+# Adding LLM Provider Plugins
 
-> **Note:** This section is intended for advanced users who want to integrate new LLM provider plugins. This requires code modifications, and you are encouraged to create a Pull Request if you want your plugin to be included in the official GenLayer Simulator.
+> **Note:** This section is intended for advanced users who wish to integrate new LLM provider plugins. This process requires code modifications, and we encourage you to create a Pull Request if you'd like your plugin to be included in the official GenLayer Simulator.
 
-The GenLayer Simulator interacts with multiple LLM providers.
-We currently support the following providers out of the box:
+The GenLayer Simulator seamlessly interacts with multiple LLM providers.
+Currently, we support the following providers out of the box:
 
 - [OpenAI](https://platform.openai.com/)
 - [Anthropic](https://www.anthropic.com/)
 - [Ollama](https://ollama.com/)
 - [Heuristai](https://heurist.ai/)
 
-In addition to these providers, you can also add your own custom providers.
+In addition to these built-in providers, you have the flexibility to integrate your own custom providers.
 
 ## Prerequisites
 
-1. A good understanding of [GitHub](https://github.com/) and how to use it for version control and collaboration.
-2. A local setup of the [GenLayer Simulator](https://github.com/yeagerai/genlayer-simulator) for development and testing.
-3. Familiarity with [Python](https://www.python.org/) programming.
-4. Knowledge of the LLM provider you want to integrate, including its API and authentication methods.
+Before you begin, ensure you have:
 
-Having these prerequisites will make the process of adding a new plugin smoother and more efficient.
+1. A solid understanding of [GitHub](https://github.com/) and its version control and collaboration features.
+2. A local development environment with the [GenLayer Simulator](https://github.com/yeagerai/genlayer-simulator) set up for development and testing.
+3. Proficiency in [Python](https://www.python.org/) programming.
+4. In-depth knowledge of the LLM provider you intend to integrate, including its API structure and authentication mechanisms.
 
-## Adding a new LLM Provider Plugin
+Meeting these prerequisites will significantly streamline the process of adding a new plugin and enhance your overall efficiency.
 
-To add a new LLM provider plugin, you need to implement the `Plugin` protocol defined [here](https://github.com/yeagerai/genlayer-simulator/blob/main/backend/node/genvm/llms.py).
+## Adding a New LLM Provider Plugin
+
+To integrate a new LLM provider plugin, you need to implement the `Plugin` protocol defined in the [llms.py](https://github.com/yeagerai/genlayer-simulator/blob/main/backend/node/genvm/llms.py) file. The protocol is structured as follows:
 
 ```python
 class Plugin(Protocol):
@@ -42,14 +44,14 @@ class Plugin(Protocol):
     def is_model_available(self, model: str) -> bool: ...
 ```
 
-And register it in the `llms.py` file under the `get_llm_provider` function.
+After implementing the `Plugin` protocol, you need to register your new provider in the `llms.py` file under the `get_llm_provider` function. This step ensures that the GenLayer Simulator recognizes and can utilize your custom plugin.
 
 ## Updating the JSON Schema
 
-You also need to update the [JSON schema](https://json-schema.org/) in the [`providers_schema.json`](https://github.com/yeagerai/genlayer-simulator/blob/main/backend/node/create_nodes/providers_schema.json) file to include your new provider and its configuration options.
+To maintain consistency and enable proper configuration validation, you must update the [JSON schema](https://json-schema.org/) in the [`providers_schema.json`](https://github.com/yeagerai/genlayer-simulator/blob/main/backend/node/create_nodes/providers_schema.json) file. This update should include your new provider and its specific configuration options.
 
-The schema is used to validate the configuration options for each provider.
+The JSON schema plays a crucial role in validating the configuration options for each provider, ensuring that users input correct and compatible settings.
 
-## Creating a new Validator with the new Provider
+## Creating a New Validator for the New Provider
 
-Refer to [this section](/advanced-features/customizing-llm-providers) for more details.
+For a comprehensive guide on creating a validator for your new provider, please refer to the [Customizing LLM Providers](/advanced-features/customizing-llm-providers) section. This process is essential for maintaining the integrity and functionality of your custom plugin within the GenLayer ecosystem.
