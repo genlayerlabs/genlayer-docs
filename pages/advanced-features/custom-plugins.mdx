@@ -1,6 +1,6 @@
 # Adding LLM Providers Plugins
 
-> **Note:** This section is intended for advanced users who want to integrate new LLM provider plugins.
+> **Note:** This section is intended for advanced users who want to integrate new LLM provider plugins. This requires code modifications, and you are encouraged to create a Pull Request if you want your plugin to be included in the official GenLayer Simulator.
 
 The GenLayer Simulator interacts with multiple LLM providers.
 We currently support the following providers out of the box:
@@ -12,9 +12,18 @@ We currently support the following providers out of the box:
 
 In addition to these providers, you can also add your own custom providers.
 
+## Prerequisites
+
+1. A good understanding of [GitHub](https://github.com/) and how to use it for version control and collaboration.
+2. A local setup of the [GenLayer Simulator](https://github.com/yeagerai/genlayer-simulator) for development and testing.
+3. Familiarity with [Python](https://www.python.org/) programming.
+4. Knowledge of the LLM provider you want to integrate, including its API and authentication methods.
+
+Having these prerequisites will make the process of adding a new plugin smoother and more efficient.
+
 ## Adding a new LLM Provider Plugin
 
-To add a new LLM provider plugin, you need to implement the `Plugin` protocol from [here](https://github.com/yeagerai/genlayer-simulator/blob/main/backend/node/genvm/llms.py).
+To add a new LLM provider plugin, you need to implement the `Plugin` protocol defined [here](https://github.com/yeagerai/genlayer-simulator/blob/main/backend/node/genvm/llms.py).
 
 ```python
 class Plugin(Protocol):
