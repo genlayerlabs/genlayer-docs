@@ -1,51 +1,145 @@
 # Transactions
 Transactions are the fundamental operations that drive the GenLayer protocol. Whether it's deploying a new contract, sending value between accounts, or invoking a function within an existing contract, transactions are the means by which state changes occur on the network.
 
-## Types of Transactions
-There are three different types of transactions that users can send in GenLayer. All three types are sent through the same RPC method, but they differ in the data they contain and the actions they perform.
 
-#### 1. Deploy a Contract
-Deploying a contract involves creating a new Intelligent Contract on the GenLayer network. This transaction initializes the contract's state and assigns it a unique address on the blockchain. The deployment process ensures that the contract code is properly validated and stored, making it ready to be called.
+Here is the general structure of a transaction:
 
-#### 2. Send Value
-Sending value refers to transferring the native GEN token from one account to another. This is one of the most common types of transactions. Each transfer updates the balance of the involved accounts, and the transaction is recorded on the blockchain to ensure transparency and security.
+```json
+{
+  "consensus_data": {
+    "leader_receipt": {
+      "args": [
+        [
+          2,
+          "0x793Ae2CfF17462cc9f9D68e194b7b949d2080Ea2"
+        ]
+      ],
+      "class_name": "LlmErc20",
+      "contract_state": "gASVnAAAAAAAAACMF2JhY2tlbmQubm9kZS5nZW52bS5iYXNllIwITGxtRXJjMjCUk5QpgZR9lIwIYmFsYW5jZXOUfZQojCoweEQyNzFjNzRBNzgwODNGMzU3YTlmOGQzMWQ1YWRDNTlCMzk1Y2YxNmKUS2KMKjB4NzkzQWUyQ2ZGMTc0NjJjYzlmOUQ2OGUxOTRiN2I5NDlkMjA4MEVhMpRLAnVzYi4=",
+      "eq_outputs": {
+        "leader": {
+          "0": "{\"transaction_success\": true, \"transaction_error\": \"\", \"updated_balances\": {\"0xD271c74A78083F357a9f8d31d5adC59B395cf16b\": 98, \"0x793Ae2CfF17462cc9f9D68e194b7b949d2080Ea2\": 2}}"
+        }
+      },
+      "error": null,
+      "execution_result": "SUCCESS",
+      "gas_used": 0,
+      "method": "transfer",
+      "mode": "leader",
+      "node_config": {
+        "address": "0x185D2108D9dE15ccf6beEb31774CA96a4f19E62B",
+        "config": {},
+        "model": "gpt-4o",
+        "plugin": "openai",
+        "plugin_config": {
+          "api_key_env_var": "OPENAIKEY",
+          "api_url": null
+        },
+        "provider": "openai",
+        "stake": 1
+      },
+      "vote": "agree"
+    },
+    "validators": [
+      {
+        "args": [
+          [
+            2,
+            "0x793Ae2CfF17462cc9f9D68e194b7b949d2080Ea2"
+          ]
+        ],
+        "class_name": "LlmErc20",
+        "contract_state": "gASVnAAAAAAAAACMF2JhY2tlbmQubm9kZS5nZW52bS5iYXNllIwITGxtRXJjMjCUk5QpgZR9lIwIYmFsYW5jZXOUfZQojCoweEQyNzFjNzRBNzgwODNGMzU3YTlmOGQzMWQ1YWRDNTlCMzk1Y2YxNmKUS2KMKjB4NzkzQWUyQ2ZGMTc0NjJjYzlmOUQ2OGUxOTRiN2I5NDlkMjA4MEVhMpRLAnVzYi4=",
+        "eq_outputs": {
+          "leader": {
+            "0": "{\"transaction_success\": true, \"transaction_error\": \"\", \"updated_balances\": {\"0xD271c74A78083F357a9f8d31d5adC59B395cf16b\": 98, \"0x793Ae2CfF17462cc9f9D68e194b7b949d2080Ea2\": 2}}"
+          }
+        },
+        "error": null,
+        "execution_result": "SUCCESS",
+        "gas_used": 0,
+        "method": "transfer",
+        "mode": "validator",
+        "node_config": {
+          "address": "0x31bc9380eCbF487EF5919eBa7457F457B5196FCD",
+          "config": {},
+          "model": "gpt-4o",
+          "plugin": "openai",
+          "plugin_config": {
+            "api_key_env_var": "OPENAIKEY",
+            "api_url": null
+          },
+          "provider": "openai",
+          "stake": 1
+        },
+        "pending_transactions": [],
+        "vote": "agree"
+      },
+      ...
+    ],
+    "votes": {
+      "0x185D2108D9dE15ccf6beEb31774CA96a4f19E62B": "agree",
+      "0x2F04Fb1e5daf7DCbf170E4CB0e427d9b11aB96cA": "agree",
+      "0x31bc9380eCbF487EF5919eBa7457F457B5196FCD": "agree"
+    }
+  },
+  "created_at": "2024-10-02T20:32:50.469443+00:00",
+  "data": {
+    "function_args": "[2,\"0x793Ae2CfF17462cc9f9D68e194b7b949d2080Ea2\"]",
+    "function_name": "transfer"
+  },
+  "from_address": "0xD271c74A78083F357a9f8d31d5adC59B395cf16b",
+  "gaslimit": 66,
+  "hash": "0xb7486f70a3fec00af5f929fc1cf1078af9ff3a063afe8b6f370a44a96635505d",
+  "leader_only": false,
+  "nonce": 66,
+  "r": null,
+  "s": null,
+  "status": "FINALIZED",
+  "to_address": "0x5929bB548a2Fd7E9Ea2577DaC9c67A08BbC2F356",
+  "type": 2,
+  "v": null,
+  "value": 0
+}
+```
+## Explanation of fields:
 
-#### 3. Call Contract Function
-Calling a contract function is the process of invoking a specific method within an existing Intelligent Contract. This could involve anything from querying data stored within the contract to executing more complex operations like transferring tokens or interacting with other contracts. Each function call is a transaction that modifies the contract’s state based on the inputs provided.
+- consensus_data: Object containing information about the consensus process
+  - leader_receipt: Object containing details about the leader's execution of the transaction
+    - args: Arguments passed to the contract function
+    - class_name: Name of the contract class
+    - contract_state: Encoded state of the contract
+    - eq_outputs: Outputs from every equivalence principle in the execution of the contract method
+    - error: Any error that occurred during execution (null if no error)
+    - execution_result: Result of the execution (e.g., "SUCCESS" or "ERROR")
+    - gas_used: Amount of gas used in the transaction
+    - method: Name of the method called on the contract
+    - mode: Execution mode (e.g., "leader" or "validator")
+    - node_config: Configuration of the node executing the transaction
+      - address: Address of the node
+      - config: Configuration of the node
+      - model: Model of the node
+      - plugin: Plugin used for the LLM provider connection
+      - plugin_config: Configuration of the plugin
+        - api_key_env_var: Environment variable containing the API key for the given provider
+        - api_url: API URL for the given provider
+      - provider: Provider of the node
+      - stake: Stake of the validator
+    - vote: The leader's vote on the transaction (e.g., "agree")
+  - validators: Array of objects containing similar information for each validator
+  - votes: Object mapping validator addresses to their votes
+- created_at: Timestamp of when the transaction was created
+- data: Object containing details about the function call in the transaction
+- from_address: Address of the account initiating the transaction
+- gaslimit: Maximum amount of gas the transaction is allowed to consume
+- hash: Unique identifier (hash) of the transaction
+- leader_only: Boolean indicating whether the transaction is to be executed by the leader node only
+- nonce: Number of transactions sent from the from_address (used to prevent double-spending)
+- r: Part of the transaction signature (null if not yet signed)
+- s: Part of the transaction signature (null if not yet signed)
+- status: Current status of the transaction (e.g., "FINALIZED")
+- to_address: Address of the contract or account receiving the transaction
+- type: Internal type of the transaction (2 indicates a contract write call)
+- v: Part of the transaction signature (null if not yet signed)
+- value: Amount of native currency (GEN) being transferred in the transaction
 
-## Transaction Processing
-In GenLayer, transactions are processed through an account-based queue system that ensures orderliness. Here’s how transactions transition through different statuses:
-
-#### 1. Pending
-When a transaction is first submitted, it enters the pending state. This means it has been received by the network but is waiting to be processed. Transactions are queued per account, ensuring that each account's transactions are processed in the order they were submitted.
-
-#### 2. Proposing
-In this stage, the transaction is moved from the pending queue to the proposing stage. A leader and a set of voters are selected from the validator set via a weighted random selection based on total stake. The leader proposes a receipt for the transaction, which is then committed to by the validators.
-
-#### 3. Committing
-The transaction enters the committing stage, where validators commit their votes and cost estimates for processing the transaction. This stage is crucial for reaching consensus on the transaction's execution.
-
-#### 4. Revealing
-After the committing stage, validators reveal their votes and cost estimates, allowing the network to finalize the transaction's execution cost and validate the consensus.
-
-#### 5. Accepted
-Once the majority of validators agree on the transaction's validity and cost, the transaction is marked as accepted. This status indicates that the transaction has passed through the initial validation process successfully.
-
-#### 6. Finalized
-After all validations are completed and any potential appeals have been resolved, the transaction is finalized. In this state, the transaction is considered irreversible and is permanently recorded in the blockchain.
-
-#### 7. Undetermined
-If the transaction fails to reach consensus after all voting rounds, it enters the undetermined state. This status indicates that the transaction's outcome is unresolved, and it may require further validation or be subject to an appeal process.
-
-#### 8. Canceled
-A transaction can be canceled by the user or by the system if it fails to meet certain criteria (e.g., insufficient funds). Once canceled, the transaction is removed from the processing queue and will not be executed.
-
-## Transaction encoding, serialization, and signing
-In GenLayer, all three types of transactions needs to be properly encoded, serialized, and signed on the client-side. This process ensures that the transaction data is packaged into a relieable cross-platform efficient format, and securely signed using the sender's private key to verify the sender's identity. 
-
-Once prepared, the transaction is sent to the network via the `send_raw_transaction` method on the RPC Server. This method performs the inverse process: it decodes and deserializes the transaction data, and then verifies the signature to ensure its authenticity. By handling all transaction types through `send_raw_transaction`, GenLayer ensures that transactions are processed securely and efficiently while maintaining compatibility with Ethereum’s specification.
-
-## Transaction execution
-Once a transaction is received and properly verified by the `send_raw_transaction` method on the RPC server, it is stored with a PENDING status and its hash is returned as the RPC method response. This means that the transaction has been validated for authenticity and format, but it has not yet been executed. From this point, the transaction enters the GenLayer consensus mechanism, where it is picked up for execution by the network's validators according to the consensus rules.
-
-As the transaction progresses through various stages—such as proposing, committing, and revealing—its status is updated accordingly. Throughout this process, the current status and output of the transaction can be queried by the user. This is done by calling the `get_transaction_by_hash` method on the RPC server, which retrieves the transaction’s details based on its unique hash. This method allows users to track the transaction’s journey from submission to finalization, providing transparency and ensuring that they can monitor the outcome of their transactions in real-time.
