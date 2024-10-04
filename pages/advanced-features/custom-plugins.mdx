@@ -122,4 +122,29 @@ The JSON schema plays a crucial role in validating the configuration options for
 
 ## Creating a New Validator for the New Provider
 
-For a comprehensive guide on creating a validator for your new provider, please refer to the [Customizing LLM Providers](/advanced-features/customizing-llm-providers) section. This process is essential for maintaining the integrity and functionality of your custom plugin within the GenLayer ecosystem.
+We're working on providing more customization options from the UI for LLM providers to enhance your GenLayer experience.
+
+For now, new LLM Providers need to be manually created through the backend API. Here's an example on how addition of an LLM Provider using your new Plugin could look like
+
+```sh
+curl --request POST \
+  --url http://localhost:4000/api \
+  --header 'Content-Type: application/json' \
+  --data '{
+	"jsonrpc": "2.0",
+	"method": "sim_addProvider",
+	"params": [
+		{
+			"provider": "my-custom-provider",
+			"model": "my-custom-model",
+			"config": {},
+			"plugin": "custom-plugin-key",
+			"plugin_config": {
+				"api_key": "MY-SECRET-KEY",
+				"base_url": "my.custom.url"
+			}
+		}
+	],
+	"id": 1
+}'
+```
