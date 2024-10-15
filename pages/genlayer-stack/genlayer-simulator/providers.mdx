@@ -1,0 +1,39 @@
+import Image from 'next/image'
+
+# Inference Providers
+
+Validators can use various inference providers to validate transactions. You can configure those providers and add custom ones to suit your needs. When you then create a new validator in the validators page, you will be able to select those providers and the relevant models from the list.
+
+## Accessing Providers
+
+You can manage your providers in the **Settings** page:
+
+<Image src="/providers-config.png" width={700} height={700} />
+
+## Configuring Providers
+
+Providers have the following properties:
+
+- **Provider:** The name of the provider. For example, `OpenAI` or `ollama`.
+- **Model:** The model attached to this provider. For example, `gpt-4o` or `llama3`.
+- **Plugin: (only for custom providers)** When adding a custom provider, you need to specify a plugin that implements the provider. The plugin defines what configuration is necessary for the provider.
+- **Provider Config:** Related environment variables, for example API keys or endpoint URLs.
+- **Default Validator Config:** This config is used as fefault when creating a new validator, and will then be applied when making calls to inference providers using said validator.
+
+## Adding a new Provider
+
+You can add a new provider by clicking the **New Config** button at the top of the providers list.
+
+<Image src="/create-providers.png" width={700} height={700} />
+
+## Updating an Existing Provider
+
+To modify your validator settings, click on any existing validator and modify the fields based on your needs.
+
+<Image src="/modify-providers.png" width={700} height={700} />
+
+## Deleting a Provider
+
+To delete a provider, click on the delete button beside the provider in the list.
+
+<Image src="/delete-providers.png" width={700} height={700} />
