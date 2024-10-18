@@ -1,0 +1,338 @@
+# Influencer Tweet Analyzer Contract
+
+The Influencer Tweet Analyzer contract sets up a system for analyzing cryptocurrency-related tweets from influencers, evaluating their impact on market prices, and managing a leaderboard of influencers based on their predictive accuracy. This contract demonstrates complex social media analysis, market data integration, and automated investment simulation within a blockchain environment.
+
+```python
+from typing import List
+from backend.node.genvm.icontract import IContract
+from backend.node.genvm.equivalence_principle import EquivalencePrinciple
+import json
+
+
+# TODO: handle duplication of tweet feeds
+class InfluencerTweetAnalyzer(IContract):
+    # AnalyzedTweet is defined here due to problems "compiling" the contract in the simulator
+    from dataclasses import dataclass
+
+    @dataclass
+    class AnalyzedTweet:
+        influencer: str
+        tweet: str
+        date: str
+        cryptocurrency: str
+        positive_sentiment: float
+
+    def __init__(self) -> None:
+        from collections import defaultdict
+
+        self.leaderboard: dict[str, float] = {}  # influencer -> score
+        self.price_history: dict[str, dict[str, float]] = defaultdict(
+            dict
+        )  # cryptocurrency -> date -> price
+        self.tweets_pending_process: List[InfluencerTweetAnalyzer.AnalyzedTweet] = []
+        self.balances: dict[str, int] = defaultdict(int)  # address -> balance
+        self.followers: dict[str, set[str]] = defaultdict(
+            set
+        )  # influencer -> followers addresses
+
+        self.followers_investments: dict[str, int] = defaultdict(
+            self._default_int_dict
+        )  # address -> cryptocurrency -> investment. Simulates interactions with other coins
+
+    def _default_int_dict(
+        self,
+    ):  # This is a workaround for the fact that lambdas don't work in the simulator
+        from collections import defaultdict
+
+        return defaultdict(int)
+
+    async def feed(self, influencer: str, tweet: str, date: str):
+        """
+        Inputs:
+        - influencer: the name of the influencer
+        - tweet: the tweet content
+        - date: the date of the tweet
+
+        Process:
+        1. Analyze the tweet to determine if sentiment is positive towards one or more cryptocurrencies
+            - This step uses Consensus to analyze the tweet
+            - We save these results in a list of tweets pending process, one per cryptocurrency
+        """
+        if influencer not in self.leaderboard:  # influencer enters the leaderboard
+            self.leaderboard[influencer] = 0
+
+        tweet_result = {}
+        async with EquivalencePrinciple(
+            result=tweet_result,
+            principle="The cryptocurrencies names are the exact same, and the positive_senitment is similar",
+            comparative=True,
+        ) as eq:
+            # TODO: actually retrieve from the internet
+            # web_data = await eq.get_webpage(tweet)
+            # print(web_data)
+            web_data = tweet
+
+            task = f"""In this webpage you'll find a tweet from a crypto influencer. 
+            Analyze this tweet to determine if sentiment is positive towards one or more cryptocurrencies
+            
+            Return the output as a JSON array of cryptocurrencies and their positive sentiment.
+            - 'positive_sentiment' should go from -1 to 1.
+            - 'cryptocurrency' should be the entire name of the cryptocurrency, all in lowercase, only letters
+
+            Here's an example format:
+            [
+              {{
+                "cryptocurrency": "bitcoin",
+                "positive_sentiment": 0.1
+              }}
+            ]
+
+            Respong ONLY with the JSON output, nothing else. The output should be parsable by any JSON parser
+
+            Web page content:
+            {web_data}
+            """
+            result = await eq.call_llm(task)
+            print(result)
+            eq.set(result)
+
+        tweet_result = json.loads(tweet_result["output"])
+
+        for item in tweet_result:
+            analyzed_tweet = InfluencerTweetAnalyzer.AnalyzedTweet(
+                influencer=influencer,
+                tweet=tweet,
+                date=date,
+                cryptocurrency=item["cryptocurrency"],
+                positive_sentiment=item["positive_sentiment"],
+            )
+
+            self.tweets_pending_process.append(analyzed_tweet)
+
+            if date == self._today():
+                self._update_follower_investments(analyzed_tweet)
+
+    def _today(self) -> str:
+        from datetime import date
+
+        return date.today().strftime("%Y-%m-%d")
+
+    def _update_follower_investments(self, analyzed_tweet: AnalyzedTweet):
+        # TODO: can we make this contract interact with other Ethereum contracts like ERC20?
+        # TODO: sentiment threshold and investment amount are arbitrary
+        if analyzed_tweet.positive_sentiment > 0.5:  # Buy
+            for follower in self.followers[analyzed_tweet.influencer]:
+                if self.balances[follower] > 0:
+                    self.balances[follower] -= 1
+                    self.followers_investments[follower][
+                        analyzed_tweet.cryptocurrency
+                    ] += 1
+
+        elif analyzed_tweet.positive_sentiment < -0.5:  # Sell
+            for follower in self.followers[analyzed_tweet.influencer]:
+                if self.followers_investments[follower] > 0:
+                    self.balances[follower] += 1
+                    self.followers_investments[follower][
+                        analyzed_tweet.cryptocurrency
+                    ] -= 1
+
+    async def process_score(self):
+        """
+        1. For each analyzed tweet, get the daily price change of the cryptocurrency
+            - This step uses Consensus and connects to the Internet to get the price change
+        2. Update the leaderboard with the score of the influencer, based on alignment between sentiment and price change
+        """
+        tweets_pending_process_from_today = []
+        for tweet in self.tweets_pending_process:
+            if tweet.date == self._today():
+                # We skip today's tweets since there's no market data yet
+                tweets_pending_process_from_today.append(tweet)
+                continue
+
+            price_change = await self.retrieve_market_data(
+                tweet.cryptocurrency, tweet.date
+            )
+
+            # This is a simple score function for demonstration
+            self.leaderboard[tweet.influencer] += (
+                price_change * tweet.positive_sentiment
+            )
+
+        self.tweets_pending_process = tweets_pending_process_from_today
+
+    # TODO: use date
+    async def retrieve_market_data(self, cryptocurrency: str, date: str) -> float:
+        if cryptocurrency in self.price_history:
+            if date in self.price_history[cryptocurrency]:
+                return self.price_history[cryptocurrency][date]
+
+        market_result = {}
+
+        async with EquivalencePrinciple(
+            result=market_result,
+            principle="The price ",
+            comparative=True,
+        ) as eq:
+            url = "https://coinmarketcap.com/currencies/" + cryptocurrency
+            web_data = await eq.get_webpage(url)
+            print(web_data)
+
+            task = f"""In this webpage from 'coinmarketcap' you'll find a lot of information about the market status of a cryptocurrency. 
+                Analyze this information to determine today's daily price change of the cryptocurrency.
+                
+                Return the output as a JSON number bigger than -100, representing the daily price change.
+                - Negative numbers mean that the price went down
+                - Positive numbers mean that the price went up
+
+                Respong ONLY with the JSON output, nothing else, not even the word "json". The output should be parsable by any JSON parser
+                Example output:
+                {{
+                  "price_change": 2.4
+                }}
+
+                Web page content:
+                {web_data}
+                """
+            result = await eq.call_llm(task)
+            print(result)
+            eq.set(result)
+
+        market_data = json.loads(market_result["output"])["price_change"]
+        self.price_history[cryptocurrency][date] = market_data
+        return market_data
+
+    def deposit(self, amount: int):
+        self.balances[contract_runner.from_address] += amount
+
+    def follow(self, influencer: str):
+        self.followers[influencer].add(contract_runner.from_address)
+
+    def unfollow(self, influencer: str):
+        self.followers[influencer].remove(contract_runner.from_address)
+
+    # Read methods
+    def get_leaderboard(self):
+        return self.leaderboard
+
+    def get_price_history(self):
+        return self.price_history
+
+    def get_tweets_pending_process(self):
+        return [item.__dict__ for item in self.tweets_pending_process]
+
+    def get_followers_investments(self):
+        return self.followers_investments
+
+    def get_followers(self):
+        return {key: list(value) for key, value in self.followers.items()}
+
+    def get_all_state(self):
+        # We convert them so they are json serializable
+        return {
+            "leaderboard": self.leaderboard,
+            "price_history": self.price_history,
+            "tweets_pending_process": self.get_tweets_pending_process(),
+            "balances": self.balances,
+            "followers": self.get_followers(),
+            "followers_investments": self.followers_investments,
+        }
+
+    async def test(self):
+        influencer = "Chris Burniske"
+        self.deposit(1000)
+
+        self.follow(influencer)
+
+        # New tweet, should create movement in followers investments
+        await self.feed(
+            influencer=influencer,
+            tweet="""
+        Each cycle I've tended to give a majority of focus to one major underdog. In 2014-17 that was $BTC, in 2018-2021 that was $ETH, and in 2022 to now that's $SOL.
+        """,
+            date=self._today(),
+        )
+
+        other_influencer = "Wizard Of SoHo"
+        self.follow(other_influencer)
+
+        # Old tweet, should be processed for leaderboard score
+        await self.feed(
+            influencer=other_influencer,
+            tweet="""
+            @Nate_Rivers @osf_rekt I don't think so. Doge had Elon like max shilling. No other memecoin has made it otherwise. Who is gonna drive pepe up again? No coin makes it without some leaders pushing it or large holders. Here the large holders are jeet scam devs with no rep outside of shitcoin world
+            """,
+            date="2024-08-16",
+        )
+
+        await self.process_score()
+```
+
+## Code Explanation
+
+- **Initialization**: The `InfluencerTweetAnalyzer` class initializes with empty data structures for the leaderboard, price history, pending tweets, user balances, and follower relationships.
+
+- **Key Methods**:
+  - `feed()`: Analyzes a tweet to determine sentiment towards cryptocurrencies using an LLM.
+  - `process_score()`: Updates the leaderboard based on the alignment between tweet sentiment and actual price changes.
+  - `retrieve_market_data()`: Fetches and processes cryptocurrency price data from an external source.
+
+- **User Interaction Methods**:
+  - `deposit()`: Allows users to deposit funds into their account.
+  - `follow()` and `unfollow()`: Enables users to follow or unfollow influencers.
+
+- **Read Methods**: Various getter methods to retrieve contract state, leaderboard, price history, and user data.
+
+## Deploying the Contract
+
+To deploy the Influencer Tweet Analyzer contract:
+1. **Deploy the Contract**: No initial parameters are needed.
+
+## Checking the Contract State
+
+After deploying the contract, you can check its state using the Read Methods:
+- Use `get_leaderboard()` to view the current influencer rankings.
+- Use `get_price_history()` to see historical cryptocurrency prices.
+- Use `get_followers()` to check follower relationships.
+- Use `get_all_state()` to retrieve the entire contract state.
+
+## Executing Transactions
+
+To interact with the deployed contract, use the Write Methods:
+- Call `feed(influencer, tweet, date)` to input new tweets for analysis.
+- Call `process_score()` to update the leaderboard based on recent market data.
+- Call `deposit(amount)` to add funds to a user's account.
+- Call `follow(influencer)` or `unfollow(influencer)` to manage influencer subscriptions.
+
+## Analyzing the Contract's Behavior
+
+The contract's behavior involves several complex processes:
+1. **Sentiment Analysis**: Uses an LLM to analyze tweets and determine sentiment towards specific cryptocurrencies.
+2. **Market Data Integration**: Fetches and processes real-time cryptocurrency price data.
+3. **Automated Scoring**: Updates the influencer leaderboard based on the accuracy of their implied predictions.
+4. **Simulated Investments**: Automatically adjusts follower investments based on influencer tweets.
+
+## Handling Different Scenarios
+
+- **New Tweet Analysis**: When a new tweet is fed, it's analyzed for sentiment and potentially triggers simulated investments for followers.
+- **Historical Tweet Processing**: Older tweets are used to update the leaderboard based on actual market performance.
+- **User Following/Unfollowing**: Users can dynamically change their subscriptions, affecting their simulated investment behavior.
+
+## Use Cases and Market Potential
+
+The Influencer Tweet Analyzer contract has several potential applications:
+- **Crypto Investment Guidance**: Provides users with insights based on influencer performance.
+- **Influencer Accountability**: Creates a transparent system for tracking the accuracy of cryptocurrency predictions.
+- **Automated Trading Strategies**: Could be extended to implement real trading based on influencer sentiment.
+- **Market Sentiment Analysis**: Offers a tool for understanding the relationship between social media sentiment and market movements.
+
+## Future Enhancements
+
+Potential future developments include:
+1. **Real-time Tweet Fetching**: Implementing an external service to automatically fetch tweets from followed influencers.
+2. **Advanced Sentiment Analysis**: Refining the LLM prompts for more nuanced sentiment evaluation.
+3. **Integration with Trading Platforms**: Connecting with real cryptocurrency exchanges for actual trading based on the contract's analysis.
+4. **User Customization**: Allowing users to set their own risk preferences and investment thresholds.
+5. **Expanded Market Data**: Incorporating more comprehensive and real-time market data sources.
+
+This Influencer Tweet Analyzer contract demonstrates an innovative use of GenLayer for social media analysis and cryptocurrency market prediction. It showcases how Intelligent Contracts can process complex, real-world data streams, provide valuable insights, and potentially guide investment decisions in a decentralized and transparent manner.
+
