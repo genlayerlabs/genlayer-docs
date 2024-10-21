@@ -1,6 +1,8 @@
 # GenLayer Documentation
 
-This repo contains technical documentation for the [GenLayer project](https://genlayer.com/). 
+This repo contains technical documentation for the [GenLayer project](https://genlayer.com/).
+
+The live site is available at [https://docs.genlayer.com/](https://docs.genlayer.com/).
 
 ## Setting up the Docs Locally
 

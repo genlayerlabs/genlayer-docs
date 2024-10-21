@@ -1,0 +1,139 @@
+import { Callout } from "nextra-theme-docs";
+
+# Adding LLM Provider Plugins
+
+<Callout type="info">
+  This section is intended for advanced users who wish to integrate new LLM
+  provider plugins. This process requires code modifications, and we encourage
+  you to create a Pull Request if you'd like your plugin to be included in the
+  official GenLayer Simulator.
+</Callout>
+
+The GenLayer Simulator seamlessly interacts with multiple LLM providers.
+Currently, we support the following providers out of the box:
+
+- [OpenAI](https://platform.openai.com/)
+- [Anthropic](https://www.anthropic.com/)
+- [Ollama](https://ollama.com/)
+- [Heuristai](https://heurist.ai/)
+
+In addition to these built-in providers, you have the flexibility to integrate your own custom providers.
+
+## Adding a New LLM Provider Plugin
+
+### Creating the Plugin
+
+To integrate a new LLM provider plugin, you need to implement the `Plugin` protocol defined in the [llms.py](https://github.com/yeagerai/genlayer-simulator/blob/main/backend/node/genvm/llms.py) file. The protocol is structured as follows:
+
+```python
+class Plugin(Protocol):
+    def __init__(self, plugin_config: dict): ...
+
+    async def call(
+        self,
+        node_config: dict,
+        prompt: str,
+        regex: Optional[str],
+        return_streaming_channel: Optional[asyncio.Queue],
+    ) -> str: ...
+
+    def is_available(self) -> bool: ...
+
+    def is_model_available(self, model: str) -> bool: ...
+```
+
+Here's an example of how you might implement a custom `Plugin`. Note that this are just some common guidelines, you are free to implement your integration as you please
+
+```python
+class MyCustomPlugin:
+    def __init__(self, plugin_config: dict):
+        self.api_key = plugin_config.get('api_key')
+        self.base_url = plugin_config.get('base_url', 'https://api.customllm.com')
+        # Add any other necessary configuration parameters
+
+    async def call(
+        self,
+        node_config: dict,
+        prompt: str,
+        regex: Optional[str],
+        return_streaming_channel: Optional[asyncio.Queue],
+    ) -> str:
+        # Implement the API call to your custom LLM provider
+        # This is a placeholder implementation
+        async with aiohttp.ClientSession() as session:
+            async with session.post(
+                f"{self.base_url}/generate",
+                json={"prompt": prompt, "config": node_config},
+                headers={"Authorization": f"Bearer {self.api_key}"}
+            ) as response:
+                if response.status == 200:
+                    result = await response.json()
+                    return result['generated_text']
+                else:
+                    raise Exception(f"API call failed with status {response.status}")
+
+    def is_available(self) -> bool:
+        # Check if the plugin is properly configured and available
+        return bool(self.api_key) and bool(self.base_url)
+
+    def is_model_available(self, model: str) -> bool:
+        # Check if the specified model is available for this provider
+        # This is a placeholder implementation
+        available_models = ['custom-gpt-3', 'custom-gpt-4']
+        return model in available_models
+```
+### Registering the Plugin
+
+After implementing the `Plugin` protocol, you need to register your new provider in the `llms.py` file under the `get_llm_provider` function. This step ensures that the GenLayer Simulator recognizes and can utilize your custom plugin.
+
+```python
+def get_llm_plugin(plugin: str, plugin_config: dict) -> Plugin:
+"""
+Function to register new providers
+"""
+plugin_map = {
+"ollama": OllamaPlugin,
+"openai": OpenAIPlugin,
+"anthropic": AnthropicPlugin,
+"custom-plugin-key": MyCustomPlugin, # Modify here accordingly
+}
+
+    if plugin not in plugin_map:
+        raise ValueError(f"Plugin {plugin} not registered.")
+
+    return plugin_map[plugin](plugin_config)
+
+```
+
+## Updating the JSON Schema
+
+To maintain consistency and enable proper configuration validation, you must update the [JSON schema](https://json-schema.org/) in the [`providers_schema.json`](https://github.com/yeagerai/genlayer-simulator/blob/main/backend/node/create_nodes/providers_schema.json) file. This update should include your new provider and its specific configuration options.
+
+The JSON schema plays a crucial role in validating the configuration options for each provider, ensuring that users input correct and compatible settings.
+
+## Registering a Provider for the new plugin
+
+New LLM Providers can be registered through the Simulator's UI in the **Settings page** or manually through the backend API. Here is an example on how addition of an LLM Provider using your new Plugin could look like
+
+```sh
+curl --request POST \
+  --url http://localhost:4000/api \
+  --header 'Content-Type: application/json' \
+  --data '{
+	"jsonrpc": "2.0",
+	"method": "sim_addProvider",
+	"params": [
+		{
+			"provider": "my-custom-provider",
+			"model": "my-custom-model",
+			"config": {},
+			"plugin": "custom-plugin-key",
+			"plugin_config": {
+				"api_key": "MY-SECRET-KEY",
+				"base_url": "my.custom.url"
+			}
+		}
+	],
+	"id": 1
+}'
+```
