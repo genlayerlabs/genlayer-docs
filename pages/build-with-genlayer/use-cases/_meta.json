@@ -1,0 +1,14 @@
+{
+  "storage": "Storage",
+  "user-storage": "User Storage",
+  "llm-erc20": "ERC-20 Token",
+  "wizard-of-coin": "Wizard of Coin",
+  "prediction": "Prediction Market",
+  "git-bounties": "Git Bounties",
+  "genlayer-dao": "GenLayerDAO",
+  "adr-validator": "ADR Validator",
+  "flight-insurance": "Flight Insurance",
+  "rokos-mansion": "Rokos Mansion",
+  "influencer-tweet-analyzer": "Influencer Tweet Analyzer",
+  "purellm-dao": "Pure LLM DAO"
+}

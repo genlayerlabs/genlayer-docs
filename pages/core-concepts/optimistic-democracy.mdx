@@ -1,0 +1,34 @@
+import { Callout } from 'nextra-theme-docs'
+
+# Optimistic Democracy
+
+Optimistic Democracy is the consensus method used by GenLayer to validate transactions and operations of Intelligent Contracts. This approach is especially good at handling unpredictable outcomes from transactions involving web data or AI models, which is important for keeping the network reliable and secure.
+
+## Key Components
+
+- **Validators:** Participants who stake tokens to earn the right to validate transactions. They play a crucial role in both the initial validation and any appeals process if needed.
+- **Leader Selection:** A process that randomly picks one validator to propose the outcome for each transaction, ensuring fairness and reducing potential biases.
+
+## How It Works
+
+Optimistic Democracy relies on a mix of trust and verification to ensure transaction integrity:
+
+![](/optimistic-democracy-concept.png)
+
+1. **Initial Validation:** When a transaction is submitted, a small group of randomly selected validators checks its validity. One is chosen as the leader. The leader executes the transaction, and the other validators assess the leader's proposal using the Equivalence Principle.
+
+2. **Majority Consensus:** If most validators accept the leader's proposal, the transaction is provisionally accepted. However, this decision is not final yet, allowing for possible appeals during a limited window of time, known as the **Finality Window**.
+
+<Callout>
+  If any validator fails to vote within the specified timeframe, they are replaced, and a new validator is selected to cast a vote.
+</Callout>
+
+3. **Initiating an Appeal:** If a participant disagrees with the initial validation (if it's incorrect or fraudulent), they can appeal during the Finality Window. They must submit a request and provide a bond. After the appeal starts, a new group of validators joins the original ones. This group first votes on whether the transaction should be re-evaluated. If they agree, a new leader is chosen to reassess the transaction, and all validators then review this new evaluation.
+
+4. **Appeal Evaluation:** The new leader re-evaluates the transaction, while the other validators assess the leader's proposal using the Equivalence Principle. This step involves more validators, increasing the chances of an accurate decision.
+
+5. **Escalating Appeals:** If the appealing party is still not satisfied, the process can escalate, with each round involving more validators. Each round doubles the number of validators. A new leader is only chosen if the transaction is overturned.
+
+6. **Final Decision:** The appeals process continues until a majority consensus is reached or until all validators have participated. The final decision is recorded, and the transaction's state is updated accordingly. If the appealing party is correct, they receive a reward for their efforts, while incorrect appellants lose their bond.
+
+

@@ -1,0 +1,49 @@
+# GenLayer CLI Reference
+
+Each command includes syntax, usage information, and examples to help you effectively use the CLI for interacting with the GenLayer environment.
+
+## Command line syntax
+
+General syntax for using the GenLayer CLI:
+
+```bash
+genlayer command [command options] [arguments...]
+```
+
+## Commands and usage
+
+### Initialize
+
+Prepares and verifies your environment to run the GenLayer simulator.
+
+```bash
+USAGE:
+   genlayer init [options]
+
+OPTIONS:
+   --numValidators <numValidators>  Number of validators (default: "5")
+   --branch <branch>                Branch to use (default: "main")
+
+EXAMPLES:
+   genlayer init
+   genlayer init --numValidators 10 --branch develop
+```
+
+### Start GenLayer environment
+
+Launches the GenLayer environment and the simulator, initializing a fresh set of database and accounts.
+
+```bash
+USAGE:
+   genlayer up [options]
+
+OPTIONS:
+   --reset-validators               Remove all current validators and create new random ones (default: false)
+   --numValidators <numValidators>  Number of validators (default: "5")
+   --branch <branch>                Branch to use (default: "main")
+
+EXAMPLES:
+   genlayer up
+   genlayer up --reset-validators --numValidators 8 --branch feature-branch
+```
+

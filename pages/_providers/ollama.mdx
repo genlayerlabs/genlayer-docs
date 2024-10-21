@@ -1,0 +1,29 @@
+import { Callout } from 'nextra-theme-docs'
+
+# Ollama
+
+Ollama is a free and open-source LLM provider that runs locally, providing an accessible option for processing and validating intelligent contracts within GenLayer. While it may perform slower than other providers, it is set up to run within Docker containers to facilitate the operations.
+
+## Setup during `genlayer init` 
+
+When you run the `genlayer init` command, you will be prompted to select the LLM providers you want to use. If you choose Ollama, it will automatically set up the necessary Docker containers for running the validators.
+
+### Server Details
+
+Ollama server details are typically configured as follows:
+
+```shell
+OLAMAPROTOCOL=http
+OLAMAHOST=ollama
+OLAMAPORT=11434
+```
+
+<Callout type="info">
+    This environment variable is configured in the `.env` file located in the simulator's root folder. 
+</Callout>
+
+### Troubleshooting Tips
+
+- **Missing Configuration**: Ensure that the Ollama server details (`OLAMAPROTOCOL`, `OLAMAHOST`, `OLAMAPORT`) are set correctly during the initialization process.
+- **Docker Setup Issues**: Verify that Docker is installed and running on your system, as Ollama relies on Docker containers for its operation.
+- **Service Status**: To confirm Ollama is running, use the `docker ps` command and check for the `ollama` container.

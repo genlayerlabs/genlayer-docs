@@ -1,0 +1,38 @@
+# GenVM (GenLayer Virtual Machine)
+
+GenVM is the execution environment for Intelligent Contracts in the GenLayer protocol. It serves as the backbone for processing and managing contract operations within the GenLayer ecosystem.
+
+## Key Features
+
+- **Intelligent Contract Execution**: GenVM processes and executes Intelligent Contracts written in Python, enabling complex logic and AI-driven operations.
+- **Internal Transaction Handling**: GenVM processes internal GenLayer transactions within the rollup data.
+- **Integration with LLMs**: GenVM facilitates seamless interaction between Intelligent Contracts and Large Language Models (LLMs).
+
+## How GenVM Works
+
+1. **Contract Deployment**: When an Intelligent Contract is deployed, GenVM compiles and executes the contract code.
+
+2. **Transaction Processing**: As transactions are submitted to the network, GenVM executes the relevant contract functions and produces the next state for the contract.
+
+3. **Stateless**: GenVM is stateless and does not maintain any persistent state between transactions. It executes a transaction with a given snapshot of the state to produce the next state.
+
+## GenVM vs. Traditional VMs
+
+Unlike traditional blockchain virtual machines (e.g., Ethereum's EVM), GenVM is designed to handle:
+
+- Non-deterministic operations through LLM integrations
+- Direct web data access
+- Python-based contract execution
+
+This design allows for more flexible and powerful smart contract capabilities while maintaining blockchain security and consistency.
+
+## Developer Considerations
+
+When developing Intelligent Contracts for GenVM:
+
+- Utilize Python's robust libraries and features
+- Consider potential non-deterministic outcomes when integrating LLMs
+- Implement proper error handling for web data access
+- Optimize code for efficient execution within the rollup environment
+
+GenVM plays a crucial role in enabling the unique features of GenLayer, bridging the gap between traditional smart contracts and AI-powered, web-connected Intelligent Contracts.

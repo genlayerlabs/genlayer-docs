@@ -1,0 +1,251 @@
+# JSON-RPC API Reference
+
+This document describes the JSON-RPC methods available in the simulator.
+
+## Simulator Methods
+
+### sim_clearDbTables
+
+Clears specified database tables.
+
+**Parameters:**
+- `tables`: An array of table names to clear.
+
+**Returns:** None
+<br />
+<hr />
+### sim_fundAccount
+
+Funds an account with a specified amount.
+
+**Parameters:**
+- `account_address`: The address of the account to fund.
+- `amount`: The amount to fund the account with.
+
+**Returns:** Transaction hash (string)
+<br />
+<hr />
+### sim_getProvidersAndModels
+
+Retrieves all providers and models.
+
+**Parameters:** None
+
+**Returns:** An array of provider and model objects.
+<br />
+<hr />
+### sim_resetDefaultsLlmProviders
+
+Resets LLM providers to default settings.
+
+**Parameters:** None
+
+**Returns:** None
+<br />
+<hr />
+### sim_addProvider
+
+Adds a new LLM provider.
+
+**Parameters:**
+- `provider`: Provider name.
+- `model`: Model name.
+- `config`: Provider configuration.
+- `plugin`: Plugin name.
+- `plugin_config`: Plugin configuration.
+
+**Returns:** Provider ID (integer)
+<br />
+<hr />
+### sim_updateProvider
+
+Updates an existing LLM provider.
+
+**Parameters:**
+- `id`: Provider ID to update.
+- `provider`: Updated provider name.
+- `model`: Updated model name.
+- `config`: Updated provider configuration.
+- `plugin`: Updated plugin name.
+- `plugin_config`: Updated plugin configuration.
+
+**Returns:** None
+<br />
+<hr />
+### sim_deleteProvider
+
+Deletes an LLM provider.
+
+**Parameters:**
+- `id`: Provider ID to delete.
+
+**Returns:** None
+<br />
+<hr />
+### sim_createValidator
+
+Creates a new validator.
+
+**Parameters:**
+- `stake`: Validator's stake amount.
+- `provider`: LLM provider name.
+- `model`: LLM model name.
+- `config`: (Optional) Provider configuration.
+- `plugin`: (Optional) Plugin name.
+- `plugin_config`: (Optional) Plugin configuration.
+
+**Returns:** Validator details (object)
+<br />
+<hr />
+### sim_createRandomValidator
+
+Creates a random validator.
+
+**Parameters:**
+- `stake`: Validator's stake amount.
+
+**Returns:** Validator details (object)
+<br />
+<hr />
+### sim_createRandomValidators
+
+Creates multiple random validators.
+
+**Parameters:**
+- `count`: Number of validators to create.
+- `min_stake`: Minimum stake amount.
+- `max_stake`: Maximum stake amount.
+- `limit_providers`: (Optional) Array of allowed provider names.
+- `limit_models`: (Optional) Array of allowed model names.
+
+**Returns:** Array of validator details (objects)
+<br />
+<hr />
+### sim_updateValidator
+
+Updates an existing validator.
+
+**Parameters:**
+- `validator_address`: Address of the validator to update.
+- `stake`: Updated stake amount.
+- `provider`: Updated LLM provider name.
+- `model`: Updated LLM model name.
+- `config`: (Optional) Updated provider configuration.
+- `plugin`: (Optional) Updated plugin name.
+- `plugin_config`: (Optional) Updated plugin configuration.
+
+**Returns:** Updated validator details (object)
+<br />
+<hr />
+### sim_deleteValidator
+
+Deletes a validator.
+
+**Parameters:**
+- `validator_address`: Address of the validator to delete.
+
+**Returns:** Deleted validator address (string)
+<br />
+<hr />
+### sim_deleteAllValidators
+
+Deletes all validators.
+
+**Parameters:** None
+
+**Returns:** Array of remaining validators (should be empty)
+<br />
+<hr />
+### sim_getAllValidators
+
+Retrieves all validators.
+
+**Parameters:** None
+
+**Returns:** Array of validator details (objects)
+<br />
+<hr />
+### sim_getValidator
+
+Retrieves a specific validator.
+
+**Parameters:**
+- `validator_address`: Address of the validator to retrieve.
+
+**Returns:** Validator details (object)
+<br />
+<hr />
+### sim_countValidators
+
+Counts the number of validators.
+
+**Parameters:** None
+
+**Returns:** Number of validators (integer)
+
+## GenLayer Specific Methods
+
+### gen_getContractSchema
+
+Retrieves the schema for a deployed contract.
+
+**Parameters:**
+- `contract_address`: Address of the deployed contract.
+
+**Returns:** Contract schema (object)
+<br />
+<hr />
+### gen_getContractSchemaForCode
+
+Retrieves the schema for given contract code.
+
+**Parameters:**
+- `contract_code`: The contract code to analyze.
+
+**Returns:** Contract schema (object)
+
+## Ethereum-compatible Methods
+
+### eth_getBalance
+
+Retrieves the balance of an account.
+
+**Parameters:**
+- `account_address`: The address of the account.
+- `block_tag`: (Optional) The block number or tag (default: "latest").
+
+**Returns:** Account balance (integer)
+<br />
+<hr />
+### eth_getTransactionByHash
+
+Retrieves transaction details by hash.
+
+**Parameters:**
+- `transaction_hash`: The hash of the transaction.
+
+**Returns:** Transaction details (object)
+<br />
+<hr />
+### eth_call
+
+Executes a new message call without creating a transaction.
+
+**Parameters:**
+- `params`: An object containing:
+  - `to`: The address of the contract to call.
+  - `from`: (Optional) The address the call is made from.
+  - `data`: The call data.
+- `block_tag`: (Optional) The block number or tag (default: "latest").
+
+**Returns:** The return value of the executed contract method
+<br />
+<hr />
+### eth_sendRawTransaction
+
+Sends a signed transaction.
+
+**Parameters:**
+- `signed_transaction`: The signed transaction data.
+
+**Returns:** Transaction hash (string)

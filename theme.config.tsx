@@ -15,6 +15,10 @@ const config: DocsThemeConfig = {
   footer: {
     text: "GenLayer Documentation",
   },
+  sidebar: {
+    defaultMenuCollapseLevel: 1,
+  },
+  navigation: true,
   navbar: {
     extraContent: (
       <div style={{ display: "flex", alignItems: "center" }}>
