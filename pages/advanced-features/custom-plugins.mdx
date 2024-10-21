@@ -19,17 +19,6 @@ Currently, we support the following providers out of the box:
 
 In addition to these built-in providers, you have the flexibility to integrate your own custom providers.
 
-## Prerequisites
-
-Before you begin, ensure you have:
-
-1. A solid understanding of [GitHub](https://github.com/) and its version control and collaboration features.
-2. A local development environment with the [GenLayer Simulator](https://github.com/yeagerai/genlayer-simulator) set up for development and testing.
-3. Proficiency in [Python](https://www.python.org/) programming.
-4. In-depth knowledge of the LLM provider you intend to integrate, including its API structure and authentication mechanisms.
-
-Meeting these prerequisites will significantly streamline the process of adding a new plugin and enhance your overall efficiency.
-
 ## Adding a New LLM Provider Plugin
 
 ### Creating the Plugin
@@ -55,7 +44,7 @@ class Plugin(Protocol):
 
 Here's an example of how you might implement a custom `Plugin`. Note that this are just some common guidelines, you are free to implement your integration as you please
 
-````python
+```python
 class MyCustomPlugin:
     def __init__(self, plugin_config: dict):
         self.api_key = plugin_config.get('api_key')
@@ -92,7 +81,7 @@ class MyCustomPlugin:
         # This is a placeholder implementation
         available_models = ['custom-gpt-3', 'custom-gpt-4']
         return model in available_models
-
+```
 ### Registering the Plugin
 
 After implementing the `Plugin` protocol, you need to register your new provider in the `llms.py` file under the `get_llm_provider` function. This step ensures that the GenLayer Simulator recognizes and can utilize your custom plugin.
@@ -114,7 +103,7 @@ plugin_map = {
 
     return plugin_map[plugin](plugin_config)
 
-````
+```
 
 ## Updating the JSON Schema
 
@@ -122,11 +111,9 @@ To maintain consistency and enable proper configuration validation, you must upd
 
 The JSON schema plays a crucial role in validating the configuration options for each provider, ensuring that users input correct and compatible settings.
 
-## Creating a New Validator for the New Provider
+## Registering a Provider for the new plugin
 
-We're working on providing more customization options from the UI for LLM providers to enhance your GenLayer experience.
-
-For now, new LLM Providers need to be manually created through the backend API. Here's an example on how addition of an LLM Provider using your new Plugin could look like
+New LLM Providers can be registered through the Simulator's UI in the **Settings page** or manually through the backend API. Here is an example on how addition of an LLM Provider using your new Plugin could look like
 
 ```sh
 curl --request POST \
