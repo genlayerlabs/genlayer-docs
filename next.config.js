@@ -86,6 +86,11 @@ const nextConfig = withNextra({
         destination: "/security-and-best-practices/universal-attacks",
         permanent: true,
       },
+      {
+        source: "/ideas",
+        destination: "/build-with-genlayer/ideas",
+        permanent: true,
+      },
     ];
   },
 });
