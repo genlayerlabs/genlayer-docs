@@ -97,7 +97,7 @@ const nextConfig = withNextra({
         permanent: true,
       },
       {
-        source: "/getting-started/genlayer-studio/:page*",
+        source: "/genlayer-stack/genlayer-simulator/:page*",
         destination: "/genlayer-stack/genlayer-studio/:page*",
         permanent: true,
       },
