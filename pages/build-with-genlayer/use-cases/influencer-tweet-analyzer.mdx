@@ -11,7 +11,7 @@ import json
 
 # TODO: handle duplication of tweet feeds
 class InfluencerTweetAnalyzer(IContract):
-    # AnalyzedTweet is defined here due to problems "compiling" the contract in the simulator
+    # AnalyzedTweet is defined here due to problems "compiling" the contract in the Studio
     from dataclasses import dataclass
 
     @dataclass
@@ -41,7 +41,7 @@ class InfluencerTweetAnalyzer(IContract):
 
     def _default_int_dict(
         self,
-    ):  # This is a workaround for the fact that lambdas don't work in the simulator
+    ):  # This is a workaround for the fact that lambdas don't work in the Studio
         from collections import defaultdict
 
         return defaultdict(int)
