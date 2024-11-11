@@ -91,6 +91,16 @@ const nextConfig = withNextra({
         destination: "/build-with-genlayer/ideas",
         permanent: true,
       },
+      {
+        source: "/genlayer-stack/genlayer-simulator",
+        destination: "/genlayer-stack/genlayer-studio",
+        permanent: true,
+      },
+      {
+        source: "/getting-started/genlayer-studio/:page*",
+        destination: "/genlayer-stack/genlayer-studio/:page*",
+        permanent: true,
+      },
     ];
   },
 });
