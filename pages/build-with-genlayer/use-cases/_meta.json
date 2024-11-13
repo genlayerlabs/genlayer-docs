@@ -1,7 +1,7 @@
 {
   "storage": "Storage",
   "user-storage": "User Storage",
-  "llm-erc20": "ERC-20 Token",
+  "llm-token": "LLM Token",
   "wizard-of-coin": "Wizard of Coin",
   "prediction": "Prediction Market",
   "git-bounties": "Git Bounties",
