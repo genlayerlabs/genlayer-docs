@@ -2,16 +2,16 @@ import { Callout } from 'nextra-theme-docs'
 
 # Managing Intelligent Contract Operations with the Equivalence Principle
 
-The Equivalence Principle is a core concept in GenLayer's Intelligent Contract framework. It ensures consistency and reliability when handling non-deterministic operation results, such as responses from Large Language Models or web data retrieval, by establishing a standard for validators to agree on the correctness of these outputs. These functions give user detailed control over how the outputs are validated.
+The Equivalence Principle is a core concept in GenLayer's Intelligent Contract framework. It ensures consistency and reliability when handling non-deterministic operation results, such as responses from Large Language Models or web data retrieval, by establishing a standard for validators to agree on the correctness of these outputs. These functions give users detailed control over how the outputs are validated.
 
-Depending on how you want the validators to work, you can choose from few provided options, such as principle that uses LLMs itself, or one that just the strict comparison
+Depending on how you want the validators to work, you can choose from a few options, such as a principle that uses LLMs or one that just uses a strict comparison.
 
 <Callout emoji="💡">
     Advanced users may also choose to write their own equivalence principle
 </Callout>
 
 
-The Equivalence Principle involves multiple validators randomly selected to determine whether different outputs from non-deterministic operations can be considered equivalent. One validator acts as the leader, proposing the output, while others validate it and then return it instead of their own computation
+The Equivalence Principle involves multiple validators randomly selected to determine whether different outputs from non-deterministic operations can be considered equivalent. One validator acts as the leader, proposing the output, while others validate it and then return it instead of their computation.
 
 ## Equivalence Principles Options
 
@@ -19,7 +19,7 @@ Validators work to reach a consensus on whether the result set by the leader is 
 
 ### Comparative Equivalence Principle
 
-In the Comparative Equivalence Principle, both the leader and the validators perform identical tasks and then directly compare their respective results with the predefined criteria in the Equivalence Principle to ensure consistency and accuracy. This method uses an acceptable margin of error to handle slight variations in results between validators and is suitable for quantifiable outputs. However, since multiple validators perform the same tasks as the leader, it increases computational demands and associated costs.
+In the Comparative Equivalence Principle, the leader and the validators perform identical tasks and then directly compare their respective results with the predefined criteria to ensure consistency and accuracy. This method uses an acceptable margin of error to handle slight variations in results between validators and is suitable for quantifiable outputs. However, computational demands and associated costs increase since multiple validators perform the same tasks as the leader.
 
 ```python
 gl.eq_principle_prompt_comparative(
@@ -27,14 +27,14 @@ gl.eq_principle_prompt_comparative(
     "The result must not differ by more than 5%"
 )
 ```
-For example, if an intelligent contract is tasked with fetching the follower count of a Twitter account and the Equivalence Principle specifies that _follower counts should not differ by more than 5%_, validators will compare their results to the leader's result utilizing LLMs to ensure it falls within this margin.
+For example, if an intelligent contract is tasked with fetching the follower count of a Twitter account and the Equivalence Principle specifies that _follower counts should not differ by more than 5%_, validators will compare their results to the leader's result utilizing LLMs to ensure they fall within this margin.
 
 ### Non-Comparative Equivalence Principle
 
 In contrast, the Non-Comparative Equivalence Principle does not require validators to replicate the leader's output, which makes the validation process faster and less costly. Instead, validators assess the accuracy of the leader's result against the criteria defined in the Equivalence Principle. This method is particularly useful for qualitative outputs like text summaries.
 
 <Callout type="info" emoji="🏗️">
-    This feature is in development. GenVM doesn't have interface for Non-Comparative Equivalence Principle right now
+    This feature is in development. GenVM doesn't have an interface for Non-Comparative Equivalence Principle right now
 </Callout>
 
 ## Ideal Scenarios
