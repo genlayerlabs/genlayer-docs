@@ -1,0 +1,59 @@
+import { Callout } from 'nextra-theme-docs'
+
+# Your First Contract
+
+While GenLayer contract is a pure Python program, few things must be presented in your file
+
+### Magic comment
+First of all, you need to place a magic comment with version of GenVM you wish to use on the **first** line of your file
+```py
+# { "Depends": "py-genlayer:test" }
+```
+It is similar to Solidity's `pragma solidity`, and `test` after a colon is a version. When GenLayer releases it will be changed to some exact hash of a version, which will be frozen forever.
+
+### Importing standard library
+Then you should import genlayer standard library:
+```py
+from genlayer import *
+```
+This will import all types to the global scope, and everything else under `gl` namespace
+
+### Finally, the contract
+Contract is a Python class, with regular constructor and methods which allows you to use your favorite IDE for type checking and auto completion.
+
+However, there are some catches:
+- This class must be decorated with `@gl.contract`, so that magic happens
+- All persistent data should be declared as class fields and annotated with types
+    - Note, that not all types are supported, but there are rewriting rules:
+        - `list[T]` → `DynArray[T]`
+        - `dict[K, V]` → `TreeMap[K, V]`
+    - `int` type isn't supported on purpose. Most likely you wish to use some fixed-size integer type, such as `i32` or `u256`. If it is not the case and you are sure that you need big integers you can annotate your field with `bigint`, which is just an alias for python `int`
+    - Only fully instantiated generic types can be used, so `TreeMap` is forbidden, while `TreeMap[str, u256]` is not
+- All public methods must be decorated with either `@gl.public.view` for read-only methods or `@gl.public.write` for methods that modify storage. Constructor (`__init__`) must be private (not annotated)
+
+```py
+# { "Depends": "py-genlayer:test" }
+
+from genlayer import *
+
+@gl.contract
+class Hello:
+    name: str
+
+    def __init__(self, name: str):
+        self.name = name
+
+    @gl.public.view
+    def run(self) -> str:
+        return f'Hello, {self.name}'
+
+    @gl.public.write
+    def set_name(self, name: str):
+        print(f'debug old name: {self.name}') # <- you can use prints for debugging
+            # they will be included in the GenVM execution log
+        self.name = name
+```
+
+<Callout emoji="👾">
+  The GenLayer simulator automatically detects the constructor parameters from your code. When you run your contract in the simulator, it provides the UI for all parameters for both constructor and methods, making it easy to manage and modify these inputs.
+</Callout>

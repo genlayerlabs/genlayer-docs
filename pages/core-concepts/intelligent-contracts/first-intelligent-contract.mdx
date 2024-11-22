@@ -1,0 +1,44 @@
+# Your First **Intelligent** Contract
+
+Now is the time to utilize all power of GenLayer!
+
+For blockchain integrity reasons, non-determinism must be contained within special non-deterministic blocks. Such blocks are regular python functions with no arguments, which can return arbitrary values back. However, there are some limitations:
+- Storage is inaccessible from non-deterministic blocks
+- State of Python interpreter is not passed back to the deterministic code (for instance, you won't see changes in global variables)
+
+### Simple Case
+To illustrate how it works, lets get a webpage as plain html, and verify that it has a link to the owner:
+
+```py
+example_web_address = 'https://example.org'
+def my_non_deterministic_block():
+    web_data = gl.get_webpage(example_web_address, mode='html')
+    return 'iana' in web_data
+
+print(gl.eq_principle_strict_eq(my_non_deterministic_block))
+```
+
+Here are few important parts:
+1. It is **mandatory** to call `gl.get_webpage` from a function invoked via `gl.eq_principle_*`, otherwise it will give an error
+2. Type annotations are not required
+3. `example_web_address` gets captured without need to explicitly specify it
+4. We are getting page in plain html, because we want a text from of a link (`<a>` html tag), which is not visible in text representation
+5. We are using `eq_principle_strict_eq`, because we return a `bool` (`True` or `False`), so there is no need to run LLMs or other complex computations: validators will agree _iff_ they both got exactly same result, which makes sense for out case. However, if you wish to return some more complex data (such as a text summary), you should use other `eq_principle`. More on this topic on the next page
+
+### As a Full Contract
+```py
+# { "Depends": "py-genlayer:test" }
+
+from genlayer import *
+
+@gl.contract
+class Contract:
+    had_iana: bool
+
+    def __init__(self):
+        example_web_address = 'https://example.org'
+        def my_non_deterministic_block():
+            web_data = gl.get_webpage(example_web_address, mode='html')
+            return 'iana' in web_data
+        self.had_iana = gl.eq_principle_strict_eq(my_non_deterministic_block)
+```
