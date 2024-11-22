@@ -2,29 +2,27 @@
 
 GenVM is the execution environment for Intelligent Contracts in the GenLayer protocol. It serves as the backbone for processing and managing contract operations within the GenLayer ecosystem.
 
-## Key Features
+## Purpose of GenVM
 
-- **Intelligent Contract Execution**: GenVM processes and executes Intelligent Contracts written in Python, enabling complex logic and AI-driven operations.
-- **Internal Transaction Handling**: GenVM processes internal GenLayer transactions within the rollup data.
-- **Integration with LLMs**: GenVM facilitates seamless interaction between Intelligent Contracts and Large Language Models (LLMs).
+GenVM's only purpose is to execute Intelligent Contracts, which can have non-deterministic code while maintaining blockchain security and consistency.
+
+In summary, GenVM plays a crucial role in enabling GenLayer's unique features, bridging the gap between traditional smart contracts and AI-powered, web-connected Intelligent Contracts.
+
+## Key Features That Make GenVM Different
+
+Unlike traditional blockchain virtual machines such as Ethereum Virtual Machine (EVM), GenVM has some advanced features.
+
+- **Integration with LLMs**: GenVM facilitates seamless interaction between Intelligent Contracts and Large Language Models
+- **Web access**: GenVM provides access to the internet
+- **User friendliness**: Intelligent Contracts can be written in Python, which makes the learning curve much more shallow
 
 ## How GenVM Works
 
 1. **Contract Deployment**: When an Intelligent Contract is deployed, GenVM compiles and executes the contract code.
 
-2. **Transaction Processing**: As transactions are submitted to the network, GenVM executes the relevant contract functions and produces the next state for the contract.
+2. **Transaction Processing**: As transactions are submitted to the network, GenVM executes the relevant contract functions and produces the contract's next state.
 
-3. **Stateless**: GenVM is stateless and does not maintain any persistent state between transactions. It executes a transaction with a given snapshot of the state to produce the next state.
-
-## GenVM vs. Traditional VMs
-
-Unlike traditional blockchain virtual machines (e.g., Ethereum's EVM), GenVM is designed to handle:
-
-- Non-deterministic operations through LLM integrations
-- Direct web data access
-- Python-based contract execution
-
-This design allows for more flexible and powerful smart contract capabilities while maintaining blockchain security and consistency.
+3. **Stateless**: GenVM is stateless and does not maintain any persistent state between transactions. It executes a transaction with a given state snapshot to produce the next state.
 
 ## Developer Considerations
 
@@ -34,5 +32,3 @@ When developing Intelligent Contracts for GenVM:
 - Consider potential non-deterministic outcomes when integrating LLMs
 - Implement proper error handling for web data access
 - Optimize code for efficient execution within the rollup environment
-
-GenVM plays a crucial role in enabling the unique features of GenLayer, bridging the gap between traditional smart contracts and AI-powered, web-connected Intelligent Contracts.
