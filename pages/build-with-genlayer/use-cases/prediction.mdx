@@ -3,11 +3,22 @@
 The Prediction Market contract sets up a scenario to determine the outcome of a football game between two teams. The contract uses the Equivalence Principle to ensure accurate and consistent decision-making based on the game's resolution data.
 
 ```python filename="PredictionMarket" copy
-import json
-from genvm.base.equivalence_principle import EquivalencePrinciple
-from genvm.base.icontract import IContract
+# { "Depends": "py-genlayer:test" }
 
-class PredictionMarket(IContract):
+from genlayer import *
+
+import json
+import typing
+
+
+@gl.contract
+class PredictionMarket:
+    has_resolved: bool
+    game_date: str
+    team1: str
+    team2: str
+    resolution_url: str
+
     def __init__(self, game_date: str, team1: str, team2: str):
         """
         Initializes a new instance of the prediction market with the specified game date and teams.
@@ -26,22 +37,20 @@ class PredictionMarket(IContract):
         """
         self.has_resolved = False
         self.game_date = game_date
-        self.resolution_url = 'https://www.bbc.com/sport/football/scores-fixtures/' + game_date
+        self.resolution_url = (
+            "https://www.bbc.com/sport/football/scores-fixtures/" + game_date
+        )
         self.team1 = team1
         self.team2 = team2
 
-    async def resolve(self) -> None:
+    @gl.public.write
+    def resolve(self) -> typing.Any:
 
         if self.has_resolved:
             return "Already resolved"
 
-        final_result = {}
-        async with EquivalencePrinciple(
-                result=final_result,
-                principle="The score and the winner has to be exactly the same",
-                comparative=True,
-            ) as eq:
-            web_data = await eq.get_webpage(self.resolution_url)
+        def nondet() -> str:
+            web_data = gl.get_webpage(self.resolution_url, mode="text")
             print(web_data)
 
             task = f"""In the following web page, find the winning team in a matchup between the following teams:
@@ -57,20 +66,24 @@ class PredictionMarket(IContract):
 
             Respond with the following JSON format:
             {{
-                "score": str, // The score with numbers only, e.g., "1:2", or "-" if the game is not resolved yet
+                "score": str, // The score with numbers only, e.g, "1:2", or "-" if the game is not resolved yet
                 "winner": int, // The number of the winning team, 0 for draw, or -1 if the game is not yet finished
             }}
+            It is mandatory that you respond only using the JSON format above,
+            nothing else. Don't include any other words or characters,
+            your output must be only JSON without any formatting prefix or suffix.
+            This result should be perfectly parsable by a JSON parser without errors.
             """
-            result = await eq.call_llm(task)
+            result = gl.exec_prompt(task).replace("```json", "").replace("```", "")
             print(result)
-            eq.set(result)
+            return json.dumps(json.loads(result), sort_keys=True)
 
-        result_json = json.loads(final_result['output'])
+        result_json = json.loads(gl.eq_principle_strict_eq(nondet))
 
-        if result_json['winner'] > -1:
+        if result_json["winner"] > -1:
             self.has_resolved = True
-            self.winner = result_json['winner']
-            self.score = result_json['score']
+            self.winner = result_json["winner"]
+            self.score = result_json["score"]
 
         return result_json
 ```
