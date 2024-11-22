@@ -91,6 +91,11 @@ const nextConfig = withNextra({
         destination: "/build-with-genlayer/ideas",
         permanent: true,
       },
+      {
+        source: "/build-with-genlayer/use-cases/llm-erc20",
+        destination: "/build-with-genlayer/use-cases/llm-token",
+        permanent: true,
+      },
     ];
   },
 });
