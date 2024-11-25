@@ -92,6 +92,16 @@ const nextConfig = withNextra({
         permanent: true,
       },
       {
+        source: "/genlayer-stack/genlayer-simulator",
+        destination: "/genlayer-stack/genlayer-studio",
+        permanent: true,
+      },
+      {
+        source: "/genlayer-stack/genlayer-simulator/:page*",
+        destination: "/genlayer-stack/genlayer-studio/:page*",
+        permanent: true,
+      },
+      {
         source: "/build-with-genlayer/use-cases/llm-erc20",
         destination: "/build-with-genlayer/use-cases/llm-token",
         permanent: true,

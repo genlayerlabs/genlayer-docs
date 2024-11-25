@@ -6,10 +6,10 @@ import { Callout } from "nextra-theme-docs";
   This section is intended for advanced users who wish to integrate new LLM
   provider plugins. This process requires code modifications, and we encourage
   you to create a Pull Request if you'd like your plugin to be included in the
-  official GenLayer Simulator.
+  official GenLayer Studio.
 </Callout>
 
-The GenLayer Simulator seamlessly interacts with multiple LLM providers.
+The GenLayer Studio seamlessly interacts with multiple LLM providers.
 Currently, we support the following providers out of the box:
 
 - [OpenAI](https://platform.openai.com/)
@@ -84,7 +84,7 @@ class MyCustomPlugin:
 ```
 ### Registering the Plugin
 
-After implementing the `Plugin` protocol, you need to register your new provider in the `llms.py` file under the `get_llm_provider` function. This step ensures that the GenLayer Simulator recognizes and can utilize your custom plugin.
+After implementing the `Plugin` protocol, you need to register your new provider in the `llms.py` file under the `get_llm_provider` function. This step ensures that the GenLayer Studio recognizes and can utilize your custom plugin.
 
 ```python
 def get_llm_plugin(plugin: str, plugin_config: dict) -> Plugin:
@@ -113,7 +113,7 @@ The JSON schema plays a crucial role in validating the configuration options for
 
 ## Registering a Provider for the new plugin
 
-New LLM Providers can be registered through the Simulator's UI in the **Settings page** or manually through the backend API. Here is an example on how addition of an LLM Provider using your new Plugin could look like
+New LLM Providers can be registered through the Studio's UI in the **Settings page** or manually through the backend API. Here is an example on how addition of an LLM Provider using your new Plugin could look like
 
 ```sh
 curl --request POST \

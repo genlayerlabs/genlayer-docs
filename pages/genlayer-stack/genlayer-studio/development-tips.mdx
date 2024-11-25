@@ -1,7 +1,7 @@
 import Image from 'next/image'
 
 # Development Tips
-Here are some valuable tips on how to develop your intelligent contract, debug it, and test it using the Genlayer Simulator.
+Here are some valuable tips on how to develop your intelligent contract, debug it, and test it using the Genlayer Studio.
 
 ## 1. Validators setup
 You need to be sure that you have at least one validator. If you don't have any, you can create one in the validators screen by providing:
@@ -26,16 +26,16 @@ The constructor is a special method called when the contract is deployed. It is 
 def __init__(self, initial_storage: str):
     self.storage = initial_storage
 ```
-Right now, your contract must include a constructor. Without one, the simulator won't be able to deploy your contract.
+Right now, your contract must include a constructor. Without one, the Studio won't be able to deploy your contract.
 
 ## 4. Deploying a contract and sending transactions
 After you have written your contract, you can deploy it by clicking the "Deploy" button. This will deploy the contract and show you the contract's address.
-<br/>You can then call the contract's methods, shown below in the deployment section on the left panel of the simulator's UI.
+<br/>You can then call the contract's methods, shown below in the deployment section on the left panel of the Studio's UI.
 <br/>
 <Image src="/images/run-debug/read-write-methods.png" alt="Node Log" width={400} height={400} />
 
 ## 5. Debugging your contract
-You can debug your contract by adding print statements to your contract methods. The simulator's Logs section will display these print statements.
+You can debug your contract by adding print statements to your contract methods. The Studio's Logs section will display these print statements.
 Here is an example of printing in a contract method:
 ```python
 def update_storage(self, new_storage:str) -> None:
@@ -74,4 +74,4 @@ def get_balances(self) -> dict[str, int]:
 def get_balance_of(self, address: str) -> int:
     return self.balances.get(address, 0)
 ```
-These two methods allow you to query the contract's balance state. You can call them by expanding them from the left panel of the simulator's UI and clicking on the "Call Contract" button.
+These two methods allow you to query the contract's balance state. You can call them by expanding them from the left panel of the Studio's UI and clicking on the "Call Contract" button.

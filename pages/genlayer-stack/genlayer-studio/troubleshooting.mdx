@@ -1,6 +1,6 @@
 # Troubleshooting
 
-If you encounter any issues with the simulator, here are some detailed steps to help you resolve common problems:
+If you encounter any issues with the Studio, here are some detailed steps to help you resolve common problems:
 
 ## Frontend Not Loading Correctly
 The frontend may not load correctly due to caching issues or an outdated version of the contract stored in your browser.
@@ -14,9 +14,9 @@ import Image from 'next/image'
 <Image src="/troubleshoot.png" alt="Node Log" width={700} height={700} />
 
 ## Port Conflicts
-The simulator may fail to start if some ports required for its operation are already in use by other applications.
+The Studio may fail to start if some ports required for its operation are already in use by other applications.
 
-**Ports used by the simulator:**
+**Ports used by the Studio:**
 - **Frontend:** 8080
 - **Ollama:** 11434
 - **JSON-RPC Server:** 4000
@@ -43,7 +43,7 @@ The simulator may fail to start if some ports required for its operation are alr
      ```
 
 ## Docker not Running
-The Genlayer Simulator relies on Docker for managing containers and images. If Docker is not running, the simulator cannot function properly.
+The Genlayer Studio relies on Docker for managing containers and images. If Docker is not running, the Studio cannot function properly.
 
 ### Solution
 - Ensure that Docker (or Docker Desktop) is installed on your system. You can check this by running:
@@ -57,10 +57,10 @@ The Genlayer Simulator relies on Docker for managing containers and images. If D
 The code section or other UI elements may not display correctly due to screen size limitations.
 
 ### Solution
-- Resize your screen to accommodate the UI elements properly. This will help improve the visibility and layout of the simulator.
+- Resize your screen to accommodate the UI elements properly. This will help improve the visibility and layout of the Studio.
 
-## Simulator Not Responding or Throwing Errors
-The simulator may become unresponsive or throw errors due to various reasons, such as conflicting processes or corrupted containers.
+## Studio Not Responding or Throwing Errors
+The Studio may become unresponsive or throw errors due to various reasons, such as conflicting processes or corrupted containers.
 
 ### Solution
 You can perform a fresh start by stopping and removing all containers, as well as removing all images. 

@@ -10,13 +10,13 @@ Creates a new GenLayer client instance.
 ```typescript
 import { createClient } from 'genlayer-js';
 const client = createClient({
-  network: simulator,
+  chain: simulator,
   account: account, // Optional: Use this account for subsequent calls
 });
 ```
 
 **Parameters:**
-- `network`: The network configuration (e.g., simulator)
+- `chain`: The chain configuration (e.g., simulator)
 - `account`: (Optional) Sets an account to be used in subsequent calls
 
 **Returns:** A GenLayer client instance
@@ -131,9 +131,9 @@ const accountWithKey = createAccount('0x1234...'); // Replace with actual privat
 
 ### simulator
 
-Provides configuration for the GenLayer simulator network.
+Provides configuration for the GenLayer Studio chain (the Studio used to be called "Simulator").
 ```typescript
 import { simulator } from 'genlayer-js/chains';
 ```
-**Usage:** Used when creating a client to specify the network
+**Usage:** Used when creating a client to specify the chain
 

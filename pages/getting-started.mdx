@@ -2,11 +2,11 @@ import CustomCard from '../components/card'
 
 # Getting Started with GenLayer
 
-Welcome to the GenLayer getting started guide. This guide will help you set up the GenLayer environment, write your first Intelligent Contract, deploy it, and interact with it using the GenLayer Simulator. You'll also learn how to write end-to-end tests and build a frontend dApp with GenLayerJS.
+Welcome to the GenLayer getting started guide. This guide will help you set up the GenLayer environment, write your first Intelligent Contract, deploy it, and interact with it using the GenLayer Studio. You'll also learn how to use the Genlayer Project Boilerplate to write end-to-end tests and build a frontend dApp with GenLayerJS.
 
 ## Table of Contents
 1. [Installation of the GenLayer CLI](#installation-of-the-genlayer-cli)
-2. [Launching the GenLayer Simulator](#launching-the-genlayer-simulator)
+2. [Launching the GenLayer Studio](#launching-the-genlayer-studio)
 3. [Writing Intelligent Contracts](#writing-intelligent-contracts)
 4. [Deploying and Interacting with Intelligent Contracts](#deploying-and-interacting-with-intelligent-contracts)
 5. [Writing End-to-End Tests with genlayer-project-boilerplate](#writing-end-to-end-tests-with-genlayer-project-boilerplate)
@@ -14,7 +14,7 @@ Welcome to the GenLayer getting started guide. This guide will help you set up t
 
 ## Installation of the GenLayer CLI
 
-The GenLayer CLI is used to set up the GenLayer Simulator and, in the future, mainnet and testnet environments.
+The GenLayer CLI is used to set up the GenLayer Studio and, in the future, mainnet and testnet environments.
 
 ### Prerequisites
 Ensure you have the following installed and updated:
@@ -67,7 +67,7 @@ Ensure you have the following installed and updated:
    You can customize the initialization with the following options:
 
    - `--numValidators <number>`: Specify the number of validators (default is 5).
-   - `--branch <branch>`: Specify the branch of the GenLayer Simulator to use (default is "main").
+   - `--branch <branch>`: Specify the branch of the GenLayer Studio to use (default is "main").
 
    Example:
 
@@ -75,20 +75,20 @@ Ensure you have the following installed and updated:
    genlayer init --numValidators 3 --branch staging
    ```
 
-## Launching the GenLayer Simulator
+## Launching the GenLayer Studio
 
-After initializing the environment, you can start the simulator by running:
+After initializing the environment, you can start the Studio by running:
 
 ```bash
 genlayer up
 ```
 
-This command launches the GenLayer Simulator using your existing configuration.
+This command launches the GenLayer Studio using your existing configuration.
 
 **Optional Parameters:**
 - `--reset-validators`: Removes all current validators and creates new ones.
 - `--numValidators <number>`: Specify the number of validators to start.
-- `--branch <branch>`: Specify the branch to start the GenLayer Simulator from.
+- `--branch <branch>`: Specify the branch to start the GenLayer Studio from.
 
 Example:
 
@@ -96,7 +96,7 @@ Example:
 genlayer up --reset-validators --numValidators 3 --branch staging
 ```
 
-Once the simulator is running, access it at http://localhost:8080/.
+Once the Studio is running, access it at http://localhost:8080/.
 
 ## Writing Intelligent Contracts
 
@@ -145,10 +145,10 @@ If you need to process natural language or web data:
 ### Deploying the Contract
 
 1. **Load Your Contract**
-<br/>In the GenLayer Simulator, navigate to the Contracts section and upload your contract file.
+<br/>In the GenLayer Studio, navigate to the Contracts section and upload your contract file.
 
 2. **Set Constructor Parameters**
-<br/>The simulator will automatically detect constructor parameters. Provide the required values.
+<br/>The Studio will automatically detect constructor parameters. Provide the required values.
 
 3. **Deploy the Contract**
 <br/>Navigate to the Run and Deploy section and click the "Deploy" button. Upon successful deployment, the contract address will be displayed.
@@ -162,7 +162,7 @@ If you need to process natural language or web data:
 <br/>Execute Write Methods to interact with your contract. Provide any required input parameters.
 
 3. **Transaction Logs**
-<br/>Monitor transactions and validator consensus via the Node Logs at the bottom of the simulator.
+<br/>Monitor transactions and validator consensus via the Node Logs at the bottom of the Studio.
 
 ## Writing End-to-End Tests with genlayer-project-boilerplate
 
@@ -186,7 +186,7 @@ On a location different from the GenLayer Studio, clone the repository:
 ```
 
 3. **Configure Environment**
-<br/>Ensure the GenLayer Simulator is running. Update the configuration files if necessary.
+<br/>Ensure the GenLayer Studio is running. Update the configuration files if necessary.
 
 ### Writing E2E Tests
 
@@ -236,7 +236,7 @@ On a location different from the GenLayer Studio, clone the repository:
       assert updated_value == 20
    ```
 
-**Note on Deployment**: For deployment, developers should currently use the GenLayer Simulator UI. Deploying through the CLI is not yet supported.
+**Note on Deployment**: For deployment, developers should currently use the GenLayer Studio UI. Deploying through the CLI is not yet supported.
 
 ## Building a Frontend dApp with GenLayerJS
 
@@ -287,7 +287,7 @@ After you have your project ready, continue with the following steps:
 
 ### Running the Frontend
 
-Ensure your frontend application is configured to connect to the GenLayer Simulator's RPC endpoint (http://localhost:4000/api).
+Ensure your frontend application is configured to connect to the GenLayer Studio's RPC endpoint (http://localhost:4000/api).
 
 Start your frontend application:
 
@@ -297,5 +297,5 @@ Start your frontend application:
 
 ## Conclusion
 
-You've now set up the GenLayer environment, written and deployed an Intelligent Contract, and interacted with it through both the simulator and a frontend dApp using GenLayerJS. Explore further by customizing your contracts, writing more comprehensive tests, and enhancing your dApp's functionality.
+You've now set up the GenLayer environment, written and deployed an Intelligent Contract, and interacted with it through both the Studio and a frontend dApp using GenLayerJS. Explore further by customizing your contracts, writing more comprehensive tests, and enhancing your dApp's functionality.
 

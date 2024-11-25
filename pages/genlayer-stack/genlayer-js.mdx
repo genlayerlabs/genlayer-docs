@@ -47,7 +47,7 @@ npm install genlayer-js
 
 ## Usage
 
-Here’s how to initialize the client and connect to the GenLayer Simulator:
+Here’s how to initialize the client and connect to the GenLayer Studio:
 
 ### Reading a Transaction
 
@@ -56,7 +56,7 @@ import { simulator } from 'genlayer-js/chains';
 import { createClient } from 'genlayer-js';
 
 const client = createClient({
-  network: simulator,
+  chain: simulator,
 });
 
 const transaction = await client.getTransaction({ hash: transactionHash });
@@ -70,7 +70,7 @@ import { createClient, createAccount } from 'genlayer-js';
 
 const account = createAccount();
 const client = createClient({
-  network: simulator,
+  chain: simulator,
   account: account, // Use this account for subsequent calls
 });
 
@@ -89,7 +89,7 @@ import { createClient, createAccount } from 'genlayer-js';
 
 const account = createAccount();
 const client = createClient({
-  network: simulator,
+  chain: simulator,
   account: account,
 });
 
