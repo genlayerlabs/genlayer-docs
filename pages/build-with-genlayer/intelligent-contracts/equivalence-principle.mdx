@@ -15,7 +15,7 @@ The Equivalence Principle involves multiple validators randomly selected to dete
 
 ## Equivalence Principles Options
 
-Validators work to reach a consensus on whether the result set by the leader is acceptable, which might involve direct comparison or qualitative evaluation, depending on the contract's design. If the validators do not reach a consensus due to differing data interpretations or an error in data processing, the result might be challenged or an appeal process might be initiated.
+Validators work to reach a consensus on whether the result set by the leader is acceptable, which might involve direct comparison or qualitative evaluation, depending on the contract's design. If the validators do not reach a consensus due to differing data interpretations or an error in data processing, the transaction will become undetermined.
 
 ### Comparative Equivalence Principle
 
@@ -23,11 +23,11 @@ In the Comparative Equivalence Principle, the leader and the validators perform 
 
 ```python
 gl.eq_principle_prompt_comparative(
-    your_non_det_function,
+    your_non_deterministic_function,
     "The result must not differ by more than 5%"
 )
 ```
-For example, if an intelligent contract is tasked with fetching the follower count of a Twitter account and the Equivalence Principle specifies that _follower counts should not differ by more than 5%_, validators will compare their results to the leader's result utilizing LLMs to ensure they fall within this margin.
+For example, if an intelligent contract is tasked with fetching the follower count of a Twitter account and the Equivalence Principle specifies that _follower counts should not differ by more than 5%_, validators will compare their results to the leader's result utilizing their own LLMs to ensure they fall within this margin.
 
 ### Non-Comparative Equivalence Principle
 
