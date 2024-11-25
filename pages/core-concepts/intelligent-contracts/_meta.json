@@ -1,9 +1,6 @@
 {
-    "imports": "Imports",
-    "contract-class": "Intelligent Contract Class",
-    "constructor": "Constructor",
-    "crafting-prompts": "Crafting Prompts",
+    "first-contract": "Your First Contract",
+    "first-intelligent-contract": "Your First Intelligent Contract",
     "equivalence-principle": "",
-    "parsing-results": "",
-    "state-management": ""
-  }
+    "crafting-prompts": "Crafting Prompts"
+}

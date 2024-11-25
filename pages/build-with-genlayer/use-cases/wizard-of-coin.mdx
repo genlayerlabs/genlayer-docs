@@ -2,16 +2,24 @@
 
 The Wizard of Coin contract sets up a scenario where a wizard possesses a valuable coin, which adventurers try to obtain. The wizard must decide whether to give the coin away based on specific conditions.
 
-```python filename="WizardOfCoin" copy
-import json
-from genvm.base.icontract import IContract
-from genvm.base.equivalence_principle import call_llm_with_principle
+```python
+# { "Depends": "py-genlayer:test" }
+from genlayer import *
 
-class WizardOfCoin(IContract):
+import json
+
+
+@gl.contract
+class WizardOfCoin:
+    have_coin: bool
+
     def __init__(self, have_coin: bool):
         self.have_coin = have_coin
 
-    async def ask_for_coin(self, request: str) -> None:
+    @gl.public.write
+    def ask_for_coin(self, request: str) -> None:
+        if not self.have_coin:
+            return
         prompt = f"""
 You are a wizard, and you hold a magical coin.
 Many adventurers will come and try to get you to give them the coin.
@@ -29,19 +37,25 @@ Respond using ONLY the following format:
 "reasoning": str,
 "give_coin": bool
 }}
+It is mandatory that you respond only using the JSON format above,
+nothing else. Don't include any other words or characters,
+your output must be only JSON without any formatting prefix or suffix.
+This result should be perfectly parseable by a JSON parser without errors.
 """
-        if self.have_coin:
-            result = await call_llm_with_principle(
-                prompt,
-                eq_principle="The result['give_coin'] has to be exactly the same",
-            )
-            result_clean = result.replace("True", "true").replace("False", "false")
-            output = json.loads(result_clean)
 
-            if output["give_coin"] is True:
-                self.have_coin = False
+        def nondet():
+            res = gl.exec_prompt(prompt)
+            res = res.replace("```json", "").replace("```", "")
+            print(res)
+            dat = json.loads(res)
+            return dat["give_coin"]
 
-    def get_have_coin(self):
+        result = gl.eq_principle_strict_eq(nondet)
+        assert isinstance(result, bool)
+        self.have_coin = result
+
+    @gl.public.view
+    def get_have_coin(self) -> bool:
         return self.have_coin
 ```
 

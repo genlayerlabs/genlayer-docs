@@ -22,14 +22,14 @@ To use the Vector Store in your Intelligent Contracts, you will interact with it
 #### Importing Vector Store
 First, import the VectorStore class from the standard library in your contract:
 
-```python filename="llmErc20" copy
+```python
 from backend.node.genvm.std.vector_store import VectorStore
 ```
 
 #### Creating a Contract with Vector Store
 Here’s an example of a contract using the Vector Store for indexing and searching text logs:
 
-```python filename="llmErc20" copy
+```python
 from backend.node.genvm.icontract import IContract
 from backend.node.genvm.std.vector_store import VectorStore
 
@@ -72,7 +72,7 @@ class LogIndexer(IContract):
 #### 1. Adding Text and Metadata
 To store text in the Vector Store along with its metadata, use the add_text() method. This method generates a vector embedding for the text and stores it in the store.
 
-```python filename="llmErc20" copy
+```python
 vector_id = self.vector_store.add_text("example text", {"log_id": 123})
 ```
 **Args:**
@@ -84,7 +84,7 @@ vector_id = self.vector_store.add_text("example text", {"log_id": 123})
 #### 2. Retrieving the Closest Vector
 To find the vector that is most similar to a given text, use the get_closest_vector() method.
 
-```python filename="llmErc20" copy
+```python
 closest = self.vector_store.get_closest_vector("example text")
 ```
 **Args:**
@@ -100,7 +100,7 @@ closest = self.vector_store.get_closest_vector("example text")
 #### 3. Updating Text and Metadata
 To update the text and metadata associated with a stored vector, use the update_text() method.
 
-```python filename="llmErc20" copy
+```python
 self.vector_store.update_text(vector_id, "new text", {"log_id": 456})
 ```
 **Args:**
@@ -112,7 +112,7 @@ self.vector_store.update_text(vector_id, "new text", {"log_id": 456})
 #### 4. Deleting a Vector
 To delete a stored vector and its associated metadata, use the delete_vector() method.
 
-```python filename="llmErc20" copy
+```python
 self.vector_store.delete_vector(vector_id)
 ```
 **Args:**
@@ -122,7 +122,7 @@ self.vector_store.delete_vector(vector_id)
 #### 5. Fetching All Items
 To retrieve all stored vectors and their metadata, use the get_all_items() method.
 
-```python filename="llmErc20" copy
+```python
 items = self.vector_store.get_all_items()
 ```
 **Returns:** A list of tuples containing stored texts and their metadata.

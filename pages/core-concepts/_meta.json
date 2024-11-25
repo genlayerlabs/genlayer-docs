@@ -1,7 +1,7 @@
 {
   "validators-and-validator-roles": "",
+  "genvm": "GenVM",
   "intelligent-contracts": "",
-  "genvm": "",
   "optimistic-democracy": "",
   "rollup-integration": "",
   "non-deterministic-operations-handling": "",

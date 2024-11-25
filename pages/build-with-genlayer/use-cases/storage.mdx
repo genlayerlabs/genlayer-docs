@@ -3,15 +3,26 @@
 The Storage contract sets up a simple scenario to store and retrieve a string value. This contract demonstrates basic data storage and retrieval functionality within a blockchain environment.
 
 ```python
-from backend.node.genvm.icontract import IContract
+# { "Depends": "py-genlayer:test" }
 
-class Storage(IContract):
+from genlayer import *
+
+# contract class
+@gl.contract
+class Storage:
+    storage: str
+
+    # constructor
     def __init__(self, initial_storage: str):
         self.storage = initial_storage
 
+    # read methods must be annotated with view
+    @gl.public.view
     def get_storage(self) -> str:
         return self.storage
 
+    # write method
+    @gl.public.write
     def update_storage(self, new_storage: str) -> None:
         self.storage = new_storage
 ```
