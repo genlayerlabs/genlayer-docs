@@ -8,5 +8,7 @@
   "providers": "Providers",
   "limitations": "Limitations",
   "reset-the-studio": "Reset the Studio",
-  "troubleshooting": "Troubleshooting"
+  "troubleshooting": "Troubleshooting",
+  "development-tips": "Development Tips",
+  "advanced-features": "Advanced Features"
 }
