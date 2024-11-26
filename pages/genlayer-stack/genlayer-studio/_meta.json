@@ -1,12 +1,14 @@
 {
-  "loading-contract": "",
-  "deploying-contract": "",
-  "contract-state": "",
-  "execute-transaction": "",
-  "monitoring-node-logs": "",
-  "validators": "",
-  "providers": "",
-  "limitations": "",
-  "reset-the-studio": "",
-  "troubleshooting": ""
+  "loading-contract": "Loading a Contract",
+  "deploying-contract": "Deploying a Contract",
+  "contract-state": "Reading the Contract State",
+  "execute-transaction": "Executing a Transaction",
+  "monitoring-node-logs": "Monitoring Node Logs",
+  "validators": "Validators",
+  "providers": "Providers",
+  "limitations": "Limitations",
+  "reset-the-studio": "Reset the Studio",
+  "troubleshooting": "Troubleshooting",
+  "development-tips": "Development Tips",
+  "advanced-features": "Advanced Features"
 }

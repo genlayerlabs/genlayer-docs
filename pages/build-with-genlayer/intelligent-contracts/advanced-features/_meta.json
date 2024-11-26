@@ -1,5 +1,4 @@
 {
   "vector-store": "Vector Store",
-  "custom-plugins": "Adding LLM Providers Plugins",
   "contract-to-contract-interaction": "Contract-to-Contract Interaction"
 }

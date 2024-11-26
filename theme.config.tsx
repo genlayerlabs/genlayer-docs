@@ -45,9 +45,10 @@ const config: DocsThemeConfig = {
         type: "website",
         locale: "en_IE",
         url: "https://docs.genlayer.com/" + asPath,
-        site_name: "GenLayer Documentation",
-        title: "GenLayer the intelligence layer of the internet - Documentation",
-        description: "GenLayer the intelligence layer of the internet - Documentation.",
+        site_name: "GenLayer: the intelligence layer of the internet - Documentation",
+        title: "GenLayer: the intelligence layer of the internet - Documentation",
+        description:
+          "Build and deploy AI-powered applications with GenLayer. Comprehensive documentation, guides, and API references for developers.",
         images: [
           {
             url: "/assets/genlayer.png",
@@ -72,7 +73,7 @@ const config: DocsThemeConfig = {
         },
         {
           property: "og:image",
-          content: "./components/icon",
+          content: "https://docs.genlayer.com/assets/genlayer.png",
         },
       ],
     };

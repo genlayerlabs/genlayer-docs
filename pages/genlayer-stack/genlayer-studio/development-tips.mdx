@@ -65,12 +65,14 @@ If a contract method calls an LLM, you can see the Equivalence Principle Output 
 <Image src="/images/run-debug/transaction-modal-eq-output.png" alt="Node Log" width={400} height={400} />
 
 ## 8. Access to the contract state
-If your contract methods change the contract's state, you can query that information by adding a read method to your contract (read methods should start with `get_`). This method should return the state you want to query.
+If your contract methods change the contract's state, you can query that information by adding a read method to your contract. Read methods on a contract need to be decorated with the `@gl.public.view` decorator. This method should return the state you want to query.
 <br/>For example:
 ```python
+@gl.public.view
 def get_balances(self) -> dict[str, int]:
     return self.balances
 
+@gl.public.view
 def get_balance_of(self, address: str) -> int:
     return self.balances.get(address, 0)
 ```

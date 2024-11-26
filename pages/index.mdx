@@ -2,7 +2,7 @@ import { Card, Cards } from 'nextra-theme-docs'
 import CustomCard from '../components/card'
 
 # Welcome to GenLayer docs 
-GenLayer is a decentralized blockchain platform designed to execute AI-powered smart contracts called **Intelligent Contracts** that uses AI models to search the web and process natural language instructions.
+GenLayer is a decentralized blockchain platform designed to execute AI-powered smart contracts called **Intelligent Contracts** which can use AI models to search the web and process natural language instructions.
 
 ## What makes GenLayer different
 GenLayer stands out with a unique set of features that empower developers to create innovative and intelligent decentralized applications:
@@ -16,8 +16,8 @@ Unlike conventional blockchain platforms, GenLayer enables Intelligent Contracts
 #### 🧠 Optimistic Democracy Consensus
 GenLayer employs a cutting-edge consensus mechanism known as Optimistic Democracy. This approach enhances security and efficiency by allowing transactions to be validated and finalized quickly, with the flexibility to appeal and re-evaluate in case of disputes.
 
-#### 🐍 Developer-Friendly Language
-Building on GenLayer is made easier with a developer-friendly language that simplifies the creation of Intelligent Contracts. Whether you're new to blockchain development or an experienced coder, GenLayer's tools are designed to streamline your workflow and accelerate innovation.
+#### 🐍 Python-based Contract Language
+Building on GenLayer is made easier with a Python-based SDK that simplifies the creation of Intelligent Contracts. Whether you're new to blockchain development or an experienced coder, GenLayer's tools are designed to streamline your workflow and accelerate innovation.
 
 
 ## Find your way in the docs
@@ -25,14 +25,14 @@ Building on GenLayer is made easier with a developer-friendly language that simp
 <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, minmax(0, 1fr))', gap: '1rem' }}>
   <CustomCard
     arrow
-    title=" What is GenLayer"
+    title="What is GenLayer"
     description="An introduction to GenLayer and its core functionalities. Learn what sets GenLayer apart"
     href="/overview/what-is-genlayer"
   />
   <CustomCard
     arrow
-    title="Run Intelligent Contract on the Studio"
-    description="Step-by-step guide to building and deploying your first Intelligent Contract using our Studio"
+    title="Develop Intelligent Contracts in the GenLayer Studio"
+    description="Step-by-step guide to developing Intelligent Contracts using the GenLayer Studio"
     href="/genlayer-stack/genlayer-studio"
   />
   <CustomCard
@@ -54,8 +54,8 @@ Building on GenLayer is made easier with a developer-friendly language that simp
 We feature various collaborators who help drive our innovation.
 
 <Cards num={3}>
-  <Card image title="Yeager" href="/partners/yeager">
-    <img src="/yeager.jpeg" alt="Yeager" fetchpriority="high" />
+  <Card image title="YeagerAI" href="/partners/yeager">
+    <img src="/yeager.jpeg" alt="YeagerAI" fetchpriority="high" />
   </Card>
   <Card image title="Heurist" href="/partners/heurist">
     <img src="/heurist.png" alt="Heurist" fetchpriority="high" />
@@ -80,9 +80,9 @@ The GenLayer FAQ is a collection of useful questions and answers about the proje
 
 <details style={{ backgroundColor: '#262626', padding: '10px', borderRadius: '5px', color: 'white' }}>
   <summary style={{ color: 'white' }}>
-    <b>How do I set up the GenLayer environment?</b>
+    <b>How do I set up the GenLayer Development Environment?</b>
   </summary>
-  To quickly set up the GenLayer environment, run the commands below:
+  To quickly set up the GenLayer Development Environment, run the commands below:
   ```
   $ npm install -g genlayer
   $ genlayer init
@@ -94,16 +94,16 @@ The GenLayer FAQ is a collection of useful questions and answers about the proje
   <summary style={{ color: 'white' }}>
     <b>Where can I find the GenLayer Studio?</b>
   </summary>
-  For you to use the Studio, you need to install GenLayer via the [CLI](/getting-started#installation-of-the-genlayer-cli). Once the setup is complete, you can access the GenLayer Studio at http://localhost:8080/. 
+  The GenLayer Studio is available at [studio.genlayer.com](https://studio.genlayer.com).
   </details>
 
 <details style={{ backgroundColor: '#262626', padding: '10px', borderRadius: '5px', color: 'white' }}>
   <summary style={{ color: 'white' }}>
     <b>How do I deploy an Intelligent Contract?</b>
   </summary>
-   - Use the CLI to start the GenLayer Studio.
-   - Write your contract in Python using the [Intelligent Contract syntax](/core-concepts/intelligent-contracts). 
-   - Folllow the guide [here](/genlayer-stack/genlayer-studio/execute-transaction) to interact with the Studio and deploy your Intelligent Contract.
+   - Go to [studio.genlayer.com](https://studio.genlayer.com) or use the [GenLayer CLI](/getting-started#installation-of-the-genlayer-cli) to start the GenLayer Studio locally.
+   - Write your contract in Python using the [Intelligent Contract SDK](/core-concepts/intelligent-contracts). 
+   - Follow the guide [here](/genlayer-stack/genlayer-studio/execute-transaction) to interact with the Studio and deploy your Intelligent Contract.
 </details>
 
 <details style={{ backgroundColor: '#262626', padding: '10px', borderRadius: '5px', color: 'white' }}>
