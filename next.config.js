@@ -106,6 +106,21 @@ const nextConfig = withNextra({
         destination: "/build-with-genlayer/use-cases/llm-token",
         permanent: true,
       },
+      {
+        source: "/advanced-features/:page*",
+        destination: "/build-with-genlayer/intelligent-contracts/advanced-features/:page*",
+        permanent: true,
+      },
+      {
+        source: "/core-concepts/intelligent-contracts",
+        destination: "/build-with-genlayer/intelligent-contracts",
+        permanent: true,
+      },
+      {
+        source: "/core-concepts/intelligent-contracts/:page*",
+        destination: "/build-with-genlayer/intelligent-contracts/:page*",
+        permanent: true,
+      },
     ];
   },
 });
