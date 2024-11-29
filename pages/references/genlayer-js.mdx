@@ -85,6 +85,7 @@ const transactionHash = await client.writeContract({
   functionName: 'storeData',
   args: ['new_data'],
   value: 0, // Optional: amount of native token to send with the transaction
+  leader_only: false, // Optional: whether the transaction should be executed only by the leader
 });
 ```
 
@@ -94,8 +95,34 @@ const transactionHash = await client.writeContract({
 - `functionName`: The name of the function to call
 - `args`: An array of arguments for the function call
 - `value`: (Optional) Amount of native token to send with the transaction
-
+- `leaderOnly`: (Optional) Whether the transaction should be executed only by the leader. Note: this is only supported in the local network.
 **Returns:** The transaction hash
+<br/>
+<hr/>
+### getContractSchema
+
+Retrieves the schema for a deployed contract.
+```typescript
+const schema = await client.getContractSchema(contractAddress);
+```
+
+**Parameters:**
+- `address`: The contract address
+
+**Returns:** A ContractSchema object describing the contract's interface
+<br/>
+<hr/>
+### getContractSchemaForCode
+
+Retrieves the schema for undeployed contract code.
+```typescript
+const schema = await client.getContractSchemaForCode(contractCode);
+```
+
+**Parameters:**
+- `contractCode`: The contract source code as a string
+
+**Returns:** A ContractSchema object describing the contract's interface
 
 ## Account Management
 
