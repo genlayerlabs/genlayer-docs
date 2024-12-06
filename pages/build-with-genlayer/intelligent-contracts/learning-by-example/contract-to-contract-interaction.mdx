@@ -1,0 +1,60 @@
+import { Callout } from 'nextra-theme-docs'
+
+# Interacting with other contracts
+
+## Interacting with Intelligent Contracts
+
+As GenLayer calldata is dynamically typed users can send whatever they want to a contract, or use statically typed interface to facilitate type checking and autocompletion
+
+<Callout emoji="🏗️">
+    Exact parameters of `.view()` and `.write()` are subject to change
+</Callout>
+
+### Dynamically typed approach
+
+```py
+address = Address("0x03FB09251eC05ee9Ca36c98644070B89111D4b3F")
+result = gl.ContractAt(address).view().method_name(1, '234')
+gl.ContractAt(address).write(gas=10**5).method_name(1, '234')
+# ^ write methods do not return anything!
+```
+
+### Statically typed approach
+
+```py
+@gl.contract_interface
+class GenLayerContractIface:
+    class View:
+        def method_name(self, a: int, b: str): ...
+
+    class Write:
+        pass
+
+### in your contract method ###
+
+address = Address("0x03FB09251eC05ee9Ca36c98644070B89111D4b3F")
+result = GenLayerContractIface(address).view().method_name(1, '234')
+```
+
+## Interacting with Ghost Contracts
+
+Eth contracts have statically typed calldata format, which means that only statically typed approach with interfaces is applicable
+
+<Callout emoji="🏗️">
+    This is not supported in the Studio right now
+</Callout>
+
+```py
+@gl.ghost_contract
+class GhostContractIface:
+    class View:
+        def method_name(self, param: str, /) -> tuple[u32, str]: ...
+
+    class Write:
+        def bar(self, param: str, /): ...
+
+### in your contract method ###
+
+address = Address("0x03FB09251eC05ee9Ca36c98644070B89111D4b3F")
+i, s = GhostContractIface(address).view().method_name('234')
+```
