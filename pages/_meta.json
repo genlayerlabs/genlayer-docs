@@ -1,18 +1,22 @@
 {
-  "index": "Welcome to GenLayer",
-  "overview": "Overview",
-  "getting-started": "Getting started",
-  "build-with-genlayer": "Build with GenLayer",
-  "genlayer-stack": "GenLayer Stack",
-  "core-concepts": "Core concepts",
-  "security-and-best-practices": "Security and Best Practices",
+  "index": "Welcome to GenLayer Docs",
+  "about-genlayer": "About GenLayer Protocol",
+  "users": "Interact with GenLayer",
+  "developers": "Build Intelligent Contracts",
+  "contributors": "Contribute to the network",
   "partners": "Partners",
   "glossary": "Glossary",
-  "references": "References",
+  "api-references": "API References",
   "blog": {
     "title": "Blog 📚",
     "type": "page",
     "href": "https://blog.genlayer.com/",
+    "newWindow": true
+  },
+  "bulkdownload": {
+    "title": "Bulk Download 🤖",
+    "type": "page",
+    "href": "/full-documentation.txt",
     "newWindow": true
   }
 }
