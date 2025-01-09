@@ -12,11 +12,9 @@ Intelligent Contracts store data publicly on chain, attached to their account's 
 
 For storage declaration GenLayer uses contract class fields.
 
-<Callout emoji="⚠️">
-    All persistent fields must be declared in the class body and annotated with types.
-</Callout>
 <Callout emoji="🚫">
-    Fields declared outside the class body by creating new instance variables (`self.field = value`) are not persistent and will be discarded after the contract execution.
+    All persistent fields must be declared in the class body and annotated with types.
+    <br/>Fields declared outside the class body by creating new instance variables (`self.field = value`) are not persistent and will be discarded after the contract execution.
 </Callout>
 
 Example:

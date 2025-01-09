@@ -35,11 +35,9 @@ The GenVM enables Intelligent Contracts to maintain persistent data. This data i
 
 This is done by declaring fields in the contract class.
 
-<Callout emoji="⚠️">
-    All persistent fields must be declared in the class body and annotated with types.
-</Callout>
 <Callout emoji="🚫">
-    Fields declared outside the class body by creating new instance variables (`self.field = value`) are not persistent and will be discarded after the contract execution.
+    All persistent fields must be declared in the class body and annotated with types.
+    <br/>Fields declared outside the class body by creating new instance variables (`self.field = value`) are not persistent and will be discarded after the contract execution.
 </Callout>
 
 #### Types
