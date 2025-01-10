@@ -5,9 +5,9 @@ import { Callout } from 'nextra-theme-docs'
 Contract-to-Contract Interaction in GenLayer allows developers to create more complex and modular Intelligent Contracts by enabling communication between them. This feature is crucial for building scalable and composable decentralized applications, allowing contracts to read from and write to other contracts.
 
 <Callout type="info">
-    Please note that this feature is experimental and will be subject to changes in the near future.
+    Please note that this feature is in progress and will be subject to changes in the near future.
 </Callout>
-## Key Features of Contract-to-Contract Interaction
+## Features of Contract-to-Contract Interaction
 
 The Contract-to-Contract Interaction provides several powerful capabilities:
 
@@ -25,35 +25,39 @@ Contracts can be designed to work together, creating more powerful and flexible 
 
 ## How to Use Contract-to-Contract Interaction in Your Contracts
 
-To use Contract-to-Contract Interaction in your Intelligent Contracts, you'll use the `Contract` class to interact with other contracts. Below are the details of how to use this feature.
+As GenLayer calldata is dynamically typed users can send whatever they want to a contract, or use statically typed interface to facilitate type checking and autocompletion
 
+<Callout emoji="🏗️">
+    Exact parameters of `.view()` and `.write()` are subject to change
+</Callout>
 
-#### Creating a Contract with Cross-Contract Interaction
-Here's an example of a contract that interacts with an ERC20 token contract:
+### Dynamically typed approach
 
-```python filename="token_interaction" copy
-# { "Depends": "py-genlayer:test" }
-
-from genlayer import *
-
-
-@gl.contract
-class TokenInteraction:
-    token_contract_address: Address
-
-    def __init__(self, token_contract_address: str):
-        self.token_contract_address = Address(token_contract_address)
-
-    @gl.public.view
-    def get_balance(self, account_address: str) -> int:
-        return gl.ContractAt(self.token_contract_address).view().get_balance_of(account_address)
-
-    @gl.public.write 
-    def transfer_tokens(self, to_address: str, amount: int) -> bool:
-        return gl.ContractAt(self.token_contract_address).emit(gas=100000).transfer(to_address, amount)
+```py
+address = Address("0x03FB09251eC05ee9Ca36c98644070B89111D4b3F")
+result = gl.ContractAt(address).view().method_name(1, '234')
+gl.ContractAt(address).write(gas=10**5).method_name(1, '234')
+# ^ write methods do not return anything!
 ```
 
-## Key Methods for Contract-to-Contract Interaction
+### Statically typed approach
+
+```py
+@gl.contract_interface
+class GenLayerContractIface:
+    class View:
+        def method_name(self, a: int, b: str): ...
+
+    class Write:
+        pass
+
+### in your contract method ###
+
+address = Address("0x03FB09251eC05ee9Ca36c98644070B89111D4b3F")
+result = GenLayerContractIface(address).view().method_name(1, '234')
+```
+
+## Methods for Contract-to-Contract Interaction
 
 #### 1. Reading from Another Contract
 To read data from another contract, create an instance of the `Contract` class and call its methods:
@@ -99,6 +103,30 @@ class MultiContractInteraction:
             storage.emit(gas=100000).store_data(account, data)
             return True
         return False
+```
+
+
+## Interacting with Ghost Contracts
+
+Eth contracts have statically typed calldata format, which means that only statically typed approach with interfaces is applicable
+
+<Callout emoji="🏗️">
+    This is not supported in the Studio right now
+</Callout>
+
+```py
+@gl.ghost_contract
+class GhostContractIface:
+    class View:
+        def method_name(self, param: str, /) -> tuple[u32, str]: ...
+
+    class Write:
+        def bar(self, param: str, /): ...
+
+### in your contract method ###
+
+address = Address("0x03FB09251eC05ee9Ca36c98644070B89111D4b3F")
+i, s = GhostContractIface(address).view().method_name('234')
 ```
 
 ## Best Practices for Contract-to-Contract Interaction
