@@ -6,7 +6,5 @@
   "reading-data": "Reading Data from Intelligent Contracts",
   "writing-data": "Writing Data to Intelligent Contracts",
   "querying-a-transaction": "Querying a Transaction",
-  "testing-and-debugging": "Testing and Debugging",
-  "examples": "Examples",
-  "tools": "Tools"
+  "testing-and-debugging": "Testing and Debugging"
 }
