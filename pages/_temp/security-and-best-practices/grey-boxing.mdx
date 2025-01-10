@@ -1,0 +1,15 @@
+# Greyboxing in GenLayer
+
+Greyboxing combines elements of both "blackboxing" and "whiteboxing" to create a semi-transparent operational environment for AI models. In GenLayer, this technique involves individually configuring each validator's interaction with AI models, ensuring that manipulative or malicious inputs do not affect the blockchain's integrity.
+
+## How Greyboxing Works
+
+1. **Unique Configuration per Validator**: Each validator in GenLayer operates its AI models within a uniquely configured greybox environment. This customization makes it more difficult for attackers to perform successful universal attacks, as they cannot predict the specific defensive mechanisms employed by each validator.
+
+2. **Input Filtration**: Inputs to AI models are rigorously filtered to remove or sanitize potential threats before processing. This precaution helps ensure that only safe and intended data influences the AI's decision-making processes.
+
+3. **Output Restrictions**: Outputs from AI models are confined within predefined safety parameters to prevent unintended or harmful responses. These restrictions are tailored to each greybox setup, enhancing security and reliability.
+
+4. **Model Isolation**: While AI models access necessary data for operations, they do so within controlled and observable environments. This isolation helps prevent external manipulations and maintains the integrity of model responses.
+
+5. **Continuous Monitoring**: The operations within each greyboxed environment are continuously monitored for any signs of anomalous or potentially harmful activity. This ongoing surveillance allows for immediate detection and response to security threats.
