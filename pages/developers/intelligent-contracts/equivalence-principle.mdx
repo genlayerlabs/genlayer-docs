@@ -38,27 +38,26 @@ GenLayer SDK provides function `gl.eq_principle_prompt_non_comparative` for hand
 The `eq_principle_prompt_non_comparative` function takes three key parameters that define how validators should evaluate non-deterministic operations:
 
 1. **input** (function)
-   - The original input data that needs to be processed
-   - Can be any data type (string, number, object, etc.)
-   - Example: A text description that needs to be classified
+
+   The input parameter represents the original data or function that needs to be processed by the task. For instance, when building a sentiment analysis contract, the input might be a text description that needs to be classified. The function processes this input before passing it to the validators for evaluation.
 
 2. **task** (str)
-   - Describes the specific operation that needs to be performed
-   - Should be a clear, concise instruction
-   - Example: "Classify the sentiment of this text as positive, negative, or neutral"
+
+   The task parameter provides a clear and concise instruction that defines exactly what operation needs to be performed on the input. This string should be specific enough to guide the validators in their evaluation process while remaining concise enough to be easily understood. For example, in a sentiment analysis context, the task might be "Classify the sentiment of this text as positive, negative, or neutral". This instruction serves as a guide for both the leader and validators in processing the input.
 
 3. **criteria** (str)
-   - Defines the validation rules or acceptance criteria
-   - Can be either a list of requirements or a dictionary of validation parameters
-   - Used by validators to determine if an output is acceptable
-   - Example:
+
+   The criteria parameter defines the specific rules and requirements that validators use to determine if an output is acceptable. This string should contain a comprehensive set of validation parameters that ensure consistency across different validators. While the criteria can be structured in various ways, it typically outlines the expected format of the output and any specific considerations that should be taken into account during validation. For example:
+
    ```python
-   criteria = [
-       "Output must be one of: positive, negative, neutral",
-       "Classification should consider context and tone",
-       "Sarcasm should be properly identified"
-   ]
+   criteria = """
+               Output must be one of: positive, negative, neutral
+               Consider context and tone
+               Account for sarcasm and idioms
+           """
    ```
+
+   This criteria helps validators make consistent decisions about whether to accept or reject the leader's proposed output, even when dealing with subjective or non-deterministic results.
 
 #### Example Usage
 
@@ -66,16 +65,15 @@ The `eq_principle_prompt_non_comparative` function takes three key parameters th
 @gl.contract
 class SentimentAnalyzer:
     @gl.public.write
-    @gl.non_comparative_validation
     def analyze_sentiment(self, text: str) -> str:
-        return eq_principle_prompt_non_comparative(
+        self.sentiment = gl.eq_principle_prompt_non_comparative(
             input=text,
-            task="Classify the sentiment of this text",
-            criteria=[
-                "Output must be one of: positive, negative, neutral",
-                "Consider context and tone",
-                "Account for sarcasm and idioms"
-            ]
+            task="Classify the sentiment of this text as positive, negative, or neutral",
+            criteria="""
+                Output must be one of: positive, negative, neutral
+                Consider context and tone
+                Account for sarcasm and idioms
+            """
         )
 ```
 
