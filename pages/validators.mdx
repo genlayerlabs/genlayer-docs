@@ -1,0 +1,37 @@
+import { Callout } from 'nextra-theme-docs'
+
+# GenLayer Validator Hardware Requirements
+
+Running a GenLayer Validator node ensures the security and reliability of the GenLayer network. Below are the **initial** recommended hardware requirements. These guidelines may change as the network grows and evolves.
+
+## RAM
+
+- **Recommended:** 16 GB  
+- **Why:**  
+  - GenLayer's _genvm_ can spawn multiple Sub-VMs for contract calls and non-deterministic blocks.  
+  - Each Sub-VM can consume up to ~4 GB of RAM for storage.
+
+## CPU
+
+- **Recommended:** Modern multi-core processor with at least 8 cores/16 threads  
+
+## Storage
+
+- **Recommended Disk Space:** 128 GB+  
+- **Preferred Type:** SSD or NVMe (M.2)  
+
+## GPU (Optional)
+
+- **Recommended:** If you plan to run advanced AI-models locally, a CUDA-compatible GPU could be beneficial.  
+
+## Network
+
+- **Recommended Connection:** Stable broadband  
+
+## Operating System
+
+- **Recommended:** 64-bit Linux (Ubuntu, Debian, CentOS, etc.)  
+
+<Callout emoji="⚠️">
+    These requirements are a starting point. As GenLayer evolves and usage patterns change (e.g., more complex AI-driven Intelligent Contracts), the recommended hardware may change.
+</Callout>
