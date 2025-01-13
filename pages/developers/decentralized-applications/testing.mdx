@@ -1,8 +1,8 @@
 import { Callout } from 'nextra-theme-docs'
 
-# Testing and Debugging Intelligent Contracts on GenLayer
+# Testing Intelligent Contracts on GenLayer
 
-Testing and debugging Intelligent Contracts on GenLayer involves deploying contracts, sending transactions, validating their behavior, and identifying issues using logs. Here is some guidance on how to test and debug using the tools provided in the local development environment and GenLayer Studio.
+Testing Intelligent Contracts on GenLayer involves deploying contracts, sending transactions, validating their behavior, and identifying issues. Here is some guidance on how to test using the tools provided in the local development environment and GenLayer Studio.
 
 ## 1. Testing in the Local Environment
 
@@ -78,38 +78,3 @@ After completing the tests, delete the validators or reset the environment:
 ```python
 delete_response = post_request_localhost(payload("sim_deleteAllValidators")).json()
 ```
-
-
-## 2. Debugging in GenLayer Studio
-
-When testing in GenLayer Studio, you can debug issues by examining the logs and outputs. The Studio provides detailed logs for every transaction and contract execution.
-
-### Getting static code syntax errors
-If you get a syntax error in your contract, you can see the error on a red panel in the Studio in the **Run and Debug** tab.
-
-Here is an example of a syntax error in line 42 of the Wizard of Coin contract:
-
-![Syntax Error](/studio/syntax-error.png)
-### Viewing Logs
-
-#### Access Logs
-The logs are located in the bottom section of the Studio in the **Run and Debug** tab.
-
-#### Filter Relevant Logs
-Use filters to isolate logs related to specific transactions or contracts. You can select the debug level (info, success, error), the execution layer(RPC Server, GenVM, and Consensus), and the transaction hash.
-
-Also, you can select a transaction from the left list and see the logs for that specific transaction.
-
-### Identifying Common Issues
-
-#### Input Validation Errors
-- Look for incorrect or missing parameters in the transaction payload
-
-#### Contract Logic Errors
-- Debug issues in contract logic by examining state changes and variable values in logs
-
-#### Non-deterministic Output Issues
-- Analyze LLM or web data interactions for discrepancies or timeouts
-
-#### Consensus Errors
-- Investigate validator disagreements or timeout errors to identify potential misconfigurations
