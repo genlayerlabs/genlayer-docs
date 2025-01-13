@@ -1,0 +1,10 @@
+{
+  "architecture-overview": "Architecture Overview",
+  "dapp-development-workflow": "DApp Development Workflow",
+  "genlayer-js": "GenLayer JS",
+  "reading-data": "Reading Data from Intelligent Contracts",
+  "writing-data": "Writing Data to Intelligent Contracts",
+  "querying-a-transaction": "Querying a Transaction",
+  "testing": "Testing",
+  "project-boilerplate": "Project Boilerplate"
+}

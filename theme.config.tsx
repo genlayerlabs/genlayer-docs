@@ -19,6 +19,11 @@ const config: DocsThemeConfig = {
     defaultMenuCollapseLevel: 1,
   },
   navigation: true,
+  head: (
+    <>
+      <meta name="description" content="GenLayer the intelligence layer of the internet" />
+    </>
+  ),
   navbar: {
     extraContent: (
       <div style={{ display: "flex", alignItems: "center" }}>

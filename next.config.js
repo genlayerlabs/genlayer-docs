@@ -4,128 +4,139 @@ const withNextra = require("nextra")({
   latex: true,
 });
 
+const previousRedirects = [
+  {
+    old: "/getting-started/genlayer-simulator",
+    new: "/developers/intelligent-contracts/tools/genlayer-studio",
+  },
+  {
+    old: "/getting-started/genlayer-simulator/:page*",
+    new: "/developers/intelligent-contracts/tools/genlayer-studio/:page*",
+  },
+  {
+    old: "/getting-started/development-tips",
+    new: "/developers/intelligent-contracts/tools/genlayer-studio/development-tips",
+  },
+  { old: "/getting-started/install-genlayer", new: "/getting-started" },
+  { old: "/getting-started/writing-intelligent-contracts", new: "/core-concepts/intelligent-contracts" },
+  {
+    old: "/getting-started/writing-intelligent-contracts/:page*",
+    new: "/developers/intelligent-contracts/first-contract",
+  },
+  { old: "/core-concepts/intelligent-contract", new: "/core-concepts/intelligent-contracts" },
+  { old: "/concept", new: "/core-concepts" },
+  { old: "/concept/optimistic-democracy/slashing", new: "/core-concepts/optimistic-democracy/slashing" },
+  {
+    old: "/simulator/usage-and-interaction/execute-transaction",
+    new: "/genlayer-stack/genlayer-simulator/execute-transaction",
+  },
+  {
+    old: "/simulator/intelligent-contract-syntax/constructor",
+    new: "/core-concepts/intelligent-contracts/constructor",
+  },
+  {
+    old: "/simulator/intelligent-contract-syntax/contract-class",
+    new: "/core-concepts/intelligent-contracts/contract-class",
+  },
+  { old: "/simulator/intelligent-contract-syntax", new: "/core-concepts/intelligent-contracts" },
+  { old: "/concept/optimistic-democracy/staking", new: "/core-concepts/optimistic-democracy/staking" },
+  { old: "/simulator/installation", new: "/getting-started" },
+  {
+    old: "/overview/risks-and-security/universal-attacks",
+    new: "/security-and-best-practices/universal-attacks",
+  },
+  { old: "/ideas", new: "/build-with-genlayer/ideas" },
+  { old: "/genlayer-stack/genlayer-simulator", new: "/genlayer-stack/genlayer-studio" },
+  {
+    old: "/genlayer-stack/genlayer-simulator/:page*",
+    new: "/developers/intelligent-contracts/tools/genlayer-studio/:page*",
+  },
+  { old: "/build-with-genlayer/use-cases/llm-erc20", new: "/build-with-genlayer/use-cases/llm-token" },
+  {
+    old: "/advanced-features/:page*",
+    new: "/developers/intelligent-contracts/advanced-features/:page*",
+  },
+  { old: "/core-concepts/intelligent-contracts", new: "/build-with-genlayer/intelligent-contracts" },
+  {
+    old: "/core-concepts/intelligent-contracts/:page*",
+    new: "/developers/intelligent-contracts/introduction",
+  },
+];
+
+const actualRedirects = [
+  { old: "/getting-started", new: "/developers" },
+
+  { old: "/overview", new: "/about-genlayer" },
+  { old: "/overview/:page*", new: "/about-genlayer/:page*" },
+
+  { old: "/core-concepts", new: "/about-genlayer/core-concepts" },
+  { old: "/core-concepts/:page*", new: "/about-genlayer/core-concepts/:page*" },
+
+  { old: "/references", new: "/api-references" },
+  { old: "/references/:page*", new: "/api-references/:page*" },
+  {
+    old: "/build-with-genlayer/intelligent-contracts",
+    new: "/developers/intelligent-contracts/introduction",
+  },
+  {
+    old: "/build-with-genlayer/intelligent-contracts/:page*",
+    new: "/developers/intelligent-contracts/:page*",
+  },
+  {
+    old: "/build-with-genlayer/intelligent-contracts/advanced-features/:page*",
+    new: "/developers/intelligent-contracts/advanced-features/:page*",
+  },
+  {
+    old: "/build-with-genlayer/use-cases/:page*",
+    new: "/developers/intelligent-contracts/examples/:page*",
+  },
+  {
+    old: "/build-with-genlayer/intelligent-contracts/learning-by-example",
+    new: "/developers/intelligent-contracts/introduction",
+  },
+  {
+    old: "/genlayer-stack/genlayer-js",
+    new: "/developers/decentralized-applications/genlayer-js",
+  },
+  {
+    old: "/genlayer-stack/genlayer-cli",
+    new: "/developers/intelligent-contracts/tools/genlayer-cli",
+  },
+  {
+    old: "/genlayer-stack/genlayer-studio",
+    new: "/developers/intelligent-contracts/tools/genlayer-studio",
+  },
+  {
+    old: "/genlayer-stack/genlayer-studio/:page*",
+    new: "/developers/intelligent-contracts/tools/genlayer-studio/:page*",
+  },
+  {
+    old: "/security-and-best-practices",
+    new: "/developers/intelligent-contracts/security-and-best-practices/prompt-injection",
+  },
+  {
+    old: "/security-and-best-practices/:page",
+    new: "/developers/intelligent-contracts/security-and-best-practices/prompt-injection",
+  },
+];
+
 const nextConfig = withNextra({
   async redirects() {
     return [
-      {
-        source: "/getting-started/genlayer-simulator",
-        destination: "/genlayer-stack/genlayer-simulator",
+      // Previous redirects
+      ...previousRedirects.map(({ old, new: destination }) => ({
+        source: old,
+        destination,
         permanent: true,
-      },
-      {
-        source: "/getting-started/genlayer-simulator/:page*",
-        destination: "/genlayer-stack/genlayer-simulator/:page*",
+      })),
+      // Actual redirects
+      ...actualRedirects.map(({ old, new: destination }) => ({
+        source: old,
+        destination,
         permanent: true,
-      },
-      {
-        source: "/getting-started/development-tips",
-        destination: "/genlayer-stack/genlayer-simulator/development-tips",
-        permanent: true,
-      },
-      {
-        source: "/getting-started/install-genlayer",
-        destination: "/getting-started",
-        permanent: true,
-      },
-      {
-        source: "/getting-started/writing-intelligent-contracts",
-        destination: "/core-concepts/intelligent-contracts",
-        permanent: true,
-      },
-      {
-        source: "/getting-started/writing-intelligent-contracts/:page*",
-        destination: "/core-concepts/intelligent-contracts/:page*",
-        permanent: true,
-      },
-      {
-        source: "/core-concepts/intelligent-contract",
-        destination: "/core-concepts/intelligent-contracts",
-        permanent: true,
-      },
-      {
-        source: "/concept",
-        destination: "/core-concepts",
-        permanent: true,
-      },
-      {
-        source: "/concept/optimistic-democracy/slashing",
-        destination: "/core-concepts/optimistic-democracy/slashing",
-        permanent: true,
-      },
-      {
-        source: "/simulator/usage-and-interaction/execute-transaction",
-        destination: "/genlayer-stack/genlayer-simulator/execute-transaction",
-        permanent: true,
-      },
-      {
-        source: "/simulator/intelligent-contract-syntax/constructor",
-        destination: "/core-concepts/intelligent-contracts/constructor",
-        permanent: true,
-      },
-      {
-        source: "/simulator/intelligent-contract-syntax/contract-class",
-        destination: "/core-concepts/intelligent-contracts/contract-class",
-        permanent: true,
-      },
-      {
-        source: "/simulator/intelligent-contract-syntax",
-        destination: "/core-concepts/intelligent-contracts",
-        permanent: true,
-      },
-      {
-        source: "/concept/optimistic-democracy/staking",
-        destination: "/core-concepts/optimistic-democracy/staking",
-        permanent: true,
-      },
-      {
-        source: "/simulator/installation",
-        destination: "/getting-started",
-        permanent: true,
-      },
-      {
-        source: "/overview/risks-and-security/universal-attacks",
-        destination: "/security-and-best-practices/universal-attacks",
-        permanent: true,
-      },
-      {
-        source: "/ideas",
-        destination: "/build-with-genlayer/ideas",
-        permanent: true,
-      },
-      {
-        source: "/genlayer-stack/genlayer-simulator",
-        destination: "/genlayer-stack/genlayer-studio",
-        permanent: true,
-      },
-      {
-        source: "/genlayer-stack/genlayer-simulator/:page*",
-        destination: "/genlayer-stack/genlayer-studio/:page*",
-        permanent: true,
-      },
-      {
-        source: "/build-with-genlayer/use-cases/llm-erc20",
-        destination: "/build-with-genlayer/use-cases/llm-token",
-        permanent: true,
-      },
-      {
-        source: "/advanced-features/:page*",
-        destination: "/build-with-genlayer/intelligent-contracts/advanced-features/:page*",
-        permanent: true,
-      },
-      {
-        source: "/core-concepts/intelligent-contracts",
-        destination: "/build-with-genlayer/intelligent-contracts",
-        permanent: true,
-      },
-      {
-        source: "/core-concepts/intelligent-contracts/:page*",
-        destination: "/build-with-genlayer/intelligent-contracts/:page*",
-        permanent: true,
-      },
+      })),
     ];
   },
 });
-
-console.log("Final config:", nextConfig);
 
 module.exports = nextConfig;

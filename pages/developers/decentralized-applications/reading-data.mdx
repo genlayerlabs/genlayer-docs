@@ -1,0 +1,109 @@
+# Reading from Intelligent Contracts
+
+Reading from an Intelligent Contract allows you to query the contract's state and execute view functions without modifying the blockchain state. These operations are free (no fees) and provide immediate access to contract data.
+
+## Understanding View Operations
+
+In GenLayer, functions marked with the `@gl.public.view` decorator are read-only operations that:
+- Don't modify the contract's state
+- Can be executed without requiring a transaction
+- Return data immediately
+- Don't consume gas
+- Can be called by any account
+
+## Basic Contract Reading
+
+Here's how to read from an Intelligent Contract:
+
+```typescript
+import { simulator } from 'genlayer-js/chains';
+import { createClient, createAccount } from 'genlayer-js';
+
+const account = createAccount();
+const client = createClient({
+  chain: simulator,
+  account: account,
+});
+
+const result = await client.readContract({
+  address: contractAddress,
+  functionName: 'get_complete_storage',
+  args: [],
+});
+```
+
+### Parameters Explained
+
+- `address`: The deployed contract's address on the GenLayer network
+- `functionName`: The name of the view function you want to call
+- `args`: An array of arguments that the function accepts (empty if none required)
+
+## Common View Operations
+
+Intelligent Contracts typically include several types of view functions:
+
+### State Queries
+```typescript
+// Reading a single value
+const balance = await client.readContract({
+  address: contractAddress,
+  functionName: 'get_balance',
+  args: [accountAddress],
+});
+
+// Reading multiple values
+const userInfo = await client.readContract({
+  address: contractAddress,
+  functionName: 'get_user_info',
+  args: [userId],
+});
+```
+
+### Computed Values
+```typescript
+// Getting calculated results
+const totalSupply = await client.readContract({
+  address: contractAddress,
+  functionName: 'calculate_total_supply',
+  args: [],
+});
+```
+
+### Validation Checks
+```typescript
+// Checking permissions
+const hasAccess = await client.readContract({
+  address: contractAddress,
+  functionName: 'check_user_permission',
+  args: [userId, 'ADMIN_ROLE'],
+});
+```
+
+## Error Handling
+
+When reading from contracts, you should handle potential errors:
+
+```typescript
+try {
+  const result = await client.readContract({
+    address: contractAddress,
+    functionName: 'get_data',
+    args: [],
+  });
+  console.log('Data retrieved:', result);
+} catch (error) {
+  if (error.message.includes('Contract not found')) {
+    console.error('Invalid contract address');
+  } else if (error.message.includes('Function not found')) {
+    console.error('Invalid function name');
+  } else {
+    console.error('Error reading contract:', error);
+  }
+}
+```
+
+## Best Practices
+
+1. **Cache Results**: For frequently accessed data that doesn't change often, consider caching the results.
+2. **Batch Readings**: When possible, use functions that return multiple values instead of making multiple separate calls.
+3. **Type Safety**: Use TypeScript interfaces to ensure type safety when handling returned data:

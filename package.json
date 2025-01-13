@@ -3,9 +3,10 @@
   "version": "0.0.1",
   "description": "GenLayer documentation",
   "scripts": {
-    "dev": "next dev",
-    "build": "next build",
-    "start": "next start"
+    "dev": "node scripts/generate-full-docs.js && next dev",
+    "build": "node scripts/generate-full-docs.js && next build",
+    "start": "next start",
+    "generate-sitemap": "node scripts/generate-sitemap-xml.js"
   },
   "repository": {
     "type": "git",
@@ -21,8 +22,8 @@
     "clsx": "^2.1.1",
     "next": "^14.0.0",
     "nextjs-google-analytics": "^2.3.3",
-    "nextra": "latest",
-    "nextra-theme-docs": "latest",
+    "nextra": "^2.13.2",
+    "nextra-theme-docs": "^2.13.2",
     "react": "^18.3.1",
     "react-dom": "^18.3.1"
   },

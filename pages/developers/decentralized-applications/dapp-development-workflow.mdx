@@ -1,0 +1,80 @@
+# DApp Development Workflow with GenLayer
+
+The GenLayer platform allows developers to create decentralized applications (DApps) throughout the lifecycle of creating, testing, and deploying. This guide details how developers can transition from using the **GenLayer Studio** for their first Intelligent Contract to an advanced local development workflow, finishing with building a frontend application with **GenLayerJS**.
+
+---
+
+## 1. Starting with GenLayer Studio
+
+**GenLayer Studio** is an integrated environment designed to streamline the initial stages of Intelligent Contract development, making it accessible for developers of all experience levels.
+
+It provides an interactive environment that serves as a comprehensive sandbox for developing, deploying, and testing Intelligent Contracts in real time. This environment enables developers to experiment with their contracts and see immediate results without the complexities of a production setup.
+
+The platform runs a simulated network with customizable validators that accurately mirror the GenLayer consensus mechanism. This feature allows developers to test their contracts under conditions that closely resemble the actual blockchain environment, ensuring reliable deployment outcomes.
+
+### Getting Started:
+1. **Set Up the Studio**: Developers initialize the Studio using `genlayer cli` command `genlayer init` which configures the environment and spawns a local validator network. GenLayer Studio is also available as a hosted instace at [studio.genlayer.com](https://studio.genlayer.com/).
+2. **Write Your First Contract**: Intelligent Contracts in GenLayer are written in Python, utilizing its extensive libraries and GenVM capabilities like LLM calls and web integration. Refer to [Your First Contract](/developers/intelligent-contracts/your-first-contract) guide for more information.
+3. **Deploy and Test**: Deploy your Intelligent Contracts through the Studio interface and test them in the simulated network.
+
+---
+
+## 2. Moving to Advanced Workflow
+
+As projects transforms to real-world applications, developers should migrate to a local development setup. This approach mirrors frameworks like Hardhat or Foundry and is well-suited for iterative development and comprehensive testing.
+
+### Benefits of Local Development:
+- **Complete Control**: Developers can configure the environment, validators, and network parameters as needed.
+- **Enhanced Debugging**: The local setup allows for advanced debugging of both contracts and transactions.
+- **Flexible Testing**: Tests can simulate real-world scenarios, including edge cases and complex interactions.
+
+### Workflow Steps:
+1. **Set Up Your Local Environment**: Developers can start with the GenLayer boilerplate project, which includes pre-configured templates for local testing.
+2. **Write Tests**: Tests are written in Python, focusing on validating contract functionality and ensuring consensus integrity. The boilerplate includes sample tests to accelerate development.
+3. **Simulate Transactions**: Run detailed simulations to observe how contracts behave under various network conditions, ensuring robust performance.
+
+---
+
+## 3. Building the Frontend with GenLayerJS
+
+The frontend is the user-facing component of a DApp. With **GenLayerJS**, developers can integrate their applications with the GenLayer network, focusing on providing a seamless user experience.
+
+### Why Use GenLayerJS?
+- **Simplified Interactions**: Abstracts the complexity of blockchain interactions with high-level APIs.
+- **Comprehensive Features**: Supports transaction handling, contract interaction, event subscriptions, and account management.
+- **TypeScript Integration**: Provides type safety and code reliability for frontend development.
+
+### Frontend Development Workflow:
+1. **Integrate GenLayerJS**:
+
+Install the SDK and set up a client to connect to the GenLayer network. Configuration options allow connection to various environments, such as testnets or the GenLayer Studio.
+Refer to [GenLayerJS](/developers/decentralized-applications/genlayer-js) guide for more information.
+
+2. **Read and Write to Contracts**:
+
+Use the SDK's high-level APIs to interact with deployed contracts. For instance, retrieve user balances or update contract state seamlessly.
+Refer to [Reading Data](/developers/decentralized-applications/reading-data) and [Writing Data](/developers/decentralized-applications/writing-data) guides for more information.
+
+3. **Monitor Transactions**:
+
+Developers can subscribe to events or query transaction statuses, ensuring users are kept informed of transaction progress and outcomes.
+
+4. **Build the User Interface**:
+
+Combine GenLayerJS with popular frontend frameworks (like React or Angular) to create intuitive interfaces.
+
+---
+
+## Advanced Tips for Developers
+
+1. **Leverage GenVM Features**:
+
+GenVM allows Intelligent Contracts to interact with LLM models and access real-time web data. Developers should design contracts to maximize these capabilities for dynamic and intelligent DApps.
+
+2. **Optimize Testing**:
+
+Incorporate edge case scenarios in tests to ensure that contracts behave reliably under all conditions.
+
+3. **Focus on Security**:
+
+Implement robust security measures, including input validation and error handling, to protect contracts from malicious inputs and ensure consensus consistency.
