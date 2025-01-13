@@ -122,6 +122,56 @@ const nextConfig = withNextra({
         destination: "/build-with-genlayer/intelligent-contracts/:page*",
         permanent: true,
       },
+      {
+        source: "/build-with-genlayer/intelligent-contracts",
+        destination: "/developers/intelligent-contracts/introduction",
+        permanent: true,
+      },
+      {
+        source: "/build-with-genlayer/intelligent-contracts/:page*",
+        destination: "/developers/intelligent-contracts/:page*",
+        permanent: true,
+      },
+      {
+        source: "/build-with-genlayer/intelligent-contracts/advanced-features/:page*",
+        destination: "/developers/intelligent-contracts/advanced-features/:page*",
+        permanent: true,
+      },
+      {
+        source: "/build-with-genlayer/use-cases/:page*",
+        destination: "/developers/intelligent-contracts/examples/:page*",
+        permanent: true,
+      },
+      {
+        source: "/build-with-genlayer/intelligent-contracts/learning-by-example",
+        destination: "/developers/intelligent-contracts/introduction",
+        permanent: true,
+      },
+      {
+        source: "/genlayer-stack/genlayer-js",
+        destination: "/developers/decentralized-applications/genlayer-js",
+        permanent: true,
+      },
+      {
+        source: "/genlayer-stack/genlayer-cli",
+        destination: "/developers/intelligent-contracts/tools/genlayer-cli",
+        permanent: true,
+      },
+      {
+        source: "/genlayer-stack/genlayer-studio",
+        destination: "/developers/intelligent-contracts/tools/genlayer-studio",
+        permanent: true,
+      },
+      {
+        source: "/genlayer-stack/genlayer-studio/:page*",
+        destination: "/developers/intelligent-contracts/tools/genlayer-studio/:page*",
+        permanent: true,
+      },
+      {
+        source: "/security-and-best-practices",
+        destination: "/developers/intelligent-contracts/security-and-best-practices/prompt-injection",
+        permanent: true,
+      },
     ];
   },
 });
