@@ -5,7 +5,8 @@
   "scripts": {
     "dev": "node scripts/generate-full-docs.js && next dev",
     "build": "node scripts/generate-full-docs.js && next build",
-    "start": "next start"
+    "start": "next start",
+    "generate-sitemap": "node scripts/generate-sitemap-xml.js"
   },
   "repository": {
     "type": "git",
