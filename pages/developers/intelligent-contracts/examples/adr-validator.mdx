@@ -1,0 +1,204 @@
+import Image from 'next/image'
+import { Callout } from 'nextra-theme-docs'
+
+# ADRValidator Contract
+
+The ADRValidator contract sets up a system for validating, categorizing, and ensuring consistency of Architectural Decision Records (ADRs) in a decentralized and automated manner. This contract demonstrates complex document validation, category management, and a reward system within a blockchain environment.
+
+<Callout type="info" emoji="🏗️">
+    This intelligent contract is currently not migrated to the real GenVM syntaxis.
+</Callout>
+
+```python
+import json
+import re
+from backend.node.genvm.icontract import IContract
+from backend.node.genvm.equivalence_principle import call_llm_with_principle
+
+
+class ADRValidator(IContract):
+    def __init__(self):
+        self.owner = contract_runner.from_address
+        self.arch_categories = {}
+        self.balances = {}
+        self.max_reward = 10
+
+    def change_owner(self, new_owner: str):
+        if contract_runner.from_address == self.owner:
+            self.owner = new_owner
+
+    def set_max_reward(self, new_max_reward: int):
+        if contract_runner.from_address == self.owner:
+            self.max_reward = new_max_reward
+
+    def get_owner(self) -> str:
+        return self.owner
+
+    def get_categories(self) -> str:
+        return {
+            category: details["description"]
+            for category, details in self.arch_categories.items()
+        }
+
+    def get_adrs_of_a_category(self, category_name: str) -> dict:
+        if category_name in self.arch_categories:
+            return self.arch_categories[category_name]["ADRs"]
+
+    def get_balances(self) -> dict[str, int]:
+        return self.balances
+
+    def get_balance_of(self, address: str) -> int:
+        return self.balances.get(address, 0)
+
+    def add_category(self, category_name: str, category_description: str):
+        if (
+            contract_runner.from_address == self.owner
+            and category_name not in self.arch_categories
+        ):
+            self.arch_categories[f"{category_name}"] = {
+                "description": category_description,
+                "ADRs": [],
+            }
+
+    async def validate_adr(self, adr: str, category_name: str) -> None:
+        print("validate")
+        if not self._check_template(adr): return
+        output = await self._evaluate_adr(adr, category_name)
+
+        ## Improvement: would split checks more by concern
+        if not output["accepted"]:
+            return
+
+        if contract_runner.from_address not in self.balances:
+            self.balances[contract_runner.from_address] = 0
+
+        self.balances[contract_runner.from_address] += output["reward"]
+        self.arch_categories[category_name]["ADRs"].append(adr)
+
+    def _check_template(self, adr: str) -> bool:
+        adr = adr.replace("\r\n", "\n").replace("\r", "\n")
+        pattern = r"^\# [^\n]+?\n+(- Status: (proposed|accepted|validated).+)\n+(- Deciders: [^\n]+)\n+(- Date: \d\d\d\d-\d\d-\d\d)\n+(\#\# Context and Problem Statement)\n+(\#\#\#\# Problem\n+(.|\n)*)+(\#\#\#\# Context\n+(.|\n)*)+(\#\# Decision Drivers+(.|\n)*)+(\#\# Considered Options+(.|\n)*)+(\#\# Decision Outcome+(.|\n)*)+(\#\#\# Consequences+(.|\n)*)+(\#\# Pros and Cons of the Options+(.|\n)*)+(\#\#\#(.|\n)*)+(\#\#\#\# Pros+(.|\n)*)+(\#\#\#\# Cons+(.|\n)*)+(\#\#\#(.|\n)*)+(\#\#\#\# Pros+(.|\n)*)+(\#\#\#\# Cons+(.|\n)*)"
+        compiled_pattern = re.compile(pattern, re.MULTILINE | re.DOTALL)
+        result = bool(compiled_pattern.match(adr))
+        print("Result of checking template structure: ", result)
+        return result
+
+    async def _evaluate_adr(self, adr: str, category: str) -> object:
+        print("Evaluating ADR...")
+        valid_decisions = False
+        prompt = f"""
+        Here are some architecture decisions made in the past, and a new decision candidate.
+        You must check past decisions for contradiction with the new candidate that would block this candidate from being added to ADRs.
+
+        - Past decisions:
+        {self.arch_categories[category]['ADRs']}
+
+        - New decision candidate:
+        {adr}
+
+        You must decide if the new decision can be accepted or if it should be rejected.
+
+        In case of rejection:
+        - You MUST provide a REASON for the rejection.
+
+        In case of acceptance:
+        - The REASON should be an EMPTY STRING.
+        - You MUST decide of a REWARD (INTEGER) between 1 and {self.max_reward}. Evaluate the reward based on the potential impact, importance, and writing quality of the candidate.
+
+        Respond ONLY with the following format:
+        {{
+        "accepted": bool,
+        "reasoning": str,
+        "reward": int,
+        }}
+        It is mandatory that you respond only using the JSON format above,
+        nothing else. Don't include any other words or characters,
+        your output must be only JSON without any formatting prefix or suffix.
+        This result should be perfectly parseable by a JSON parser without errors.
+        """
+        result = await call_llm_with_principle(
+            prompt,
+            eq_principle="The result['accepted'] has to be exactly the same",
+        )
+        result_clean = result.replace("True", "true").replace("False", "false")
+        output = json.loads(result_clean)
+
+        print(output)
+
+        return output
+```
+## Code Explanation
+
+- **Initialization**: The `ADRValidator` class initializes with an owner, empty categories and balances, and a default max reward.
+
+- **Key Methods**:
+  - `validate_adr()`: Validates an ADR's structure and content, and rewards the submitter if accepted.
+  - `_check_template()`: Uses regex to ensure the ADR follows a specific structure.
+  - `_evaluate_adr()`: Uses an LLM to check for contradictions with existing ADRs and determine acceptance and reward.
+
+- **Management Methods**:
+Methods for changing owner, setting max reward, and managing categories.
+
+- **Read Methods**:
+Various getter methods to retrieve contract state, categories, and balances.
+
+## Deploying the Contract
+
+To deploy the ADRValidator contract:
+1. **Deploy the Contract**: No initial parameters are needed. The deployer becomes the initial owner.
+
+## Checking the Contract State
+
+After deploying the contract, you can check its state in the Read Methods section:
+- Use `get_owner()` to see the current contract owner.
+- Use `get_categories()` to view defined architectural categories.
+- Use `get_balances()` to check reward balances of contributors.
+
+## Executing Transactions
+
+To interact with the deployed contract, go to the Write Methods section. Here, you can:
+- Call `add_category(name, description)` to define new architectural categories (owner only).
+- Call `validate_adr(adr, category_name)` to submit an ADR for validation.
+- Call `change_owner(new_owner)` or `set_max_reward(new_max_reward)` for contract management (owner only).
+
+## Analyzing the Contract's Behavior
+
+The contract's behavior involves several complex processes:
+1. **Template Validation**: Uses regex to ensure ADRs follow a specific structure.
+2. **Consistency Checking**: Employs an LLM to compare new ADRs against existing ones for contradictions.
+3. **Automated Decision-Making**: Determines acceptance and reward based on LLM evaluation.
+4. **Reward System**: Automatically credits submitters with tokens for accepted ADRs.
+
+## Handling Different Scenarios
+
+As illustrated in the provided flowchart:
+
+<Image src="/contract-examples/adr-validator/flowchart.png" alt="ADRValidator Flowchart" width={700} height={400} />
+
+- **Invalid ADR Structure**: The ADR is rejected without further evaluation.
+- **Valid ADR, Contradictions Found**: The ADR is rejected with reasoning provided.
+- **Valid ADR, No Contradictions**: The ADR is accepted, and the submitter is rewarded.
+
+The outputs shows various scenarios:
+
+<Image src="/contract-examples/adr-validator/outputs.png" alt="ADRValidator Outputs" width={700} height={400} />
+
+This diagram illustrates different outcomes based on the ADR's content and its relation to existing ADRs in the category.
+
+## Use Cases and Market Potential
+
+The ADRValidator contract has broad applications:
+- **Software Development Teams**: For managing and validating architectural decisions.
+- **Resource Allocation**: In contexts where decisions about shared resources (e.g., budget, design principles) are critical.
+- **Hackathons and Competitions**: As a tool for evaluating and rewarding contributions.
+
+Its automated, trustless nature makes it valuable for any organization seeking to streamline decision-making processes and ensure consistency in architectural choices.
+
+## Future Enhancements
+
+Future developments may include:
+1. **Spam Prevention**: Implementing measures to prevent submission of fake or spammy ADRs.
+2. **Platform Integration**: Direct integration with platforms like GitHub for seamless ADR management.
+3. **Global ADR Repository**: Evolving into a comprehensive, accessible repository for ADRs worldwide.
+
+This ADRValidator contract demonstrates an innovative use of GenLayer for document validation and decision-making in software architecture. It showcases how Intelligent Contracts can automate complex processes, ensure consistency, and provide incentives for quality contributions in a decentralized manner.
