@@ -1,14 +1,13 @@
 {
   "storage": "Storage",
   "user-storage": "User Storage",
-  "llm-token": "LLM Token",
+  "llm-hello-world": "LLM Hello World",
+  "llm-hello-world-non-comparative": "LLM Hello World Non-Comparative",
   "wizard-of-coin": "Wizard of Coin",
-  "prediction": "Prediction Market",
-  "git-bounties": "Git Bounties",
-  "genlayer-dao": "GenLayerDAO",
-  "adr-validator": "ADR Validator",
-  "flight-insurance": "Flight Insurance",
-  "rokos-mansion": "Rokos Mansion",
-  "influencer-tweet-analyzer": "Influencer Tweet Analyzer",
-  "purellm-dao": "Pure LLM DAO"
+  "fetch-web-content": "Fetch Web Content",
+  "fetch-github-profile": "Fetch Github Profile",
+  "github-profile-projects": "Github Profile Projects",
+  "github-profile-summary": "Github Profile Summary",
+  "prediction": "Football Prediction Market",
+  "vector-store-log-indexer": "Vector Store Log Indexer"
 }
