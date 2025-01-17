@@ -1,32 +1,39 @@
+import Image from 'next/image'
 import { Card, Cards } from 'nextra-theme-docs'
 import CustomCard from '../components/card'
 
-# Welcome & Overview 
-GenLayer is a decentralized blockchain platform designed to execute AI-powered smart contracts called **Intelligent Contracts** which can use AI models to search the web and process natural language instructions.
+# Welcome to GenLayer Docs
 
-To navigate the docs, the sidebar on the left organizes the documentation, one can start with knowing generic concepts [about the GenLayer Protocol](/about-genlayer), and 
-then choosing a path as a [Developer](/developers).
+Welcome to **GenLayer Docs**, your gateway to the future of **AI-driven blockchain innovation**. **GenLayer** is the first **Layer 1 blockchain** to integrate **artificial intelligence** directly into its core, creating an **intelligence layer** that empowers on-chain applications with reasoning capabilities. By combining **Large Language Models (LLMs)** with a robust, decentralized infrastructure, GenLayer unlocks **unprecedented opportunities** for developers to build applications that can understand, analyze, and adapt to real-world data.
+
+GenLayer is designed to redefine what’s possible in blockchain. Our **Intelligent Contracts**—powered by native AI—go beyond deterministic logic, enabling **dynamic, data-driven decision-making** and adaptive user experiences.
+
+Through GenLayer,you can push the boundaries of blockchain, creating new markets, automating complex processes, and transforming the way digital value is created, managed, and exchanged. Dive in to discover how to build, validate, and innovate on the **world’s first AI-native Layer 1 blockchain**.
+
+To navigate these docs, use the sidebar on the left. You can begin by exploring the **[GenLayer Protocol](https://docs.genlayer.com/about-genlayer)** to understand core concepts, or dive straight into **[Developer resources](https://docs.genlayer.com/developers)**.
 
 
-## Find your way in the docs
+
+## Get Started
 <br/>
 <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, minmax(0, 1fr))', gap: '1rem' }}>
   <CustomCard
     arrow
     title="GenLayer Protocol"
-    description="An introduction to GenLayer and its core functionalities. Learn what sets GenLayer apart"
+    description="An introduction to GenLayer and its core functionalities. Learn what sets GenLayer apart."
     href="/about-genlayer"
   />
   {/* <CustomCard
     arrow
     title="For Holders"
-    description="Learn how to interact with the GenLayer Network as a user."
+    description="Step-by-step guides to building Intelligent Contracts using the Python-based GenLayer SDK.
+"
     href="/users"
   /> */}
   <CustomCard
     arrow
     title="For Developers"
-    description="All guides to develop Intelligent Contracts using the Python GenLayer SDK."
+    description="Step-by-step guides to building Intelligent Contracts using the Python-based GenLayer SDK."
     href="/developers"
   />
   {/* <CustomCard
@@ -38,10 +45,75 @@ then choosing a path as a [Developer](/developers).
   <CustomCard
     arrow
     title="For Validators"
-    description="Learn how to run a validator node and participate in the GenLayer network."
+    description="Detailed instructions on running validator nodes and actively participating in the GenLayer network."
     href="/validators"
   />
 </div>
+
+## Core Technology
+
+At the heart of GenLayer lies **Optimistic Democracy**—an **enhanced Delegated Proof of Stake (dPoS)** consensus mechanism that integrates **AI models** directly into validator operations. This synergy delivers three capabilities traditional blockchains cannot match:
+
+1. **On-Chain AI Processing**
+
+Validators connect to leading AI models (GPT, LLaMA, Meta, etc.) to execute complex reasoning on-chain, from natural language comprehension to data-driven predictions.
+
+2. **Consensus-Backed Security**
+
+Multiple validators vote on outcomes, ensuring collective agreement and robust reliability for every transaction—even those involving non-deterministic AI outputs.
+
+3. **Intelligent Contracts**
+
+Smart contracts in GenLayer gain reasoning abilities, allowing them to understand natural language, process real-world data, and adapt to evolving conditions.
+
+## Technical Implementation
+
+To integrate AI seamlessly with the blockchain, GenLayer employs a distributed neural consensus network, wherein validators run specialized software connected via API to advanced AI models. This approach unifies:
+
+- **Delegated Proof of Stake (dPoS)** for efficient block production and governance.
+- **Neural Consensus** for non-deterministic transactions requiring advanced AI reasoning.
+
+This architecture supports autonomous DAOs, self-executing prediction markets, and dynamic DeFi protocols that react to real-world data in real time.
+
+
+# Optimistic Democracy: How Consensus Works
+
+<img src="/studio/Diagram MAIN.jpg" alt="GenLayer Optimistic Democracy Consensus Diagram" width="100%" />
+
+Inspired by **[Condorcet's Jury Theorem](https://jury-theorem.genlayer.com/)** (click the link to check out our interactive model), **Optimistic Democracy** merges probabilistic AI systems with deterministic blockchain rules, ensuring secure and **accurate** consensus at scale.
+
+1. **User Submits a Transaction**
+A user sends a transaction request to the network (see the diagram’s Step 1).
+
+2. **Leader (Validator) Proposes Result**
+The network selects a Leader, who processes the request and proposes an outcome (Step 2).
+
+3. **Validators Recompute**
+A group of Validators independently re-compute the transaction (Step 3). If the output aligns with the Leader's proposal, they approve; otherwise, they deny.
+
+This multi-layer validation ensures majority agreement, adding a safety net for AI-driven computations.
+
+# Validator Selection Mechanism
+Token holders bolster network security by delegating tokens to validator candidates. A deterministic function f(x) then randomly designates Lead- and Co-Validators for each transaction. This process not only promotes fairness but also helps decentralize validation power, strengthening GenLayer’s security and trustlessness.
+
+# Validator Operational Framework
+Each GenLayer validator node integrates:
+
+- **Validator Software**
+Handles core blockchain functions: networking, block production, and transaction management.
+
+- **AI Model Integration**
+Connects to Large Language Models (LLMs) or other AI services for complex reasoning, natural language processing, and real-time data retrieval.
+
+Validators seamlessly manage both:
+
+1. **Deterministic Transactions** typical of traditional blockchains.
+2. **Non-Deterministic Transactions** that leverage AI-driven logic (e.g., searching the internet, analyzing data, making probabilistic inferences).
+
+By splitting tasks between standard deterministic and advanced AI-powered transactions, GenLayer ensures high performance without compromising on security.
+
+# Putting It All Together
+With Optimistic Democracy guiding consensus and validators empowered by AI, GenLayer enables a new class of blockchain applications. From DAOs that self-govern based on real-time data to DeFi protocols that dynamically adjust parameters in response to market changes, developers can now build truly intelligent decentralized solutions.
 
 ## Partners
 
@@ -49,18 +121,30 @@ We feature various collaborators who help drive our innovation.
 
 <Cards num={3}>
   <Card image title="YeagerAI" href="/partners/yeager">
-    <img src="/yeager.jpeg" alt="YeagerAI" fetchpriority="high" />
+    <Image src="/yeager.jpeg" alt="YeagerAI" fetchpriority="high" width="300" height="120" style={{objectFit: "cover"}} />
   </Card>
   <Card image title="Heurist" href="/partners/heurist">
-    <img src="/heurist.png" alt="Heurist" fetchpriority="high" />
+    <Image src="/heurist.png" alt="Heurist" fetchpriority="high" width="300" height="120" style={{objectFit: "cover"}} />
+  </Card>
+  <Card image title="Aimelia" href="/partners/aimelia">
+    <Image src="/studio/aimelia.png" alt="Aimelia" fetchpriority="high" width="300" height="120" style={{objectFit: "cover"}} />
+  </Card>
+  <Card image title="Etherisc" href="/partners/etherisc">
+    <Image src="/studio/etherisc.png" alt="Etherisc" fetchpriority="high" width="300" height="120" style={{objectFit: "cover"}} />
+  </Card>
+  <Card image title="PredX" href="/partners/predx">
+    <Image src="/studio/predx.jpg" alt="PredX" fetchpriority="high" width="300" height="120" style={{objectFit: "cover"}} />
+  </Card>
+  <Card image title="Provably" href="/partners/provably">
+    <Image src="/studio/provably.jpg" alt="Provably" fetchpriority="high" width="300" height="120" style={{objectFit: "cover"}} />
   </Card>
 </Cards>
 
+## Community and Careers
+**Need Help?**
 
-## Questions?
+Join our vibrant community on [Discord](https://discord.gg/8Jm4v89VAu) or [Telegram](https://t.me/genlayer) to ask questions, share feedback, and showcase your GenLayer creations.
 
-Join the GenLayer community in our [Discord](https://discord.gg/8Jm4v89VAu) and [Telegram](https://t.me/genlayer) to ask for help, as well as share your feedback or showcase what you have built with GenLayer!
+**Looking to Build the Future with Us?**
 
-## Join us
-
-We are hiring! If you are passionate about blockchain technology and want to be part of an innovative team, check out our [career opportunities](https://apply.workable.com/yeager-dot-a-i/) and join us in shaping the future of decentralized applications.
+We’re hiring! If blockchain and AI excite you, explore our career opportunities and help shape the future of decentralized applications.

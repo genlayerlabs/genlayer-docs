@@ -1,10 +1,11 @@
 {
   "index": "Welcome & Overview",
-  "about-genlayer": "About GL PROTewirewfmruj",
-  "developers": "Build with GenLayer",
+  "understand-genlayer-protocol": "Understand GenLayer Protocol",
+  "build-with-genlayer": "Build with GenLayer",
   "validators": "Run a Validator",
   "partners": "Partners",
   "api-references": "API References",
+  "FAQ": "FAQ",
   "blog": {
     "title": "Blog 📚",
     "type": "page",

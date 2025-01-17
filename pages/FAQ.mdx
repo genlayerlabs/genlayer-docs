@@ -1,0 +1,99 @@
+---
+title: "FAQ"
+---
+
+# FAQ
+
+<details>
+  <summary>1. What is GenLayer?</summary>
+  
+  GenLayer is an AI-native Layer 1 blockchain designed to run **Intelligent Contracts**—smart contracts enhanced with Large Language Models (LLMs)—enabling them to process natural language, fetch web data in real time, and execute data-driven logic.
+</details>
+
+<details>
+  <summary>2. How is GenLayer different from traditional blockchains?</summary>
+
+  Most blockchains rely solely on deterministic logic and external oracles to interact with off-chain data. **GenLayer integrates AI at the protocol level**, allowing on-chain contracts to directly interpret text prompts, perform complex computations, and adapt to real-world events without relying on external oracles.
+</details>
+
+<details>
+  <summary>3. What is “Optimistic Democracy” consensus?</summary>
+
+  **Optimistic Democracy** is GenLayer’s enhanced Delegated Proof of Stake (dPoS) mechanism. It randomly selects a **Lead-Validator** to process transactions and multiple **Co-Validators** to verify the results. The system is designed to handle non-deterministic (AI-driven) outputs securely by requiring a majority agreement.
+</details>
+
+<details>
+  <summary>4. Why does GenLayer use Large Language Models (LLMs)?</summary>
+
+  LLMs give Intelligent Contracts the ability to interpret and process complex human language, as well as to analyze data in ways traditional code-based smart contracts cannot. This opens up new use cases, such as AI-driven DAOs, predictive analytics, and autonomous oracles.
+</details>
+
+<details>
+  <summary>5. Can I still run normal, deterministic transactions on GenLayer?</summary>
+
+  Absolutely. GenLayer supports **standard blockchain transactions** and deterministic logic alongside AI-driven logic. Developers can write regular smart contracts or Intelligent Contracts depending on their needs.
+</details>
+
+<details>
+  <summary>6. Do I have to be an AI expert to build on GenLayer?</summary>
+
+  Not necessarily. While some knowledge of AI or LLMs can help, GenLayer provides a **Python-based SDK** and user-friendly tools (like the GenLayer Studio) to simplify contract creation. You can harness AI capabilities without deep machine learning expertise.
+</details>
+
+<details>
+  <summary>7. How do validators handle AI computation?</summary>
+
+  Each validator runs both **Validator Software** (for networking, block production, and transaction management) **and** an **AI Model Integration** via API. When a contract calls an AI-dependent function, the validator executes that function locally, **then** verifies the output through the consensus process.
+</details>
+
+<details>
+  <summary>8. What happens if validators disagree on an AI result?</summary>
+
+  In **Optimistic Democracy**, disagreements trigger a **majority vote**. If a validator strongly believes the proposed result is incorrect, they can challenge or appeal the outcome within the **Finality Window**. An appeal bond is posted to discourage frivolous or malicious appeals.
+</details>
+
+<details>
+  <summary>9. How do I get started as a developer?</summary>
+
+
+  1. Install the **GenLayer CLI** and set up your local environment.  
+  2. Explore the **GenLayer Studio** to write, deploy, and test your Intelligent Contracts.  
+  3. Check out the **genlayer-project-boilerplate** for end-to-end testing setups and best practices.  
+  4. Use **GenLayerJS** or other tools for front-end integration.
+</details>
+
+<details>
+  <summary>10. Can I use any LLM provider?</summary>
+
+  GenLayer is designed to **integrate with multiple LLM providers**, such as GPT, LLaMA, and others. During the `genlayer init` process, you can configure your preferred LLM, including its API keys and model parameters. You can also customize or switch providers as needed.
+</details>
+
+<details>
+  <summary>11. How is the network secured?</summary>
+
+  Security is driven by a **delegated staking** model plus the **Optimistic Democracy** consensus process:
+  - Token holders delegate **stake** to validators, incentivizing honest behavior.
+  - **Multi-Validator Verification** mitigates errors by checking each other’s results.
+  - **Appeals** provide a failsafe, penalizing dishonest validators via slashing.
+</details>
+
+<details>
+  <summary>12. What are the typical use cases for GenLayer?</summary>
+
+
+  - **Prediction Markets**: AI-powered event outcomes  
+  - **Performance-Based Contracting**: Automatic escrow and payments tied to real-time metrics  
+  - **Network States**: Decentralized governance frameworks  
+  - **Dispute Resolution**: Low-cost, AI-driven arbitration  
+  - **AI-Driven DAOs**: Autonomous organizations that react to off-chain data  
+</details>
+
+<details>
+  <summary>13. How can I contribute to GenLayer?</summary>
+
+   You can:
+   - Join the community on **Discord** or **Telegram**  
+   - Contribute code and documentation in GenLayer’s GitHub repositories  
+   - Provide feedback and suggestions to improve the GenLayer ecosystem  
+   - Help grow the community by sharing GenLayer with potential developers and AI enthusiasts
+</details>
