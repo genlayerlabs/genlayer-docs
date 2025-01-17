@@ -1,36 +1,61 @@
 import { Callout } from 'nextra-theme-docs'
 
-# GenLayer Validator Hardware Requirements
+# GenLayer Validator Requirements
 
-Running a GenLayer Validator node ensures the security and reliability of the GenLayer network. Below are the **initial** recommended hardware requirements. These guidelines may change as the network grows and evolves.
+Running a GenLayer Validator node ensures the security and reliability of the GenLayer network. Below are the requirements for running a GenLayer validator.
 
-## RAM
+## Dependencies
+
+### LLM Access
+
+Each validator needs access to a Large Language Model (LLM) for executing and evaluating Intelligent Contracts.
+
+It is up to each validator to select the model they want to use.
+
+Possible options:
+- Run an open-source model locally on the same machine with a GPU
+- Run an open-source model on a different machine
+- Connect to a hosted inference provider (OpenAI, Anthropic, Heurist, Atoma network etc.)
+
+### ZKSync Full Node for the GenLayer Chain
+
+Each validator needs access to a [ZKSync Full Node](https://docs.zksync.io/zksync-era/tooling/external-node) connected to the GenLayer chain.
+
+One full node can be shared between multiple validators - TBD how many exactly.
+
+
+## System Requirements
+
+Below are the **initial** recommended system requirements. These guidelines may change as the network grows and evolves.
+
+### RAM
 
 - **Recommended:** 16 GB  
 - **Why:**  
   - GenLayer's _genvm_ can spawn multiple Sub-VMs for contract calls and non-deterministic blocks.  
   - Each Sub-VM can consume up to ~4 GB of RAM for storage.
 
-## CPU
+### CPU
 
 - **Recommended:** Modern multi-core processor with at least 8 cores/16 threads  
 
-## Storage
+### Storage
 
 - **Recommended Disk Space:** 128 GB+  
 - **Preferred Type:** SSD or NVMe (M.2)  
 
-## GPU (Optional)
-
-- **Recommended:** If you plan to run advanced AI-models locally, a CUDA-compatible GPU could be beneficial.  
-
-## Network
+### Network
 
 - **Recommended Connection:** Stable broadband  
 
-## Operating System
+### Operating System
 
-- **Recommended:** 64-bit Linux (Ubuntu, Debian, CentOS, etc.)  
+- **Recommended:** 64-bit Linux (Ubuntu, Debian, CentOS, etc.) 
+
+### GPU (Optional)
+
+- **Recommended:** If you plan to run advanced AI-models locally, a CUDA-compatible GPU could be beneficial.  
+
 
 <Callout emoji="⚠️">
     These requirements are a starting point. As GenLayer evolves and usage patterns change (e.g., more complex AI-driven Intelligent Contracts), the recommended hardware may change.
