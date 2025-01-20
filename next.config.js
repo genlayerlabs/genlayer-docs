@@ -45,18 +45,18 @@ const previousRedirects = [
     old: "/overview/risks-and-security/universal-attacks",
     new: "/security-and-best-practices/universal-attacks",
   },
-  { old: "/ideas", new: "/build-with-genlayer/ideas" },
+  { old: "/ideas", new: "/developers/intelligent-contracts/ideas" },
   { old: "/genlayer-stack/genlayer-simulator", new: "/genlayer-stack/genlayer-studio" },
   {
     old: "/genlayer-stack/genlayer-simulator/:page*",
     new: "/developers/intelligent-contracts/tools/genlayer-studio/:page*",
   },
-  { old: "/build-with-genlayer/use-cases/llm-erc20", new: "/build-with-genlayer/use-cases/llm-token" },
+  { old: "/build-with-genlayer/use-cases/llm-erc20", new: "/developers/intelligent-contracts/ideas" },
   {
     old: "/advanced-features/:page*",
     new: "/developers/intelligent-contracts/advanced-features/:page*",
   },
-  { old: "/core-concepts/intelligent-contracts", new: "/build-with-genlayer/intelligent-contracts" },
+  { old: "/core-concepts/intelligent-contracts", new: "/developers/intelligent-contracts/introduction" },
   {
     old: "/core-concepts/intelligent-contracts/:page*",
     new: "/developers/intelligent-contracts/introduction",
