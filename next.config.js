@@ -66,11 +66,11 @@ const previousRedirects = [
 const actualRedirects = [
   { old: "/getting-started", new: "/developers" },
 
-  { old: "/overview", new: "/about-genlayer" },
-  { old: "/overview/:page*", new: "/about-genlayer/:page*" },
+  { old: "/overview", new: "/understand-genlayer-protocol" },
+  { old: "/overview/:page*", new: "/understand-genlayer-protocol/:page*" },
 
-  { old: "/core-concepts", new: "/about-genlayer/core-concepts" },
-  { old: "/core-concepts/:page*", new: "/about-genlayer/core-concepts/:page*" },
+  { old: "/core-concepts", new: "/understand-genlayer-protocol/core-concepts" },
+  { old: "/core-concepts/:page*", new: "/understand-genlayer-protocol/core-concepts/:page*" },
 
   { old: "/references", new: "/api-references" },
   { old: "/references/:page*", new: "/api-references/:page*" },
@@ -117,6 +117,10 @@ const actualRedirects = [
   {
     old: "/security-and-best-practices/:page",
     new: "/developers/intelligent-contracts/security-and-best-practices/prompt-injection",
+  },
+  {
+    old: "/about-genlayer/:page*",
+    new: "/understand-genlayer-protocol/:page*",
   },
 ];
 
