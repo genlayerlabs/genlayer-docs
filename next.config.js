@@ -64,7 +64,8 @@ const previousRedirects = [
 ];
 
 const actualRedirects = [
-  { old: "/getting-started", new: "/developers" },
+  { old: "/getting-started", new: "/developers/intelligent-contracts/introduction" },
+  { old: "/developers", new: "/developers/intelligent-contracts/introduction" },
 
   { old: "/overview", new: "/understand-genlayer-protocol" },
   { old: "/overview/:page*", new: "/understand-genlayer-protocol/:page*" },
