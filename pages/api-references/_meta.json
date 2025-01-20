@@ -1,6 +1,8 @@
 {
   "genlayer-cli": "GenLayer CLI",
-  "json-rpc": "JSON RPC",
-  "genlayer-js": "GenLayer JS",
-  "genvm": "GenVM"
+  "genlayer-js": "GenLayerJS",
+  "genlayer-sdk": {
+    "title": "GenLayer SDK",
+    "href": "https://sdk.genlayer.com/"
+  }
 }

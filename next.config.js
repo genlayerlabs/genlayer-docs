@@ -45,18 +45,18 @@ const previousRedirects = [
     old: "/overview/risks-and-security/universal-attacks",
     new: "/security-and-best-practices/universal-attacks",
   },
-  { old: "/ideas", new: "/build-with-genlayer/ideas" },
+  { old: "/ideas", new: "/developers/intelligent-contracts/ideas" },
   { old: "/genlayer-stack/genlayer-simulator", new: "/genlayer-stack/genlayer-studio" },
   {
     old: "/genlayer-stack/genlayer-simulator/:page*",
     new: "/developers/intelligent-contracts/tools/genlayer-studio/:page*",
   },
-  { old: "/build-with-genlayer/use-cases/llm-erc20", new: "/build-with-genlayer/use-cases/llm-token" },
+  { old: "/build-with-genlayer/use-cases/llm-erc20", new: "/developers/intelligent-contracts/ideas" },
   {
     old: "/advanced-features/:page*",
     new: "/developers/intelligent-contracts/advanced-features/:page*",
   },
-  { old: "/core-concepts/intelligent-contracts", new: "/build-with-genlayer/intelligent-contracts" },
+  { old: "/core-concepts/intelligent-contracts", new: "/developers/intelligent-contracts/introduction" },
   {
     old: "/core-concepts/intelligent-contracts/:page*",
     new: "/developers/intelligent-contracts/introduction",
@@ -64,13 +64,14 @@ const previousRedirects = [
 ];
 
 const actualRedirects = [
-  { old: "/getting-started", new: "/developers" },
+  { old: "/getting-started", new: "/developers/intelligent-contracts/introduction" },
+  { old: "/developers", new: "/developers/intelligent-contracts/introduction" },
 
-  { old: "/overview", new: "/about-genlayer" },
-  { old: "/overview/:page*", new: "/about-genlayer/:page*" },
+  { old: "/overview", new: "/understand-genlayer-protocol" },
+  { old: "/overview/:page*", new: "/understand-genlayer-protocol/:page*" },
 
-  { old: "/core-concepts", new: "/about-genlayer/core-concepts" },
-  { old: "/core-concepts/:page*", new: "/about-genlayer/core-concepts/:page*" },
+  { old: "/core-concepts", new: "/understand-genlayer-protocol/core-concepts" },
+  { old: "/core-concepts/:page*", new: "/understand-genlayer-protocol/core-concepts/:page*" },
 
   { old: "/references", new: "/api-references" },
   { old: "/references/:page*", new: "/api-references/:page*" },
@@ -116,6 +117,46 @@ const actualRedirects = [
   },
   {
     old: "/security-and-best-practices/:page",
+    new: "/developers/intelligent-contracts/security-and-best-practices/prompt-injection",
+  },
+  {
+    old: "/about-genlayer/:page*",
+    new: "/understand-genlayer-protocol/:page*",
+  },
+  {
+    old: "/developers/decentralized-applications/testing-and-debugging",
+    new: "/developers/decentralized-applications/testing",
+  },
+  {
+    old: "/overview/what-is-genlayer",
+    new: "/understand-genlayer-protocol",
+  },
+  {
+    old: "/overview/genlayer-different",
+    new: "/understand-genlayer-protocol/what-makes-genlayer-different",
+  },
+  {
+    old: "/build-with-genlayer/use-cases",
+    new: "/developers/intelligent-contracts/examples/storage",
+  },
+  {
+    old: "/developers/intelligent-contracts/your-first-contract",
+    new: "/developers/intelligent-contracts/first-contract",
+  },
+  {
+    old: "/developers/intelligent-contracts/examples",
+    new: "/developers/intelligent-contracts/examples/storage",
+  },
+  {
+    old: "/developers/intelligent-contracts/advanced-features",
+    new: "/developers/intelligent-contracts/advanced-features/contract-to-contract-interaction",
+  },
+  {
+    old: "/developers/intelligent-contracts/testing-and-debugging",
+    new: "/developers/intelligent-contracts/debugging",
+  },
+  {
+    old: "/developers/intelligent-contracts/security-and-best-practices/",
     new: "/developers/intelligent-contracts/security-and-best-practices/prompt-injection",
   },
 ];
