@@ -122,6 +122,42 @@ const actualRedirects = [
     old: "/about-genlayer/:page*",
     new: "/understand-genlayer-protocol/:page*",
   },
+  {
+    old: "/developers/decentralized-applications/testing-and-debugging",
+    new: "/developers/decentralized-applications/testing",
+  },
+  {
+    old: "/overview/what-is-genlayer",
+    new: "/understand-genlayer-protocol",
+  },
+  {
+    old: "/overview/genlayer-different",
+    new: "/understand-genlayer-protocol/what-makes-genlayer-different",
+  },
+  {
+    old: "/build-with-genlayer/use-cases",
+    new: "/developers/intelligent-contracts/examples/storage",
+  },
+  {
+    old: "/developers/intelligent-contracts/your-first-contract",
+    new: "/developers/intelligent-contracts/first-contract",
+  },
+  {
+    old: "/developers/intelligent-contracts/examples",
+    new: "/developers/intelligent-contracts/examples/storage",
+  },
+  {
+    old: "/developers/intelligent-contracts/advanced-features",
+    new: "/developers/intelligent-contracts/advanced-features/contract-to-contract-interaction",
+  },
+  {
+    old: "/developers/intelligent-contracts/testing-and-debugging",
+    new: "/developers/intelligent-contracts/debugging",
+  },
+  {
+    old: "/developers/intelligent-contracts/security-and-best-practices/",
+    new: "/developers/intelligent-contracts/security-and-best-practices/prompt-injection",
+  },
 ];
 
 const nextConfig = withNextra({
