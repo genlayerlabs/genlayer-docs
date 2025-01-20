@@ -4,16 +4,14 @@ import { Callout } from 'nextra-theme-docs'
 
 Testing Intelligent Contracts on GenLayer involves deploying contracts, sending transactions, validating their behavior, and identifying issues. Here is some guidance on how to test using the tools provided in the local development environment and GenLayer Studio.
 
-## 1. Testing in the Local Environment
+## Testing Workflow in the Local Environment
 
 For a more advanced and controlled testing setup, you can leverage the GenLayer Project Boilerplate and the provided test helpers.
 <Callout type="info">
-Please note that you need the Studio running to run the tests by sending requests to the it.
+Please note that you need the Studio running to run the tests by sending requests to it.
 </Callout>
 
-### Testing Workflow
-
-#### 1. Create Accounts
+### 1. Create Accounts
 
 Use the `create_new_account` helper to generate accounts for testing. These accounts simulate users interacting with the contract.
 
@@ -23,19 +21,24 @@ from tools.request import create_new_account
 account = create_new_account()
 ```
 
-#### 2. Set Up Validators
+### 2. Set Up Validators
 
 Validators are essential for processing transactions in GenLayer. Use the `sim_createRandomValidators` method to initialize them.
 
 ```python
 from tools.request import payload, post_request_localhost
 
+nb_validators = 5
+min_stake = 8
+max_stake = 12
+providers = ["openai"]
+models = ["gpt-4o"]
 validators_response = post_request_localhost(
-    payload("sim_createRandomValidators", 5, 8, 12, ["openai"], ["gpt-4o"])
+    payload("sim_createRandomValidators", nb_validators, min_stake, max_stake, providers, models)
 ).json()
 ```
 
-#### 3. Deploy the Contract
+### 3. Deploy the Contract
 
 Deploy your Intelligent Contract using the `deploy_intelligent_contract` helper:
 
@@ -46,7 +49,7 @@ contract_code = open("contracts/my_contract.py", "r").read()
 contract_address, deploy_response = deploy_intelligent_contract(account, contract_code, "{}")
 ```
 
-#### 4. Interact with the Contract
+### 4. Interact with the Contract
 
 Use `send_transaction` for writing data to the contract and `call_contract_method` for reading data:
 
@@ -60,7 +63,7 @@ send_transaction(account, contract_address, "method_name", [arg1, arg2])
 result = call_contract_method(contract_address, account, "get_state", [])
 ```
 
-#### 5. Assertions
+### 5. Assertions
 
 Validate the responses using provided assertion helpers:
 
@@ -71,7 +74,7 @@ assert has_success_status(result)
 assert_dict_struct(result, expected_structure)
 ```
 
-#### 6. Clean Up
+### 6. Clean Up
 
 After completing the tests, delete the validators or reset the environment:
 

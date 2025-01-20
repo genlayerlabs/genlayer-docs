@@ -5,32 +5,25 @@ As the transaction progresses through various stages—such as proposing, commit
 
 ### Transaction Status Transitions
 
-- **[*] → Pending**: New transaction submitted by EOA user or internally when processing messages from `proposeReceipt()`.
+```mermaid
+graph TD;
+    Start(( )) -->|EOA submits| Pending(Pending)
+    Start -->|Insufficient fee| OutOfFee(OutOfFee)
+    OutOfFee -->|Fee topped up| Pending
+    Pending -->|User cancels| Canceled(Canceled)
 
-- **[*] → OutOfFee**: Transaction submitted internally lacks sufficient GEN for fees.
+    Pending -->|Select leader| Proposing(Proposing)
+    Proposing -->|Leader proposes receipt| Committing(Committing)
+    Committing -->|All validators commit| Revealing(Revealing)
 
-- **OutOfFee → Pending**: Transaction fee params topped up, satisfying fee restrictions.
+    Revealing -->|Majority agrees| Accepted(Accepted)
+    Revealing -->|No majority agreement| Proposing
+    Revealing -->|All leaders rotated| Undetermined(Undetermined)
+    Revealing -.->|Disagreement, appeal successful| Pending
+    Revealing -.->|Agreement, appeal failed| Accepted
 
-- **Pending → Proposing**: Transaction moved to proposing stage, leader and voters selected.
-
-- **Proposing → Committing**: Leader proposes transaction receipt, validators commit votes and prices.
-
-- **Committing → Revealing**: All validators committed, now revealing votes and price estimates.
-
-- **Revealing → Accepted**: Majority agrees with proposed receipt.
-
-- **Revealing → Rejected**: Consensus on transaction being malformed, failed, or too resource-intensive.
-
-- **Revealing → Proposing**: No majority, leader rotated, transaction returns to proposing.
-
-- **Revealing → Undetermined**: No consensus after all leader rotations.
-
-- **Accepted → Finalized**: Appeal window passes without appeals, transaction finalized.
-
-- **Accepted → Appealed**: Transaction appealed within appeal window.
-
-- **Appealed → Accepted/Rejected**: Appeals on subsequent transactions canceled, reverting to previous state.
-
-- **Appealed → Proposing**: Pre-voting shows disagreement, returns to proposing with new leader/voters.
-
-- **Undetermined → Proposing**: Appealed undetermined transaction returns to proposing, affecting subsequent transactions.
+    Accepted -->|Appeal window passes| Finalized(Finalized)
+    Undetermined -->|Appeal window passes| Finalized
+    Accepted -.->|Appeal initiated| Committing
+    Undetermined -->|Appeal automatically| Pending
+```

@@ -1,4 +1,6 @@
 {
   "genlayer-cli": "GenLayer CLI",
-  "json-rpc": "JSON RPC"
+  "json-rpc": "JSON RPC",
+  "genlayer-js": "GenLayer JS",
+  "genvm": "GenVM"
 }

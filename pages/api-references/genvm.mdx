@@ -1,0 +1,120 @@
+# GenVM Reference
+
+## Imports
+- `{ "Depends": "py-genlayer:test" }`: Version of GenVM
+- `{ "Depends": "py-lib-genlayermodelwrappers:test" }`: Model wrappers
+- `from genlayer import *`: Imports all necessary types and functions from the GenLayer SDK for Intelligent Contract development.
+
+## Decorators
+- `@gl.contract`: Marks a Python class as an Intelligent Contract.
+- `@gl.contract_interface`: Defines an interface for contract-to-contract interaction.
+- `@gl.ghost_contract`: Marks a class as a ghost contract for proxy interactions.
+- `@gl.public.view`: Decorates a method as a read-only function that does not modify the contract state.
+- `@gl.public.write`: Decorates a method as a function that can modify the contract state.
+
+## Data Members
+- `gl.message.sender_account`: Represents the account address of the sender of the current message or transaction.
+
+## Methods
+
+### gl.ContractAt
+
+Retrieves a contract instance at the specified blockchain address.
+
+**Parameters:**
+- `address`: The blockchain address of the contract.
+
+**Returns:** Contract (object) 
+<br />
+<hr />
+
+### gl.ContractAt(address).view
+
+Accesses view methods of a contract at the given address.
+
+**Parameters:** None
+
+**Returns:** View method (object)
+<br />
+<hr />
+
+### gl.ContractAt(address).write
+
+Accesses write methods of a contract at the given address.
+
+**Parameters:**
+- `gas`: The amount of gas to be used for the transaction.
+
+**Returns:** Write method (object) 
+<br />
+<hr />
+
+### gl.eq_principle_prompt_comparative
+
+Executes a prompt with comparative equivalence principle.
+
+**Parameters:**
+- `function`: The function to be executed.
+- `criteria`: The criteria to be used.
+
+**Returns:** Result of the prompt execution
+<br />
+<hr />
+
+### gl.eq_principle_prompt_non_comparative
+
+Executes a prompt with non-comparative equivalence principle.
+
+**Parameters:**
+- `input`: The text to analyze.
+- `task`: The operation to perform.
+- `criteria`: Consistent validation criteria across validators without requiring exact output matching.
+
+**Returns:** Result of the prompt execution
+<br />
+<hr />
+
+### gl.eq_principle_strict_eq
+
+Executes a prompt with strict equality equivalence principle.
+
+**Parameters:**
+- `function`: The function to be executed.
+
+**Returns:** Result of the prompt execution
+<br />
+<hr />
+
+### gl.exec_prompt
+
+Executes a given prompt using the GenVM.
+
+**Parameters:**
+- `prompt`: The prompt to be executed.
+
+**Returns:** Execution result
+<br />
+<hr />
+
+### gl.get_webpage
+
+Fetches a webpage from the internet.
+
+**Parameters:**
+- `url`: The URL of the webpage.
+- `mode`: The mode in which to fetch the webpage.
+
+**Returns:** Webpage content
+<br />
+<hr />
+
+### gl.rollback_immediate
+
+Immediately rolls back the current transaction with a message.
+
+**Parameters:**
+- `message`: The message explaining the rollback.
+
+**Returns:** None
+<br />
+<hr />
