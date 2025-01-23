@@ -1,10 +1,11 @@
 {
   "index": "Welcome to GenLayer Docs",
-  "about-genlayer": "About GenLayer Protocol",
+  "understand-genlayer-protocol": "Understand GenLayer Protocol",
   "developers": "Build with GenLayer",
   "validators": "Run a Validator",
   "partners": "Partners",
   "api-references": "API References",
+  "FAQ": "FAQ",
   "blog": {
     "title": "Blog 📚",
     "type": "page",
