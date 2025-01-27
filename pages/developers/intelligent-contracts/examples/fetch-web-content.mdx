@@ -1,0 +1,145 @@
+# FetchWebContent Contract
+
+The FetchWebContent contract demonstrates how to fetch and store web content within an intelligent contract. This contract shows how to use the [comparative equivalence principle](/developers/intelligent-contracts/equivalence-principle#comparative-equivalence-principle) to ensure all nodes agree on the same web content.
+
+```python
+# { "Depends": "py-genlayer:test" }
+
+from genlayer import *
+import typing
+
+
+@gl.contract
+class FetchWebContent:
+    content: str
+
+    def __init__(self):
+        self.content = ""
+
+    @gl.public.write
+    def fetch_web_content(self) -> typing.Any:
+
+        def fetch_web_url_content() -> str:
+            return gl.get_webpage("https://example.com/", mode="text")
+    
+        self.content = gl.eq_principle_strict_eq(fetch_web_url_content)
+        
+    @gl.public.view
+    def show_content(self) -> str:       
+        return self.content
+```
+
+## Code Explanation
+
+- **Initialization**: The `FetchWebContent` class initializes with an empty string in the `content` variable.
+- **Write Method**: 
+  - `fetch_web_content()` retrieves content from a web page and stores it.
+  - It contains an inner function `fetch_web_url_content()` that uses `gl.get_webpage()` to fetch content.
+  - Uses `gl.eq_principle_strict_eq()` to ensure all nodes agree on the same content.
+- **Read Method**: 
+  - `show_content()` returns the stored web content.
+
+## Key Components
+
+1. **Web Integration**: The contract uses `gl.get_webpage()` to fetch content from web URLs.
+2. **Deterministic Execution**: `gl.eq_principle_strict_eq()` ensures that all nodes in the network arrive at the same exact content.
+3. **State Management**: The contract maintains a single string state variable that stores the web content.
+
+## Deploying the Contract
+
+To deploy the FetchWebContent contract:
+
+1. **Deploy the Contract**: No initial parameters are needed for deployment.
+2. The contract will initialize with an empty content string.
+
+## Checking the Contract State
+
+After deployment, you can:
+
+- Use `show_content()` to view the currently stored web content.
+- Initially, this will return an empty string.
+
+## Executing Transactions
+
+To interact with the deployed contract:
+
+1. Call `fetch_web_content()` to trigger the web content fetch.
+2. The function will:
+   - Fetch the content from example.com
+   - Store the result using the equivalence principle
+   - Make the content available through `show_content()`
+
+## Understanding Web Content Integration
+
+This contract demonstrates several important concepts:
+
+- **Web Fetching**: Shows how to safely retrieve content from web sources.
+- **Deterministic Results**: Uses the equivalence principle to ensure all nodes reach consensus on web content.
+- **State Updates**: Demonstrates how web content can be stored in blockchain state.
+
+## Handling Different Scenarios
+
+- **Initial State**: The content starts empty.
+- **After fetch_web_content()**: The content will contain the text from example.com.
+- **Multiple Calls**: Each call to `fetch_web_content()` will update the stored content.
+- **Network Consensus**: All nodes will agree on the same content due to the equivalence principle.
+
+## Important Notes
+
+1. This example uses example.com as a stable demonstration URL.
+2. Web content should be relatively stable to ensure consensus.
+3. The equivalence principle ensures that all nodes store identical content.
+4. The `mode="text"` parameter ensures only text content is retrieved.
+
+## Security Considerations
+
+1. Only fetch content from trusted and stable sources.
+2. Be aware that web content can change over time.
+3. Consider implementing content validation before storage.
+4. Use appropriate error handling for network issues.
+
+You can monitor the contract's behavior through transaction logs, which will show the fetched content and state updates as they occur.
+
+## HTML Mode for Web Content
+
+The `gl.get_webpage()` function supports different modes for retrieving web content. While `mode="text"` returns the plain text content, `mode="html"` allows you to retrieve the complete HTML `<body>` of the webpage.
+
+Here's an example of using HTML mode:
+
+```python
+@gl.contract
+class FetchHTMLContent:
+    html_content: str
+
+    def __init__(self):
+        self.html_content = ""
+
+    @gl.public.write
+    def fetch_html_content(self) -> typing.Any:
+        def fetch_web_url_html() -> str:
+            return gl.get_webpage("https://example.com/", mode="html")
+    
+        self.html_content = gl.eq_principle_strict_eq(fetch_web_url_html)
+        
+    @gl.public.view
+    def show_html_content(self) -> str:       
+        return self.html_content
+```
+
+### Key Differences with HTML Mode:
+
+- **Complete Structure**: Returns the full HTML document including tags, attributes, and DOM structure
+- **Use Cases**: 
+  - Parsing specific HTML elements or attributes
+  - Extracting links, images, or other structured content
+  - Analyzing webpage structure and metadata
+- **Data Size**: HTML content is typically larger than text mode as it includes markup
+- **Processing**: May require additional HTML parsing to extract specific elements
+
+### When to Use HTML Mode:
+
+1. When you need to extract information from specific HTML elements
+3. When analyzing page structure or links
+4. If you need to process structured data like tables or forms
+
+This addition provides users with a clear understanding of the HTML mode option and its specific use cases, complementing the existing text mode example.
