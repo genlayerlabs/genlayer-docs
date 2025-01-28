@@ -1,0 +1,104 @@
+# FetchGitHubProfile Contract
+
+The FetchGitHubProfile contract demonstrates how to fetch and store GitHub profile content within an intelligent contract. This contract shows how to use the [comparative equivalence principle](/developers/intelligent-contracts/equivalence-principle#comparative-equivalence-principle) to ensure all nodes agree on the same profile content.
+
+```python
+# { "Depends": "py-genlayer:test" }
+
+from genlayer import *
+import typing
+
+
+@gl.contract
+class FetchGitHubProfile:
+    github_profile: str
+
+    def __init__(self):
+        self.github_profile = ""
+
+    @gl.public.write
+    def fetch_github_profile(self, github_handle: str) -> typing.Any:
+        github_profile_url = "https://github.com/"+github_handle
+
+        def fetch_github_profile_page_content() -> str:
+            return gl.get_webpage(github_profile_url, mode="text")
+    
+        self.github_profile = gl.eq_principle_strict_eq(fetch_github_profile_page_content)
+        
+    @gl.public.view
+    def show_github_profile(self) -> str:       
+        return self.github_profile
+```
+
+## Code Explanation
+
+- **Initialization**: The `FetchGitHubProfile` class initializes with an empty string in the `github_profile` variable.
+- **Write Method**: 
+  - `fetch_github_profile(github_handle)` takes a GitHub username and retrieves their profile content.
+  - Constructs the profile URL using the provided handle.
+  - Uses `gl.eq_principle_strict_eq()` to ensure all nodes agree on the same profile content.
+- **Read Method**: 
+  - `show_github_profile()` returns the stored profile content.
+
+## Key Components
+
+1. **GitHub Integration**: The contract uses `gl.get_webpage()` to fetch content from GitHub profiles.
+2. **Deterministic Execution**: `gl.eq_principle_strict_eq()` ensures that all nodes in the network arrive at the same exact content.
+3. **State Management**: The contract maintains a single string state variable that stores the profile content.
+
+## Deploying the Contract
+
+To deploy the FetchGitHubProfile contract:
+
+1. **Deploy the Contract**: No initial parameters are needed for deployment.
+2. The contract will initialize with an empty profile string.
+
+## Checking the Contract State
+
+After deployment, you can:
+
+- Use `show_github_profile()` to view the currently stored profile content.
+- Initially, this will return an empty string.
+
+## Executing Transactions
+
+To interact with the deployed contract:
+
+1. Call `fetch_github_profile(github_handle)` with a GitHub username.
+2. The function will:
+   - Construct the GitHub profile URL
+   - Fetch the profile content
+   - Store the result using the equivalence principle
+   - Make the content available through `show_github_profile()`
+
+## Understanding GitHub Integration
+
+This contract demonstrates several important concepts:
+
+- **Dynamic URLs**: Shows how to construct URLs based on input parameters.
+- **Web Fetching**: Demonstrates safe retrieval of content from GitHub.
+- **Deterministic Results**: Uses the equivalence principle to ensure all nodes reach consensus on profile content.
+- **State Updates**: Shows how external web content can be stored in blockchain state.
+
+## Handling Different Scenarios
+
+- **Initial State**: The profile content starts empty.
+- **Valid GitHub Handle**: The content will contain the text from the GitHub profile page.
+- **Invalid Handle**: May result in a 404 page content or error.
+- **Network Consensus**: All nodes will agree on the same content due to the equivalence principle.
+
+## Important Notes
+
+1. This example fetches public GitHub profile pages only.
+2. Profile content may change over time.
+3. The equivalence principle ensures that all nodes store identical content.
+4. The `mode="text"` parameter ensures only text content is retrieved.
+
+## Security Considerations
+
+1. Be aware that GitHub profiles are dynamic and can change.
+2. Consider implementing rate limiting to respect GitHub's terms of service.
+3. Handle potential errors for non-existent profiles.
+4. Be mindful of GitHub's robots.txt and usage policies.
+
+You can monitor the contract's behavior through transaction logs, which will show the fetched profile content and state updates as they occur.
