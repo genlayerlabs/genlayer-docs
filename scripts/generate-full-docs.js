@@ -1,21 +1,36 @@
 const fs = require('fs');
 const path = require('path');
 
+// Function to read and parse _meta.json files
+function parseMetaJson(dir) {
+  const metaFilePath = path.join(dir, '_meta.json');
+  if (fs.existsSync(metaFilePath)) {
+    const metaContent = fs.readFileSync(metaFilePath, 'utf8');
+    return JSON.parse(metaContent);
+  }
+  return null;
+}
+
 // Function to recursively get all MDX files
-function getMdxFiles(dir, fileList = []) {
-  const files = fs.readdirSync(dir);
-  
-  files.forEach(file => {
-    const filePath = path.join(dir, file);
-    const stat = fs.statSync(filePath);
-    
-    if (stat.isDirectory()) {
-      getMdxFiles(filePath, fileList);
-    } else if (file.endsWith('.mdx')) {
-      fileList.push(filePath);
+function getMdxFiles(baseDir, fileList = []) {
+  function traverseDirectory(dir) {
+    const meta = parseMetaJson(dir);
+    if (meta) {
+      Object.keys(meta).forEach(key => {
+        const mdxPath = path.join(dir, `${key}.mdx`);
+        if (fs.existsSync(mdxPath)) {
+          fileList.push(mdxPath);
+        }
+
+        const subDir = path.join(dir, key);
+        if (fs.existsSync(subDir) && fs.statSync(subDir).isDirectory()) {
+          traverseDirectory(subDir);
+        }
+      });
     }
-  });
-  
+  }
+
+  traverseDirectory(baseDir);
   return fileList;
 }
 

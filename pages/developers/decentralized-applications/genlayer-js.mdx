@@ -39,7 +39,7 @@ Before using the GenLayerJS SDK, ensure your system meets the following requirem
 
 ### Installation
 
-To install the GenLayerJS SDK in , use the following command:
+To install the GenLayerJS SDK, use the following command:
 
 ```bash
 npm install genlayer-js
@@ -49,64 +49,9 @@ npm install genlayer-js
 
 Here’s how to initialize the client and connect to the GenLayer Studio:
 
-### Reading a Transaction
-
-```typescript
-import { simulator } from 'genlayer-js/chains';
-import { createClient } from 'genlayer-js';
-
-const client = createClient({
-  chain: simulator,
-});
-
-const transactionHash = "0x...";
-
-const transaction = await client.getTransaction({ hash: transactionHash });
-```
-
-### Reading a Contract
-
-```typescript
-import { simulator } from 'genlayer-js/chains';
-import { createClient, createAccount } from 'genlayer-js';
-
-const account = createAccount();
-const client = createClient({
-  chain: simulator,
-  account: account, // Use this account for subsequent calls
-});
-
-const result = await client.readContract({
-  address: contractAddress,
-  functionName: 'get_complete_storage',
-  args: [],
-});
-```
-
-### Writing a Transaction
-
-```typescript
-import { simulator } from 'genlayer-js/chains';
-import { createClient, createAccount } from 'genlayer-js';
-
-const account = createAccount();
-const client = createClient({
-  chain: simulator,
-  account: account,
-});
-
-const transactionHash = await client.writeContract({
-  address: contractAddress,
-  functionName: 'update_storage',
-  args: ['new_data'],
-  value: 0, // Optional: amount of native token to send with the transaction
-});
-
-const receipt = await client.waitForTransactionReceipt({
-  hash: transactionHash,
-  status: 'FINALIZED', // or 'ACCEPTED'
-});
-```
+- **[Reading a transaction](../intelligent-contracts/advanced-features/contract-to-contract-interaction)**: Understand how to query transactions on the GenLayer network.
+- **[Reading a contract](/developers/decentralized-applications/reading-data)**: Discover how to read data from intelligent contracts on GenLayer.
+- **[Writing a contract](../intelligent-contracts/tools/genlayer-studio/contract-state)**: Learn how to write data to intelligent contracts on GenLayer.
 
 ## General Format of Commands
 

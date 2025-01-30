@@ -1,4 +1,5 @@
 import { Callout } from 'nextra-theme-docs'
+import { Fragment } from 'react';
 
 # Managing Intelligent Contract Operations with the Equivalence Principle
 
@@ -82,37 +83,91 @@ In this example:
 - `task` defines what operation to perform
 - `criteria` ensures consistent validation across validators without requiring exact output matching
 
-#### Data flow
-```mermaid
-graph TD
 
-    task[task & criteria]
+### Data flow
+<Fragment>
+  <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'stretch' }}>
+    <div style={{ flex: 1, marginRight: '10px', paddingRight: '10px', borderRight: '1px solid #ccc' }}>
+      <div>
+        ```mermaid
+        ---
+        title: Comparative Equivalence Principle
+        ---
+        graph TD
 
-    input[input function]
+            input[Input function]
+            criteria[Criteria]
+            final_result[Final result]
+            output_leader[Output leader]
+            output_validator[Output validator]
 
-    subgraph Leader
-        input_leader[executing input function]
-        leader["performing task (llm)"]
-        input_leader --> leader
-    end
+            subgraph Leader
+                input_leader[Executing input function]
+                leader["Performing task (LLM)"]
+                input_leader --> leader
+            end
 
-    task --> leader
+            subgraph Validator
+                input_validator[Executing input function]
+                validator["Performing task (LLM)"]
+                input_validator --> validator
+            end
 
-    leader --> output
+            input --> Leader
+            input --> Validator
+            
+            leader --> output_leader
+            validator --> output_validator
+
+            
+            output_leader --> final_result
+            criteria --> final_result
+            output_validator --> final_result
+        ```
+      </div>
+    </div>
+
+    <div style={{ flex: 1, marginLeft: '10px', paddingLeft: '10px' }}>
+      <div>
+        ```mermaid
+        ---
+        title: Non-Comparative Equivalence Principle
+        ---
+        graph TD
+
+            task[Task & criteria]
+
+            input[Input function]
+
+            subgraph Leader
+                input_leader[Executing input function]
+                leader["Performing task (LLM)"]
+                input_leader --> leader
+            end
+
+            task --> leader
+
+            leader --> Output
 
 
-    subgraph Validator
-        input_validator[executing input function]
-        validator["validating (llm)"]
-        input_validator --> validator
-    end
+            subgraph Validator
+                input_validator[Executing input function]
+                validator["Validating (LLM)"]
+                input_validator --> validator
+            end
 
-    task --> validator
-    output --> validator
+            task --> validator
+            Output --> validator
 
-    input --> input_leader
-    input --> input_validator
+            input --> Leader
+            input --> Validator
 
-    output --> final_result
-    validator -..- final_result
-```
+            final_result[Final result]
+            Output --> final_result
+            validator -..- final_result
+        ```
+      </div>
+    </div>
+
+  </div>
+</Fragment>
