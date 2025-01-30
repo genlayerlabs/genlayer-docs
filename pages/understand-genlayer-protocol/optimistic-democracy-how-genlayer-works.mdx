@@ -4,16 +4,16 @@
 
 Optimistic Democracy is GenLayer's consensus mechanism, rooted in [Condorcet's Jury Theorem](https://jury-theorem.genlayer.com/) (click the link to check out our interactive model), which affirms that collective decision-making becomes more accurate as independent validators vote. The process unfolds in distinct phases:
 
-1. **User Submits a Transaction**: The user sends a transaction to the GenLayer network.
+1. **Transaction Submission**: A user sends a transaction to the GenLayer network.
 
-2. **Leader (Validator) Proposes Result**: A validator is randomly chosen as the Leader-Validator, processes the transaction, and proposes a result.
+2. **Leader Proposes Result**: A validator is randomly chosen as the Leader validator. It processes the transaction and proposes a result.
 
-3. **Validators Recompute**: A committee of validators (Validators) re-computes the transaction. If the output aligns (i.e., is “equivalent”) with the Leader-Validator’s result, they approve; otherwise, they deny.
+3. **Validators Recompute**: A committee of validators re-compute the transaction. They either approve or deny based on whether the output aligns with the Leader's result (i.e. is <b>equivalent</b>).
 
 4. **Result Accepted**: Once a majority approves, the result is provisionally accepted.
 
-5. **Can Appeal**: If any participant disputes the outcome, they can appeal within the Finality Window by posting a bond.
+5. **Appeal**: If any participant disputes the outcome, they can appeal within the Finality Window by posting a bond.
 
-6. **Additional Validation (If Appealed)**: A new set of validators may be chosen to re-evaluate the transaction. If the appeal is valid, they reward the appellant; if not, the bond is forfeited.
+6. **Additional Validation (If Appealed)**: A new set of validators may be chosen to re-evaluate the transaction. If the appeal is valid, they reward the appellant. Otherwise, the bond is forfeited.
 
 7. **Final Decision**: After all appeals are resolved, the outcome becomes final.
