@@ -10,6 +10,14 @@ General syntax for using the GenLayer CLI:
 genlayer command [command options] [arguments...]
 ```
 
+## Version Compatibility
+
+The GenLayer CLI always uses the latest compatible version of the environment, ensuring that you benefit from the most recent features, bug fixes, and optimizations without requiring manual updates. If a specific version is needed, you can specify it using the --localnet-version option when initializing the environment.
+
+```bash
+genlayer init --localnet-version v0.10.2
+```
+
 ## Commands and usage
 
 ### Initialize
@@ -21,12 +29,14 @@ USAGE:
    genlayer init [options]
 
 OPTIONS:
-   --numValidators <numValidators>  Number of validators (default: "5")
-   --branch <branch>                Branch to use (default: "main")
+   --numValidators <numValidators>       Number of validators (default: "5")
+   --headless                            Headless mode (default: false)
+   --reset-db                            Reset Database (default: false)
+   --localnet-version <localnetVersion>  Select a specific localnet version
 
 EXAMPLES:
    genlayer init
-   genlayer init --numValidators 10 --branch develop
+   genlayer init --numValidators 10 --headless --reset-db --localnet-version v0.10.2
 ```
 
 ### Start GenLayer environment
@@ -40,10 +50,133 @@ USAGE:
 OPTIONS:
    --reset-validators               Remove all current validators and create new random ones (default: false)
    --numValidators <numValidators>  Number of validators (default: "5")
-   --branch <branch>                Branch to use (default: "main")
+   --headless                       Headless mode (default: false)
+   --reset-db                       Reset Database (default: false)
 
 EXAMPLES:
    genlayer up
-   genlayer up --reset-validators --numValidators 8 --branch feature-branch
+   genlayer up --reset-validators --numValidators 8 --headless --reset-db
 ```
 
+### Manage CLI Configuration
+
+Configure the GenLayer CLI settings.
+
+```bash
+USAGE:
+   genlayer config <command> [options]
+
+COMMANDS:
+   set <key=value>  Set a configuration value
+   get [key]        Get the current configuration
+   reset <key>      Reset a configuration value to its default
+
+EXAMPLES:
+   genlayer config get
+   genlayer config get defaultOllamaModel
+   genlayer config set defaultOllamaModel=deepseek-r1
+   genlayer config reset keyPairPath
+```
+
+### Deploy and Call Intelligent Contracts
+
+Deploy and interact with intelligent contracts.
+
+```bash
+USAGE:
+   genlayer deploy [options]
+   genlayer call <contractAddress> <method> [options]
+
+OPTIONS (deploy):
+   --contract <contractPath>  Path to the intelligent contract to deploy
+   --args <args...>           Positional arguments for the contract (space-separated, use quotes for multi-word arguments)
+
+OPTIONS (call):
+   --args <args...>           Positional arguments for the method (space-separated, use quotes for multi-word arguments)
+
+EXAMPLES:
+   genlayer deploy --contract ./my_contract.gpy
+   genlayer call 0x123456789abcdef greet --args "Hello World!"
+```
+
+### Keypair Management
+
+Generate and manage keypairs.
+
+```bash
+USAGE:
+   genlayer keygen create [options]
+
+OPTIONS:
+   --output <path>    Path to save the keypair (default: "./keypair.json")
+   --overwrite        Overwrite the existing file if it already exists (default: false)
+
+EXAMPLES:
+   genlayer keygen create
+   genlayer keygen create --output ./my_key.json --overwrite
+```
+
+### Update Resources
+
+Manage and update models or configurations.
+
+```bash
+USAGE:
+   genlayer update ollama [options]
+
+OPTIONS:
+   --model [model-name]  Specify the model to update or pull
+   --remove              Remove the specified model instead of updating
+
+EXAMPLES:
+   genlayer update ollama
+   genlayer update ollama --model deepseek-r1
+   genlayer update ollama --model deepseek-r1 --remove
+```
+
+### Validator Management
+
+Manage validator operations.
+
+```bash
+USAGE:
+   genlayer validators <command> [options]
+
+COMMANDS:
+   get [--address <validatorAddress>]     Retrieve details of a specific validator or all validators
+   delete [--address <validatorAddress>]  Delete a specific validator or all validators
+   count                                  Count all validators
+   update <validatorAddress> [options]    Update a validator details
+   create-random [options]                Create random validators
+   create [options]                       Create a new validator
+
+OPTIONS (update):
+   --stake <stake>                        New stake for the validator
+   --provider <provider>                  New provider for the validator
+   --model <model>                        New model for the validator
+   --config <config>                      New JSON config for the validator
+
+OPTIONS (create-random):
+   --count <count>                        Number of validators to create (default: "1")
+   --providers <providers...>             Space-separated list of provider names (e.g., openai ollama)
+   --models <models...>                   Space-separated list of model names (e.g., gpt-4 gpt-4o)
+
+OPTIONS (create):
+   --stake <stake>                        Stake amount for the validator (default: 1)
+   --config <config>                      Optional JSON configuration for the validator
+   --provider <provider>                  Specify the provider for the validator
+   --model <model>                        Specify the model for the validator
+
+EXAMPLES:
+   genlayer validators get
+   genlayer validators get --address 0x123456789abcdef
+
+   genlayer validators count
+   genlayer validators delete --address 0x123456789abcdef
+   genlayer validators update 0x123456789abcdef --stake 100 --provider openai --model gpt-4
+
+   genlayer validators create
+   genlayer validators create --stake 50 --provider openai --model gpt-4
+   genlayer validators create-random --count 3 --providers openai --models gpt-4 gpt-4o
+
+```
