@@ -38,7 +38,7 @@ To initiate a state change in another contract, call a method that modifies its 
 
 ```python filename="token_interaction" copy
 token_contract = gl.ContractAt(self.token_contract_address)
-success = token_contract.emit(gas=100000).transfer(to_address, amount)
+success = token_contract.emit().transfer(to_address, amount)
 ```
 
 #### 3. Handling Multiple Contract Interactions
@@ -64,9 +64,9 @@ class MultiContractInteraction:
 
         if balance >= amount:
             # Write to token contract
-            token.emit(gas=100000).transfer(self.address, amount)
+            token.emit().transfer(self.address, amount)
             # Write to storage contract
-            storage.emit(gas=100000).store_data(account, data)
+            storage.emit().store_data(account, data)
             return True
         return False
 ```
@@ -75,7 +75,7 @@ class MultiContractInteraction:
 As GenLayer calldata is dynamically typed users can send whatever they want to a contract, or use statically typed interface to facilitate type checking and autocompletion
 
 <Callout emoji="🏗️">
-    Exact parameters of `.view()` and `.write()` are subject to change
+    Exact parameters of `.view()` and `.emit()` are subject to change
 </Callout>
 
 ### Dynamically typed approach
@@ -83,7 +83,7 @@ As GenLayer calldata is dynamically typed users can send whatever they want to a
 ```py
 address = Address("0x03FB09251eC05ee9Ca36c98644070B89111D4b3F")
 result = gl.ContractAt(address).view().method_name(1, '234')
-gl.ContractAt(address).write(gas=10**5).method_name(1, '234')
+gl.ContractAt(address).emit().method_name(1, '234')
 # ^ write methods do not return anything!
 ```
 
