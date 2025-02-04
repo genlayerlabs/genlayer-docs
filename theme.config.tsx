@@ -21,7 +21,7 @@ const config: DocsThemeConfig = {
   navigation: true,
   head: (
     <>
-      <meta name="description" content="GenLayer the intelligence layer of the internet" />
+      <meta name="description" content="GenLayer the intelligence layer of the Internet" />
     </>
   ),
   navbar: {
@@ -44,14 +44,14 @@ const config: DocsThemeConfig = {
     const isHomePage = asPath === "/";
     return {
       titleTemplate: isHomePage
-        ? "GenLayer the intelligence layer of the internet - Documentation"
+        ? "GenLayer the intelligence layer of the Internet - Documentation"
         : "%s | Detailed GenLayer Documentation",
       openGraph: {
         type: "website",
         locale: "en_IE",
         url: "https://docs.genlayer.com/" + asPath,
-        site_name: "GenLayer: the intelligence layer of the internet - Documentation",
-        title: "GenLayer: the intelligence layer of the internet - Documentation",
+        site_name: "GenLayer: the intelligence layer of the Internet - Documentation",
+        title: "GenLayer: the intelligence layer of the Internet - Documentation",
         description:
           "Build and deploy AI-powered applications with GenLayer. Comprehensive documentation, guides, and API references for developers.",
         images: [
@@ -74,7 +74,7 @@ const config: DocsThemeConfig = {
         },
         {
           property: "og:description",
-          content: "GenLayer the intelligence layer of the internet - Documentation.",
+          content: "GenLayer the intelligence layer of the Internet - Documentation.",
         },
         {
           property: "og:image",
