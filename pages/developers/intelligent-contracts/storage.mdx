@@ -8,7 +8,7 @@ Usual data structures aren't suitable for representing blockchain persistent sto
 2. Allocation requires knowledge about all allocated addresses, which takes a lot of space and would cost a lot of reads at start time
 3. Serialization works poorly as it will rewrite entire storage (consider rehash)
 
-Intelligent Contracts store data publicly on chain, attached to their account's address. The storage starts zero-initialized until a contract is deployed initializes a state.
+Intelligent Contracts store data publicly on chain, attached to their account's address. The storage starts zero-initialized until a contract is deployed and initializes a state.
 
 For storage declaration GenLayer uses contract class fields.
 

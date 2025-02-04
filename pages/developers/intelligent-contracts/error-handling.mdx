@@ -17,6 +17,6 @@ And a recoverable error via one of two mechanisms:
 - `raise Rollback("message")`
 - `gl.rollback_immediate("message")`
 
-Later method won't unwind stack and current VM can't catch it
+Latter method won't unwind stack and current VM can't catch it.
 
-Built-in `gl.eq_principle_*` functions family will `raise Rollback(sub_vm_message)` in case non-deterministic block agreed on a rollback. Note that rollback message is compared for strict equality
+Built-in `gl.eq_principle_*` functions family will `raise Rollback(sub_vm_message)` in case non-deterministic block agreed on a rollback. Note that rollback message is compared for strict equality.

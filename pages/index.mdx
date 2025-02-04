@@ -2,32 +2,30 @@ import Image from 'next/image'
 import { Card, Cards } from 'nextra-theme-docs'
 import CustomCard from '../components/card'
 
-# Welcome to the GenLayer Guide
+# Welcome to GenLayer 
+## The Intelligence Layer of the Internet. 
 
-Welcome to **GenLayer - the Intelligence Layer of the Internet**. 
+GenLayer is a new class of DLT capable of non deterministic operations though a dynamic consensus mechanism, by leveraging the [Jury Theorem](https://en.wikipedia.org/wiki/Condorcet%27s_jury_theorem) ("wisdom of the crowd") and [Schelling Point](https://en.wikipedia.org/wiki/Focal_point_(game_theory)) mechanics.
 
-GenLayer is a new class of DLT where each validator is connected to a different AI model and reaches consensus dynamically by leveraging the wisdom of the crowd and Schelling Point mechanics. 
 
-**GenLayer enables trustless, reliable and unbiased autonomous decision-making.** 
+In other words, GenLayer is the first Intelligent Blockchain. Enabling smart contracts to natively access the internet and go beyond deterministic logic, to make subjective decisions.
 
-In other words, GenLayer is the first Intelligent Blockchain capable of smart contracts that can natively access the Internet and go beyond deterministic logic to make subjective decisions. 
+- **Bitcoin is Trustless Money,**<br />
+- **Ethereum is Trustless Applications,**<br />
+- **GenLayer is Trustless Decision-Making.**
 
-**Bitcoin is Trustless Money,**<br />
-**Ethereum is Trustless Applications,**<br />
-**GenLayer is Trustless Decision-Making.**
+GenLayer's Intelligent Contracts can connect to the Internet, process natural language, and handle non-deterministic operations such as making subjective decisions, enabling a whole new generation of smart contract logic that is not possible under the limitations of current blockchain infrastructure.
 
-GenLayer's Intelligent Contracts can natively connect to the Internet, process natural language, and handle non-deterministic operations such as making subjective decisions, enabling a whole new generation of smart contract logic that is not possible under the limitations of current blockchain infrastructure.
+See some of the usecases [here](/understand-genlayer-protocol/typical-use-cases).
 
-Protocols and applications that can autonomously and trustlessly **understand, analyze, and adapt to real-world data.**
-
-To navigate these docs, use the sidebar on the left. You can begin by exploring the [**GenLayer Protocol**](https://docs.genlayer.com/about-genlayer) to understand core concepts, or dive straight into [**Developer resources**](https://docs.genlayer.com/developers).
+Protocols and applications that can **understand, learn, and adapt to real-world events.**
 
 ## Get Started
 <br/>
 <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, minmax(0, 1fr))', gap: '1rem' }}>
   <CustomCard
     arrow
-    title="GenLayer Protocol"
+    title="Discover the Protocol"
     description="An introduction to GenLayer and its core functionalities. Learn what sets GenLayer apart."
     href="/about-genlayer"
   />
@@ -58,169 +56,8 @@ To navigate these docs, use the sidebar on the left. You can begin by exploring 
   />
 </div>
 
-## Core Technology
 
-At the heart of GenLayer lies Optimistic Democracy—an enhanced Delegated Proof of Stake (dPoS) consensus mechanism that integrates AI models directly into validator operations. This synergy delivers three capabilities traditional blockchains cannot match:
 
-1. **On-Chain AI Processing** <br />
-Validators connect to leading AI models (GPT, LLaMA, Meta, etc.) to execute complex reasoning on-chain, from natural language comprehension to data-driven predictions. 
-
-2. **Consensus-Backed Security** <br />
-Multiple validators vote on outcomes, ensuring collective agreement and robust reliability for every transaction—even those involving non-deterministic AI outputs.
-
-3. **Intelligent Contracts** <br />
-Smart contracts in GenLayer gain reasoning abilities, allowing them to understand natural language, process real-world data, and adapt to evolving conditions.
-
-## Technical Implementation
-
-To integrate AI seamlessly with the blockchain, GenLayer employs a distributed neural consensus network, wherein validators run specialized software connected via API to advanced AI models. This approach unifies:
-
-- Delegated Proof of Stake (dPoS) for efficient block production and governance.
-- Neural Consensus for non-deterministic transactions requiring advanced AI reasoning.
-
-This architecture supports autonomous DAOs, self-executing prediction markets, and dynamic DeFi protocols that react to real-world data in real time.
-
-{/* # Optimistic Democracy: How Consensus Works
-
-<img src="/studio/Diagram MAIN.jpg" alt="GenLayer Optimistic Democracy Consensus Diagram" width="100%" />
-
-Inspired by **[Condorcet's Jury Theorem](https://jury-theorem.genlayer.com/)** (click the link to check out our interactive model), Optimistic Democracy merges probabilistic AI systems with deterministic blockchain rules, ensuring secure and accurate consensus at scale.
-
-1. **User Submits a Transaction**
-A user sends a transaction request to the network (see the diagram's Step 1).
-
-2. **Leader (Validator) Proposes Result**
-The network selects a Leader, who processes the request and proposes an outcome (Step 2).
-
-3. **Validators Recompute**
-A group of Validators independently re-compute the transaction (Step 3). If the output aligns with the Leader's proposal, they approve; otherwise, they deny.
-
-This multi-layer validation ensures majority agreement, adding a safety net for AI-driven computations.
-
-# Validator Selection Mechanism
-Token holders bolster network security by delegating tokens to validator candidates. A deterministic function f(x) then randomly designates Leader-Validator and Validators for each transaction. This process not only promotes fairness but also helps decentralize validation power, strengthening GenLayer's security and trustlessness.
-
-# Validator Operational Framework
-Each GenLayer validator node integrates:
-
-- **Validator Software**
-Handles core blockchain functions: networking, block production, and transaction management.
-
-- **AI Model Integration**
-Connects to Large Language Models (LLMs) or other AI services for complex reasoning, natural language processing, and real-time data retrieval.
-
-Validators seamlessly manage both:
-
-1. **Deterministic Transactions** typical of traditional blockchains.
-2. **Non-Deterministic Transactions** that leverage AI-driven logic (e.g., searching the Internet, analyzing data, making probabilistic inferences).
-
-By splitting tasks between standard deterministic and advanced AI-powered transactions, GenLayer ensures high performance without compromising on security.
-
-# Putting It All Together
-With Optimistic Democracy guiding consensus and validators empowered by AI, GenLayer enables a new class of blockchain applications. From DAOs that self-govern based on real-time data to DeFi protocols that dynamically adjust parameters in response to market changes, developers can now build truly intelligent decentralized solutions. */}
-
-## Partners
-
-We feature various collaborators who help drive our innovation.
-
-<Cards num={3}>
-  <Card image title="YeagerAI" href="/partners/yeager">
-    <div style={{ height: "150px", display: "flex", alignItems: "center", justifyContent: "center", backgroundColor: "white", borderRadius: "8px" }}>
-      <Image 
-        src="/yeager.jpeg" 
-        alt="YeagerAI" 
-        fetchpriority="high" 
-        width="300" 
-        height="150"
-        style={{
-          maxHeight: "110px",
-          width: "auto",
-          objectFit: "contain"
-        }} 
-      />
-    </div>
-  </Card>
-  <Card image title="Heurist" href="/partners/heurist">
-    <div style={{ height: "150px", display: "flex", alignItems: "center", justifyContent: "center", backgroundColor: "white", borderRadius: "8px" }}>
-      <Image 
-        src="/heurist.png" 
-        alt="Heurist" 
-        fetchpriority="high" 
-        width="300" 
-        height="150"
-        style={{
-          maxHeight: "110px",
-          width: "auto",
-          objectFit: "contain"
-        }} 
-      />
-    </div>
-  </Card>
-  <Card image title="Aimelia" href="/partners/aimelia">
-    <div style={{ height: "150px", display: "flex", alignItems: "center", justifyContent: "center", backgroundColor: "white", borderRadius: "8px" }}>
-      <Image 
-        src="/studio/aimelia.png" 
-        alt="Aimelia" 
-        fetchpriority="high" 
-        width="300" 
-        height="150"
-        style={{
-          maxHeight: "110px",
-          width: "auto",
-          objectFit: "contain"
-        }} 
-      />
-    </div>
-  </Card>
-  <Card image title="Etherisc" href="/partners/etherisc">
-    <div style={{ height: "150px", display: "flex", alignItems: "center", justifyContent: "center", backgroundColor: "white", borderRadius: "8px" }}>
-      <Image 
-        src="/studio/etherisc.png" 
-        alt="Etherisc" 
-        fetchpriority="high" 
-        width="300" 
-        height="150"
-        style={{
-          maxHeight: "110px",
-          width: "auto",
-          objectFit: "contain"
-        }} 
-      />
-    </div>
-  </Card>
-  <Card image title="PredX" href="/partners/predx">
-    <div style={{ height: "150px", display: "flex", alignItems: "center", justifyContent: "center", backgroundColor: "white", borderRadius: "8px" }}>
-      <Image 
-        src="/studio/predx.jpg" 
-        alt="PredX" 
-        fetchpriority="high" 
-        width="300" 
-        height="150"
-        style={{
-          maxHeight: "110px",
-          width: "auto",
-          objectFit: "contain"
-        }} 
-      />
-    </div>
-  </Card>
-  <Card image title="Provably" href="/partners/provably">
-    <div style={{ height: "150px", display: "flex", alignItems: "center", justifyContent: "center", backgroundColor: "white", borderRadius: "8px" }}>
-      <Image 
-        src="/studio/provably.jpg" 
-        alt="Provably" 
-        fetchpriority="high" 
-        width="300" 
-        height="150"
-        style={{
-          maxHeight: "110px",
-          width: "auto",
-          objectFit: "contain"
-        }} 
-      />
-    </div>
-  </Card>
-</Cards>
 
 ## Community and Careers
 **Need Help?**

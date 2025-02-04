@@ -27,7 +27,7 @@ The GenVM makes use of decorators to identify the contract class and its methods
 
 The contract class must be decorated with `@gl.contract` so that GenVM knows that it's an Intelligent Contract. There can be only one contract class in a file.
 
-Furthermore, ll public methods must be decorated with either `@gl.public.view` for read-only methods or `@gl.public.write` for methods that modify storage. Constructor (`__init__`) must be private (not decorated)
+Furthermore, public methods must be decorated with either `@gl.public.view` for read-only methods or `@gl.public.write` for methods that modify storage. Constructor (`__init__`) must be private (not decorated)
 
 #### Persistent data
 
@@ -53,7 +53,7 @@ In your contracts, you can use any Python types, but for persisted fields, there
 
 #### Example
 
-Here is a simple example of an Intelligent Contract that stores a name and allows changeing it:
+Here is a simple example of an Intelligent Contract that stores a name and allows changing it:
 
 ```py
 # { "Depends": "py-genlayer:test" }
