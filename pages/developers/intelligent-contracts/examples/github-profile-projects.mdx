@@ -9,8 +9,7 @@ from genlayer import *
 import typing
 import re
 
-@gl.contract
-class GitHubProfilesRepositories:
+class GitHubProfilesRepositories(gl.Contract):
     github_profiles: DynArray[str]
 
     def __init__(self):

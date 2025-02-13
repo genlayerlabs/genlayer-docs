@@ -31,8 +31,7 @@ Here are a few important parts:
 
 from genlayer import *
 
-@gl.contract
-class Contract:
+class Contract(gl.Contract):
     had_iana: bool
 
     def __init__(self):

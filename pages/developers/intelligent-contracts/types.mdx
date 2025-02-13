@@ -37,8 +37,7 @@ class User:
   name: str
   balance: u256
 
-@gl.contract
-class Contract:
+class Contract(gl.Contract):
   users: DynArray[User]
 ```
 

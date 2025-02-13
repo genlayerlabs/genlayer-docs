@@ -9,8 +9,7 @@ from genlayer import *
 import typing
 import re
 
-@gl.contract
-class GitHubProfilesSummaries:
+class GitHubProfilesSummaries(gl.Contract):
     github_profiles: TreeMap[str, str]
 
     def __init__(self):

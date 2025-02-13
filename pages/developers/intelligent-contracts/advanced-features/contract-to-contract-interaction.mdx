@@ -45,8 +45,7 @@ success = token_contract.emit().transfer(to_address, amount)
 For more complex scenarios involving multiple contracts:
 
 ```python filename="multi_contract_interaction" copy
-@gl.contract
-class MultiContractInteraction:
+class MultiContractInteraction(gl.Contract):
     token_contract: Address
     storage_contract: Address
 

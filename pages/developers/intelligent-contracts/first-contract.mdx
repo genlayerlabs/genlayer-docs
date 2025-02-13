@@ -25,9 +25,9 @@ An Intelligent Contract is a regular Python class, with a regular constructor an
 
 The GenVM makes use of decorators to identify the contract class and its methods.
 
-The contract class must be decorated with `@gl.contract` so that GenVM knows that it's an Intelligent Contract. There can be only one contract class in a file.
+The contract class must extend `gl.Contract` class so that GenVM knows that it's an Intelligent Contract. There can be only one contract class in a file.
 
-Furthermore, public methods must be decorated with either `@gl.public.view` for read-only methods or `@gl.public.write` for methods that modify storage. Constructor (`__init__`) must be private (not decorated)
+Furthermore, public methods must be decorated with either `@gl.public.view` for read-only methods or `@gl.public.write` (or `@gl.public.write.payable`) for methods that modify storage. Constructor (`__init__`) must be private (not decorated)
 
 #### Persistent data
 
@@ -60,8 +60,7 @@ Here is a simple example of an Intelligent Contract that stores a name and allow
 
 from genlayer import *
 
-@gl.contract
-class Hello:
+class Hello(gl.Contract):
     name: str
 
     def __init__(self, name: str):

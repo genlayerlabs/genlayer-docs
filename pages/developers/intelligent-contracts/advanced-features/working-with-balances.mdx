@@ -1,0 +1,91 @@
+# Working With Balances
+
+## Core concepts
+
+Each contract has a `balance` property: both derivatives of `gl.Contract` and `gl.ContractAt`
+
+All emitted messages (both internal and external) can have attached `value`: `ContractAt(...).emit(value=100).my_method()`
+
+There is a special method to call a "nameless" transfer: `ContractAt(...).emit_transfer(value=100)`.
+You can receive such transfers by overriding `__receive__(self)` method.
+
+There are few simple rules:
+1. If your method expects a `value`, annotate it with `@gl.public.write.payable` instead of just `write`
+2. Emitting transaction to a non-payable method with non-zero value is an error
+3. If transaction outcome is not *success*, attached value is sent back
+
+## Code example
+
+```python filename="working_with_balances" copy
+class MultiContractInteraction(gl.Contract):
+    token_contract: Address
+
+    def __init__(self, token_contract: str):
+        self.token_contract = Address(token_contract)
+
+    @gl.public.write.payable
+    def forward(self) -> None:
+        token = gl.ContractAt(self.token_contract)
+        amount = gl.message.value
+        token.emit_transfer(value=amount)
+
+
+    @gl.public.write.payable
+    def donate_twice(self) -> bool:
+        token = gl.ContractAt(self.token_contract)
+        amount = gl.message.value
+        if self.balance < amount:
+            return False
+        token.emit(value=amount*2).donate_twice()
+        return True
+```
+
+## Special methods
+
+There are two special methods allowed in each contract **definition**:
+```python
+class Contract(gl.Contract):
+    @gl.public.write # .payable?
+    def __handle_undefined_method__(
+        self, method_name: str, args: list[typing.Any], kwargs: dict[str, typing.Any]
+    ):
+        """
+        Method that is called for undefined method calls,
+        must be either ``@gl.public.write`` or ``@gl.public.write.payable``
+        """
+        ...
+
+    @gl.public.write.payable
+    def __receive__(self):
+        """
+        Method that is called for no-method transfers,
+        must be ``@gl.public.write.payable``
+        """
+        ...
+```
+
+Below is a diagram that shows how GenVM decides which method to pick, in case any regular method did not match:
+
+```mermaid
+graph TD
+    unhandled_message>unhandled message] ---> has_value[has value?]
+
+    has_value -->|yes| has_method_name[has method name?]
+
+    has_method_name -->|yes| fallback_defined1[__handle_undefined_method__ is defined?]
+    has_method_name -->|no| receive_defined[is __receive__ defined?]
+
+    receive_defined -->|no| fallback_defined1[is __handle_undefined_method__ defined?]
+    receive_defined -->|yes| receive{{call __receive__}}
+
+    fallback_defined1 -->|yes| fallback_is_payable[is __handle_undefined_method__ payable?]
+    fallback_defined1 -->|no| error3{{error}}
+
+    fallback_is_payable -->|yes| fallback1{{call __handle_undefined_method__}}
+    fallback_is_payable -->|no| error1{{error}}
+
+    has_value -->|no| fallback_defined
+    fallback_defined -->|yes| fallback2{{call __handle_undefined_method__}}
+    fallback_defined -->|no| error2{{error}}
+
+```

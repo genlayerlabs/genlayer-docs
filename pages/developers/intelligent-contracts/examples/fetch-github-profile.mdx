@@ -9,8 +9,7 @@ from genlayer import *
 import typing
 
 
-@gl.contract
-class FetchGitHubProfile:
+class FetchGitHubProfile(gl.Contract):
     github_profile: str
 
     def __init__(self):

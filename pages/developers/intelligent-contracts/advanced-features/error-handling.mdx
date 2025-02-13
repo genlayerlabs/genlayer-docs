@@ -1,0 +1,22 @@
+import { Callout } from 'nextra-theme-docs'
+
+# Error handling
+
+Sometimes contracts can produce errors. There are two kinds of GenVM errors:
+
+1. unrecoverable errors
+    - `exit(x)` where $x \neq 0$ (if $x = 0$ then return is considered to be `None`)
+    - unhandled `Exception`, which will result in `exit(1)`
+2. rollbacks
+    - `raise Rollback("message")`
+    - `gl.rollback_immediate("message")`
+
+    difference is that later won't unwind Python stack and execution of current sub-vm will be terminated immediately
+
+Built-in `gl.eq_principle_*` functions family will `raise Rollback(sub_vm_message)` in case non-deterministic block agreed on a rollback.
+Note that rollback message is compared for **strict** equality, which means that you should not include stacktrace there, but rather use some deterministic error codes.
+
+Difference between rollbacks and unrecoverable errors is that unrecoverable errors can't be handled by user code and their "message" contains only short description provided by the GenVM.
+However, there are two exceptions of when a contract can observe unrecoverable errors:
+1. If leaders non-deterministic block produced an error. It is discouraged to do that and indicates that some unexpected (by contract) corner case was reached
+2. You can get one out of `gl.advanced.sandbox` method
