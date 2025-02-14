@@ -6,6 +6,8 @@ Each contract has a `balance` property: both derivatives of `gl.Contract` and `g
 
 All emitted messages (both internal and external) can have attached `value`: `ContractAt(...).emit(value=100).my_method()`
 
+To get `value` from the incoming message users can read `gl.message.value`
+
 There is a special method to call a "nameless" transfer: `ContractAt(...).emit_transfer(value=100)`.
 You can receive such transfers by overriding `__receive__(self)` method.
 
@@ -17,26 +19,26 @@ There are few simple rules:
 ## Code example
 
 ```python filename="working_with_balances" copy
-class MultiContractInteraction(gl.Contract):
-    token_contract: Address
+class TokenForwarder(gl.Contract):
+    vault_contract: Address
 
-    def __init__(self, token_contract: str):
-        self.token_contract = Address(token_contract)
+    def __init__(self, vault_contract: str):
+        self.vault_contract = Address(vault_contract)
 
     @gl.public.write.payable
     def forward(self) -> None:
-        token = gl.ContractAt(self.token_contract)
+        vault = gl.ContractAt(self.vault_contract)
         amount = gl.message.value
-        token.emit_transfer(value=amount)
+        vault.emit_transfer(value=amount)
 
 
     @gl.public.write.payable
     def donate_twice(self) -> bool:
-        token = gl.ContractAt(self.token_contract)
+        vault = gl.ContractAt(self.vault_contract)
         amount = gl.message.value
         if self.balance < amount:
             return False
-        token.emit(value=amount*2).donate_twice()
+        vault.emit(value=amount*2).save(self.address)
         return True
 ```
 
