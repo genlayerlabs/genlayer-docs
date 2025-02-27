@@ -97,17 +97,20 @@ USAGE:
    genlayer call <contractAddress> <method> [options]
 
 OPTIONS (deploy):
-   --contract <contractPath>  Path to the intelligent contract to deploy
+   --contract <contractPath>  (Optional) Path to the intelligent contract to deploy
    --args <args...>           Positional arguments for the contract (space-separated, use quotes for multi-word arguments)
 
 OPTIONS (call):
    --args <args...>           Positional arguments for the method (space-separated, use quotes for multi-word arguments)
 
 EXAMPLES:
+   genlayer deploy
    genlayer deploy --contract ./my_contract.gpy
    genlayer call 0x123456789abcdef greet --args "Hello World!"
 ```
-
+#### Deploy Behavior
+- If `--contract` is specified, the command will **deploy the given contract**.
+- If `--contract` is omitted, the CLI will **search for scripts inside the `deploy` folder**, sort them, and execute them sequentially.
 ### Keypair Management
 
 Generate and manage keypairs.
