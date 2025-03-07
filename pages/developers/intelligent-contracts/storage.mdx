@@ -101,12 +101,31 @@ from genlayer.py.storage._internal.generate import storage
 
 @storage
 class B:
-    empty: TreeMap[str, str]
+    empty: TreeMap[Address, str]
 
-# Creating an instance of B and accessing the empty TreeMap
-newMap = B().empty
+# Usage
+
+@allow_storage
+@dataclass
+class Foo:
+    foo_x: str
+    foo_y: TreeMap[Address, str]
+
+
+class DoSomething(gl.Contract):
+    def __init__(self):
+        pass
+
+    @gl.public.write
+    def create_foo(self, foo1) -> None:
+        # Creating an instance of B to initialize new TreeMap object
+        new_foo = Foo(
+            foo_x=foo1,
+            foo_y=B().empty
+        )
+
 ```
-This ensures that `newMap` is an empty `TreeMap[str, str]` that can be modified within the contract.
+This ensures that attribute `Foo.foo_y` is an empty `TreeMap[Address, str]` that can be modified within the contract.
 
 ---
 ## Differences from regular python types
