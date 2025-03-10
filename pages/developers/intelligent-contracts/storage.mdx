@@ -92,6 +92,45 @@ class Contract:
     users: DynArray[User]
 ```
 
+### Instantiating an Empty TreeMap in a Contract
+
+<Callout emoji="⚠️">
+This is a temporary workaround till a more native approach will be implemented.
+</Callout>
+To define and instantiate an empty `TreeMap` inside a contract, follow this approach:
+
+```python
+from genlayer.py.storage._internal.generate import storage
+
+@storage
+class B:
+    empty: TreeMap[Address, str]
+
+# Usage
+
+@allow_storage
+@dataclass
+class Foo:
+    foo_x: str
+    foo_y: TreeMap[Address, str]
+
+
+class DoSomething(gl.Contract):
+    def __init__(self):
+        pass
+
+    @gl.public.write
+    def create_foo(self, foo1) -> None:
+        # Creating an instance of B to initialize new TreeMap object
+        new_foo = Foo(
+            foo_x=foo1,
+            foo_y=B().empty
+        )
+
+```
+This ensures that attribute `Foo.foo_y` is an empty `TreeMap[Address, str]` that can be modified within the contract.
+
+---
 ## Differences from regular python types
 Even though storage classes mimic python types, remember that they provide you only with a view on memory, not actual data that is "here". For example, consider the above example
 
