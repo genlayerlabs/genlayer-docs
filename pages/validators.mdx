@@ -1,4 +1,4 @@
-import { Callout } from 'nextra-theme-docs'
+import { Callout } from "nextra-theme-docs";
 
 # GenLayer Validator Requirements
 
@@ -13,6 +13,7 @@ Each validator needs access to a Large Language Model (LLM) for executing and ev
 It is up to each validator to select the model they want to use.
 
 Possible options:
+
 - Run an open-source model locally on the same machine with a GPU
 - Run an open-source model on a different machine
 - Connect to a hosted inference provider (OpenAI, Anthropic, Heurist, Atoma network etc.)
@@ -23,40 +24,136 @@ Each validator needs access to a [ZKSync Full Node](https://docs.zksync.io/zksyn
 
 One full node can be shared between multiple validators - TBD how many exactly.
 
-
 ## System Requirements
 
 Below are the **initial** recommended system requirements. These guidelines may change as the network grows and evolves.
 
 ### RAM
 
-- **Recommended:** 16 GB  
-- **Why:**  
-  - GenLayer's _genvm_ can spawn multiple Sub-VMs for contract calls and non-deterministic blocks.  
+- **Recommended:** 16 GB
+- **Why:**
+  - GenLayer's _genvm_ can spawn multiple Sub-VMs for contract calls and non-deterministic blocks.
   - Each Sub-VM can consume up to ~4 GB of RAM for storage.
 
 ### CPU
 
-- **Recommended:** Modern multi-core processor with at least 8 cores/16 threads  
+- **Recommended:** Modern multi-core processor with at least 8 cores/16 threads
 
 ### Storage
 
-- **Recommended Disk Space:** 128 GB+  
-- **Preferred Type:** SSD or NVMe (M.2)  
+- **Recommended Disk Space:** 128 GB+
+- **Preferred Type:** SSD or NVMe (M.2)
 
 ### Network
 
-- **Recommended Connection:** Stable broadband  
+- **Recommended Connection:** Stable broadband
 
 ### Operating System
 
-- **Recommended:** 64-bit Linux (Ubuntu, Debian, CentOS, etc.) 
+- **Recommended:** 64-bit Linux (Ubuntu, Debian, CentOS, etc.)
+
+### Architecture
+
+- **Recommended:** `AMD64`
+- `ARM64` support will come in the future
 
 ### GPU (Optional)
 
-- **Recommended:** If you plan to run advanced AI-models locally, a CUDA-compatible GPU could be beneficial.  
-
+- **Recommended:** If you plan to run advanced AI-models locally, a CUDA-compatible GPU could be beneficial.
 
 <Callout emoji="⚠️">
-    These requirements are a starting point. As GenLayer evolves and usage patterns change (e.g., more complex AI-driven Intelligent Contracts), the recommended hardware may change.
+  These requirements are a starting point. As GenLayer evolves and usage
+  patterns change (e.g., more complex AI-driven Intelligent Contracts), the
+  recommended hardware may change.
 </Callout>
+
+## Setup
+
+1. Go to https://github.com/yeagerai/genlayer-node/releases and download the corresponding asset. For example `genlayer-node-linux-amd64-v0.1.0.tar.gz`
+1. Extract it
+   ```sh
+   tar -xzvf genlayer-node-linux-amd64-*.tar.gz
+   ```
+1. `cd` into it
+   ```sh
+   cd genlayer-node-linux-amd64
+   ```
+1. [Configure `configs/node/config.yaml`](#config-yaml)
+1. [Configure `configs/node/wallet.yaml`](#wallet-yaml)
+1. Run the node
+   ```sh
+   ./bin/genlayernode
+   ```
+
+## Config
+
+### `config.yaml`
+
+```yaml
+datadir: "./data/node" # Cache directory
+logging:
+  level: "INFO" # Log level
+node:
+  rpc:
+    port: 9151 # JSON RPC port
+    endpoints:
+      groups:
+        ethereum: true # Enable Ethereum RPC endpoints
+        debug: false # Enable debug endpoints
+      methods: # Enabled `eth_` methods
+        eth_blockNumber: true
+        eth_getBlockByNumber: true
+        eth_getBlockByHash: true
+        eth_sendRawTransaction: false
+  ops:
+    port: 9153 # Metrics port
+    endpoints:
+      metrics: true # Enable metrics endpoint
+      health: true # Enable health endpoint
+  dev: # Configuration for development purposes
+    disableSubscription: false # Disable subscription
+rollup:
+  zksyncurl: "https://genlayer-testnet.rpc.caldera.xyz/http" # ZKSync RPC URL
+  zksyncwebsocketurl: "wss://genlayer-testnet.rpc.caldera.xyz/ws" # ZKSync WebSocket URL
+  ethclienturl: "https://rpc.ankr.com/eth_sepolia" # Ethereum RPC URL
+  ethclientwebsocketurl: "wss://sepolia.infura.io/ws/v3/" # Ethereum WebSocket URL
+consensus:
+  contractmainaddress: "0x..." # ConsensusMain Smart Contract Address
+  contractdataaddress: "0x..." # ConsensusData Smart Contract Address
+  contractmanageraddress: "0x..." # ConsensusManager Smart Contract Address
+  contractghostaddress: "0x..." # GhostManager Smart Contract Address
+
+# Advanced configuration
+merkleforest:
+  maxdepth: 16
+  dbpath: "./data/node/merkle/forest/data.db"
+  indexdbpath: "./data/node/merkle/index.db"
+merkletree:
+  maxdepth: 16
+  dbpath: "./data/node/merkle/tree/"
+genvm:
+  presets:
+    - name: "preset_1"
+      enabled: true
+      type: "local"
+  instances:
+    - name: "genvm_local_1"
+      usePreset: "preset_1"
+      enabled: true
+      type: "local"
+      execution:
+        timeout: 30s
+      executable: "./third_party/genvm/bin/genvm"
+      tempDir: "./tmp/genvm/genvm_local_1"
+```
+
+### `wallet.yaml`
+
+```yaml
+wallet:
+  consensusAddress: "0xbf064d3e04309730153be69ff01713a22E795718" # Public address of your validator to use
+  accounts: # List of possible accounts to use
+    "0xbf064d3e04309730153be69ff01713a22E795718": # Public address of your validator to use
+      privateKey: "0xdc9e4c3fd72879b7797223405728c7dcef8e118591c5b931270d6060c49012a0" # Private Key of the account
+      password: "whateveryouwant" # Password for locking the account
+```
