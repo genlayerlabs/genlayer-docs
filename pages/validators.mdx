@@ -18,6 +18,11 @@ Possible options:
 - Run an open-source model on a different machine
 - Connect to a hosted inference provider (OpenAI, Anthropic, Heurist, Atoma network etc.)
 
+<Callout emoji="⚠️">
+  Currently the only supported LLM provider is OpenAI. More providers will be
+  added in the near future.
+</Callout>
+
 ### ZKSync Full Node for the GenLayer Chain
 
 Each validator needs access to a [ZKSync Full Node](https://docs.zksync.io/zksync-era/tooling/external-node) connected to the GenLayer chain.
@@ -87,7 +92,7 @@ Below are the **initial** recommended system requirements. These guidelines may 
 1. [Configure `configs/node/wallet.yaml`](#walletyaml)
 1. Run the node
    ```sh
-   ./bin/genlayernode
+   OPENAIKEY='sk-proj-fill-in-your-openai-key' ./bin/genlayernode
    ```
 
 ## Config
