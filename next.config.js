@@ -160,6 +160,10 @@ const actualRedirects = [
     old: "/developers/intelligent-contracts/security-and-best-practices/",
     new: "/developers/intelligent-contracts/security-and-best-practices/prompt-injection",
   },
+  {
+    old: "/developers/intelligent-contracts/error-handling",
+    new: "/developers/intelligent-contracts/advanced-features/error-handling",
+  },
 ];
 
 const nextConfig = withNextra({

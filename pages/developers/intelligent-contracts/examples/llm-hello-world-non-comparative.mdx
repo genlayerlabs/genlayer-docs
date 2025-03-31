@@ -9,8 +9,7 @@ from genlayer import *
 import typing
 
 
-@gl.contract
-class LlmHelloWorldNonComparative:
+class LlmHelloWorldNonComparative(gl.Contract):
     message: str
 
     def __init__(self):

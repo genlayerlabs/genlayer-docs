@@ -9,8 +9,7 @@ from genlayer import *
 import typing
 
 
-@gl.contract
-class FetchWebContent:
+class FetchWebContent(gl.Contract):
     content: str
 
     def __init__(self):
@@ -107,8 +106,7 @@ The `gl.get_webpage()` function supports different modes for retrieving web cont
 Here's an example of using HTML mode:
 
 ```python
-@gl.contract
-class FetchHTMLContent:
+class FetchHTMLContent(gl.Contract):
     html_content: str
 
     def __init__(self):

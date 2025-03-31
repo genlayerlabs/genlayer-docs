@@ -24,8 +24,7 @@ class StoreValue:
 
 
 # contract class
-@gl.contract
-class LogIndexer:
+class LogIndexer(gl.Contract):
     vector_store: VecDB[np.float32, typing.Literal[384], StoreValue]
 
     def __init__(self):

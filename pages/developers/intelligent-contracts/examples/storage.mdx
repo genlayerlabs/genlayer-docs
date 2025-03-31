@@ -8,8 +8,7 @@ The Storage contract sets up a simple scenario to store and retrieve a string va
 from genlayer import *
 
 # contract class
-@gl.contract
-class Storage:
+class Storage(gl.Contract):
     storage: str
 
     # constructor

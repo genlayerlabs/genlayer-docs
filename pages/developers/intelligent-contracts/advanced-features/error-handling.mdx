@@ -1,0 +1,40 @@
+import { Callout } from 'nextra-theme-docs'
+
+# Error handling
+
+Sometimes contracts can produce errors. There are two kinds of GenVM errors:
+
+1. unrecoverable errors
+    - `exit(x)` where $x \neq 0$ (if $x = 0$ then return is considered to be `None`)
+    - unhandled `Exception`, which will result in `exit(1)`
+2. rollbacks
+    - `raise Rollback("message")` --- raises regular Python exception that can be caught,
+        if it escapes your contract, then it will call the later
+    - `gl.rollback_immediate("message")` --- immediately terminates current sub-vm without unwinding the stack,
+        which is more cost-efficient, but can't be caught in the current sub-vm
+
+Built-in `gl.eq_principle_*` functions family will `raise Rollback(sub_vm_message)` in case non-deterministic block agreed on a rollback.
+Which means that deterministic block can catch and inspect such error from a non-deterministic block and act on it.
+Note that rollback message is compared for **strict** equality, which means that you should not include stacktrace there, but rather use some descriptive error codes.
+
+Difference between rollbacks and unrecoverable errors is that unrecoverable errors can't be handled by user code and their "message" contains only short description provided by the GenVM.
+However, there are two exceptions of when a contract can observe unrecoverable errors:
+1. If leaders non-deterministic block produced an error. It is discouraged to do that and indicates that some unexpected (by contract) corner case was reached
+2. You can get one out of `gl.advanced.sandbox` method
+
+```python filename="catching_a_rollback" copy
+# { "Depends": "py-genlayer:test" }
+from genlayer import *
+
+
+class Contract(gl.Contract):
+    @gl.public.write
+    def main(self):
+        def run():
+            raise gl.Rollback('my message')
+
+        try:
+            gl.eq_principle_strict_eq(run)
+        except Rollback as r:
+            print(r.msg) # will print `my message`
+```

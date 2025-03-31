@@ -19,12 +19,11 @@ For storage declaration GenLayer uses contract class fields.
 
 Example:
 ```py
-@gl.contract
-class PersistentContract:
+class PersistentContract(gl.Contract):
     minter: Address
 
     def __init__(self):
-        self.minter = gl.message.sender_account
+        self.minter = gl.message.sender_address
 ```
 
 In your contracts, you can use any Python types, but for persisted fields, there are some restrictions:
@@ -39,8 +38,7 @@ In your contracts, you can use any Python types, but for persisted fields, there
 Simple examples:
 
 ```py
-@gl.contract
-class PersistentContract:
+class PersistentContract(gl.Contract):
     a: str
     b: bytes
     # c: list[str]           # ❌ `list` is forbidden!
@@ -60,8 +58,7 @@ These types implement python `collections.abc.MutableSequence` and `collections.
 They can be encoded into calldata as-is as well, which means that following code is correct:
 
 ```py
-@gl.contract
-class PersistentContract:
+class PersistentContract(gl.Contract):
     storage: DynArray[str]
 
     @gl.public.view
@@ -87,8 +84,7 @@ class User:
     name: str
     birthday: datetime.datetime
 
-@gl.contract
-class Contract:
+class Contract(gl.Contract):
     users: DynArray[User]
 ```
 

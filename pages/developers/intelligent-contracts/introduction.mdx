@@ -7,7 +7,7 @@ Intelligent Contracts are an advanced evolution of smart contracts that combine 
 ## Key Features of Intelligent Contracts
 
 ### Natural Language Processing (NLP)
-Intelligent Contracts leverage Large Language Models (LLMs) to process and understand human language inputs. This integration enables the contracts to interpret complex text-based instructions and requirements, moving beyond simple conditional logic. 
+Intelligent Contracts leverage Large Language Models (LLMs) to process and understand human language inputs. This integration enables the contracts to interpret complex text-based instructions and requirements, moving beyond simple conditional logic.
 
 Through NLP capabilities, these contracts can analyze qualitative criteria and make nuanced decisions based on contextual understanding, bringing a new level of intelligence to contract execution.
 
@@ -22,11 +22,12 @@ Intelligent Contracts introduce a sophisticated approach to handling operations 
 ### Contract Structure
 Intelligent Contracts are written in Python using the GenVM SDK library. The basic structure consists of:
 1. Dependencies Declaration: Specify required GenVM SDK modules
-2. Contract Decorator: Use `@gl.contract` to define a contract class
+2. Declare Contract: Extend `gl.Contract` to define a contract class
 3. State Variables: Declare with type annotations for strong typing
 4. Methods:
     - `@gl.public.view`: Read-only methods that don't modify state
     - `@gl.public.write`: Methods that can modify contract state
+    - `@gl.public.write.payable`: Methods that can modify contract state *and* receive `value`
 
 Here's an example:
 
@@ -34,8 +35,7 @@ Here's an example:
    # { "Depends": "py-genlayer:test" }
    from genlayer import *
 
-   @gl.contract
-   class MyContract:
+   class MyContract(gl.Contract):
        # State variables with type annotations
        variable: str
 
@@ -79,7 +79,7 @@ The platform supports the data structures needed to handle complex business logi
 ### Non-Deterministic Operations
 **Challenge**
 
-The primary challenge in handling non-deterministic operations is maintaining consistency across multiple validators when operations may naturally produce varying results. This is particularly evident when dealing with LLM outputs or real-time data processing. 
+The primary challenge in handling non-deterministic operations is maintaining consistency across multiple validators when operations may naturally produce varying results. This is particularly evident when dealing with LLM outputs or real-time data processing.
 
 **Mitigation**
 
@@ -88,7 +88,7 @@ To address this, GenLayer provides the Equivalence Principle as a flexible frame
 ### External Data Reliability
 **Challenge**
 
-Integrating external data sources introduces potential points of failure and data inconsistency risks that must be carefully managed. External APIs may experience downtime, return inconsistent results, or become deprecated over time. 
+Integrating external data sources introduces potential points of failure and data inconsistency risks that must be carefully managed. External APIs may experience downtime, return inconsistent results, or become deprecated over time.
 
 **Mitigation**
 
@@ -98,9 +98,8 @@ To combat these challenges, Intelligent Contracts employ a robust multi-validato
 
 **Challenge**
 
-The integration of LLM operations and complex data processing can introduce significant computational overhead, potentially impacting contract execution speed and cost efficiency. 
+The integration of LLM operations and complex data processing can introduce significant computational overhead, potentially impacting contract execution speed and cost efficiency.
 
 **Mitigation**
 
 To tackle these performance challenges, GenLayer implements optimized validation processes that balance thoroughness with efficiency. The platform provides configurable consensus mechanisms that allow developers to fine-tune the validation process based on their specific needs, whether prioritizing speed or verification thoroughness.
-

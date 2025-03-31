@@ -63,8 +63,7 @@ The `eq_principle_prompt_non_comparative` function takes three key parameters th
 #### Example Usage
 
 ```python
-@gl.contract
-class SentimentAnalyzer:
+class SentimentAnalyzer(gl.Contract):
     @gl.public.write
     def analyze_sentiment(self, text: str) -> str:
         self.sentiment = gl.eq_principle_prompt_non_comparative(
@@ -115,11 +114,11 @@ In this example:
 
             input --> Leader
             input --> Validator
-            
+
             leader --> output_leader
             validator --> output_validator
 
-            
+
             output_leader --> final_result
             criteria --> final_result
             output_validator --> final_result
