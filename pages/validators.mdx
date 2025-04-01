@@ -83,17 +83,28 @@ Below are the **initial** recommended system requirements. These guidelines may 
    tar -xzvf genlayer-node-linux-amd64-${version}.tar.gz
    ```
 1. `cd` into it
+
    ```sh
    cd genlayer-node-linux-amd64
    ```
-1. [Configure `configs/node/config.yaml`](#configyaml)
-1. [Configure `configs/node/wallet.yaml`](#walletyaml)
-1. [Configure GenVM](#genvm)
-1. Run the node
-   ```sh
-   export OPENAIKEY='sk-proj-fill-in-your-openai-key' # export all the necessary environment variables for the GenVM
-   ./bin/genlayernode
-   ```
+
+1. Follow the `README.md`
+
+   1. [Configure `configs/node/config.yaml`](#configyaml)
+   1. [Configure `configs/node/wallet.yaml`](#walletyaml)
+   1. [Configure GenVM](#genvm)
+   1. Run the WebDriver container
+
+      ```sh
+      docker compose up -d
+      ```
+
+   1. Run the node
+
+      ```sh
+      export OPENAIKEY='sk-proj-fill-in-your-openai-key' # export all the necessary environment variables for the GenVM
+      ./bin/genlayernode
+      ```
 
 ## Config
 
