@@ -1,6 +1,7 @@
 {
   "genlayer-cli": "GenLayer CLI",
   "genlayer-js": "GenLayerJS",
+  "genlayer-py": "GenLayerPY",
   "genlayer-sdk": {
     "title": "GenLayer SDK",
     "href": "https://sdk.genlayer.com/"
