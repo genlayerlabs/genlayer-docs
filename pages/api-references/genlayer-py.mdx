@@ -1,0 +1,142 @@
+# GenLayerPY SDK Reference
+
+This document describes the key components and methods available in the GenLayerPY SDK for interacting with the GenLayer network.
+
+
+## Client Creation
+
+### create_client
+
+Creates a new GenLayer client instance.
+```python
+from genlayer_py import create_client
+from genlayer_py.chains import localnet
+
+client = create_client(
+    chain=localnet,
+    account=account, # Optional: Use this account for subsequent calls
+)
+```
+
+**Parameters:**
+- `chain`: The chain configuration (e.g., localnet)
+- `account`: (Optional) Sets an account to be used in subsequent calls
+
+**Returns:** A GenLayer client instance
+
+## Transaction Handling
+
+### get_transaction
+
+Retrieves transaction details by hash.
+
+```python
+transaction = client.get_transaction(transaction_hash=transaction_hash)
+```
+
+**Parameters:**
+- `transaction_hash`: The transaction hash
+
+**Returns:** Genlayer transaction details object
+<br/>
+<hr/>
+### wait_for_transaction_receipt
+
+Waits for a transaction receipt.
+
+```python
+receipt = client.wait_for_transaction_receipt(
+  transaction_hash=transaction_hash,
+  status='FINALIZED', # or 'ACCEPTED'
+)
+```
+
+**Parameters:**
+- `transaction_hash`: The transaction hash
+- `status`: The desired transaction status ('FINALIZED' or 'ACCEPTED')
+
+**Returns:** Transaction receipt object
+
+## Contract Interaction
+
+### read_contract
+
+Reads data from a deployed contract.
+```python
+result = client.read_contract(
+  address=contract_address,
+  function_name: 'get_complete_storage',
+  args: [],
+)
+```
+
+
+**Parameters:**
+- `address`: The contract address
+- `function_name`: The name of the function to call
+- `args`: An array of arguments for the function call
+
+**Returns:** The result of the contract function call
+<br/>
+<hr/>
+### write_contract
+
+Writes data to a deployed contract.
+```python
+transaction_hash = client.write_contract(
+  address=contract_address,
+  function_name='storeData',
+  args=['new_data'],
+  value=0, # Optional: amount of native token to send with the transaction
+)
+```
+
+
+**Parameters:**
+- `address`: The contract address
+- `function_name`: The name of the function to call
+- `args`: An array of arguments for the function call
+- `value`: (Optional) Amount of native token to send with the transaction
+
+**Returns:** The transaction hash
+
+## Account Management
+
+### generate_private_key
+
+Generates a new private key.
+```python
+from genlayer_py import generate_private_key
+private_key = generate_private_key()
+```
+
+**Parameters:** None
+
+**Returns:** A new private key as bytes
+<br/>
+<hr/>
+### create_account
+
+Creates a new account, optionally using a provided private key.
+```python
+from genlayer_py import create_account
+account = create_account()
+# Or with a specific private key:
+account_with_key = create_account('0x1234...') # Replace with actual private key
+```
+
+**Parameters:**
+- `account_private_key`: (Optional) A string representing the private key
+
+**Returns:** A new account object
+
+## Chain Information
+
+### localnet
+
+Provides configuration for the local GenLayer Studio chain.
+```python
+from genlayer_py.chains import localnet
+```
+**Usage:** Used when creating a client to specify the chain
+
