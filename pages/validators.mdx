@@ -95,7 +95,6 @@ Below are the **initial** recommended system requirements. These guidelines may 
 1. Configure
 
    1. [Configure `configs/node/config.yaml`](#configyaml)
-   1. [Configure `configs/node/wallet.yaml`](#walletyaml)
    1. [Configure GenVM](#genvm)
 
 1. Set up your account
@@ -136,6 +135,9 @@ Below are the **initial** recommended system requirements. These guidelines may 
 ### `config.yaml`
 
 ```yaml
+rollup:
+  zksyncurl: "FILL_IN_YOUR_ZKSYNC_RPC_URL" # ZKSync RPC URL
+  zksyncwebsocketurl: "FILL_IN_YOUR_ZKSYNC_WEBSOCKET_URL" # ZKSync WebSocket URL
 datadir: "./data/node" # Cache directory
 logging:
   level: "INFO" # Log level
@@ -159,13 +161,11 @@ node:
       health: true # Enable health endpoint
   dev: # Configuration for development purposes
     disableSubscription: false # Disable subscription
-rollup:
-  zksyncurl: "https://genlayer-testnet.rpc.caldera.xyz/http" # ZKSync RPC URL
-  zksyncwebsocketurl: "wss://genlayer-testnet.rpc.caldera.xyz/ws" # ZKSync WebSocket URL
 consensus:
-  contractmainaddress: "0x..." # ConsensusMain Smart Contract Address
-  contractdataaddress: "0x..." # ConsensusData Smart Contract Address
-  contractmanageraddress: "0x..." # ConsensusManager Smart Contract Address
+  contractmanageraddress: "0x07Eda7CdbA3b7aA72B288f8bB8Ae24A8D74e2675" # ConsensusManager Smart Contract Address
+  contractmainaddress: "0x1b5366b03EF7ff3A430BaA9C38AC98B26aB33E0f" # ConsensusMain Smart Contract Address
+  contractdataaddress: "0xE99401E8d03143518a606060CE762546D69a66fa" # ConsensusData Smart Contract Address
+  contractidlenessaddress: "0xe2348B7724B4913932309C1aeD117A66063E0fD4" # ConsensusIdleness Smart Contract Address
 
 # Advanced configuration
 merkleforest:
@@ -189,17 +189,6 @@ genvm:
         timeout: 30s
       executable: "./third_party/genvm/bin/genvm"
       tempDir: "./tmp/genvm/genvm_local_1"
-```
-
-### `wallet.yaml`
-
-```yaml
-wallet:
-  consensusAddress: "0xbf064d3e04309730153be69ff01713a22E795718" # Public address of your validator to use
-  accounts: # List of possible accounts to use
-    "0xbf064d3e04309730153be69ff01713a22E795718": # Public address of your validator to use
-      privateKey: "0xdc9e4c3fd72879b7797223405728c7dcef8e118591c5b931270d6060c49012a0" # Private Key of the account
-      password: "whateveryouwant" # Password for locking the account
 ```
 
 ### GenVM
