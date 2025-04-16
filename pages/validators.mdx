@@ -100,7 +100,7 @@ Below are the **initial** recommended system requirements. These guidelines may 
 
       ```sh
       export password="your secret password" # Remember it! You will need it to unlock your account
-      ./bin/genlayernode account new -c $(pwd)/configs/node/config.yaml --password ${password}
+      ./bin/genlayernode account new -c $(pwd)/configs/node/config.yaml --setup --password ${password}
       ```
 
       You will see something like this:
@@ -111,12 +111,6 @@ Below are the **initial** recommended system requirements. These guidelines may 
       ```
 
       You should send that address to Genlayer Labs in order to get your validator added to the network.
-
-   1. Set it as your current account
-
-      ```sh
-      yq -i '.wallet.validatorAddress = (.wallet.accounts | keys | .[0])' configs/node/wallet.yaml
-      ```
 
 1. Run
 
