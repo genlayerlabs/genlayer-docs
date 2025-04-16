@@ -67,6 +67,24 @@ USAGE:
    genlayer stop
 ```
 
+### Create a New GenLayer Project
+
+Initialize a new GenLayer project using a local template.
+
+```bash
+USAGE:
+   genlayer new <projectName> [options]
+
+OPTIONS:
+   --path <directory>  Specify the directory for the new project (default: ".")
+   --overwrite        Overwrite existing directory if it exists (default: false)
+
+EXAMPLES:
+   genlayer new myProject
+   genlayer new myProject --path ./customDir
+   genlayer new myProject --overwrite
+```
+
 ### Manage CLI Configuration
 
 Configure the GenLayer CLI settings.
