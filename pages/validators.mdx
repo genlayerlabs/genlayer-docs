@@ -75,7 +75,7 @@ Below are the **initial** recommended system requirements. These guidelines may 
    ```
 1. Download the packaged application
    ```sh
-   export version=v0.0.0-test019 # set your desired version here
+   export version=v0.1.0-testnet006 # set your desired version here
    wget https://storage.googleapis.com/gh-af/genlayer-node/bin/amd64/${version}/genlayer-node-linux-amd64-${version}.tar.gz
    ```
 1. Extract it
@@ -88,11 +88,38 @@ Below are the **initial** recommended system requirements. These guidelines may 
    cd genlayer-node-linux-amd64
    ```
 
-1. Follow the `README.md`
+1. Configure
 
    1. [Configure `configs/node/config.yaml`](#configyaml)
    1. [Configure `configs/node/wallet.yaml`](#walletyaml)
    1. [Configure GenVM](#genvm)
+
+1. Set up your account
+
+   1. Create your account
+
+      ```sh
+      export password="your secret password" # Remember it! You will need it to unlock your account
+      ./bin/genlayernode account new -c $(pwd)/configs/node/config.yaml --password ${password}
+      ```
+
+      You will see something like this:
+
+      ```sh
+      Account created:
+        New address: 0xA0b12Fd2f3F7e86fEC458D114A5E7a6f571160a8
+      ```
+
+      You should send that address to Genlayer Labs in order to get your validator added to the network.
+
+   1. Set it as your current account
+
+      ```sh
+      yq -i '.wallet.validatorAddress = (.wallet.accounts | keys | .[0])' configs/node/wallet.yaml
+      ```
+
+1. Run
+
    1. Run the WebDriver container
 
       ```sh
@@ -103,7 +130,7 @@ Below are the **initial** recommended system requirements. These guidelines may 
 
       ```sh
       export OPENAIKEY='sk-proj-fill-in-your-openai-key' # export all the necessary environment variables for the GenVM
-      ./bin/genlayernode
+      ./bin/genlayernode run -c $(pwd)/configs/node/config.yaml --password ${password}
       ```
 
 ## Config
@@ -115,6 +142,7 @@ datadir: "./data/node" # Cache directory
 logging:
   level: "INFO" # Log level
 node:
+  mode: "validator" # "validator" or "archive"
   rpc:
     port: 9151 # JSON RPC port
     endpoints:
