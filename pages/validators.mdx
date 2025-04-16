@@ -74,12 +74,26 @@ Below are the **initial** recommended system requirements. These guidelines may 
 ## Setup
 
 1. Decide on the version of the node you want to run by checking the available packages
+
    ```sh
-   curl "https://storage.googleapis.com/storage/v1/b/gh-af/o?prefix=genlayer-node/bin/amd64"
+   curl "https://storage.googleapis.com/storage/v1/b/gh-af/o?prefix=genlayer-node/bin/amd64" | grep -o '"name": *"[^"]*"' | sed -n 's/.*\/\(v[0-9.]*-[^/]*\)\/.*/\1/p' | sort -u
    ```
+
+   You should see something like this
+
+   ```sh
+    v0.1.0-testnet002
+    v0.1.0-testnet003
+    v0.1.0-testnet004
+    v0.1.0-testnet005
+    v0.1.0-testnet006
+    v0.1.0-testnet007
+    v0.1.0-testnet008
+   ```
+
 1. Download the packaged application
    ```sh
-   export version=v0.1.0-testnet006 # set your desired version here
+   export version=v0.1.0-testnet008 # set your desired version here
    wget https://storage.googleapis.com/gh-af/genlayer-node/bin/amd64/${version}/genlayer-node-linux-amd64-${version}.tar.gz
    ```
 1. Extract it
