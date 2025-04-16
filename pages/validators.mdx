@@ -138,6 +138,11 @@ Below are the **initial** recommended system requirements. These guidelines may 
 rollup:
   zksyncurl: "FILL_IN_YOUR_ZKSYNC_RPC_URL" # ZKSync RPC URL
   zksyncwebsocketurl: "FILL_IN_YOUR_ZKSYNC_WEBSOCKET_URL" # ZKSync WebSocket URL
+consensus:
+  contractmanageraddress: "0x07Eda7CdbA3b7aA72B288f8bB8Ae24A8D74e2675" # ConsensusManager Smart Contract Address
+  contractmainaddress: "0x1b5366b03EF7ff3A430BaA9C38AC98B26aB33E0f" # ConsensusMain Smart Contract Address
+  contractdataaddress: "0xE99401E8d03143518a606060CE762546D69a66fa" # ConsensusData Smart Contract Address
+  contractidlenessaddress: "0xe2348B7724B4913932309C1aeD117A66063E0fD4" # ConsensusIdleness Smart Contract Address
 datadir: "./data/node" # Cache directory
 logging:
   level: "INFO" # Log level
@@ -161,11 +166,6 @@ node:
       health: true # Enable health endpoint
   dev: # Configuration for development purposes
     disableSubscription: false # Disable subscription
-consensus:
-  contractmanageraddress: "0x07Eda7CdbA3b7aA72B288f8bB8Ae24A8D74e2675" # ConsensusManager Smart Contract Address
-  contractmainaddress: "0x1b5366b03EF7ff3A430BaA9C38AC98B26aB33E0f" # ConsensusMain Smart Contract Address
-  contractdataaddress: "0xE99401E8d03143518a606060CE762546D69a66fa" # ConsensusData Smart Contract Address
-  contractidlenessaddress: "0xe2348B7724B4913932309C1aeD117A66063E0fD4" # ConsensusIdleness Smart Contract Address
 
 # Advanced configuration
 merkleforest:
