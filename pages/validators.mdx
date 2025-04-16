@@ -67,6 +67,10 @@ Below are the **initial** recommended system requirements. These guidelines may 
   recommended hardware may change.
 </Callout>
 
+### Programs
+
+- `docker` - for running the WebDriver container
+
 ## Setup
 
 1. Decide on the version of the node you want to run by checking the available packages
@@ -99,8 +103,7 @@ Below are the **initial** recommended system requirements. These guidelines may 
    1. Create your account
 
       ```sh
-      export password="your secret password" # Remember it! You will need it to unlock your account
-      ./bin/genlayernode account new -c $(pwd)/configs/node/config.yaml --setup --password ${password}
+      ./bin/genlayernode account new -c $(pwd)/configs/node/config.yaml --setup --password "your secret password" # Remember it! You will need it to unlock your account when running the node
       ```
 
       You will see something like this:
@@ -125,7 +128,7 @@ Below are the **initial** recommended system requirements. These guidelines may 
 
       ```sh
       export OPENAIKEY='sk-proj-fill-in-your-openai-key' # export all the necessary environment variables for the GenVM
-      ./bin/genlayernode run -c $(pwd)/configs/node/config.yaml --password ${password}
+      ./bin/genlayernode run -c $(pwd)/configs/node/config.yaml --password "your secret password" # The same password you used when creating the account
       ```
 
 ## Config
