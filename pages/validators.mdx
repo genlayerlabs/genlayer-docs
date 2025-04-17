@@ -1,6 +1,6 @@
 import { Callout } from "nextra-theme-docs";
 
-# GenLayer Validator Requirements
+# Setting Up Your GenLayer Validator
 
 Running a GenLayer Validator node ensures the security and reliability of the GenLayer network. Below are the requirements for running a GenLayer validator.
 
@@ -20,7 +20,7 @@ Possible options:
 
 ### ZKSync Full Node for the GenLayer Chain
 
-Each validator needs access to a [ZKSync Full Node](https://docs.zksync.io/zksync-era/tooling/external-node) connected to the GenLayer chain.
+Each validator needs access to a [ZKSync Full Node](https://docs.zksync.io/zksync-era/tooling/external-node) connected to the GenLayer chain. Validators use this node to read the chain state and submit transactions.
 
 One full node can be shared between multiple validators - TBD how many exactly.
 
@@ -39,6 +39,11 @@ Below are the **initial** recommended system requirements. These guidelines may 
 
 - **Recommended:** Modern multi-core processor with at least 8 cores/16 threads
 
+#### Architecture
+
+- **Recommended:** `AMD64`
+- `ARM64` is not supported at this time
+
 ### Storage
 
 - **Recommended Disk Space:** 128 GB+
@@ -46,20 +51,13 @@ Below are the **initial** recommended system requirements. These guidelines may 
 
 ### Network
 
-- **Recommended Connection:** Stable broadband
-
-### Operating System
-
-- **Recommended:** 64-bit Linux (Ubuntu, Debian, CentOS, etc.)
-
-### Architecture
-
-- **Recommended:** `AMD64`
-- `ARM64` support will come in the future
+- 100 Mbps connection 
+- **Recommended:**: 1 Gbps+
 
 ### GPU (Optional)
 
-- **Recommended:** If you plan to run advanced AI-models locally, a CUDA-compatible GPU could be beneficial.
+- GPU is **Not Required**
+- If you want to run LLMs locally, you will need to select appropriate hardware (typically a CUDA-compatible GPU with sufficient VRAM for the model you intend to use)
 
 <Callout emoji="⚠️">
   These requirements are a starting point. As GenLayer evolves and usage
@@ -67,54 +65,81 @@ Below are the **initial** recommended system requirements. These guidelines may 
   recommended hardware may change.
 </Callout>
 
+### Software
+
+- Operating System - 64-bit Linux (Ubuntu, Debian, CentOS, etc.)
+- `docker` - for running the WebDriver container
+
 ## Setup
 
-1. Decide on the version of the node you want to run by checking the available packages
+### Download the node software
+
+1. Select the version of the node you want to run by checking the available builds
+
+   You can use this command to list available versions:
+
    ```sh
-   curl "https://storage.googleapis.com/storage/v1/b/gh-af/o?prefix=genlayer-node/bin/amd64"
+   curl "https://storage.googleapis.com/storage/v1/b/gh-af/o?prefix=genlayer-node/bin/amd64" | grep -o '"name": *"[^"]*"' | sed -n 's/.*\/\(v[0-9.]*-[^/]*\)\/.*/\1/p' | sort -u
    ```
+
+   You should see a list like this
+
+   ```sh
+    v0.1.0-testnet002
+    v0.1.0-testnet003
+    v0.1.0-testnet004
+    v0.1.0-testnet005
+    v0.1.0-testnet006
+    v0.1.0-testnet007
+    v0.1.0-testnet008
+   ```
+
+   Typically you will want to run the latest version
+
 1. Download the packaged application
    ```sh
-   export version=v0.0.0-test019 # set your desired version here
+   export version=v0.1.0-testnet008 # set your desired version here
    wget https://storage.googleapis.com/gh-af/genlayer-node/bin/amd64/${version}/genlayer-node-linux-amd64-${version}.tar.gz
    ```
-1. Extract it
+1. Extract the node software
    ```sh
    tar -xzvf genlayer-node-linux-amd64-${version}.tar.gz
    ```
-1. `cd` into it
+1. Change the directory
 
    ```sh
    cd genlayer-node-linux-amd64
    ```
 
-1. Follow the `README.md`
+## Configuration
 
-   1. [Configure `configs/node/config.yaml`](#configyaml)
-   1. [Configure `configs/node/wallet.yaml`](#walletyaml)
-   1. [Configure GenVM](#genvm)
-   1. Run the WebDriver container
-
-      ```sh
-      docker compose up -d
-      ```
-
-   1. Run the node
-
-      ```sh
-      export OPENAIKEY='sk-proj-fill-in-your-openai-key' # export all the necessary environment variables for the GenVM
-      ./bin/genlayernode
-      ```
-
-## Config
+Before you scan start up the node, you need to configure it.
 
 ### `config.yaml`
 
+This is the main configuration file of your node. Without it, your node won't start
+
+The file needs to be located at `configs/node/config.yaml`
+
+You can use the following example configuration.
+
+You do not need to modify most of the predefined values. You do however need to set two values - `zksyncurl` and `zksyncwebsocketurl`
+
+
 ```yaml
+rollup:
+  zksyncurl: "TODO: Set your GenLayer Chain ZKSync HTTP RPC URL here" # ZKSync RPC URL
+  zksyncwebsocketurl: "TODO: Set your GenLayer Chain ZKSync WebSocket RPC URL here" # ZKSync WebSocket URL
+consensus:
+  contractmanageraddress: "0x07Eda7CdbA3b7aA72B288f8bB8Ae24A8D74e2675" # ConsensusManager Smart Contract Address
+  contractmainaddress: "0x1b5366b03EF7ff3A430BaA9C38AC98B26aB33E0f" # ConsensusMain Smart Contract Address
+  contractdataaddress: "0xE99401E8d03143518a606060CE762546D69a66fa" # ConsensusData Smart Contract Address
+  contractidlenessaddress: "0xe2348B7724B4913932309C1aeD117A66063E0fD4" # ConsensusIdleness Smart Contract Address
 datadir: "./data/node" # Cache directory
 logging:
   level: "INFO" # Log level
 node:
+  mode: "validator" # "validator" or "archive"
   rpc:
     port: 9151 # JSON RPC port
     endpoints:
@@ -133,13 +158,6 @@ node:
       health: true # Enable health endpoint
   dev: # Configuration for development purposes
     disableSubscription: false # Disable subscription
-rollup:
-  zksyncurl: "https://genlayer-testnet.rpc.caldera.xyz/http" # ZKSync RPC URL
-  zksyncwebsocketurl: "wss://genlayer-testnet.rpc.caldera.xyz/ws" # ZKSync WebSocket URL
-consensus:
-  contractmainaddress: "0x..." # ConsensusMain Smart Contract Address
-  contractdataaddress: "0x..." # ConsensusData Smart Contract Address
-  contractmanageraddress: "0x..." # ConsensusManager Smart Contract Address
 
 # Advanced configuration
 merkleforest:
@@ -165,18 +183,19 @@ genvm:
       tempDir: "./tmp/genvm/genvm_local_1"
 ```
 
-### `wallet.yaml`
-
-```yaml
-wallet:
-  consensusAddress: "0xbf064d3e04309730153be69ff01713a22E795718" # Public address of your validator to use
-  accounts: # List of possible accounts to use
-    "0xbf064d3e04309730153be69ff01713a22E795718": # Public address of your validator to use
-      privateKey: "0xdc9e4c3fd72879b7797223405728c7dcef8e118591c5b931270d6060c49012a0" # Private Key of the account
-      password: "whateveryouwant" # Password for locking the account
-```
-
 ### GenVM
+
+You also need to configure [the GenVM](/understand-genlayer-protocol/core-concepts/genvm) by connecting it to an LLM of your choice.
+
+<Callout type="info">
+  This is a crucial step that will determine the performance of your validator in the GenLayer network.
+</Callout>
+
+<Callout>
+  GenLayer has partnered with [Heurist](https://www.heurist.ai/) is a Layer 2 network for AI model hosting and inference, built on the ZK Stack. It offers serverless access to open-source AI models through a decentralized network.
+
+  GenLayer Validators can obtain free [Heurist API credits](https://dev-api-form.heurist.ai) by using the referral code: _"genlayer"_.
+</Callout>
 
 You can configure [the GenVM](/understand-genlayer-protocol/core-concepts/genvm) in `third_party/genvm/share/genvm/default-config.json`.
 The json schema will guide you on how to configure each field.
@@ -189,10 +208,10 @@ The json schema will guide you on how to configure each field.
   "modules": {
     "llm": {
       "config": {
-        "host": "https://api.openai.com",
+        "host": "TODO: LLM Provider Host", # e.g "https://sequencer-v2.heurist.xyz"
         "provider": "openai-compatible",
-        "model": "gpt-4o-mini",
-        "key_env_name": "OPENAIKEY"
+        "model": "TODO: Model ID",
+        "key_env_name": "LLM_PROVIDER_KEY"
       }
     },
     "web": {
@@ -203,3 +222,52 @@ The json schema will guide you on how to configure each field.
   }
 }
 ```
+
+### Set Up The Validator Key
+
+   In this step we'll generate your validator key and address.
+
+    ```sh
+    ./bin/genlayernode account new -c $(pwd)/configs/node/config.yaml --setup --password "your secret password" # Remember it! You will need it to unlock your account when running the node
+    ```
+
+    You should see the following output:
+
+    ```sh
+    Account created:
+      New address: 0xA0b12Fd2f3F7e86fEC458D114A5E7a6f571160a8
+      Account setup as a validator
+    ```
+
+<Callout type="warning" emoji="🚨">
+  **Important: Back up your validator key!**
+  Losing access to this key means losing control of your validator. Store the backup securely.
+  You can export your key using the following command:
+  ```sh
+  ./bin/genlayernode account export --password "your node password" --address "your validator address" --passphrase "your backup encryption passphrase" --export "/path/to/your/secure/backup.key"
+  ```
+  Remember both the node password (used during setup) and the backup encryption passphrase.
+</Callout>
+
+<Callout type="info">
+  Currently the GenLayer Testnet is permissioned. You can apply to be selected [by filling out the following form](https://docs.google.com/forms/d/e/1FAIpQLSc7YujY6S6knB9XC8kL-2wsgNHrweqULstgc-OOMERlRsfg0A/viewform) 
+</Callout>
+
+## Running the node
+
+    Once you have configured everything, you are ready to start the node.
+
+   1. Run the WebDriver container
+
+      ```sh
+      docker compose up -d # Starts the WebDriver needed by the GenVM web module
+      ```
+
+   1. Run the node
+
+      ```sh
+      export LLM_PROVIDER_KEY='your_llm_provider_api_key' # Set the env var specified in default-config.json
+      ./bin/genlayernode run -c $(pwd)/configs/node/config.yaml --password "your secret password" # The same password you used when creating the account
+      ```
+
+
