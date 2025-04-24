@@ -208,7 +208,7 @@ The json schema will guide you on how to configure each field.
   "modules": {
     "llm": {
       "config": {
-        "host": "TODO: LLM Provider Host", # e.g "https://sequencer-v2.heurist.xyz"
+        "host": "TODO: LLM Provider Host", # e.g "https://llm-gateway.heurist.xyz"
         "provider": "openai-compatible",
         "model": "TODO: Model ID",
         "key_env_name": "LLM_PROVIDER_KEY"
@@ -244,7 +244,7 @@ The json schema will guide you on how to configure each field.
   Losing access to this key means losing control of your validator. Store the backup securely.
   You can export your key using the following command:
   ```sh
-  ./bin/genlayernode account export --password "your node password" --address "your validator address" --passphrase "your backup encryption passphrase" --export "/path/to/your/secure/backup.key"
+  ./bin/genlayernode account export --password "your node password" --address "your validator address" --passphrase "your backup encryption passphrase" --export "/path/to/your/secure/backup.key" -c $(pwd)/configs/node/config.yaml
   ```
   Remember both the node password (used during setup) and the backup encryption passphrase.
 </Callout>
