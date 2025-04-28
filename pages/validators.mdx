@@ -51,7 +51,7 @@ Below are the **initial** recommended system requirements. These guidelines may 
 
 ### Network
 
-- 100 Mbps connection 
+- 100 Mbps connection
 - **Recommended:**: 1 Gbps+
 
 ### GPU (Optional)
@@ -185,11 +185,16 @@ genvm:
 
 ### GenVM
 
-You also need to configure [the GenVM](/understand-genlayer-protocol/core-concepts/genvm) by connecting it to an LLM of your choice.
-
-<Callout type="info">
-  This is a crucial step that will determine the performance of your validator in the GenLayer network.
-</Callout>
+1. If necessary, update configurations in `./configs/genvm*.yaml`; all of them have a json schema attached. Default ones should work fine out of the box
+2. Run precompilation of pre-delivered wasm modules (this step is optional but is **highly** recommended)
+   ```bash
+   ./bin/genvm precompile
+   ```
+3. Run two services (modules) in background (this is a crucial step for running *Intelligent* contracts):
+   1. `./bin/genvm-module-web`
+      This module in turn requires a running webdriver, which is packaged in a docker
+   2. `./bin/genvm-module-llm run`
+      This module requires API keys. See config for more details, or just `export HEURISTKEY=<your-key>` prior to running the module. More providers are available in the config
 
 <Callout>
   GenLayer has partnered with [Heurist](https://www.heurist.ai/) is a Layer 2 network for AI model hosting and inference, built on the ZK Stack. It offers serverless access to open-source AI models through a decentralized network.
@@ -197,31 +202,16 @@ You also need to configure [the GenVM](/understand-genlayer-protocol/core-concep
   GenLayer Validators can obtain free [Heurist API credits](https://dev-api-form.heurist.ai) by using the referral code: _"genlayer"_.
 </Callout>
 
-You can configure [the GenVM](/understand-genlayer-protocol/core-concepts/genvm) in `third_party/genvm/share/genvm/default-config.json`.
-The json schema will guide you on how to configure each field.
+#### Greyboxing LLMs
+`genvm-module-llm` provides user with ability to customize greyboxing via lua scripting. Right now users can customize prompt templates, specify temperature and system prompt.
 
-#### Default config
+Related scripts are located at:
+1. `./scripts/genvm-greyboxing.lua` --- user defined script
+2. `./share/lib/genvm/greyboxing/lib-greyboxing.lua` --- more low-level library
 
-```json
-{
-  "$schema": "https://raw.githubusercontent.com/yeagerai/genvm/refs/heads/main/doc/schemas/default-config.json",
-  "modules": {
-    "llm": {
-      "config": {
-        "host": "TODO: LLM Provider Host", # e.g "https://llm-gateway.heurist.xyz"
-        "provider": "openai-compatible",
-        "model": "TODO: Model ID",
-        "key_env_name": "LLM_PROVIDER_KEY"
-      }
-    },
-    "web": {
-      "config": {
-        "host": "http://127.0.0.1:4444"
-      }
-    }
-  }
-}
-```
+<Callout emoji="🏗️">
+    More features and built-in filters will be added soon
+</Callout>
 
 ### Set Up The Validator Key
 
@@ -250,7 +240,7 @@ The json schema will guide you on how to configure each field.
 </Callout>
 
 <Callout type="info">
-  Currently the GenLayer Testnet is permissioned. You can apply to be selected [by filling out the following form](https://docs.google.com/forms/d/e/1FAIpQLSc7YujY6S6knB9XC8kL-2wsgNHrweqULstgc-OOMERlRsfg0A/viewform) 
+  Currently the GenLayer Testnet is permissioned. You can apply to be selected [by filling out the following form](https://docs.google.com/forms/d/e/1FAIpQLSc7YujY6S6knB9XC8kL-2wsgNHrweqULstgc-OOMERlRsfg0A/viewform)
 </Callout>
 
 ## Running the node
@@ -269,5 +259,3 @@ The json schema will guide you on how to configure each field.
       export LLM_PROVIDER_KEY='your_llm_provider_api_key' # Set the env var specified in default-config.json
       ./bin/genlayernode run -c $(pwd)/configs/node/config.yaml --password "your secret password" # The same password you used when creating the account
       ```
-
-
