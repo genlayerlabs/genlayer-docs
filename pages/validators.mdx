@@ -159,6 +159,10 @@ node:
   dev: # Configuration for development purposes
     disableSubscription: false # Disable subscription
 
+genvm:
+    bin_dir: ./third_party/genvm/bin
+    manage_modules: true
+
 # Advanced configuration
 merkleforest:
   maxdepth: 16
@@ -167,34 +171,19 @@ merkleforest:
 merkletree:
   maxdepth: 16
   dbpath: "./data/node/merkle/tree/"
-genvm:
-  presets:
-    - name: "preset_1"
-      enabled: true
-      type: "local"
-  instances:
-    - name: "genvm_local_1"
-      usePreset: "preset_1"
-      enabled: true
-      type: "local"
-      execution:
-        timeout: 30s
-      executable: "./third_party/genvm/bin/genvm"
-      tempDir: "./tmp/genvm/genvm_local_1"
 ```
 
 ### GenVM
 
-1. If necessary, update configurations in `./configs/genvm*.yaml`; all of them have a json schema attached. Default ones should work fine out of the box
+1. If necessary, update configurations in `./configs/genvm*.yaml`; all of them have a json schema attached. Default ones should work fine out of the box. There are following configurations:
+   - `genvm-module-llm.yaml` – configuration of llm module. You may wish to check environment variable names for LLM API keys or put them into config as plain text
+   - `genvm-module-web.yaml` – configuration of webdriver module
+   - `genvm.yaml` – "genvm" configuration
 2. Run precompilation of pre-delivered wasm modules (this step is optional but is **highly** recommended)
    ```bash
    ./bin/genvm precompile
    ```
-3. Run two services (modules) in background (this is a crucial step for running *Intelligent* contracts):
-   1. `./bin/genvm-module-web`
-      This module in turn requires a running webdriver, which is packaged in a docker
-   2. `./bin/genvm-module-llm run`
-      This module requires API keys. See config for more details, or just `export HEURISTKEY=<your-key>` prior to running the module. More providers are available in the config
+   Precompilation should be ran after switching to a different node release
 
 <Callout>
   GenLayer has partnered with [Heurist](https://www.heurist.ai/) is a Layer 2 network for AI model hosting and inference, built on the ZK Stack. It offers serverless access to open-source AI models through a decentralized network.
@@ -203,11 +192,11 @@ genvm:
 </Callout>
 
 #### Greyboxing LLMs
-`genvm-module-llm` provides user with ability to customize greyboxing via lua scripting. Right now users can customize prompt templates, specify temperature and system prompt.
+`genvm-module-llm` provides user with ability to customize [greyboxing](/_temp/security-and-best-practices/grey-boxing) via lua scripting. Right now users can customize prompt templates, specify temperature and system prompt.
 
 Related scripts are located at:
-1. `./scripts/genvm-greyboxing.lua` --- user defined script
-2. `./share/lib/genvm/greyboxing/lib-greyboxing.lua` --- more low-level library
+1. `./scripts/genvm-greyboxing.lua` – user defined script
+2. `./share/lib/genvm/greyboxing/lib-greyboxing.lua` – more low-level library
 
 <Callout emoji="🏗️">
     More features and built-in filters will be added soon
@@ -253,9 +242,21 @@ Related scripts are located at:
       docker compose up -d # Starts the WebDriver needed by the GenVM web module
       ```
 
-   1. Run the node
+   2. Run two services (modules) in background (this is a crucial step for running *Intelligent* contracts). This can be done automatically or manually.
+      - To start them automatically in node configuration set `genvm.manage_modules` to `true`
+      - To start them manually run
+        ```bash
+        ./bin/genvm-module-web &
+        HEURISTKEY="<your-key>" ./bin/genvm-module-llm run &
+        ```
+
+      More providers are available in the llm module config
+
+   They will be started automatically by the node if configuration item  is set to `true`
+
+   3. Run the node
 
       ```sh
-      export LLM_PROVIDER_KEY='your_llm_provider_api_key' # Set the env var specified in default-config.json
+      export LLM_PROVIDER_KEY='your_llm_provider_api_key' # Set the env var if `genvm.manage_modules` is `true`
       ./bin/genlayernode run -c $(pwd)/configs/node/config.yaml --password "your secret password" # The same password you used when creating the account
       ```
