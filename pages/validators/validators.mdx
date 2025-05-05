@@ -22,7 +22,7 @@ Possible options:
 
 Each validator needs access to a [ZKSync Full Node](https://docs.zksync.io/zksync-era/tooling/external-node) connected to the GenLayer chain. Validators use this node to read the chain state and submit transactions.
 
-One full node can be shared between multiple validators - TBD how many exactly.
+One full node can be shared between multiple validators. The optimal validator-to-node ratio is currently under evaluation.
 
 ## System Requirements
 
@@ -51,7 +51,7 @@ Below are the **initial** recommended system requirements. These guidelines may 
 
 ### Network
 
-- 100 Mbps connection 
+- 100 Mbps connection
 - **Recommended:**: 1 Gbps+
 
 ### GPU (Optional)
@@ -85,20 +85,24 @@ Below are the **initial** recommended system requirements. These guidelines may 
    You should see a list like this
 
    ```sh
-    v0.1.0-testnet002
-    v0.1.0-testnet003
-    v0.1.0-testnet004
-    v0.1.0-testnet005
-    v0.1.0-testnet006
-    v0.1.0-testnet007
-    v0.1.0-testnet008
+      v0.0.0-test018
+      v0.0.0-test019
+      v0.1.0-testnet002
+      v0.1.0-testnet003
+      v0.1.0-testnet004
+      v0.1.0-testnet005
+      v0.1.0-testnet006
+      v0.1.0-testnet007
+      v0.1.0-testnet008
+      v0.2.0-testnet001
+      v0.2.0-testnet002
    ```
 
    Typically you will want to run the latest version
 
 1. Download the packaged application
    ```sh
-   export version=v0.1.0-testnet008 # set your desired version here
+   export version=v0.2.0-testnet002 # set your desired version here
    wget https://storage.googleapis.com/gh-af/genlayer-node/bin/amd64/${version}/genlayer-node-linux-amd64-${version}.tar.gz
    ```
 1. Extract the node software
@@ -113,7 +117,7 @@ Below are the **initial** recommended system requirements. These guidelines may 
 
 ## Configuration
 
-Before you scan start up the node, you need to configure it.
+Before you can start up the node, you need to configure it.
 
 ### `config.yaml`
 
@@ -121,9 +125,7 @@ This is the main configuration file of your node. Without it, your node won't st
 
 The file needs to be located at `configs/node/config.yaml`
 
-You can use the following example configuration.
-
-You do not need to modify most of the predefined values. You do however need to set two values - `zksyncurl` and `zksyncwebsocketurl`
+You can use the following example configuration. **Note:** For most users, you will only need to modify the `zksyncurl` and `zksyncwebsocketurl` values below.
 
 
 ```yaml
@@ -131,10 +133,10 @@ rollup:
   zksyncurl: "TODO: Set your GenLayer Chain ZKSync HTTP RPC URL here" # ZKSync RPC URL
   zksyncwebsocketurl: "TODO: Set your GenLayer Chain ZKSync WebSocket RPC URL here" # ZKSync WebSocket URL
 consensus:
-  contractmanageraddress: "0x07Eda7CdbA3b7aA72B288f8bB8Ae24A8D74e2675" # ConsensusManager Smart Contract Address
-  contractmainaddress: "0x1b5366b03EF7ff3A430BaA9C38AC98B26aB33E0f" # ConsensusMain Smart Contract Address
-  contractdataaddress: "0xE99401E8d03143518a606060CE762546D69a66fa" # ConsensusData Smart Contract Address
-  contractidlenessaddress: "0xe2348B7724B4913932309C1aeD117A66063E0fD4" # ConsensusIdleness Smart Contract Address
+  contractmanageraddress: "0x12290919253844d3400432Aebb5d0706D0f5865f" # ConsensusManager Smart Contract Address
+  contractmainaddress: "0x174782d5819dD26F3d6967c995EE43db7DB824F8" # ConsensusMain Smart Contract Address
+  contractdataaddress: "0x88B0F18613Db92Bf970FfE264E02496e20a74D16" # ConsensusData Smart Contract Address
+  contractidlenessaddress: "0x2C0F0B98F52EB358410A825f68302653EAb5cc5B" # ConsensusIdleness Smart Contract Address
 datadir: "./data/node" # Cache directory
 logging:
   level: "INFO" # Log level
@@ -159,6 +161,10 @@ node:
   dev: # Configuration for development purposes
     disableSubscription: false # Disable subscription
 
+genvm:
+    bin_dir: ./third_party/genvm/bin
+    manage_modules: true
+
 # Advanced configuration
 merkleforest:
   maxdepth: 16
@@ -167,29 +173,11 @@ merkleforest:
 merkletree:
   maxdepth: 16
   dbpath: "./data/node/merkle/tree/"
-genvm:
-  presets:
-    - name: "preset_1"
-      enabled: true
-      type: "local"
-  instances:
-    - name: "genvm_local_1"
-      usePreset: "preset_1"
-      enabled: true
-      type: "local"
-      execution:
-        timeout: 30s
-      executable: "./third_party/genvm/bin/genvm"
-      tempDir: "./tmp/genvm/genvm_local_1"
 ```
 
-### GenVM
+### GenVM Configuration
 
-You also need to configure [the GenVM](/understand-genlayer-protocol/core-concepts/genvm) by connecting it to an LLM of your choice.
-
-<Callout type="info">
-  This is a crucial step that will determine the performance of your validator in the GenLayer network.
-</Callout>
+You need to set up an LLM for your node to use to provide answers to natural language prompts. You can use any LLM you wish, however the quality of its answers will affect the performance of your node. 
 
 <Callout>
   GenLayer has partnered with [Heurist](https://www.heurist.ai/) is a Layer 2 network for AI model hosting and inference, built on the ZK Stack. It offers serverless access to open-source AI models through a decentralized network.
@@ -197,31 +185,50 @@ You also need to configure [the GenVM](/understand-genlayer-protocol/core-concep
   GenLayer Validators can obtain free [Heurist API credits](https://dev-api-form.heurist.ai) by using the referral code: _"genlayer"_.
 </Callout>
 
-You can configure [the GenVM](/understand-genlayer-protocol/core-concepts/genvm) in `third_party/genvm/share/genvm/default-config.json`.
-The json schema will guide you on how to configure each field.
+The GenVM configuration files are located at `third_party/genvm/config/`
 
-#### Default config
+#### `genvm-module-llm.yaml` 
 
-```json
-{
-  "$schema": "https://raw.githubusercontent.com/yeagerai/genvm/refs/heads/main/doc/schemas/default-config.json",
-  "modules": {
-    "llm": {
-      "config": {
-        "host": "TODO: LLM Provider Host", # e.g "https://llm-gateway.heurist.xyz"
-        "provider": "openai-compatible",
-        "model": "TODO: Model ID",
-        "key_env_name": "LLM_PROVIDER_KEY"
-      }
-    },
-    "web": {
-      "config": {
-        "host": "http://127.0.0.1:4444"
-      }
-    }
-  }
-}
-```
+This is the configuration file of the LLM module. In this file you can set up and configure various LLM providers, as well as the system prompts of your validator.
+
+You can turn on and off various LLMs by setting the `enabled` field to `false`.
+
+At this stage, select one LLM and set all other to disabled.
+
+Note environment variable name for LLM API keys (e.g., `HEURISTKEY`). You will need to ensure this key is correctly set before [running the node](#running-the-node).
+
+#### `genvm-module-web.yaml`
+
+This is the configuration of webdriver module that enables the GenVM to access the internet. You should not need to modify this.
+#### `genvm.yaml` 
+
+This is the configuration of the GenVM itself, such as how many threads it can use and what are the addresses of various modules. You should not need to edit this file either.
+
+2. Run precompilation of pre-delivered wasm modules (this step is optional but is **highly** recommended for improved performance)
+   ```bash
+   ./third_party/genvm/bin/genvm precompile
+   ```
+   Precompilation should be re-run after switching to a different node release
+
+
+
+#### Greyboxing LLMs
+
+Greyboxing is a way to further customise your LLM setup to improve its performance as well as security.
+
+<Callout type="info" emoji="💡">
+  Greyboxing is an advanced feature. Familiarity with Lua scripting and LLM prompt engineering is recommended for customization.
+</Callout>
+
+`genvm-module-llm` provides user with ability to customize [greyboxing](/_temp/security-and-best-practices/grey-boxing) via lua scripting. Right now users can customize prompt templates, specify temperature and system prompt.
+
+Related scripts are located at:
+1. `./scripts/genvm-greyboxing.lua` – user defined script
+2. `./share/lib/genvm/greyboxing/lib-greyboxing.lua` – more low-level library
+
+<Callout emoji="🏗️">
+    More features and built-in filters will be added soon
+</Callout>
 
 ### Set Up The Validator Key
 
@@ -250,24 +257,42 @@ The json schema will guide you on how to configure each field.
 </Callout>
 
 <Callout type="info">
-  Currently the GenLayer Testnet is permissioned. You can apply to be selected [by filling out the following form](https://docs.google.com/forms/d/e/1FAIpQLSc7YujY6S6knB9XC8kL-2wsgNHrweqULstgc-OOMERlRsfg0A/viewform) 
+  Currently the GenLayer Testnet is permissioned. You can apply to be selected [by filling out the following form](https://docs.google.com/forms/d/e/1FAIpQLSc7YujY6S6knB9XC8kL-2wsgNHrweqULstgc-OOMERlRsfg0A/viewform)
 </Callout>
 
 ## Running the node
 
     Once you have configured everything, you are ready to start the node.
 
-   1. Run the WebDriver container
+   1. Set the LLM Provider API Key
+
+      ```sh
+      export HEURISTKEY='your_llm_provider_api_key'
+      ```
+
+   2. Run the WebDriver container
 
       ```sh
       docker compose up -d # Starts the WebDriver needed by the GenVM web module
       ```
 
-   1. Run the node
+   3. (Optional) Run two services (modules) in background (this is a crucial step for running *Intelligent* contracts). This can be done automatically or manually.
+      - To start them automatically in node configuration set `genvm.manage_modules` to `true`
+      - To start them manually run
+        ```bash
+         ./third_party/genvm/bin/genvm-module-web & ./third_party/genvm/bin/genvm-module-llm run &
+         ```
+
+<Callout type="info">
+Note: If you are using the default configuration, `genvm.manage_modules` is set to `true` by default, meaning the node will manage these modules automatically.
+</Callout>
+
+   4. Run the node
 
       ```sh
-      export LLM_PROVIDER_KEY='your_llm_provider_api_key' # Set the env var specified in default-config.json
       ./bin/genlayernode run -c $(pwd)/configs/node/config.yaml --password "your secret password" # The same password you used when creating the account
       ```
 
-
+<Callout type="info">
+  If you are running the node via SSH, the process might terminate if your connection drops. To prevent this, consider using a terminal multiplexer like `screen` or `tmux` to keep the node running in the background even if your SSH session ends. You can find a guide on using `screen` [here](https://www.networkworld.com/article/967925/how-the-linux-screen-tool-can-save-your-tasks-and-your-sanity-if-ssh-is-interrupted.html).
+</Callout>

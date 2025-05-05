@@ -1,0 +1,11 @@
+import { Callout } from "nextra-theme-docs";
+
+# Validator upgrade guide
+
+<Callout type="info" emoji="💡">
+  To minimize downtime, you can keep your existing validator node running while you download and configure the new version according to the steps below. Once the new version is fully configured and ready to run, stop the old node and start the new one.
+</Callout>
+
+## v0.1.0-testnet008 → v0.2.0-testnet001
+- GenVM configuration has changed, please follow the new instructions in the GenVM configuration section in the validator setup guide.
+- Back up the configs/node/config.yaml file so that you can refer to any values you have set in the previous version.

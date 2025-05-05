@@ -72,13 +72,10 @@ class PersistentContract(gl.Contract):
 
 ## Using custom data types
 
-<Callout emoji="🏗️">
-    In the future it may be required to decorate classes that are used in the storage
-</Callout>
-
 You can use other python classes in storage, for example:
 
 ```py
+@allow_storage
 @dataclass
 class User:
     name: str
@@ -88,43 +85,33 @@ class Contract(gl.Contract):
     users: DynArray[User]
 ```
 
-### Instantiating an Empty TreeMap in a Contract
+Note that you must decorate them with `@allow_storage`. This is done to prevent [confusion](#differences-from-regular-python-types)
 
-<Callout emoji="⚠️">
-This is a temporary workaround till a more native approach will be implemented.
-</Callout>
-To define and instantiate an empty `TreeMap` inside a contract, follow this approach:
+However, there is a tricky case: allocating storage generics in-memory. It is different from regular python syntax because storage types don't have type erasure due to fixed memory layout.
 
-```python
-from genlayer.py.storage._internal.generate import storage
-
-@storage
-class B:
-    empty: TreeMap[Address, str]
-
-# Usage
-
+```py
 @allow_storage
 @dataclass
-class Foo:
-    foo_x: str
-    foo_y: TreeMap[Address, str]
+class User:
+    data: TreeMap[str, str]
 
-
-class DoSomething(gl.Contract):
-    def __init__(self):
-        pass
-
-    @gl.public.write
-    def create_foo(self, foo1) -> None:
-        # Creating an instance of B to initialize new TreeMap object
-        new_foo = Foo(
-            foo_x=foo1,
-            foo_y=B().empty
-        )
-
+User() # error: data is absent (from dataclass)
+User(gl.storage_inmem_allocate(TreeMap[str, str])) # works fine, this function takes a type and `*args, **kwargs` for corresponding `__init__`. Also note that type must be fully instantiated and have no type variables.
 ```
-This ensures that attribute `Foo.foo_y` is an empty `TreeMap[Address, str]` that can be modified within the contract.
+
+## Default values
+By default storage is zero-initialized:
+| Type       | Default value |
+|------------|---------------|
+| `u*`, `i*` | `0`           |
+| `bool`     | `false`       |
+| `float`    | `+0`          |
+| `str`      | `""`          |
+| `DynArray` | `[]`          |
+| `TreeMap`  | `{}`          |
+
+Struct types are zero-initialized "recursively"
+
 
 ---
 ## Differences from regular python types
