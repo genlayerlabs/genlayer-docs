@@ -79,24 +79,28 @@ Below are the **initial** recommended system requirements. These guidelines may 
    You can use this command to list available versions:
 
    ```sh
-   curl "https://storage.googleapis.com/storage/v1/b/gh-af/o?prefix=genlayer-node/bin/amd64" | grep -o '"name": *"[^"]*"' | sed -n 's/.*\/\(v[0-9.]*-[^/]*\)\/.*/\1/p' | sort -u
+   curl -s "https://storage.googleapis.com/storage/v1/b/gh-af/o?prefix=genlayer-node/bin/amd64" | grep -o '"name": *"[^"]*"' | sed -n 's/.*\/\(v[0-9.]*-[^/]*\)\/.*/\1/p' | sort -ru
    ```
 
    You should see a list like this
 
    ```sh
-      v0.0.0-test018
-      v0.0.0-test019
-      v0.1.0-testnet002
-      v0.1.0-testnet003
-      v0.1.0-testnet004
-      v0.1.0-testnet005
-      v0.1.0-testnet006
-      v0.1.0-testnet007
-      v0.1.0-testnet008
-      v0.2.0-testnet001
-      v0.2.0-testnet002
+      v0.2.0-testnet007
+      v0.2.0-testnet006
+      v0.2.0-testnet005
+      v0.2.0-testnet004
       v0.2.0-testnet003
+      v0.2.0-testnet002
+      v0.2.0-testnet001
+      v0.1.0-testnet008
+      v0.1.0-testnet007
+      v0.1.0-testnet006
+      v0.1.0-testnet005
+      v0.1.0-testnet004
+      v0.1.0-testnet003
+      v0.1.0-testnet002
+      v0.0.0-test019
+      v0.0.0-test018
    ```
 
    Typically you will want to run the latest version
@@ -127,7 +131,6 @@ This is the main configuration file of your node. Without it, your node won't st
 The file needs to be located at `configs/node/config.yaml`
 
 You can use the following example configuration. **Note:** For most users, you will only need to modify the `zksyncurl` and `zksyncwebsocketurl` values below.
-
 
 ```yaml
 rollup:
@@ -163,8 +166,8 @@ node:
     disableSubscription: false # Disable subscription
 
 genvm:
-    bin_dir: ./third_party/genvm/bin
-    manage_modules: true
+  bin_dir: ./third_party/genvm/bin
+  manage_modules: true
 
 # Advanced configuration
 merkleforest:
@@ -183,7 +186,8 @@ You need to set up an LLM for your node to use to provide answers to natural lan
 <Callout>
   GenLayer has partnered with [Heurist](https://www.heurist.ai/) is a Layer 2 network for AI model hosting and inference, built on the ZK Stack. It offers serverless access to open-source AI models through a decentralized network.
 
-  GenLayer Validators can obtain free [Heurist API credits](https://dev-api-form.heurist.ai) by using the referral code: _"genlayer"_.
+GenLayer Validators can obtain free [Heurist API credits](https://dev-api-form.heurist.ai) by using the referral code: _"genlayer"_.
+
 </Callout>
 
 The GenVM configuration files are located at `third_party/genvm/config/`
@@ -201,6 +205,7 @@ Note environment variable name for LLM API keys (e.g., `HEURISTKEY`). You will n
 #### `genvm-module-web.yaml`
 
 This is the configuration of webdriver module that enables the GenVM to access the internet. You should not need to modify this.
+
 #### `genvm.yaml`
 
 This is the configuration of the GenVM itself, such as how many threads it can use and what are the addresses of various modules. You should not need to edit this file either.
@@ -211,29 +216,29 @@ This is the configuration of the GenVM itself, such as how many threads it can u
    ```
    Precompilation should be re-run after switching to a different node release
 
-
-
 #### Greyboxing LLMs
 
 Greyboxing is a way to further customise your LLM setup to improve its performance as well as security.
 
 <Callout type="info" emoji="💡">
-  Greyboxing is an advanced feature. Familiarity with Lua scripting and LLM prompt engineering is recommended for customization.
+  Greyboxing is an advanced feature. Familiarity with Lua scripting and LLM
+  prompt engineering is recommended for customization.
 </Callout>
 
 `genvm-modules llm` provides user with ability to customize [greyboxing](/_temp/security-and-best-practices/grey-boxing) via lua scripting. Right now users can customize prompt templates, specify temperature and system prompt.
 
 Related scripts are located at:
+
 1. `./scripts/genvm-greyboxing.lua` – user defined script
 2. `./share/lib/genvm/greyboxing/lib-greyboxing.lua` – more low-level library
 
 <Callout emoji="🏗️">
-    More features and built-in filters will be added soon
+  More features and built-in filters will be added soon
 </Callout>
 
 ### Set Up The Validator Key
 
-   In this step we'll generate your validator key and address.
+In this step we'll generate your validator key and address.
 
     ```sh
     ./bin/genlayernode account new -c $(pwd)/configs/node/config.yaml --setup --password "your secret password" # Remember it! You will need it to unlock your account when running the node
@@ -248,52 +253,61 @@ Related scripts are located at:
     ```
 
 <Callout type="warning" emoji="🚨">
-  **Important: Back up your validator key!**
-  Losing access to this key means losing control of your validator. Store the backup securely.
-  You can export your key using the following command:
-  ```sh
-  ./bin/genlayernode account export --password "your node password" --address "your validator address" --passphrase "your backup encryption passphrase" --export "/path/to/your/secure/backup.key" -c $(pwd)/configs/node/config.yaml
-  ```
-  Remember both the node password (used during setup) and the backup encryption passphrase.
+  **Important: Back up your validator key!** Losing access to this key means
+  losing control of your validator. Store the backup securely. You can export
+  your key using the following command: ```sh ./bin/genlayernode account export
+  --password "your node password" --address "your validator address"
+  --passphrase "your backup encryption passphrase" --export
+  "/path/to/your/secure/backup.key" -c $(pwd)/configs/node/config.yaml ```
+  Remember both the node password (used during setup) and the backup encryption
+  passphrase.
 </Callout>
 
 <Callout type="info">
-  Currently the GenLayer Testnet is permissioned. You can apply to be selected [by filling out the following form](https://docs.google.com/forms/d/e/1FAIpQLSc7YujY6S6knB9XC8kL-2wsgNHrweqULstgc-OOMERlRsfg0A/viewform)
+  Currently the GenLayer Testnet is permissioned. You can apply to be selected
+  [by filling out the following
+  form](https://docs.google.com/forms/d/e/1FAIpQLSc7YujY6S6knB9XC8kL-2wsgNHrweqULstgc-OOMERlRsfg0A/viewform)
 </Callout>
 
 ## Running the node
 
     Once you have configured everything, you are ready to start the node.
 
-   1. Set the LLM Provider API Key
+1.  Set the LLM Provider API Key
 
-      ```sh
-      export HEURISTKEY='your_llm_provider_api_key'
+    ```sh
+    export HEURISTKEY='your_llm_provider_api_key'
+    ```
+
+2.  Run the WebDriver container
+
+    ```sh
+    docker compose up -d # Starts the WebDriver needed by the GenVM web module
+    ```
+
+3.  (Optional) Run two services (modules) in background (this is a crucial step for running _Intelligent_ contracts). This can be done automatically or manually.
+    - To start them automatically in node configuration set `genvm.manage_modules` to `true`
+    - To start them manually run
+      ```bash
+       ./third_party/genvm/bin/genvm-modules web & ./third_party/genvm/bin/genvm-modules llm &
       ```
-
-   2. Run the WebDriver container
-
-      ```sh
-      docker compose up -d # Starts the WebDriver needed by the GenVM web module
-      ```
-
-   3. (Optional) Run two services (modules) in background (this is a crucial step for running *Intelligent* contracts). This can be done automatically or manually.
-      - To start them automatically in node configuration set `genvm.manage_modules` to `true`
-      - To start them manually run
-        ```bash
-         ./third_party/genvm/bin/genvm-modules web & ./third_party/genvm/bin/genvm-modules llm &
-         ```
 
 <Callout type="info">
-Note: If you are using the default configuration, `genvm.manage_modules` is set to `true` by default, meaning the node will manage these modules automatically.
+  Note: If you are using the default configuration, `genvm.manage_modules` is
+  set to `true` by default, meaning the node will manage these modules
+  automatically.
 </Callout>
 
-   4. Run the node
+4.  Run the node
 
-      ```sh
-      ./bin/genlayernode run -c $(pwd)/configs/node/config.yaml --password "your secret password" # The same password you used when creating the account
-      ```
+    ```sh
+    ./bin/genlayernode run -c $(pwd)/configs/node/config.yaml --password "your secret password" # The same password you used when creating the account
+    ```
 
 <Callout type="info">
-  If you are running the node via SSH, the process might terminate if your connection drops. To prevent this, consider using a terminal multiplexer like `screen` or `tmux` to keep the node running in the background even if your SSH session ends. You can find a guide on using `screen` [here](https://www.networkworld.com/article/967925/how-the-linux-screen-tool-can-save-your-tasks-and-your-sanity-if-ssh-is-interrupted.html).
+  If you are running the node via SSH, the process might terminate if your
+  connection drops. To prevent this, consider using a terminal multiplexer like
+  `screen` or `tmux` to keep the node running in the background even if your SSH
+  session ends. You can find a guide on using `screen`
+  [here](https://www.networkworld.com/article/967925/how-the-linux-screen-tool-can-save-your-tasks-and-your-sanity-if-ssh-is-interrupted.html).
 </Callout>
