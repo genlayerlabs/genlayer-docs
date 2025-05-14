@@ -96,13 +96,14 @@ Below are the **initial** recommended system requirements. These guidelines may 
       v0.1.0-testnet008
       v0.2.0-testnet001
       v0.2.0-testnet002
+      v0.2.0-testnet003
    ```
 
    Typically you will want to run the latest version
 
 1. Download the packaged application
    ```sh
-   export version=v0.2.0-testnet002 # set your desired version here
+   export version=v0.2.0-testnet003 # set your desired version here
    wget https://storage.googleapis.com/gh-af/genlayer-node/bin/amd64/${version}/genlayer-node-linux-amd64-${version}.tar.gz
    ```
 1. Extract the node software
@@ -177,7 +178,7 @@ merkletree:
 
 ### GenVM Configuration
 
-You need to set up an LLM for your node to use to provide answers to natural language prompts. You can use any LLM you wish, however the quality of its answers will affect the performance of your node. 
+You need to set up an LLM for your node to use to provide answers to natural language prompts. You can use any LLM you wish, however the quality of its answers will affect the performance of your node.
 
 <Callout>
   GenLayer has partnered with [Heurist](https://www.heurist.ai/) is a Layer 2 network for AI model hosting and inference, built on the ZK Stack. It offers serverless access to open-source AI models through a decentralized network.
@@ -187,7 +188,7 @@ You need to set up an LLM for your node to use to provide answers to natural lan
 
 The GenVM configuration files are located at `third_party/genvm/config/`
 
-#### `genvm-module-llm.yaml` 
+#### `genvm-module-llm.yaml`
 
 This is the configuration file of the LLM module. In this file you can set up and configure various LLM providers, as well as the system prompts of your validator.
 
@@ -200,7 +201,7 @@ Note environment variable name for LLM API keys (e.g., `HEURISTKEY`). You will n
 #### `genvm-module-web.yaml`
 
 This is the configuration of webdriver module that enables the GenVM to access the internet. You should not need to modify this.
-#### `genvm.yaml` 
+#### `genvm.yaml`
 
 This is the configuration of the GenVM itself, such as how many threads it can use and what are the addresses of various modules. You should not need to edit this file either.
 
@@ -220,7 +221,7 @@ Greyboxing is a way to further customise your LLM setup to improve its performan
   Greyboxing is an advanced feature. Familiarity with Lua scripting and LLM prompt engineering is recommended for customization.
 </Callout>
 
-`genvm-module-llm` provides user with ability to customize [greyboxing](/_temp/security-and-best-practices/grey-boxing) via lua scripting. Right now users can customize prompt templates, specify temperature and system prompt.
+`genvm-modules llm` provides user with ability to customize [greyboxing](/_temp/security-and-best-practices/grey-boxing) via lua scripting. Right now users can customize prompt templates, specify temperature and system prompt.
 
 Related scripts are located at:
 1. `./scripts/genvm-greyboxing.lua` – user defined script
@@ -280,7 +281,7 @@ Related scripts are located at:
       - To start them automatically in node configuration set `genvm.manage_modules` to `true`
       - To start them manually run
         ```bash
-         ./third_party/genvm/bin/genvm-module-web & ./third_party/genvm/bin/genvm-module-llm run &
+         ./third_party/genvm/bin/genvm-modules web & ./third_party/genvm/bin/genvm-modules llm &
          ```
 
 <Callout type="info">
