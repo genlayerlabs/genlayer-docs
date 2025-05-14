@@ -107,7 +107,7 @@ Below are the **initial** recommended system requirements. These guidelines may 
 
 1. Download the packaged application
    ```sh
-   export version=v0.2.0-testnet003 # set your desired version here
+   export version=v0.2.0-testnet007 # set your desired version here
    wget https://storage.googleapis.com/gh-af/genlayer-node/bin/amd64/${version}/genlayer-node-linux-amd64-${version}.tar.gz
    ```
 1. Extract the node software
@@ -143,7 +143,26 @@ consensus:
   contractidlenessaddress: "0x2C0F0B98F52EB358410A825f68302653EAb5cc5B" # ConsensusIdleness Smart Contract Address
 datadir: "./data/node" # Cache directory
 logging:
-  level: "INFO" # Log level
+  level: "INFO"
+  # json: `true` for json output to console, false for human readable log formatting
+  json: false
+  # Configuration for https://github.com/natefinch/lumberjack
+  file:
+    # enabled: set to `true` to save logs to a folder
+    enabled: true
+    level: "DEBUG"
+    # folder: path to the folder where to store logs. Relative paths go under `datadir`.
+    folder: logs
+    # maxsize: maximum size in megabytes of the log file before it gets rotated. It defaults to 100 megabytes.
+    maxsize: 500
+    # maxage: maximum number of days to retain old log files based on the timestamp encoded in their filename.
+    maxage: 7
+    # maxbackups: maximum number of old log files to retain. Set to 0 for no limit
+    maxbackups: 10
+    # localtime: determines if the time used for formatting the timestamps in backup files is the computer's local time. Set to `false` to use UTC time.
+    localtime: false
+    # compress: determines if the rotated log files should be compressed using gzip
+    compress: true
 node:
   mode: "validator" # "validator" or "archive"
   rpc:
