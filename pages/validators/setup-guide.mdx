@@ -271,21 +271,66 @@ In this step we'll generate your validator key and address.
       Account setup as a validator
     ```
 
-<Callout type="warning" emoji="🚨">
-  **Important: Back up your validator key!** Losing access to this key means
-  losing control of your validator. Store the backup securely. You can export
-  your key using the following command: ```sh ./bin/genlayernode account export
-  --password "your node password" --address "your validator address"
-  --passphrase "your backup encryption passphrase" --export
-  "/path/to/your/secure/backup.key" -c $(pwd)/configs/node/config.yaml ```
-  Remember both the node password (used during setup) and the backup encryption
-  passphrase.
-</Callout>
-
 <Callout type="info">
   Currently the GenLayer Testnet is permissioned. You can apply to be selected
   [by filling out the following
   form](https://docs.google.com/forms/d/e/1FAIpQLSc7YujY6S6knB9XC8kL-2wsgNHrweqULstgc-OOMERlRsfg0A/viewform)
+</Callout>
+
+### Backing Up Your Validator Key
+
+After generating your validator key, it is critical to back it up securely.
+
+You can export your key using the following command: 
+
+  ```sh
+  ./bin/genlayernode account export \
+  --password "your node password" \
+  --address "your validator address" \
+  --passphrase "your backup encryption passphrase" \
+  --path "/path/to/your/secure/backup.key" \
+  -c $(pwd)/configs/node/config.yaml 
+  ```
+
+<Callout type="warning" emoji="🚨">
+  **Important: Back up your validator key!** Losing access to this key means
+  losing control of your validator and any associated rewards. Store the backup securely. 
+  Remember both the node password (used during setup) and the backup encryption
+  passphrase.
+</Callout>
+
+To print (display) the private key from your exported backup file, you can use the `--print` flag 
+with the account export command. This will output the private key in plain text to your terminal. 
+**Keep this private key secure and never share it.** You can use this private key to set up any other 
+EVM-compatible wallet such as MetaMask.
+
+### Importing (Restoring) Your Validator Key
+
+If you need to restore your validator key from a backup (for example, after migrating to a new server or recovering from data loss), you can import it using the following command:
+
+```sh
+./bin/genlayernode account import \
+  --password "your node password" \
+  --passphrase "your backup encryption passphrase" \
+  --path "/path/to/your/secure/backup.key" \
+  -c $(pwd)/configs/node/config.yaml \
+  --setup
+```
+
+You should see the following output:
+
+```sh
+  Account imported:
+    Address: 0xA0b12Fd2f3F7e86fEC458D114A5E7a6f571160a8
+    Account setup as a validator
+```
+
+- The validator key will be imported and available for use by your node.
+
+- You can now start your node as usual.
+
+<Callout type="warning" emoji="🚨">
+Important: Always verify that your imported key works by checking your validator address.
 </Callout>
 
 ## Running the node
