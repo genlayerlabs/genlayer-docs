@@ -1,3 +1,23 @@
+# v0.3.0
+
+## New features
+
+- Added appeals functionality
+- Added gen_getContractSchema
+- Added admin checkpoint endpoint
+- Added admin "stop at block" endpoint
+- Handle leader timeout
+- Handle validator timeout
+- Added `version` command
+
+## Bug fixes
+
+- Mitigate TxAccepted events being dropped
+- Waiting on event timeouts is now absolute
+- Patch up genvm timeouts
+- Add retry mechanism for genvm contracts interaction
+- Listen to leader timeout event to finalize transaction
+
 # v0.2.0-testnet007
 
 ## New features
