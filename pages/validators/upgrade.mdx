@@ -11,7 +11,23 @@ import { Callout } from "nextra-theme-docs";
 
 ## v0.3.0
 
-`v0.3.0` comes with a new fresh consensus deployment. For this reason, set up the validator from scratch, without reusing previous `data` folder
+`v0.3.0` comes with a new fresh consensus deployment. For this reason, set up the validator is from scratch, without reusing previous `data/genlayer.db` folder
+and there is no need to keep your existing validator node running while you download and configure the new version.
+
+- Stop the node if it is running.
+- Back up the configs/node/config.yaml file so that you can refer to any values you have set in the previous version.
+- Download the packaged application.
+- Install the new version. 
+- Remove the storage folder `data/genlayer.db`.
+- Start the node.
+
+<Callout type="info">
+  Install the new version in the same directory as the previous installation. This ensures that any paths referenced in the configuration remain the same and 
+  helps maintain continuity in your setup.
+  If you wanna install the new version in a different directory, copy your `data/keystore` and `configs/node/wallet.yaml` to the new directory to keep using 
+  the same wallet.
+</Callout>
+
 
 ## v0.1.0-testnet008 → v0.2.0-testnet001
 
