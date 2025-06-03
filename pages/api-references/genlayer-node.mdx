@@ -220,9 +220,9 @@ async function callGenLayerNode(method, params = []) {
   return response.data.result;
 }
 
-// Example: Get protocol version
-const version = await callGenLayerNode("gen_protocolVersion");
-console.log("Protocol version:", version);
+// Example: Test connectivity
+const pong = await callGenLayerNode("gen_dbg_ping");
+console.log("Ping response:", pong);
 
 // Example: Execute a read call
 const result = await callGenLayerNode("gen_call", [
@@ -231,9 +231,18 @@ const result = await callGenLayerNode("gen_call", [
     to: "0x742d35Cc6634C0532925a3b8D4C9db96c4b4d8b6",
     data: "0x70a08231000000000000000000000000742d35cc6634c0532925a3b8d4c9db96c4b4d8b6",
     type: "read",
+    transaction_hash_variant: "latest-final",
   },
 ]);
 console.log("Call result:", result);
+
+// Example: Get contract schema
+const schema = await callGenLayerNode("gen_getContractSchema", [
+  {
+    code: "IyB7ICJEZXBlbmRzIjogInB5LWdlbmxheWVyOnRlc3QiIH0KCmZyb20gZ2VubGF5ZXIgaW1wb3J0ICoKCgojIGNvbnRyYWN0IGNsYXNzCmNsYXNzIFN0b3JhZ2UoZ2wuQ29udHJhY3QpOgogICAgc3RvcmFnZTogc3RyCgogICAgIyBjb25zdHJ1Y3RvcgogICAgZGVmIF9faW5pdF9fKHNlbGYsIGluaXRpYWxfc3RvcmFnZTogc3RyKToKICAgICAgICBzZWxmLnN0b3JhZ2UgPSBpbml0aWFsX3N0b3JhZ2UKCiAgICAjIHJlYWQgbWV0aG9kcyBtdXN0IGJlIGFubm90YXRlZCB3aXRoIHZpZXcKICAgIEBnbC5wdWJsaWMudmlldwogICAgZGVmIGdldF9zdG9yYWdlKHNlbGYpIC0+IHN0cjoKICAgICAgICByZXR1cm4gc2VsZi5zdG9yYWdlCgogICAgIyB3cml0ZSBtZXRob2QKICAgIEBnbC5wdWJsaWMud3JpdGUKICAgIGRlZiB1cGRhdGVfc3RvcmFnZShzZWxmLCBuZXdfc3RvcmFnZTogc3RyKSAtPiBOb25lOgogICAgICAgIHNlbGYuc3RvcmFnZSA9IG5ld19zdG9yYWdlCg==",
+  },
+]);
+console.log("Contract schema:", schema);
 ```
 
 ### Python
@@ -260,9 +269,22 @@ def call_genlayer_node(method, params=None):
 pong = call_genlayer_node('gen_dbg_ping')
 print(f'Ping response: {pong}')
 
-# Example: Get transaction status
-status = call_genlayer_node('gen_transactionStatus', ['0x742d35Cc6634C0532925a3b8D4C9db96c4b4d8b6'])
-print(f'Transaction status: {status}')
+# Example: Execute a contract call
+result = call_genlayer_node('gen_call', [{
+    "from": "0x742d35Cc6634C0532925a3b8D4C9db96c4b4d8b6",
+    "to": "0x742d35Cc6634C0532925a3b8D4C9db96c4b4d8b6",
+    "data": "0x70a08231000000000000000000000000742d35cc6634c0532925a3b8d4c9db96c4b4d8b6",
+    "type": "read",
+    "transaction_hash_variant": "latest-final"
+}])
+print(f'Call result: {result}')
+
+# Example: Get debug trie information
+trie_info = call_genlayer_node('gen_dbg_trie', [{
+    "txID": "0x742d35Cc6634C0532925a3b8D4C9db96c4b4d8b6742d35Cc6634C0532925a3b8",
+    "round": 0
+}])
+print(f'Trie info: {trie_info}')
 ```
 
 ### cURL
@@ -288,7 +310,33 @@ curl -X POST http://localhost:9151 \
       "from": "0x742d35Cc6634C0532925a3b8D4C9db96c4b4d8b6",
       "to": "0x742d35Cc6634C0532925a3b8D4C9db96c4b4d8b6",
       "data": "0x70a08231000000000000000000000000742d35cc6634c0532925a3b8d4c9db96c4b4d8b6",
-      "type": "read"
+      "type": "read",
+      "transaction_hash_variant": "latest-final"
+    }],
+    "id": 1
+  }'
+
+# Get contract schema
+curl -X POST http://localhost:9151 \
+  -H "Content-Type: application/json" \
+  -d '{
+    "jsonrpc": "2.0",
+    "method": "gen_getContractSchema",
+    "params": [{
+      "code": "IyB7ICJEZXBlbmRzIjogInB5LWdlbmxheWVyOnRlc3QiIH0KCmZyb20gZ2VubGF5ZXIgaW1wb3J0ICoKCgojIGNvbnRyYWN0IGNsYXNzCmNsYXNzIFN0b3JhZ2UoZ2wuQ29udHJhY3QpOgogICAgc3RvcmFnZTogc3RyCgogICAgIyBjb25zdHJ1Y3RvcgogICAgZGVmIF9faW5pdF9fKHNlbGYsIGluaXRpYWxfc3RvcmFnZTogc3RyKToKICAgICAgICBzZWxmLnN0b3JhZ2UgPSBpbml0aWFsX3N0b3JhZ2UKCiAgICAjIHJlYWQgbWV0aG9kcyBtdXN0IGJlIGFubm90YXRlZCB3aXRoIHZpZXcKICAgIEBnbC5wdWJsaWMudmlldwogICAgZGVmIGdldF9zdG9yYWdlKHNlbGYpIC0+IHN0cjoKICAgICAgICByZXR1cm4gc2VsZi5zdG9yYWdlCgogICAgIyB3cml0ZSBtZXRob2QKICAgIEBnbC5wdWJsaWMud3JpdGUKICAgIGRlZiB1cGRhdGVfc3RvcmFnZShzZWxmLCBuZXdfc3RvcmFnZTogc3RyKSAtPiBOb25lOgogICAgICAgIHNlbGYuc3RvcmFnZSA9IG5ld19zdG9yYWdlCg=="
+    }],
+    "id": 1
+  }'
+
+# Get debug trie information
+curl -X POST http://localhost:9151 \
+  -H "Content-Type: application/json" \
+  -d '{
+    "jsonrpc": "2.0",
+    "method": "gen_dbg_trie",
+    "params": [{
+      "txID": "0x742d35Cc6634C0532925a3b8D4C9db96c4b4d8b6742d35Cc6634C0532925a3b8",
+      "round": 0
     }],
     "id": 1
   }'
