@@ -84,82 +84,7 @@ Retrieve the schema/interface of a GenLayer contract to understand its available
   "method": "gen_getContractSchema",
   "params": [
     {
-      "code": "ZnJvbSBnZW5sYXllciBpbXBvcnQgKg=="
-    }
-  ],
-  "id": 1
-}
-```
-
-### gen_transactionStatus
-
-Get the current status of a transaction by its hash.
-
-**Method:** `gen_transactionStatus`
-
-**Parameters:**
-
-- `transactionHash` (string, required): The transaction hash
-
-**Returns:** Transaction status object
-
-**Example:**
-
-```json
-{
-  "jsonrpc": "2.0",
-  "method": "gen_transactionStatus",
-  "params": ["0x742d35Cc6634C0532925a3b8D4C9db96c4b4d8b6"],
-  "id": 1
-}
-```
-
-### gen_getTransactionReceipt
-
-Get the receipt of a completed transaction, containing execution details and results.
-
-**Method:** `gen_getTransactionReceipt`
-
-**Parameters:**
-
-- `transactionHash` (string, required): The transaction hash
-
-**Returns:** Transaction receipt object
-
-**Example:**
-
-```json
-{
-  "jsonrpc": "2.0",
-  "method": "gen_getTransactionReceipt",
-  "params": ["0x742d35Cc6634C0532925a3b8D4C9db96c4b4d8b6"],
-  "id": 1
-}
-```
-
-### gen_estimateGas
-
-Estimate the amount of gas required for a transaction before executing it.
-
-**Method:** `gen_estimateGas`
-
-**Parameters:**
-
-- `transaction` (object, required): The transaction to estimate gas for
-
-**Returns:** Hex-encoded gas estimate
-
-**Example:**
-
-```json
-{
-  "jsonrpc": "2.0",
-  "method": "gen_estimateGas",
-  "params": [
-    {
-      "from": "0x742d35Cc6634C0532925a3b8D4C9db96c4b4d8b6",
-      "to": "0x742d35Cc6634C0532925a3b8D4C9db96c4b4d8b6",
-      "data": "0x70a08231000000000000000000000000742d35cc6634c0532925a3b8d4c9db96c4b4d8b6"
+      "code": "IyB7ICJEZXBlbmRzIjogInB5LWdlbmxheWVyOnRlc3QiIH0KCmZyb20gZ2VubGF5ZXIgaW1wb3J0ICoKCgojIGNvbnRyYWN0IGNsYXNzCmNsYXNzIFN0b3JhZ2UoZ2wuQ29udHJhY3QpOgogICAgc3RvcmFnZTogc3RyCgogICAgIyBjb25zdHJ1Y3RvcgogICAgZGVmIF9faW5pdF9fKHNlbGYsIGluaXRpYWxfc3RvcmFnZTogc3RyKToKICAgICAgICBzZWxmLnN0b3JhZ2UgPSBpbml0aWFsX3N0b3JhZ2UKCiAgICAjIHJlYWQgbWV0aG9kcyBtdXN0IGJlIGFubm90YXRlZCB3aXRoIHZpZXcKICAgIEBnbC5wdWJsaWMudmlldwogICAgZGVmIGdldF9zdG9yYWdlKHNlbGYpIC0+IHN0cjoKICAgICAgICByZXR1cm4gc2VsZi5zdG9yYWdlCgogICAgIyB3cml0ZSBtZXRob2QKICAgIEBnbC5wdWJsaWMud3JpdGUKICAgIGRlZiB1cGRhdGVfc3RvcmFnZShzZWxmLCBuZXdfc3RvcmFnZTogc3RyKSAtPiBOb25lOgogICAgICAgIHNlbGYuc3RvcmFnZSA9IG5ld19zdG9yYWdlCg=="
     }
   ],
   "id": 1
@@ -171,38 +96,27 @@ Estimate the amount of gas required for a transaction before executing it.
 ```json
 {
   "jsonrpc": "2.0",
-  "result": "0x5208",
-  "id": 1
-}
-```
-
-### gen_protocolVersion
-
-Get the current protocol version of the GenLayer node.
-
-**Method:** `gen_protocolVersion`
-
-**Parameters:** None
-
-**Returns:** Protocol version string
-
-**Example:**
-
-```json
-{
-  "jsonrpc": "2.0",
-  "method": "gen_protocolVersion",
-  "params": [],
-  "id": 1
-}
-```
-
-**Response:**
-
-```json
-{
-  "jsonrpc": "2.0",
-  "result": "1.0.0",
+  "result": {
+    "ctor": {
+      "kwparams": {},
+      "params": [["initial_storage", "string"]]
+    },
+    "methods": {
+      "get_storage": {
+        "kwparams": {},
+        "params": [],
+        "readonly": true,
+        "ret": "string"
+      },
+      "update_storage": {
+        "kwparams": {},
+        "params": [["new_storage", "string"]],
+        "payable": false,
+        "readonly": false,
+        "ret": "null"
+      }
+    }
+  },
   "id": 1
 }
 ```
@@ -242,30 +156,9 @@ Simple connectivity test method that returns a "pong" response.
 }
 ```
 
-### gen_dbg_load_test
-
-Execute a load test for performance debugging and testing purposes.
-
-**Method:** `gen_dbg_load_test`
-
-**Parameters:** None
-
-**Returns:** Load test result object
-
-**Example:**
-
-```json
-{
-  "jsonrpc": "2.0",
-  "method": "gen_dbg_load_test",
-  "params": [],
-  "id": 1
-}
-```
-
 ### gen_dbg_trie
 
-Get trie information for debugging blockchain state and transaction processing.
+Get trie information for debugging node internal DB state.
 
 **Method:** `gen_dbg_trie`
 
@@ -286,7 +179,7 @@ Get trie information for debugging blockchain state and transaction processing.
   "params": [
     {
       "txID": "0x742d35Cc6634C0532925a3b8D4C9db96c4b4d8b6742d35Cc6634C0532925a3b8",
-      "round": 1
+      "round": 0
     }
   ],
   "id": 1
@@ -295,7 +188,7 @@ Get trie information for debugging blockchain state and transaction processing.
 
 ## Ethereum Compatibility
 
-The GenLayer Node also supports Ethereum-compatible methods that are proxied to the underlying infrastructure. These methods follow the standard Ethereum JSON-RPC specification and are prefixed with `eth_`.
+The GenLayer Node also supports Ethereum-compatible methods that are proxied to the underlying infrastructure. These methods follow the standard [Ethereum JSON-RPC specification](https://ethereum.org/en/developers/docs/apis/json-rpc/) and are prefixed with `eth_`.
 
 **Examples of supported Ethereum methods:**
 
@@ -307,31 +200,7 @@ The GenLayer Node also supports Ethereum-compatible methods that are proxied to 
 
 ## zkSync Compatibility
 
-zkSync-compatible methods are also supported and proxied to the underlying infrastructure. These methods are prefixed with `zksync_`.
-
-## Error Handling
-
-All methods may return standard JSON-RPC errors:
-
-- `-32700`: Parse error
-- `-32600`: Invalid Request
-- `-32601`: Method not found
-- `-32602`: Invalid params
-- `-32603`: Internal error
-- `-32000` to `-32099`: Server error (implementation-defined)
-
-**Example Error Response:**
-
-```json
-{
-  "jsonrpc": "2.0",
-  "error": {
-    "code": -32602,
-    "message": "Invalid params"
-  },
-  "id": 1
-}
-```
+[zkSync-compatible](https://docs.zksync.io/zksync-protocol/api/zks-rpc) methods are also supported and proxied to the underlying infrastructure. These methods are prefixed with `zksync_`.
 
 ## Usage Examples
 
