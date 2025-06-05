@@ -3,20 +3,22 @@ import { Callout } from "nextra-theme-docs";
 # Validator upgrade guide
 
 <Callout type="info" emoji="💡">
-  For upgrades prior to <strong>v0.3.0</strong>, you can keep your existing validator node running while
+  For non-breaking changes, you can minimize the downtime by keeping your existing validator node running while
   you download and configure the new version according to the steps below. Once
   the upgrade is fully configured and ready to run, stop the old node and
-  start the new one.
+  start the new one. 
+
+  A fully Zero-downtime upgrade procedure is coming in a future update. 
 </Callout>
 
-## v0.3.0
+## v0.2 → v0.3 (Breaking Change)
 
-`v0.3.0` introduces a new, fresh consensus deployment. For this reason, the validator must be set up from scratch without reusing the previous `data/genlayer.db` folder.
+`v0.3` switches to a new consensus deployment. For this reason, the validator must be set up from scratch without reusing the old database stored at `data/genlayer.db`.
 You do not need to keep your existing validator node running while you download and configure the new version.
 
 - Stop the node if it is running.
 - Back up the configs/node/config.yaml file so that you can refer to any values you have set in the previous version.
-- Download the packaged application.
+- Download the packaged binary.
 - Install the new version. 
 - Remove the storage folder `data/genlayer.db`.
 - Start the node.
