@@ -13,14 +13,14 @@ import { Callout } from "nextra-theme-docs";
 
 ## v0.2 → v0.3 (Breaking Change)
 
-`v0.3` switches to a new consensus deployment. For this reason, the validator must be set up from scratch without reusing the old database stored at `data/genlayer.db`.
+`v0.3` switches to a new consensus deployment. For this reason, the validator must be set up from scratch without reusing the old database stored at `data/node/genlayer.db`.
 You do not need to keep your existing validator node running while you download and configure the new version.
 
 - Stop the node if it is running.
 - Back up the configs/node/config.yaml file so that you can refer to any values you have set in the previous version.
 - Download the packaged binary.
 - Install the new version. 
-- Remove the storage folder `data/genlayer.db`.
+- Remove the storage folder `data/node/genlayer.db`.
 - Start the node.
 
 <Callout type="info" emoji="ℹ️">
@@ -34,4 +34,4 @@ You do not need to keep your existing validator node running while you download 
 ## v0.1.0-testnet008 → v0.2.0-testnet001
 
 - GenVM configuration has changed, please follow the new instructions in the GenVM configuration section in the validator setup guide.
-- Back up the `configs/node/config.yaml`, `configs/node/wallet.yaml`, and `data/keystore` folders so you can retain your previous configuration and wallet access.
+- Back up the `configs/node/config.yaml`, `configs/node/wallet.yaml`, and `data/node/keystore` folders so you can retain your previous configuration and wallet access.
