@@ -79,7 +79,7 @@ Below are the **initial** recommended system requirements. These guidelines may 
    You can use this command to list available versions:
 
    ```sh
-   curl -s "https://storage.googleapis.com/storage/v1/b/gh-af/o?prefix=genlayer-node/bin/amd64" | grep -o '"name": *"[^"]*"' | sed -n 's/.*\/\(v[0-9.]*-[^/]*\)\/.*/\1/p' | sort -ru
+   curl -s "https://storage.googleapis.com/storage/v1/b/gh-af/o?prefix=genlayer-node/bin/amd64" | grep -o '"name": *"[^"]*"' | sed -n 's/.*\/\(v[^/]*\)\/.*/\1/p' | sort -ru
    ```
 
    You should see a list like this
