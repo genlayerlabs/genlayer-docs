@@ -35,3 +35,13 @@ img {
         margin-right: 0 !important;
     }
 }
+
+.nx-text-primary-600, .nx-text-primary-800 {
+    color: #1210FF !important;
+}
+
+@media (prefers-color-scheme: dark) {
+    .nx-text-primary-600, .nx-text-primary-800 {
+        color: #BCA2FF !important;
+    }
+}
