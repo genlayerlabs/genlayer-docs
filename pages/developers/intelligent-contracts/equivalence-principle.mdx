@@ -23,7 +23,7 @@ Validators work to reach a consensus on whether the result set by the leader is 
 In the Comparative Equivalence Principle, the leader and the validators perform identical tasks and then directly compare their respective results with the predefined criteria to ensure consistency and accuracy. This method uses an acceptable margin of error to handle slight variations in results between validators and is suitable for quantifiable outputs. However, computational demands and associated costs increase since multiple validators perform the same tasks as the leader.
 
 ```python
-gl.eq_principle_prompt_comparative(
+gl.eq_principle.prompt_comparative(
     your_non_deterministic_function,
     "The result must not differ by more than 5%"
 )
@@ -32,11 +32,11 @@ For example, if an intelligent contract is tasked with fetching the follower cou
 
 ### Non-Comparative Equivalence Principle
 
-GenLayer SDK provides function `gl.eq_principle_prompt_non_comparative` for handling most scenarios that require performing subjective NLP tasks
+GenLayer SDK provides function `gl.eq_principle.prompt_non_comparative` for handling most scenarios that require performing subjective NLP tasks
 
 #### Non-Comparative Equivalence Principle Parameters
 
-The `eq_principle_prompt_non_comparative` function takes three key parameters that define how validators should evaluate non-deterministic operations:
+The `gl.eq_principle.prompt_non_comparative` function takes three key parameters that define how validators should evaluate non-deterministic operations:
 
 1. **input** (function)
 
@@ -66,7 +66,7 @@ The `eq_principle_prompt_non_comparative` function takes three key parameters th
 class SentimentAnalyzer(gl.Contract):
     @gl.public.write
     def analyze_sentiment(self, text: str) -> str:
-        self.sentiment = gl.eq_principle_prompt_non_comparative(
+        self.sentiment = gl.eq_principle.prompt_non_comparative(
             input=text,
             task="Classify the sentiment of this text as positive, negative, or neutral",
             criteria="""
@@ -82,8 +82,7 @@ In this example:
 - `task` defines what operation to perform
 - `criteria` ensures consistent validation across validators without requiring exact output matching
 
-
-### Data flow
+### Data Flow
 <Fragment>
   <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'stretch' }}>
     <div style={{ flex: 1, marginRight: '10px', paddingRight: '10px', borderRight: '1px solid #ccc' }}>
@@ -170,3 +169,97 @@ In this example:
 
   </div>
 </Fragment>
+
+
+## The Leader/Validator Pattern
+
+Behind the scenes, GenLayer's Equivalence Principle is implemented using a leader/validator pattern. This pattern ensures security and consensus when dealing with non-deterministic operations.
+
+Each nondeterministic block consists of two functions:
+
+**Leader Function**
+
+- Executes only on the designated leader node
+- Performs operations like web requests or NLP
+- Returns a result that will be shared with validator nodes
+
+```python
+def leader() -> T:
+    # Performs the actual nondeterministic operation
+    pass
+```
+
+**Validator Function**
+
+- Executes on multiple validator nodes
+- Receives the leader's result as input
+- Must independently verify the result's validity
+- Returns `True` to accept or `False` to reject
+
+```python
+def validator(leader_result: gl.vm.Return[T] | gl.vm.VMError | gl.vm.UserError) -> bool:
+    # Verifies the leader's result
+    # Returns True if acceptable, False otherwise
+    # Note: leader function could end with a UserError or VMError
+    # reasons for them can be "host unreachable" and "OOM", respectively
+    pass
+```
+
+### Writing Secure Validator Functions
+
+#### ❌ Bad Example
+```python
+def validator(leader_result):
+    return True  # Always accepts - insecure!
+```
+
+This validator is useless because it allows the leader to return any arbitrary data without verification. This would allow a single node to produce a rigged result, such as a false match result in football prediction market contract example
+
+#### ✅ Good Examples
+
+**Independent Verification:**
+```python
+def validator(leader_result):
+    # Independently fetch the same data
+    my_data = fetch_external_data()
+
+    # If we reached this line, we haven't encountered an error --- vote disagree
+    if not isinstance(leader_result, Return):
+        return False
+
+    # Verify the leader's result matches within tolerance
+    return calculate_similarity(leader_result.data, my_data) > 0.9
+```
+
+**NLP Validation:**
+```python
+def validator(leader_result):
+    # Fetch original content independently
+    original_text = fetch_webpage(url)
+
+    # Use NLP to verify the summary quality
+    if not isinstance(leader_result, Return):
+        return False
+
+    return is_valid_summary(original_text, leader_result.summary)
+```
+
+### Key Principles for Custom Validators
+
+1. **Independent Verification**: Validators should independently verify results, not blindly trust the leader
+2. **Tolerance for Nondeterminism**: When dealing with AI outputs or time-sensitive data, allow reasonable variations:
+    - Use similarity thresholds instead of exact matches
+    - Account for timing differences in data fetches
+    - Accept semantically equivalent AI outputs
+3. **Error Handling**: Always check if the leader result is an error before processing. `gl.vm.run_nondet` provides fallbacks for validator functions errors, while `gl.vm.run_nondet_unsafe` does not. If you use the later you may wish to execute most part of the code in the sandbox and compare errors with custom advanced logic
+4. **Security First**: The validator's role is to prevent malicious or incorrect data from being accepted. When in doubt, reject
+
+### Best Practices
+
+- Keep non-deterministic operations well-defined
+- Design validators that can handle slight variations in data
+- Consider network delays and timing differences
+- Use NLP for subjective tasks validation
+- Prefer to use built-in equivalence principle templates, as they can be customized by node and have a better security against prompt attacks
+- Document expected tolerances and validation criteria
+- Test validator functions with various edge cases and malicious inputs
