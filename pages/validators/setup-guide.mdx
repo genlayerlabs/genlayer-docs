@@ -79,12 +79,14 @@ Below are the **initial** recommended system requirements. These guidelines may 
    You can use this command to list available versions:
 
    ```sh
-   curl -s "https://storage.googleapis.com/storage/v1/b/gh-af/o?prefix=genlayer-node/bin/amd64" | grep -o '"name": *"[^"]*"' | sed -n 's/.*\/\(v[0-9.]*-[^/]*\)\/.*/\1/p' | sort -ru
+   curl -s "https://storage.googleapis.com/storage/v1/b/gh-af/o?prefix=genlayer-node/bin/amd64" | grep -o '"name": *"[^"]*"' | sed -n 's/.*\/\(v[^/]*\)\/.*/\1/p' | sort -ru
    ```
 
    You should see a list like this
 
    ```sh
+      v0.3.1
+      v0.3.0
       v0.2.0-testnet007
       v0.2.0-testnet006
       v0.2.0-testnet005
@@ -107,7 +109,7 @@ Below are the **initial** recommended system requirements. These guidelines may 
 
 1. Download the packaged application
    ```sh
-   export version=v0.2.0-testnet007 # set your desired version here
+   export version=v0.3.1 # set your desired version here
    wget https://storage.googleapis.com/gh-af/genlayer-node/bin/amd64/${version}/genlayer-node-linux-amd64-${version}.tar.gz
    ```
 1. Extract the node software
@@ -281,27 +283,27 @@ In this step we'll generate your validator key and address.
 
 After generating your validator key, it is critical to back it up securely.
 
-You can export your key using the following command: 
+You can export your key using the following command:
 
-  ```sh
-  ./bin/genlayernode account export \
-  --password "your node password" \
-  --address "your validator address" \
-  --passphrase "your backup encryption passphrase" \
-  --path "/path/to/your/secure/backup.key" \
-  -c $(pwd)/configs/node/config.yaml 
-  ```
+```sh
+./bin/genlayernode account export \
+--password "your node password" \
+--address "your validator address" \
+--passphrase "your backup encryption passphrase" \
+--path "/path/to/your/secure/backup.key" \
+-c $(pwd)/configs/node/config.yaml
+```
 
 <Callout type="warning" emoji="🚨">
   **Important: Back up your validator key!** Losing access to this key means
-  losing control of your validator and any associated rewards. Store the backup securely. 
-  Remember both the node password (used during setup) and the backup encryption
-  passphrase.
+  losing control of your validator and any associated rewards. Store the backup
+  securely. Remember both the node password (used during setup) and the backup
+  encryption passphrase.
 </Callout>
 
-To print (display) the private key from your exported backup file, you can use the `--print` flag 
-with the account export command. This will output the private key in plain text to your terminal. 
-**Keep this private key secure and never share it.** You can use this private key to set up any other 
+To print (display) the private key from your exported backup file, you can use the `--print` flag
+with the account export command. This will output the private key in plain text to your terminal.
+**Keep this private key secure and never share it.** You can use this private key to set up any other
 EVM-compatible wallet such as MetaMask.
 
 ### Importing (Restoring) Your Validator Key
@@ -330,7 +332,8 @@ You should see the following output:
 - You can now start your node as usual.
 
 <Callout type="warning" emoji="🚨">
-Important: Always verify that your imported key works by checking your validator address.
+  Important: Always verify that your imported key works by checking your
+  validator address.
 </Callout>
 
 ## Running the node
