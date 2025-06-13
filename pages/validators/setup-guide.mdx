@@ -85,6 +85,7 @@ Below are the **initial** recommended system requirements. These guidelines may 
    You should see a list like this
 
    ```sh
+      v0.3.2
       v0.3.1
       v0.3.0
       v0.2.0-testnet007
@@ -109,7 +110,7 @@ Below are the **initial** recommended system requirements. These guidelines may 
 
 1. Download the packaged application
    ```sh
-   export version=v0.3.1 # set your desired version here
+   export version=v0.3.2 # set your desired version here
    wget https://storage.googleapis.com/gh-af/genlayer-node/bin/amd64/${version}/genlayer-node-linux-amd64-${version}.tar.gz
    ```
 1. Extract the node software
@@ -335,6 +336,14 @@ You should see the following output:
   Important: Always verify that your imported key works by checking your
   validator address.
 </Callout>
+
+## Checking Your Configuration
+
+To ensure your node is correctly configured, you can run the following command:
+
+```sh
+./bin/genlayernode doctor -c $(pwd)/configs/node/config.yaml
+```
 
 ## Running the node
 
