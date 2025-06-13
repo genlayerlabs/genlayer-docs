@@ -6,7 +6,7 @@ The GenLayer Node provides a [JSON-RPC API](https://www.jsonrpc.org/specificatio
 
 ### gen_call
 
-Simulate a contract call. This method supports read operations, write operations, and contract deployments.
+Executes a new message call immediately without creating a transaction on the blockchain. This method supports read operations, write operations, and contract deployments.
 
 **Method:** `gen_call`
 
@@ -18,7 +18,6 @@ Simulate a contract call. This method supports read operations, write operations
   - `Data` (string, required): The encoded function call data
   - `Type` (string, required): The type of call (`"read"`, `"write"`, or `"deploy"`)
   - `transaction_hash_variant` (string, required): `"latest-final"`
-  - `gas` (string, optional): Gas limit for the call (hex-encoded)
   - `value` (string, optional): The value to send with the call (hex-encoded)
     **Returns:** Hex-encoded result data
 
