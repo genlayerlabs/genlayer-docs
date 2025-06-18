@@ -206,10 +206,11 @@ merkletree:
 You need to set up an LLM for your node to use to provide answers to natural language prompts. You can use any LLM you wish, however the quality of its answers will affect the performance of your node.
 
 <Callout>
-  GenLayer has partnered with [Heurist](https://www.heurist.ai/) is a Layer 2 network for AI model hosting and inference, built on the ZK Stack. It offers serverless access to open-source AI models through a decentralized network.
+  GenLayer has partnered with multiple LLM providers to offer free credits for validators:
 
-GenLayer Validators can obtain free [Heurist API credits](https://dev-api-form.heurist.ai) by using the referral code: _"genlayer"_.
+  **[Heurist](https://www.heurist.ai/)** - A Layer 2 network for AI model hosting and inference, built on the ZK Stack. It offers serverless access to open-source AI models through a decentralized network. GenLayer Validators can obtain free [Heurist API credits](https://dev-api-form.heurist.ai) by using the referral code: _"genlayer"_.
 
+  **[Comput3](https://genlayer.comput3.ai/)** - A decentralized compute network providing access to various AI models. GenLayer Validators can obtain free [Comput3 API credits](https://genlayer.comput3.ai/) to get started with their validator setup.
 </Callout>
 
 The GenVM configuration files are located at `third_party/genvm/config/`
@@ -222,7 +223,7 @@ You can turn on and off various LLMs by setting the `enabled` field to `false`.
 
 At this stage, select one LLM and set all other to disabled.
 
-Note environment variable name for LLM API keys (e.g., `HEURISTKEY`). You will need to ensure this key is correctly set before [running the node](#running-the-node).
+Note environment variable names for LLM API keys (e.g., `HEURISTKEY`, `COMPUT3KEY`). You will need to ensure the appropriate key is correctly set before [running the node](#running-the-node).
 
 #### `genvm-module-web.yaml`
 
@@ -351,8 +352,16 @@ To ensure your node is correctly configured, you can run the following command:
 
 1.  Set the LLM Provider API Key
 
+    Set the appropriate environment variable for your chosen LLM provider:
+
     ```sh
-    export HEURISTKEY='your_llm_provider_api_key'
+    # For Heurist
+    export HEURISTKEY='your_heurist_api_key'
+    
+    # For Comput3
+    export COMPUT3KEY='your_comput3_api_key'
+    
+    # For other providers, use the appropriate environment variable name
     ```
 
 2.  Run the WebDriver container
