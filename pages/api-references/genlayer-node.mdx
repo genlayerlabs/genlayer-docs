@@ -1,0 +1,288 @@
+# GenLayer Node API
+
+The GenLayer Node provides a [JSON-RPC API](https://www.jsonrpc.org/specification) for interacting with it. This API allows you to execute contract calls, retrieve transaction information, and perform various blockchain operations.
+
+## GenLayer Methods
+
+### gen_call
+
+Executes a new message call immediately without creating a transaction on the blockchain. This method supports read operations, write operations, and contract deployments.
+
+**Method:** `gen_call`
+
+**Parameters:**
+
+- `request` (object, required): The contract call request parameters
+  - `from` (string, required): The address making the call
+  - `to` (string, required): The contract address to call
+  - `Data` (string, required): The encoded function call data
+  - `Type` (string, required): The type of call (`"read"`, `"write"`, or `"deploy"`)
+  - `transaction_hash_variant` (string, required): `"latest-nonfinal"`
+  - `value` (string, optional): The value to send with the call (hex-encoded)
+    **Returns:** Hex-encoded result data
+
+**Example - Read Call:**
+
+```json
+{
+  "jsonrpc": "2.0",
+  "method": "gen_call",
+  "params": [
+    {
+      "Type": "read",
+      "Data": "0xd8960e066d6574686f646c6765745f686176655f636f696e00",
+      "from": "0xf6A60752C24Cd3BFcAf8d387a5EB62d3746F44EE",
+      "to": "0xCe5712E63fd5475288aB1B7c0a368B9417357b81",
+      "transaction_hash_variant": "latest-nonfinal",
+      "gas": "0x5208",
+      "value": "0x0"
+    }
+  ],
+  "id": 1
+}
+```
+
+**Example - Write Call:**
+
+```json
+{
+  "jsonrpc": "2.0",
+  "method": "gen_call",
+  "params": [
+    {
+      "from": "0x742d35Cc6634C0532925a3b8D4C9db96c4b4d8b6",
+      "to":   "0x742d35Cc6634C0532925a3b8D4C9db96c4b4d8b6",
+      "data": "0xa9059cbb000000000000000000000000742d35cc6634c0532925a3b8d4c9db96c4b4d8b6",
+      "type": "write",
++     "transaction_hash_variant": "latest-nonfinal",
+      "gas":  "0x5208",
+      "value":"0x0"
+    }
+  ],
+  "id": 1
+}
+```
+
+### gen_getContractSchema
+
+Retrieve the schema/interface of a GenLayer contract to understand its available methods and properties.
+
+**Method:** `gen_getContractSchema`
+
+**Parameters:**
+
+- `request` (object, required): The contract schema request
+  - `code` (string, required): Base64-encoded contract code
+
+**Returns:** Contract schema object with methods and properties
+
+```json
+{
+  "ctor": { // constructor info
+    "kwparams": {}, // dict
+    "params": [["value", "type"]] // list of tuples
+  },
+  "methods": { // dict from method name to method info
+    "method_name": {
+      "kwparams": {}, // dict
+      "params": [["value", "type"]], // list of tuples
+      "payable": false, // bool
+      "readonly": false, // bool
+      "ret": "null" // string
+    },
+  }
+}
+```
+
+**Example:**
+
+```json
+{
+  "jsonrpc": "2.0",
+  "method": "gen_getContractSchema",
+  "params": [
+    {
+      "code": "IyB7ICJEZXBlbmRzIjogInB5LWdlbmxheWVyOnRlc3QiIH0KCmZyb20gZ2VubGF5ZXIgaW1wb3J0ICoKCgojIGNvbnRyYWN0IGNsYXNzCmNsYXNzIFN0b3JhZ2UoZ2wuQ29udHJhY3QpOgogICAgc3RvcmFnZTogc3RyCgogICAgIyBjb25zdHJ1Y3RvcgogICAgZGVmIF9faW5pdF9fKHNlbGYsIGluaXRpYWxfc3RvcmFnZTogc3RyKToKICAgICAgICBzZWxmLnN0b3JhZ2UgPSBpbml0aWFsX3N0b3JhZ2UKCiAgICAjIHJlYWQgbWV0aG9kcyBtdXN0IGJlIGFubm90YXRlZCB3aXRoIHZpZXcKICAgIEBnbC5wdWJsaWMudmlldwogICAgZGVmIGdldF9zdG9yYWdlKHNlbGYpIC0+IHN0cjoKICAgICAgICByZXR1cm4gc2VsZi5zdG9yYWdlCgogICAgIyB3cml0ZSBtZXRob2QKICAgIEBnbC5wdWJsaWMud3JpdGUKICAgIGRlZiB1cGRhdGVfc3RvcmFnZShzZWxmLCBuZXdfc3RvcmFnZTogc3RyKSAtPiBOb25lOgogICAgICAgIHNlbGYuc3RvcmFnZSA9IG5ld19zdG9yYWdlCg=="
+    }
+  ],
+  "id": 1
+}
+```
+
+**Response:**
+
+```json
+{
+  "jsonrpc": "2.0",
+  "result": {
+    "ctor": {
+      "kwparams": {},
+      "params": [["initial_storage", "string"]]
+    },
+    "methods": {
+      "get_storage": {
+        "kwparams": {},
+        "params": [],
+        "readonly": true,
+        "ret": "string"
+      },
+      "update_storage": {
+        "kwparams": {},
+        "params": [["new_storage", "string"]],
+        "payable": false,
+        "readonly": false,
+        "ret": "null"
+      }
+    }
+  },
+  "id": 1
+}
+```
+
+## Debug Methods
+
+These methods are available for debugging and testing purposes during development.
+
+### gen_dbg_ping
+
+Simple connectivity test method that returns a "pong" response.
+
+**Method:** `gen_dbg_ping`
+
+**Parameters:** None
+
+**Returns:** "pong" string
+
+**Example:**
+
+```json
+{
+  "jsonrpc": "2.0",
+  "method": "gen_dbg_ping",
+  "params": [],
+  "id": 1
+}
+```
+
+**Response:**
+
+```json
+{
+  "jsonrpc": "2.0",
+  "result": "pong",
+  "id": 1
+}
+```
+
+### gen_dbg_trie
+
+Get trie information for debugging node internal DB state.
+
+**Method:** `gen_dbg_trie`
+
+**Parameters:**
+
+- `request` (object, required): The trie debug request
+  - `txID` (string, required): Transaction ID (hex-encoded)
+  - `round` (integer, required): Round number
+
+**Returns:** Trie debug information string
+
+**Example:**
+
+```json
+{
+  "jsonrpc": "2.0",
+  "method": "gen_dbg_trie",
+  "params": [
+    {
+      "txID": "0x742d35Cc6634C0532925a3b8D4C9db96c4b4d8b6742d35Cc6634C0532925a3b8",
+      "round": 0
+    }
+  ],
+  "id": 1
+}
+```
+
+**Response:**
+
+```json
+{
+  "jsonrpc": "2.0",
+  "result": "graph TD\nnode0@{label: \"br  seq=1\"}\nnode1@{label: \"ext seq=1 0x00000000000000000000000000000000000000000000000000000000000000000000000\"}\nnode1 --\u003e data2@{label: \"seq=1\n[21 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0]\"}\nnode0 --\u003e|0| node1\nnode3@{label: \"ext seq=1 0x72d46c3ada9f897c74d349bbfe0e450c798167c9f580f8daf85def57e96c3ea00000000\"}\nnode3 --\u003e data4@{label: \"seq=1\n[105 110 105 116 105 97 108 32 115 116 111 114 97 103 101 32 118 97 108 117 101 0 0 0 0 0 0 0 0 0 0 0]\"}\nnode0 --\u003e|3| node3\n",
+  "id": 1
+} 
+```
+
+## Ethereum Compatibility
+
+The GenLayer Node also supports Ethereum-compatible methods that are proxied to the underlying infrastructure. These methods follow the standard [Ethereum JSON-RPC specification](https://ethereum.org/en/developers/docs/apis/json-rpc/) and are prefixed with `eth_`.
+
+**Examples of supported Ethereum methods:**
+
+- `eth_blockNumber`
+- `eth_getBalance`
+- `eth_sendTransaction`
+- `eth_call`
+- And other standard Ethereum JSON-RPC methods
+
+## zkSync Compatibility
+
+[zkSync-compatible](https://docs.zksync.io/zksync-protocol/api/zks-rpc) methods are also supported and proxied to the underlying infrastructure. These methods are prefixed with `zksync_`.
+
+## Usage Examples
+
+### cURL
+
+```bash
+# Test connectivity
+curl -X POST http://localhost:9151 \
+  -H "Content-Type: application/json" \
+  -d '{
+    "jsonrpc": "2.0",
+    "method": "gen_dbg_ping",
+    "params": [],
+    "id": 1
+  }'
+
+# Execute a contract call
+curl -X POST http://localhost:9151 \
+  -H "Content-Type: application/json" \
+  -d '{
+    "jsonrpc": "2.0",
+    "method": "gen_call",
+    "params": [{
+      "from": "0x742d35Cc6634C0532925a3b8D4C9db96c4b4d8b6",
+      "to": "0x742d35Cc6634C0532925a3b8D4C9db96c4b4d8b6",
+      "data": "0x70a08231000000000000000000000000742d35cc6634c0532925a3b8d4c9db96c4b4d8b6",
+      "type": "read",
+      "transaction_hash_variant": "latest-nonfinal"
+    }],
+    "id": 1
+  }'
+
+# Get contract schema
+curl -X POST http://localhost:9151 \
+  -H "Content-Type: application/json" \
+  -d '{
+    "jsonrpc": "2.0",
+    "method": "gen_getContractSchema",
+    "params": [{
+      "code": "IyB7ICJEZXBlbmRzIjogInB5LWdlbmxheWVyOnRlc3QiIH0KCmZyb20gZ2VubGF5ZXIgaW1wb3J0ICoKCgojIGNvbnRyYWN0IGNsYXNzCmNsYXNzIFN0b3JhZ2UoZ2wuQ29udHJhY3QpOgogICAgc3RvcmFnZTogc3RyCgogICAgIyBjb25zdHJ1Y3RvcgogICAgZGVmIF9faW5pdF9fKHNlbGYsIGluaXRpYWxfc3RvcmFnZTogc3RyKToKICAgICAgICBzZWxmLnN0b3JhZ2UgPSBpbml0aWFsX3N0b3JhZ2UKCiAgICAjIHJlYWQgbWV0aG9kcyBtdXN0IGJlIGFubm90YXRlZCB3aXRoIHZpZXcKICAgIEBnbC5wdWJsaWMudmlldwogICAgZGVmIGdldF9zdG9yYWdlKHNlbGYpIC0+IHN0cjoKICAgICAgICByZXR1cm4gc2VsZi5zdG9yYWdlCgogICAgIyB3cml0ZSBtZXRob2QKICAgIEBnbC5wdWJsaWMud3JpdGUKICAgIGRlZiB1cGRhdGVfc3RvcmFnZShzZWxmLCBuZXdfc3RvcmFnZTogc3RyKSAtPiBOb25lOgogICAgICAgIHNlbGYuc3RvcmFnZSA9IG5ld19zdG9yYWdlCg=="
+    }],
+    "id": 1
+  }'
+
+# Get debug trie information
+curl -X POST http://localhost:9151 \
+  -H "Content-Type: application/json" \
+  -d '{
+    "jsonrpc": "2.0",
+    "method": "gen_dbg_trie",
+    "params": [{
+      "txID": "0x742d35Cc6634C0532925a3b8D4C9db96c4b4d8b6742d35Cc6634C0532925a3b8",
+      "round": 0
+    }],
+    "id": 1
+  }'
+```
