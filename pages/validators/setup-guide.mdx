@@ -211,6 +211,8 @@ You need to set up an LLM for your node to use to provide answers to natural lan
   **[Heurist](https://www.heurist.ai/)** - A Layer 2 network for AI model hosting and inference, built on the ZK Stack. It offers serverless access to open-source AI models through a decentralized network. GenLayer Validators can obtain free [Heurist API credits](https://dev-api-form.heurist.ai) by using the referral code: _"genlayer"_.
 
   **[Comput3](https://genlayer.comput3.ai/)** - A decentralized compute network providing access to various AI models. GenLayer Validators can use the Comput3.ai inferencing API with access to llama3, hermes3 and qwen3 models. Validators can obtain free [Comput3 API credits](https://genlayer.comput3.ai/) to get started with their validator setup.
+
+  **[io.net](/partners/ionet)** - A decentralized compute network providing GPU access for AI inference. GenLayer Validators can create an account at [id.io.net](https://id.io.net/login) and obtain free credits by [filling out this form](https://form.typeform.com/to/pDmCCViV).
 </Callout>
 
 The GenVM configuration files are located at `third_party/genvm/config/`
@@ -223,7 +225,7 @@ You can turn on and off various LLMs by setting the `enabled` field to `false`.
 
 At this stage, select one LLM and set all other to disabled.
 
-Note environment variable names for LLM API keys (e.g., `HEURISTKEY`, `COMPUT3KEY`). You will need to ensure the appropriate key is correctly set before [running the node](#running-the-node).
+Note environment variable names for LLM API keys (e.g., `HEURISTKEY`, `COMPUT3KEY`, `IOINTELLIGENCE_API_KEY`). You will need to ensure the appropriate key is correctly set before [running the node](#running-the-node).
 
 #### `genvm-module-web.yaml`
 
@@ -360,6 +362,9 @@ To ensure your node is correctly configured, you can run the following command:
     
     # For Comput3
     export COMPUT3KEY='your_comput3_api_key'
+    
+    # For io.net
+    export IOINTELLIGENCE_API_KEY='your_ionet_api_key'
     
     # For other providers, use the appropriate environment variable name
     ```
