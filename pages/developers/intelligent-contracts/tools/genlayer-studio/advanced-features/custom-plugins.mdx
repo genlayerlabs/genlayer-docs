@@ -23,7 +23,7 @@ In addition to these built-in providers, you have the flexibility to integrate y
 
 ### Creating the Plugin
 
-To integrate a new LLM provider plugin, you need to implement the `Plugin` protocol defined in the [llms.py](https://github.com/yeagerai/genlayer-simulator/blob/main/backend/node/genvm/llms.py) file. The protocol is structured as follows:
+To integrate a new LLM provider plugin, you need to implement the `Plugin` protocol defined in the [llms.py](https://github.com/genlayerlabs/genlayer-simulator/blob/main/backend/node/genvm/llms.py) file. The protocol is structured as follows:
 
 ```python
 class Plugin(Protocol):
@@ -107,7 +107,7 @@ plugin_map = {
 
 ## Updating the JSON Schema
 
-To maintain consistency and enable proper configuration validation, you must update the [JSON schema](https://json-schema.org/) in the [`providers_schema.json`](https://github.com/yeagerai/genlayer-simulator/blob/main/backend/node/create_nodes/providers_schema.json) file. This update should include your new provider and its specific configuration options.
+To maintain consistency and enable proper configuration validation, you must update the [JSON schema](https://json-schema.org/) in the [`providers_schema.json`](https://github.com/genlayerlabs/genlayer-simulator/blob/main/backend/node/create_nodes/providers_schema.json) file. This update should include your new provider and its specific configuration options.
 
 The JSON schema plays a crucial role in validating the configuration options for each provider, ensuring that users input correct and compatible settings.
 
