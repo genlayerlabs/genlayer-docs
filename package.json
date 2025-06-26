@@ -10,14 +10,14 @@
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/yeagerai/genlayer-docs.git"
+    "url": "git+https://github.com/genlayerlabs/genlayer-docs.git"
   },
   "author": "GenLayer",
   "license": "MIT",
   "bugs": {
-    "url": "https://github.com/yeagerai/genlayer-docs/issues"
+    "url": "https://github.com/genlayerlabs/genlayer-docs/issues"
   },
-  "homepage": "https://github.com/yeagerai/genlayer-docs#readme",
+  "homepage": "https://github.com/genlayerlabs/genlayer-docs#readme",
   "dependencies": {
     "clsx": "^2.1.1",
     "next": "^15.0.0",

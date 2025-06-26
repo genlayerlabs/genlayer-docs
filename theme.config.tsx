@@ -9,9 +9,9 @@ import DiscordIcon from "./components/discord";
 const config: DocsThemeConfig = {
   logo: <Logo />,
   project: {
-    link: "https://github.com/yeagerai/genlayer-simulator",
+    link: "https://github.com/genlayerlabs/genlayer-simulator",
   },
-  docsRepositoryBase: "https://github.com/yeagerai/genlayer-docs",
+  docsRepositoryBase: "https://github.com/genlayerlabs/genlayer-docs",
   footer: {
     text: "GenLayer Documentation",
   },

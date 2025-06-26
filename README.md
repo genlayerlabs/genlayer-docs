@@ -12,6 +12,6 @@ The live site is available at [https://docs.genlayer.com/](https://docs.genlayer
 
 ## License
 
-Text and diagrams: [Creative Commons Attribution 4.0 International](https://github.com/yeagerai/genlayer-docs/blob/main/LICENSES/CC-BY-4.0.txt).
+Text and diagrams: [Creative Commons Attribution 4.0 International](https://github.com/genlayerlabs/genlayer-docs/blob/main/LICENSES/CC-BY-4.0.txt).
 
-Code snippets and examples: [MIT License](https://github.com/yeagerai/genlayer-docs/blob/main/LICENSES/MIT.txt).
+Code snippets and examples: [MIT License](https://github.com/genlayerlabs/genlayer-docs/blob/main/LICENSES/MIT.txt).
