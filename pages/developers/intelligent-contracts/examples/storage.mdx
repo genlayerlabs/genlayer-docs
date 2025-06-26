@@ -1,0 +1,65 @@
+# Storage Contract
+
+The Storage contract sets up a simple scenario to store and retrieve a string value. This contract demonstrates basic data storage and retrieval functionality within a blockchain environment.
+
+```python
+# { "Depends": "py-genlayer:test" }
+
+from genlayer import *
+
+# contract class
+class Storage(gl.Contract):
+    storage: str
+
+    # constructor
+    def __init__(self, initial_storage: str):
+        self.storage = initial_storage
+
+    # read methods must be annotated with view
+    @gl.public.view
+    def get_storage(self) -> str:
+        return self.storage
+
+    # write method
+    @gl.public.write
+    def update_storage(self, new_storage: str) -> None:
+        self.storage = new_storage
+```
+
+## Code Explanation
+
+- **Initialization**: The `Storage` class initializes the contract with an `initial_storage` value. This value is stored in the `self.storage` attribute.
+- **Read Method**: The `get_storage()` method is a read-only function that returns the current value stored in `self.storage`.
+- **Write Method**: The `update_storage(new_storage)` method allows updating the stored value with a new string.
+
+## Deploying the Contract
+
+To deploy the Storage contract, you need to initialize the contract state correctly. This setup will determine the initial value stored in the contract.
+
+1. **Set Initial Storage**: Provide the initial storage value. The `initial_storage` constructor parameter is detected from the code. For example, you might set `initial_storage` to "Hello, World!".
+2. **Deploy the Contract**: Once the initial storage is set, deploy the contract to make it ready for interaction.
+
+## Checking the Contract State
+
+After deploying the contract, its address is displayed and you can check its state in the **Read Methods** section. Use the `get_storage()` function to see the current value stored in the contract.
+
+## Executing Transactions
+
+To interact with the deployed contract, go to the **Write Methods** section. Here, you can call the `update_storage` method to change the stored value. This triggers the contract's logic to update the storage with the new value.
+
+## Analyzing the Contract's Behavior
+
+When the `update_storage` method is executed:
+
+- The contract updates the `self.storage` attribute with the new value provided.
+- You can then use the `get_storage()` method to verify that the value has been updated.
+
+## Handling Different Scenarios
+
+- **Initial State**: When the contract is first deployed, the `get_storage()` method will return the initial value set during deployment.
+- **After Update**: After calling `update_storage`, the `get_storage()` method will return the newly set value.
+- **Multiple Updates**: You can update the storage multiple times, and each time the most recent value will be stored and returned by `get_storage()`.
+
+You can view the logs to see detailed information about the contract interaction, including the values being stored and retrieved.
+
+This Storage contract provides a simple example of how data can be stored and retrieved on a blockchain, demonstrating basic state management within a smart contract.

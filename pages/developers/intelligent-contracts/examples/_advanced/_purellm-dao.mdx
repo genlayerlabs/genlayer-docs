@@ -1,0 +1,163 @@
+import { Callout } from 'nextra-theme-docs'
+
+# PureLLM DAO Contract
+
+The PureLLM DAO contract implements a simplified, AI-driven Decentralized Autonomous Organization (DAO) that relies entirely on language model decision-making. This contract demonstrates extreme flexibility in governance by interpreting and executing natural language proposals within a blockchain environment.
+
+<Callout type="info" emoji="🏗️">
+    This intelligent contract is currently not migrated to the real GenVM syntaxis.
+</Callout>
+
+```python
+import json
+from backend.node.genvm.icontract import IContract
+from backend.node.genvm.equivalence_principle import call_llm_with_principle
+
+
+class ConstitutionalDAO(IContract):
+    """
+    A Constitutional DAO that uses AI to interpret and execute motions.
+    This DAO maintains a state and can update it based on user-submitted motions.
+    """
+
+    def __init__(self):
+        """
+        Initialize the ConstitutionalDAO with a basic constitution.
+        """
+        self.state = json.dumps({
+            "constitution": [
+                "1. Anyone can become a member of the DAO",
+                "2. The constitution of the DAO can be updated by a unanimous vote"
+            ]
+        })
+
+    async def execute_motion(self, motion: str) -> None:
+        """
+        Execute a motion proposed by a user.
+
+        This method interprets the motion using an AI model and updates the DAO state accordingly.
+
+        Args:
+            motion (str): The motion proposed by a user.
+
+        Returns:
+            None
+        """
+        # Prepare the prompt for the language model
+        prompt = f"""
+You are a constitutional DAO
+
+Your state is as follows:
+{self.state}
+
+User with the address "{contract_runner.from_address}"
+has made the following motion:
+{motion}
+
+Decide how to proceed
+Respond with the following JSON format:
+{{
+"reasoning": str,          // Your reasoning
+"updated_state": any,      // The new state of the DAO - can be any format
+}}
+
+It is mandatory that you respond only using the JSON format above,
+nothing else. Don't include any other words or characters,
+your output must be only JSON without any formatting prefix or suffix.
+This result should be perfectly parseable by a JSON parser without errors.
+        """
+
+        # Call the language model with the equivalence principle
+        result = await call_llm_with_principle(
+            prompt,
+            eq_principle="The updated state has to be essentially equivalent",
+        )
+
+        # Clean up the result and parse it as JSON
+        result_clean = result.replace("True", "true").replace("False", "false")
+        output = json.loads(result_clean)
+
+        # Update the DAO state
+        self.state = json.dumps(output["updated_state"])
+
+    def get_state(self) -> str:
+        """
+        Get the current state of the DAO.
+
+        Returns:
+            str: The current state of the DAO as a JSON string.
+        """
+        return self.state
+```
+
+## Code Explanation
+
+- **Initialization**: The ConstitutionalDAO class initializes with a basic constitution stored as a JSON string in the state variable.
+- **Key Methods**:
+  - `execute_motion(motion)`: Processes a text-based motion submitted by any user. It uses an AI model to interpret the motion and update the DAO's state accordingly.
+- **State Management**:
+  - `get_state()`: Allows retrieval of the current DAO state.
+
+## Deploying the Contract
+
+To deploy the ConstitutionalDAO contract:
+1. Deploy the Contract: No initial parameters are needed. The contract initializes with a basic constitution.
+
+## Checking the Contract State
+
+After deploying the contract, you can check its state in the Read Methods section.
+- Use `get_state()` to view the current state of the DAO, including its constitution and any other properties that have been added through motions.
+
+## Executing Transactions
+
+To interact with the deployed contract, go to the Write Methods section. Here, you can:
+- Call `execute_motion(motion)` to propose and execute a change to the DAO. This is the primary method of interaction with the contract.
+
+
+## Analyzing the Contract's Behavior
+
+The contract's behavior involves a single, highly flexible process:
+
+### AI-Driven Motion Execution:
+1. A user submits a motion in natural language.
+2. The AI interprets the motion in the context of the current DAO state.
+3. The AI decides how to update the state based on its interpretation.
+4. The contract's state is updated according to the AI's decision.
+
+## Handling Different Scenarios
+
+The ConstitutionalDAO can handle a wide range of scenarios through its flexible motion execution:
+- Constitutional Amendments: Users can propose changes to the DAO's constitution.
+- New Feature Proposals: Motions can suggest adding new functionalities to the DAO.
+- Resource Allocation: Users might propose ways to manage or distribute resources.
+- Membership Rules: Motions could alter how membership in the DAO is determined or managed.
+- Decision-Making Processes: The very process of how decisions are made could be altered through motions.
+
+## Use Cases and Benefits
+
+The ConstitutionalDAO contract is ideal for:
+- Experimental Governance: Organizations looking to explore highly adaptive governance models.
+- Rapid Iteration: Communities that need to quickly evolve their structure and rules.
+- Complex Decision-Making: Scenarios where decisions require nuanced interpretation and execution.
+
+Benefits include:
+- Extreme Flexibility: Can handle a wide range of governance actions without predefined structures.
+- Natural Language Interface: Allows users to interact with the DAO using everyday language.
+- Adaptive Governance: The DAO can evolve its own rules and structure over time based on member input.
+
+## Limitations and Considerations
+
+While powerful, this approach has some important considerations:
+1. AI Dependence: The reliability and effectiveness of the DAO are heavily dependent on the capabilities of the AI model.
+2. Interpretation Accuracy: There's a risk of misinterpretation of motions, which could lead to unintended outcomes.
+3. Language Precision: Users need to be careful in how they word their motions to ensure accurate interpretation.
+4. Lack of Traditional Checks and Balances: The flexibility could potentially lead to rapid, drastic changes without traditional safeguards.
+
+## Future Enhancements
+
+Potential improvements to this system could include:
+1. Multi-Step Approval Process: Implementing a confirmation step before major changes are executed.
+2. Historical Tracking: Maintaining a log of all executed motions and their impacts on the DAO state.
+3. User Reputation System: Incorporating a system that weighs motions based on the proposer's past contributions or reputation.
+
+This ConstitutionalDAO contract demonstrates an innovative and highly flexible approach to decentralized governance. It showcases how advanced AI can be integrated with blockchain technology to create adaptive, language-driven organizational structures. While powerful, it also highlights the challenges and considerations in creating AI-driven governance systems.

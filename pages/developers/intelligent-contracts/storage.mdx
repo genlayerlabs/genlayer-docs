@@ -1,0 +1,125 @@
+import { Callout } from 'nextra-theme-docs'
+
+# Persisting data on the blockchain
+
+Usual data structures aren't suitable for representing blockchain persistent storage:
+
+1. Allocated addresses (`id` in python terms) are not persistent
+2. Allocation requires knowledge about all allocated addresses, which takes a lot of space and would cost a lot of reads at start time
+3. Serialization works poorly as it will rewrite entire storage (consider rehash)
+
+Intelligent Contracts store data publicly on chain, attached to their account's address. The storage starts zero-initialized until a contract is deployed and initializes a state.
+
+For storage declaration GenLayer uses contract class fields.
+
+<Callout emoji="🚫">
+    All persistent fields must be declared in the class body and annotated with types.
+    <br/>Fields declared outside the class body by creating new instance variables (`self.field = value`) are not persistent and will be discarded after the contract execution.
+</Callout>
+
+Example:
+```py
+class PersistentContract(gl.Contract):
+    minter: Address
+
+    def __init__(self):
+        self.minter = gl.message.sender_address
+```
+
+In your contracts, you can use any Python types, but for persisted fields, there are some restrictions:
+- `list[T]` needs to be replaced with `DynArray[T]`
+- `dict[K, V]` needs to be replaced with `TreeMap[K, V]`
+- `int` type isn't supported on purpose. You most likely wish to use some fixed-size integer type, such as `i32` or `u256`. If this is not the case and you are sure that you need big integers, you can annotate your field with `bigint`, which is just an alias for python `int`
+
+<Callout emoji="⚠️">
+    Only fully instantiated generic types can be used, so `TreeMap` is forbidden, while `TreeMap[str, u256]` is not
+</Callout>
+
+Simple examples:
+
+```py
+class PersistentContract(gl.Contract):
+    a: str
+    b: bytes
+    # c: list[str]           # ❌ `list` is forbidden!
+    c: DynArray[str]
+    # b: dict[Address, u256] # ❌ `dict` is forbidden!
+    # b: TreeMap             # ❌ only fully specialized generic types are allowed!
+    b: TreeMap[Address, u256]
+    # d: int                 # ❌ `int` is forbidden
+    d: bigint                # ⚠️ most likely you don't need an arbitrary big integer
+    d_sized: i256
+```
+
+## Few words about `DynArray` and `TreeMap`
+
+These types implement python `collections.abc.MutableSequence` and `collections.abc.MutableMapping` which makes them compatible with most of the python code
+
+They can be encoded into calldata as-is as well, which means that following code is correct:
+
+```py
+class PersistentContract(gl.Contract):
+    storage: DynArray[str]
+
+    @gl.public.view
+    def get_complete_storage(self) -> collections.abc.Sequence[str]:
+        return self.storage
+```
+
+<Callout emoji="⚠️">
+    Calldata format supports mappings only with `str` keys, like JSON does.
+</Callout>
+
+## Using custom data types
+
+You can use other python classes in storage, for example:
+
+```py
+@allow_storage
+@dataclass
+class User:
+    name: str
+    birthday: datetime.datetime
+
+class Contract(gl.Contract):
+    users: DynArray[User]
+```
+
+Note that you must decorate them with `@allow_storage`. This is done to prevent [confusion](#differences-from-regular-python-types)
+
+However, there is a tricky case: allocating storage generics in-memory. It is different from regular python syntax because storage types don't have type erasure due to fixed memory layout.
+
+```py
+@allow_storage
+@dataclass
+class User:
+    data: TreeMap[str, str]
+
+User() # error: data is absent (from dataclass)
+User(gl.storage_inmem_allocate(TreeMap[str, str])) # works fine, this function takes a type and `*args, **kwargs` for corresponding `__init__`. Also note that type must be fully instantiated and have no type variables.
+```
+
+## Default values
+By default storage is zero-initialized:
+| Type       | Default value |
+|------------|---------------|
+| `u*`, `i*` | `0`           |
+| `bool`     | `false`       |
+| `float`    | `+0`          |
+| `str`      | `""`          |
+| `DynArray` | `[]`          |
+| `TreeMap`  | `{}`          |
+
+Struct types are zero-initialized "recursively"
+
+
+---
+## Differences from regular python types
+Even though storage classes mimic python types, remember that they provide you only with a view on memory, not actual data that is "here". For example, consider the above example
+
+```py
+self.users.append(User("Ada"))
+user = self.users[-1]
+self.users[-1] = User("Definitely not Ada", datetime.datetime.now())
+assert user.name == "Definitely not Ada" # this is true!
+```

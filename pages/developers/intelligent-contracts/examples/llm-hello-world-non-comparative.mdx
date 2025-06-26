@@ -1,0 +1,94 @@
+# LlmHelloWorldNonComparative Contract
+
+The LlmHelloWorldNonComparative contract demonstrates a simple example of integrating AI capabilities within an intelligent contract without requiring that all the validators execute the full task. They just need to evaluate the leader's response against the specified criteria. This is done by using the [non-comparative equivalence principle](/developers/intelligent-contracts/equivalence-principle#non-comparative-equivalence-principle).
+
+```python
+# { "Depends": "py-genlayer:test" }
+
+from genlayer import *
+import typing
+
+
+class LlmHelloWorldNonComparative(gl.Contract):
+    message: str
+
+    def __init__(self):
+        self.message = ""
+
+    @gl.public.write
+    def set_message(self) -> typing.Any:
+        self.message = gl.eq_principle_prompt_non_comparative(
+            lambda: "There is no context, I just want you to answer with truthy value in python (for example: 'yes', 'True', 1)",
+            task="Answer with truthy value in python (for example: 'yes', 'True', 1)",
+            criteria="Answer should be a truthy value in python"
+        )
+
+    @gl.public.view
+    def get_message(self) -> str:       
+        return self.message
+```
+
+## Code Explanation
+
+- **Initialization**: The `LlmHelloWorldNonComparative` class initializes with an empty string in the `message` variable.
+- **Write Method**: 
+  - `set_message()` uses AI functionality to generate and store a message.
+  - Uses `gl.eq_principle_prompt_non_comparative()` with three parameters:
+    - A lambda function providing the prompt
+    - A task description
+    - Validation criteria for the response
+- **Read Method**: 
+  - `get_message()` returns the stored message.
+
+## Key Components
+
+1. **AI Integration**: The contract uses non-comparative equivalence principle to interact with an AI model.
+2. **Deterministic Execution**: `gl.eq_principle_prompt_non_comparative()` ensures that all nodes in the network accept responses that meet the specified criteria.
+3. **State Management**: The contract maintains a single string state variable that stores the AI response.
+
+## Deploying the Contract
+
+To deploy the LlmHelloWorldNonComparative contract:
+
+1. **Deploy the Contract**: No initial parameters are needed for deployment.
+2. The contract will initialize with an empty message.
+
+## Checking the Contract State
+
+After deployment, you can:
+
+- Use `get_message()` to view the currently stored message.
+- Initially, this will return an empty string.
+
+## Executing Transactions
+
+To interact with the deployed contract:
+
+1. Call `set_message()` to trigger the AI interaction.
+2. The function will:
+   - Execute the AI prompt requesting a truthy Python value
+   - Validate the response against the specified criteria
+   - Store the result if it meets the criteria
+
+## Understanding AI Integration
+
+This contract demonstrates several important concepts:
+
+- **AI Prompting**: Shows how to formulate prompts with specific validation criteria.
+- **Non-comparative Validation**: Uses criteria-based validation instead of exact matching.
+- **State Updates**: Demonstrates how validated AI-generated content can be stored in blockchain state.
+
+## Handling Different Scenarios
+
+- **Initial State**: The message starts empty.
+- **After set_message()**: The message will contain any valid truthy Python value (e.g., "yes", "True", or "1").
+- **Multiple Calls**: Each call to `set_message()` may result in different valid responses.
+- **Network Consensus**: All nodes will accept any response that meets the validation criteria.
+
+## Important Notes
+
+1. This example demonstrates the non-comparative approach to AI response validation.
+2. The validation criteria ensure semantic correctness rather than exact matching.
+3. Different nodes may accept different responses as long as they meet the specified criteria.
+
+You can monitor the contract's behavior through transaction logs, which will show the AI responses and state updates as they occur.

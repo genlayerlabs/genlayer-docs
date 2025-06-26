@@ -1,0 +1,43 @@
+# Rollup Integration
+
+GenLayer leverages Ethereum rollups, such as ZKSync or Polygon CDK, to ensure scalability and compatibility with existing Ethereum infrastructure. This integration is crucial for optimizing transaction throughput and reducing fees while maintaining the security guarantees of the Ethereum mainnet.
+
+## Key Aspects of Rollup Integration
+
+### Scalability
+- **High Transaction Throughput**: Rollups allow GenLayer to process a much higher number of transactions per second compared to Layer 1 solutions.
+- **Reduced Congestion**: By moving computation off-chain, GenLayer helps alleviate congestion on the Ethereum mainnet.
+
+### Cost Efficiency
+- **Lower Transaction Fees**: Users benefit from significantly reduced gas fees compared to direct Layer 1 transactions.
+- **Batched Submissions**: Transactions are batched and submitted to the Ethereum mainnet, distributing costs across multiple operations.
+
+### Security
+- **Ethereum Security Inheritance**: While execution happens off-chain, the security of assets and final state is guaranteed by Ethereum's robust consensus mechanism.
+- **Fraud Proofs/Validity Proofs**: Depending on the specific rollup solution (Optimistic or ZK), security is ensured through either fraud proofs or validity proofs.
+
+## How Rollup Integration Works with GenLayer
+
+1. **Transaction Submission**: Users submit transactions to the rollup.
+
+2. **Transaction Execution**: Transactions are executed within the GenVM environment.
+
+3. **Consensus**: The rollup layer implements the Optimistic Democracy mechanism to reach consensus on the state updates.
+
+4. **State Updates**: The rollup layer maintains an up-to-date state of all accounts and contracts.
+
+5. **Batch Submission**: Periodically, batches of transactions and state updates are submitted to the Ethereum mainnet.
+
+6. **Verification**: The Ethereum network verifies the integrity of the submitted data, ensuring its validity.
+
+## Benefits for Developers and Users
+
+- **Ethereum Compatibility**: Developers can leverage existing Ethereum tools and infrastructure.
+- **Improved User Experience**: Lower fees and faster transactions lead to a better overall user experience.
+
+## Considerations
+
+- **Withdrawal Periods**: Depending on the rollup solution, there might be waiting periods for withdrawing assets back to the Ethereum mainnet.
+- **Rollup-Specific Features**: Different rollup solutions may offer unique features or limitations that developers should be aware of.
+
+By integrating with Ethereum rollups, GenLayer combines the innovative capabilities of Intelligent Contracts with the scalability and efficiency of Layer 2 solutions, creating a powerful platform for next-generation decentralized applications.

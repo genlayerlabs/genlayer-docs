@@ -1,0 +1,134 @@
+# GenLayer CLI
+
+The GenLayer CLI is a command-line interface designed to streamline the setup and local execution of the GenLayer Studio. It automates the process of downloading and launching the Studio, allowing developers to start simulating and testing locally with minimal effort.
+
+## Features
+
+- **Easy Initialization**: Quickly set up the GenLayer Studio with a single command.
+- **Automated Downloads**: Automatically downloads all necessary components required to run the Studio.
+- **Developer-Friendly**: Simplifies local development and testing workflows.
+- **Extensible**: Plans for additional commands to enhance interaction with the Studio.
+
+## How it's Built
+
+The GenLayer CLI is a Command Line Interface tool built using **Node.js** and **TypeScript**. It's designed to automate the setup and management of the GenLayer Studio, simplifying the process for developers.
+
+### Technologies Used
+
+- **Node.js**: A JavaScript runtime environment that allows the execution of JavaScript code on the server side.
+- **TypeScript**: A statically typed superset of JavaScript that compiles to plain JavaScript, enhancing code reliability and maintainability.
+- **ESBuild**: A fast JavaScript bundler and minifier used for building the CLI efficiently.
+- **Jest**: A JavaScript testing framework utilized for writing and running tests.
+
+
+### Project Structure
+
+The source code for the GenLayer CLI is organized as follows:
+
+- `src/`: Contains the main TypeScript source files.
+- `tests/`: Includes all the test files written using Jest.
+- `dist/`: The compiled JavaScript files ready for execution.
+
+## Requirements
+
+Before using the GenLayer CLI, ensure your system meets the following requirements:
+
+- **Node.js**: Version 14.x or higher is required.
+- **npm**: Comes bundled with Node.js, used for managing packages.
+- **Git**: Required if cloning the repository directly from GitHub.
+- **Operating System**: Compatible with macOS, Linux, and Windows.
+
+
+## Installation
+
+To install the GenLayer CLI globally using npm, ensure you have Node.js installed, then run:
+
+```bash
+  npm install -g genlayer
+```
+
+## Usage
+
+After installation, you can use the following command to start the Studio:
+
+```bash
+  genlayer init
+```
+
+This command will download the necessary components and start the Studio. Once initialized, you can execute further commands (to be implemented) to interact with the Studio.
+
+## General Format of Commands
+
+The GenLayer CLI commands follow a consistent syntax pattern:
+
+```bash
+genlayer <command> [options]
+```
+
+- `<command>`: The primary action you want the CLI to perform (e.g., `init`, `up`).
+- `[options]`: Optional flags that alter the behavior of the command.
+
+### Example
+
+To initialize the GenLayer Studio with specific parameters:
+
+```bash
+genlayer init --numValidators 10 --branch develop
+```
+
+## Testing
+The GenLayer CLI uses Jest with ts-jest for testing TypeScript files.
+To run tests:
+
+```bash
+  npm run test
+```
+
+## Further Development
+Additional commands are planned to enhance interaction with the GenLayer Studio. Stay tuned for updates.
+
+## Repository
+You can find the GenLayer CLI repository on GitHub:
+[GenLayer CLI Repository](https://github.com/yeagerai/genlayer-cli)
+
+## Full Reference
+
+The full reference for the GenLayer CLI is available in the [GenLayer CLI Reference](/references/genlayer-cli).
+
+## GenLayer FAQ
+The GenLayer FAQ is a collection of useful questions and answers about the project. If you have a question that isn't answered here, please let us know on our [Discord](https://discord.gg/8Jm4v89VAu) .
+
+<details style={{ backgroundColor: '#262626', padding: '10px', borderRadius: '5px', color: 'white' }}>
+  <summary style={{ color: 'white' }}>
+    <b>How do I set up the GenLayer Development Environment?</b>
+  </summary>
+  To quickly set up the GenLayer Development Environment, run the commands below:
+  ```
+  $ npm install -g genlayer
+  $ genlayer init
+  ```
+  For more detailed setup instructions, please refer to the [Getting Started page](/getting-started)
+</details>
+
+<details style={{ backgroundColor: '#262626', padding: '10px', borderRadius: '5px', color: 'white' }}>
+  <summary style={{ color: 'white' }}>
+    <b>Where can I find the GenLayer Studio?</b>
+  </summary>
+  The GenLayer Studio is available at [studio.genlayer.com](https://studio.genlayer.com).
+  </details>
+
+<details style={{ backgroundColor: '#262626', padding: '10px', borderRadius: '5px', color: 'white' }}>
+  <summary style={{ color: 'white' }}>
+    <b>How do I deploy an Intelligent Contract?</b>
+  </summary>
+   - Go to [studio.genlayer.com](https://studio.genlayer.com) or use the [GenLayer CLI](/getting-started#installation-of-the-genlayer-cli) to start the GenLayer Studio locally.
+   - Write your contract in Python using the [Intelligent Contract SDK](/core-concepts/intelligent-contracts). 
+   - Follow the guide [here](/genlayer-stack/genlayer-studio/execute-transaction) to interact with the Studio and deploy your Intelligent Contract.
+</details>
+
+<details style={{ backgroundColor: '#262626', padding: '10px', borderRadius: '5px', color: 'white' }}>
+  <summary style={{ color: 'white' }}>
+    <b>What is the GenLayer CLI used for?</b>
+  </summary>
+  The GenLayer CLI is used for setting up the GenLayer Studio and, in the future, will support mainnet and testnet environments. 
+</details>

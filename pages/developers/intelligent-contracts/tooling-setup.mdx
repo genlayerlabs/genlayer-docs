@@ -1,0 +1,259 @@
+import CustomCard from '../../../components/card'
+
+# Tooling Setup
+
+This guide will help you set up the GenLayer environment by installing the GenLayer CLI and launching the GenLayer Studio, write your first Intelligent Contract, deploy it, and interact with it using the GenLayer Studio. You'll also learn how to use the Genlayer Project Boilerplate to write end-to-end tests and build a frontend dApp with GenLayerJS.
+
+## Table of Contents
+1. [Using the GenLayer Studio](#using-the-genlayer-studio)
+2. [Local Installation of the GenLayer CLI](#local-installation-of-the-genlayer-cli) 
+3. [Launching the GenLayer Studio](#launching-the-genlayer-studio)
+4. [Writing Intelligent Contracts](#writing-intelligent-contracts)
+5. [Deploying and Interacting with Intelligent Contracts](#deploying-and-interacting-with-intelligent-contracts)
+6. [Writing End-to-End Tests with genlayer-project-boilerplate](#writing-end-to-end-tests-with-genlayer-project-boilerplate)
+7. [Building a Frontend dApp with GenLayerJS](#building-a-frontend-dapp-with-genlayerjs)
+
+## Using the GenLayer Studio
+
+The GenLayer Studio is a web-based interface for developing, testing, and deploying Intelligent Contracts. It provides a user-friendly environment for interacting with the GenLayer ecosystem. You can find it at [studio.genlayer.com](https://studio.genlayer.com).
+
+## Local Installation of the GenLayer CLI
+
+The GenLayer CLI is used to set up the GenLayer Studio and, in the future, mainnet and testnet environments.
+
+### Prerequisites
+Ensure you have the following installed and updated:
+<br/>
+<div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, minmax(0, 1fr))', gap: '1rem' }}>
+  <CustomCard
+    arrow
+    title="Docker version 26+"
+    description="Required to run the GenLayer environment"
+    href="https://docs.docker.com/get-docker/"
+    target="_blank"
+  />
+  <CustomCard
+    arrow
+    title="Node.js version 18+"
+    description="Needed for the GenLayer CLI tool"
+    href="https://nodejs.org/en/download/"
+    target="_blank"
+  />
+</div>
+
+### Installation Steps
+
+1. **Install GenLayer CLI**
+
+   Open your terminal and run:
+
+   ```bash
+   npm install -g genlayer
+   ```
+
+2. **Initialize GenLayer Environment**
+
+   Run the following command to set up your development environment:
+
+   ```bash
+   genlayer init
+   ```
+
+   During initialization, you'll be prompted to select your preferred LLM provider(s) and enter any required API keys.
+
+   **Optional Initialization Parameters**
+
+   You can customize the initialization with the following options:
+
+   - `--numValidators <number>`: Specify the number of validators (default is 5)
+   - `--headless`: Run in headless mode without UI (default is false)
+   - `--reset-db`: Reset the database to a clean state (default is false)
+   - `--localnet-version <version>`: Specify the localnet version to use (default is latest stable version)
+
+   Example:
+
+   ```bash
+   genlayer init --numValidators 3 --headless --reset-db --localnet-version v0.32.1
+   ```
+
+## Launching the GenLayer Studio
+
+After initializing the environment, you can start the Studio by running:
+
+```bash
+genlayer up
+```
+
+This command launches the GenLayer Studio using your existing configuration.
+
+**Optional Parameters:**
+- `--reset-validators`: Removes all current validators and creates new ones.
+- `--numValidators <number>`: Specify the number of validators to start.
+- `--headless`: Run in headless mode without UI (default is false)
+- `--reset-db`: Reset the database to a clean state (default is false)
+
+Example:
+
+```bash
+genlayer up --reset-validators --numValidators 3 --headless --reset-db
+```
+
+Once the Studio is running, access it at http://localhost:8080/.
+
+## Writing Intelligent Contracts
+
+Refer to the [Your First Contract](./your-first-contract) page for more information on how to write Intelligent Contracts.
+
+## Deploying and Interacting with Intelligent Contracts
+
+### Deploying the Contract
+
+1. **Load Your Contract**
+<br/>In the GenLayer Studio, navigate to the Contracts section and upload your contract file.
+
+
+3. **Deploy the Contract**
+<br/>Navigate to the Run and Deploy section and click the "Deploy" button. 
+<br/>The Studio will automatically detect constructor parameters. Provide the required values.
+<br/>Upon successful deployment, the contract address will be displayed.
+
+### Interacting with the Contract
+
+1. **Read Methods**
+<br/>View the current state of the contract using Read Methods. These are methods that return data without modifying the state.
+
+2. **Write Methods**
+<br/>Execute Write Methods to interact with your contract. Provide any required input parameters.
+
+3. **Execution Logs**
+<br/>Monitor transactions and validator consensus via the Node Logs at the bottom of the Studio.
+
+4. **Transaction Details**
+<br/>View detailed information about a transaction by clicking on it in the bottom left list of transactions.
+
+## Writing End-to-End Tests with genlayer-project-boilerplate
+
+The [genlayer-project-boilerplate](https://github.com/yeagerai/genlayer-project-boilerplate/) provides a starting point for writing end-to-end (e2e) tests for your Intelligent Contracts.
+
+### Setting Up the Boilerplate
+
+1. **Clone the Repository**
+
+On a location different from the GenLayer Studio, clone the repository:
+```bash
+  git clone https://github.com/yeagerai/genlayer-project-boilerplate.git
+```
+
+2. **Install Dependencies**
+<br/>Navigate to the project directory and install the required packages:
+
+```bash
+  cd genlayer-project-boilerplate/app
+  npm install
+```
+
+3. **Configure Environment**
+<br/>Ensure the GenLayer Studio is running. Update the configuration files if necessary.
+
+### Writing E2E Tests
+
+1. **Create Test Files**
+<br/>In the `test` directory, create test files using your pytest as a testing framework.
+
+2. **Example Test**
+   
+```python
+  import pytest
+  from genlayer import GenLayer, Account
+
+  def test_simple_contract():
+      # Account
+      account_1 = create_new_account()
+
+      # Deploy contract
+      contract_code = open("contracts/my_contract.py", "r").read()
+      contract_address, transaction_response_deploy = deploy_intelligent_contract(
+        account_1,
+        contract_code,
+        "{value = 10}",
+      )
+      
+      # Test initial state
+      initial_value = call_contract_method(
+        contract_address, account_1, "get_value", []
+      )
+      assert initial_value == 10
+      
+      # Test state change
+      send_transaction_response = send_transaction(
+        account_1,
+        contract_address,
+        "set_value",
+        ["20"],
+      )
+      
+      # Test updated state
+      updated_value = call_contract_method(
+        contract_address, account_1, "get_value", []
+      )
+      assert updated_value == 20
+   ```
+
+**Note on Deployment**: For deployment, developers should currently use the GenLayer Studio UI. Deploying through the CLI is not yet supported.
+
+## Building a Frontend dApp with GenLayerJS
+
+You can build a frontend decentralized application (dApp) that interacts with your Intelligent Contract using GenLayerJS, a JavaScript SDK for GenLayer.
+
+You can start by cloning the [genlayer-dapp-boilerplate](https://github.com/yeagerai/genlayer-project-boilerplate/) repository or start from scratch with a new frontend project.
+
+After you have your project ready, continue with the following steps:
+
+### Installing GenLayerJS
+
+```bash
+  npm install genlayer-js
+```
+
+### Connecting to GenLayer
+
+```javascript
+  import { createClient } from 'genlayer-js';
+  const client = createClient(config);
+```
+
+### Interacting with Contracts
+
+1. **Read from a Contract**
+
+```javascript
+  const value = await client.readContract({
+      address: contractAddress,
+      functionName: "get_value",
+      args: [],
+  });
+```
+
+2. **Update Contract State**
+
+```javascript
+  const txHash = await client.writeContract({
+      address: contractAddress,
+      functionName: "set_value",
+      args: [newValue],
+  });
+  const receipt = await client.waitForTransactionReceipt({
+    hash: txHash,
+    status: "FINALIZED",
+  });
+```
+
+### Running the Frontend
+
+Ensure your frontend application is configured to connect to the GenLayer Studio's RPC endpoint (http://localhost:4000/api).
+
+Start your frontend application:
+
+```bash
+  npm run dev
+```

@@ -1,0 +1,82 @@
+# Troubleshooting
+
+If you encounter any issues with the Studio, here are some detailed steps to help you resolve common problems:
+
+## Frontend Not Loading Correctly
+The frontend may not load correctly due to caching issues or an outdated version of the contract stored in your browser.
+
+### Solution
+- **Refresh Frontend:** Simply reload the page in your browser.
+- **Clear Cache:** Clear your browser's cache by clicking on the left of your address bar -> Cookies and site data -> Manage on device site data -> Delete localhost.
+
+import Image from 'next/image'
+ 
+<Image src="/troubleshoot.png" alt="Node Log" width={700} height={700} />
+
+## Port Conflicts
+The Studio may fail to start if some ports required for its operation are already in use by other applications.
+
+**Ports used by the Studio:**
+- **Frontend:** 8080
+- **Ollama:** 11434
+- **JSON-RPC Server:** 4000
+- **GenVM:** 6678 
+- **Postgres:** 5432
+- **Hardhat:** 8545
+- **Webrequest:** 5000, 5001
+
+### Solution
+1. Identify processes using the required ports. Replace `<PORT_NUMBER>` with the specific port number.
+   - **Linux / MacOS:**
+     ```bash copy
+     lsof -i :<PORT_NUMBER>
+     ```
+   - **Windows:**
+     ```cmd copy
+     netstat -aon | find <PORT_NUMBER>
+     ```
+2. Use the following command to kill the process using the port. Replace `<PID>` with the Process ID obtained from the previous step.
+   - **Linux / MacOS:**
+     ```bash copy
+     kill -9 <PID>
+     ```
+   - **Windows:**
+     ```cmd copy
+     taskkill /PID <PID> /F
+     ```
+
+## Docker not Running
+The GenLayer Studio relies on Docker for managing containers and images. If Docker is not running, the Studio cannot function properly.
+
+### Solution
+- Ensure that Docker (or Docker Desktop) is installed on your system. You can check this by running:
+  
+  ```bash copy
+  docker info
+  ```
+- Restart Docker Desktop or the Docker daemon on your system.
+
+## Display Issues
+The code section or other UI elements may not display correctly due to screen size limitations.
+
+### Solution
+- Resize your screen to accommodate the UI elements properly. This will help improve the visibility and layout of the Studio.
+
+## Studio Not Responding or Throwing Errors
+The Studio may become unresponsive or throw errors due to various reasons, such as conflicting processes or corrupted containers.
+
+### Solution
+You can perform a fresh start by stopping and removing all containers, as well as removing all images. 
+
+**Via Command Line:**
+```bash
+docker stop $(docker ps -aq)
+docker rm $(docker ps -aq)
+docker rmi $(docker images -q)
+```
+
+**Via Docker Desktop:**
+1. Open Docker Desktop and go to the **Containers** section.
+3. Select all containers and click **Delete**.
+4. Go to the **Images** section.
+5. Select all images and click **Delete**.

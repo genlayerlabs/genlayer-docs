@@ -1,0 +1,8 @@
+# Glossary
+
+- **Validators:** Participants who stake tokens to earn the right to validate transactions. They are critical in both the initial validation and the subsequent appeals process, if necessary.
+  
+- **Leader Selection:** A process that randomly selects one validator to propose the execution outcome for each transaction, ensuring fairness and reducing potential biases.
+
+- **Appeals Process:** This component allows any network participant to contest the results of a transaction's validation during a designated Finality Window, promoting transparency and accountability.
+

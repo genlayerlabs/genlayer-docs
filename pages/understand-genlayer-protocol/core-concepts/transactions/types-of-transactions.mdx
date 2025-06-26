@@ -1,0 +1,95 @@
+# Types of Transactions
+There are three different types of transactions that users can send in GenLayer. All three types are sent through the same RPC method, but they differ in the data they contain and the actions they perform.
+
+
+## 1. Deploy a Contract
+Deploying a contract involves creating a new Intelligent Contract on the GenLayer network. This transaction initializes the contract's state and assigns it a unique address on the blockchain. The deployment process ensures that the contract code is properly validated and stored, making it ready to be called.
+
+### Example
+```json
+{
+  "consensus_data": {
+    "leader_receipt": {
+      "args": [
+        {
+          "total_supply": 100
+        }
+      ],
+      "class_name": "LlmErc20",
+      "contract_state": "gASVnAAAAAAAAACMF2JhY2tlbmQubm9kZS5nZW52bS5iYXNllIwITGxtRXJjMjCUk5QpgZR9lIwIYmFsYW5jZXOUfZQojCoweEQyNzFjNzRBNzgwODNGMzU3YTlmOGQzMWQ1YWRDNTlCMzk1Y2YxNmKUS2KMKjB4NzkzQWUyQ2ZGMTc0NjJjYzlmOUQ2OGUxOTRiN2I5NDlkMjA4MEVhMpRLAnVzYi4=",
+      ...
+    },
+    "validators": [
+      ...
+    ],
+    ...
+  },
+  "data": {
+    "constructor_args": "{\"total_supply\":100}",
+    "contract_address": "0x5929bB548a2Fd7E9Ea2577DaC9c67A08BbC2F356",
+    "contract_code": "import json\nfrom backend.node.genvm.icontract import IContract\nfrom backend.node.genvm.equivalence_principle import EquivalencePrinciple\n\n\nclass LlmErc20(IContract):\n    def __init__(self, total_supply: int) -> None:\n        self.balances = {}\n        self.balances[contract_runner.from_address] = total_supply\n...",
+  },
+  ...
+}
+```
+## 2. Send Value
+Sending value refers to transferring the native GEN token from one account to another. This is one of the most common types of transactions. Each transfer updates the balance of the involved accounts, and the transaction is recorded on the blockchain to ensure transparency and security.
+
+### Example
+```json
+{
+  "consensus_data": null,
+  "created_at": "2024-10-02T21:21:04.192995+00:00",
+  "data": {},
+  "from_address": "0x0Bd6441CB92a64fA667254BCa1e102468fffB3f3",
+  "gaslimit": 0,
+  "hash": "0x6357ec1e86f003b20964ef3b2e9e072c7c9521f92989b08e04459b871b69de89",
+  "leader_only": false,
+  "nonce": 2,
+  "r": null,
+  "s": null,
+  "status": "FINALIZED",
+  "to_address": "0xf739FDe22E0C0CB6DFD8f3F8D170bFC07329489E",
+  "type": 0,
+  "v": null,
+  "value": 200
+}
+```
+
+## 3. Call Contract Function
+Calling a contract function is the process of invoking a specific method within an existing Intelligent Contract. This could involve anything from querying data stored within the contract to executing more complex operations like transferring tokens or interacting with other contracts. Each function call is a transaction that modifies the contract’s state based on the inputs provided.
+
+### Example
+```json
+{
+  "consensus_data": {
+    "leader_receipt": {
+      "args": [
+        [
+          2,
+          "0x793Ae2CfF17462cc9f9D68e194b7b949d2080Ea2"
+        ]
+      ],
+      "class_name": "LlmErc20",
+      "contract_state": "gASVnAAAAAAAAACMF2JhY2tlbmQubm9kZS5nZW52bS5iYXNllIwITGxtRXJjMjCUk5QpgZR9lIwIYmFsYW5jZXOUfZQojCoweEQyNzFjNzRBNzgwODNGMzU3YTlmOGQzMWQ1YWRDNTlCMzk1Y2YxNmKUS2KMKjB4NzkzQWUyQ2ZGMTc0NjJjYzlmOUQ2OGUxOTRiN2I5NDlkMjA4MEVhMpRLAnVzYi4=",
+      "eq_outputs": {
+        "leader": {
+          "0": "{\"transaction_success\": true, \"transaction_error\": \"\", \"updated_balances\": {\"0xD271c74A78083F357a9f8d31d5adC59B395cf16b\": 98, \"0x793Ae2CfF17462cc9f9D68e194b7b949d2080Ea2\": 2}}"
+        }
+      },
+      ...
+    },
+    "validators": [
+      ...
+    ],
+    ...
+  },
+  "data": {
+    "function_args": "[2,\"0x793Ae2CfF17462cc9f9D68e194b7b949d2080Ea2\"]",
+    "function_name": "transfer"
+  },
+  ...
+}
+```
+
+* For a list of all the fields in a transaction, see [here](/core-concepts/transactions)

@@ -1,0 +1,95 @@
+# LlmHelloWorld Contract
+
+The LlmHelloWorld contract demonstrates a simple example of integrating AI capabilities within an intelligent contract. This contract shows how to use the [comparative equivalence principle](/developers/intelligent-contracts/equivalence-principle#comparative-equivalence-principle) to call an LLM and store the response in the contract state.
+
+```python
+# { "Depends": "py-genlayer:test" }
+
+from genlayer import *
+import typing
+
+
+class LlmHelloWorld(gl.Contract):
+    message: str
+
+    def __init__(self):
+        self.message = ""
+
+    @gl.public.write
+    def set_message(self) -> typing.Any:
+
+        def get_message() -> str:
+            task = "There is no context, I just want you to answer with a string equal to 'yes'"
+            result = gl.exec_prompt(task)
+            print(result)
+            return result
+
+        self.message = gl.eq_principle_strict_eq(get_message)
+
+    @gl.public.view
+    def get_message(self) -> str:       
+        return self.message
+```
+
+## Code Explanation
+
+- **Initialization**: The `LlmHelloWorld` class initializes with an empty string in the `message` variable.
+- **Write Method**: 
+  - `set_message()` uses AI functionality to generate and store a message.
+  - It contains an inner function `get_message()` that prompts an AI model with a simple task.
+  - Uses `gl.eq_principle_strict_eq()` to ensure deterministic AI responses across the network.
+- **Read Method**: 
+  - `get_message()` returns the stored message.
+
+## Key Components
+
+1. **AI Integration**: The contract uses `gl.exec_prompt()` to interact with an AI model.
+2. **Deterministic Execution**: `gl.eq_principle_strict_eq()` ensures that all nodes in the network arrive at the same exact result.
+3. **State Management**: The contract maintains a single string state variable that stores the AI response.
+
+## Deploying the Contract
+
+To deploy the LlmHelloWorld contract:
+
+1. **Deploy the Contract**: No initial parameters are needed for deployment.
+2. The contract will initialize with an empty message.
+
+## Checking the Contract State
+
+After deployment, you can:
+
+- Use `get_message()` to view the currently stored message.
+- Initially, this will return an empty string.
+
+## Executing Transactions
+
+To interact with the deployed contract:
+
+1. Call `set_message()` to trigger the AI interaction.
+2. The function will:
+   - Execute the AI prompt requesting a "yes" response
+   - Store the result using the equivalence principle
+   - Print the result to the logs
+
+## Understanding AI Integration
+
+This contract demonstrates several important concepts:
+
+- **AI Prompting**: Shows how to formulate simple prompts for AI models within smart contracts.
+- **Deterministic AI**: Uses the equivalence principle to ensure all nodes reach consensus on AI outputs.
+- **State Updates**: Demonstrates how AI-generated content can be stored in blockchain state.
+
+## Handling Different Scenarios
+
+- **Initial State**: The message starts empty.
+- **After set_message()**: The message will contain "yes" (the AI's response).
+- **Multiple Calls**: Each call to `set_message()` will update the stored message.
+- **Network Consensus**: All nodes will agree on the same message due to the equivalence principle.
+
+## Important Notes
+
+1. This is a minimal example to demonstrate AI-blockchain integration.
+2. The AI prompt is intentionally simple for demonstration purposes.
+3. The equivalence principle ensures that the AI response is consistent across all network nodes.
+
+You can monitor the contract's behavior through transaction logs, which will show the AI responses and state updates as they occur.

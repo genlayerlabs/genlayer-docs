@@ -1,0 +1,27 @@
+# Slashing in GenLayer
+
+Slashing is a mechanism used in GenLayer to penalize validators who engage in behavior detrimental to the network. This ensures that validators act honestly and effectively, maintaining the integrity of the platform and the Intelligent Contracts executed within it. 
+
+By penalizing undesirable behavior, slashing helps align validators' incentives with those of the network and its users.
+
+## Slashing Process
+
+1. **Violation Detection**: The network identifies a violation, such as missing an execution window.
+
+2. **Slash Calculation**: The amount to be slashed is calculated based on the specific violation and platform rules.
+
+3. **Stake Reduction**: The slashed amount is deducted from the validator's stake.
+
+4. **Finality**: The slashing becomes final after the Finality Window closes, ensuring that the validator's balance is finalized and accounts for any potential appeals.
+
+## When Slashing Occurs
+
+Validators in GenLayer can be slashed for several reasons:
+
+1. **Missing Transaction Execution Window**: Validators are expected to execute transactions within a specified time frame. If a validator misses this window, they are penalized, ensuring that validators remain active and responsive.
+
+2. **Missing Appeal Execution Window**: During the appeals process, validators must respond within a set time frame. If they fail to do so, they are slashed, which motivates validators to participate in the appeals process.
+
+### Amount Slashed
+
+The amount slashed varies based on the severity of the violation and the specific rules set by the GenLayer platform. The slashing amount is designed to be substantial enough to deter malicious or negligent behavior while not being excessively punitive for honest mistakes.

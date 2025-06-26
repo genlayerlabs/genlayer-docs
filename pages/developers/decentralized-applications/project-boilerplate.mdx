@@ -1,0 +1,156 @@
+import { Callout } from 'nextra-theme-docs'
+
+# GenLayer Project Boilerplate
+
+The GenLayer Project Boilerplate is a template for building decentralized applications (DApps) on GenLayer. This boilerplate includes a complete example implementation of a football prediction market, demonstrating best practices and common patterns for GenLayer development.
+
+<Callout type="info">
+    This boilerplate is a work in progress and is not yet ready for production use. You can find the latest version at: [GenLayer Project Boilerplate](https://github.com/yeagerai/genlayer-project-boilerplate)
+</Callout>
+
+
+## Features
+
+- **Contract Templates**: Ready-to-use intelligent contract templates and examples
+- **Testing Framework**: Built-in testing infrastructure for end-to-end testing
+- **Frontend Integration**: Vue.js-based frontend setup with GenLayerJS integration
+- **Environment Configuration**: Pre-configured environment setup for development
+- **Example Implementation**: Full football prediction market implementation
+
+## How it's Built
+
+The boilerplate project is structured to provide a development environment for GenLayer applications, combining both backend contract development and frontend user interface.
+
+### Technologies Used
+
+- **Python**: For intelligent contract development and testing
+- **Vue.js**: Frontend framework for building user interfaces
+- **GenLayerJS**: SDK for interacting with GenLayer contracts
+- **pytest**: Testing framework for contract validation
+- **Vite**: Frontend build tool and development server
+
+### Project Structure
+
+```
+project-root/
+├── app/                 # Frontend application
+│   ├── src/             # Vue.js source files
+│   └── .env.example     # Frontend environment variables template
+├── contracts/           # Intelligent Contracts
+│   └── football_prediction_market.py
+├── test/                # Test files
+└── .env.example         # Main environment variables template
+```
+
+## Requirements
+
+Before using the GenLayer Project Boilerplate, ensure your system meets the following requirements:
+
+- **GenLayer Studio**: Running instance required
+- **Node.js**: Version 18.x or higher
+- **Python**: Version 3.8 or higher
+
+### Installation
+
+1. Clone the boilerplate repository:
+```bash
+git clone https://github.com/yeagerai/genlayer-project-boilerplate
+cd genlayer-project-boilerplate
+```
+
+2. Set up the environment:
+```bash
+cp .env.example .env
+```
+
+## Usage
+
+### Deploying Contracts
+
+1. Access the GenLayer Simulator UI (default: http://localhost:8080)
+2. Navigate to "Contracts" section
+3. Create a new contract using `/contracts/football_prediction_market.py`
+4. Deploy through the "Run and Debug" interface
+
+### Frontend Setup
+
+1. Configure the frontend environment:
+```bash
+cd app
+cp .env.example .env
+# Add your contract address to VITE_CONTRACT_ADDRESS
+```
+
+2. Install dependencies and start the development server:
+```bash
+npm install
+npm run dev
+```
+
+### Running Tests
+
+Execute the test suite using pytest:
+```bash
+pip install -r requirements.txt
+pytest test
+```
+
+## Football Prediction Market Example
+
+The included example contract demonstrates a complete prediction market implementation with the following features:
+
+### Contract Functions
+
+#### Create Predictions:
+  ```python
+  create_prediction(game_date: str, team1: str, team2: str, predicted_winner: str)
+  ```
+
+#### Resolve Predictions:
+  ```python
+  resolve_prediction(prediction_id: str)
+  ```
+
+#### Query Data:
+  ```python
+  get_player_predictions(player_address: str)
+  get_player_points(player_address: str)
+  ```
+
+### Frontend Integration
+
+The Vue.js frontend demonstrates:
+- Wallet connection handling
+- Contract interaction using GenLayerJS
+- User interface for prediction creation and management
+- Real-time updates for prediction status
+
+## Testing Framework
+
+The boilerplate includes a comprehensive testing suite covering the following scenarios:
+
+### Contract Schema
+The schema of the contract is well generated and has the expected methods and variables.
+
+### Test Scenarios
+
+#### Successful Draw Prediction
+Tests the scenario where a player correctly predicts a draw between two teams. When the match is resolved as a draw, the player should receive 1 point for their accurate prediction.
+
+#### Successful Winner Prediction
+Validates the case where a player correctly predicts the winning team. Upon match resolution confirming their predicted team as the winner, the player should be awarded 1 point.
+
+#### Unsuccessful Prediction
+Covers the scenario where a player's prediction doesn't match the actual result. This could be:
+- Predicting Team A wins, but Team B wins
+- Predicting a draw, but there's a winner
+- Predicting a winner, but the match ends in a draw
+In all these cases, the player should receive 0 points.
+
+## Best Practices
+
+- Always use environment variables for configuration
+- Implement comprehensive testing for all contract functions
+- Follow the provided folder structure for consistency
+- Use TypeScript for frontend development
+- Implement proper error handling in both contract and frontend code

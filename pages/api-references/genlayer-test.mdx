@@ -1,0 +1,377 @@
+# GenLayer Testing Suite Reference
+
+This document describes the key components and methods available in the GenLayer Test SDK for testing Intelligent Contracts.
+
+For comprehensive test examples and implementation patterns, see our [Test Suite Examples](https://github.com/yeagerai/genlayer-testing-suite/tree/main/tests/examples).
+
+## Installation
+
+```bash
+pip install genlayer-test
+```
+
+## General
+
+### create_account
+
+Creates a new account for testing purposes.
+
+```python
+from gltest import create_account
+
+account = create_account()
+```
+
+**Parameters:** None
+
+**Returns:** A new account object
+
+### default_account
+
+The default account used to execute transactions when no account is specified.
+
+```python
+from gltest import default_account
+```
+
+**Returns:** The default account object
+
+### accounts
+
+A collection of pre-created accounts available for testing. By design, the first account is the default account.
+
+```python
+from gltest import accounts, default_account
+
+assert default_account == accounts[0]
+
+other_account = accounts[1]  # Get a different account
+assert default_account != other_account
+```
+
+## Contract Interaction
+
+For the following code examples, we'll use a Storage Intelligent Contract as a reference:
+
+```python
+# { "Depends": "py-genlayer:test" }
+
+from genlayer import *
+
+class Storage(gl.Contract):
+    # State variable to store data
+    storage: str
+
+    # Constructor - initializes the contract state
+    def __init__(self, initial_storage: str):
+        self.storage = initial_storage
+
+    # Read method - marked with @gl.public.view decorator
+    @gl.public.view
+    def get_storage(self) -> str:
+        return self.storage
+
+    # Write method - marked with @gl.public.write decorator
+    @gl.public.write
+    def update_storage(self, new_storage: str) -> None:
+        self.storage = new_storage
+```
+
+### Contract Factory
+
+The Contract Factory is used to deploy and build Contract objects that can interact with Intelligent Contract methods.
+
+#### get_contract_factory
+
+Retrieves a contract factory for a specific contract.
+
+```python
+from gltest import get_contract_factory
+
+def test_get_factory():
+    factory = get_contract_factory('Storage')
+```
+
+**Parameters:**
+- `contract_name`: The name of the contract class to instantiate
+
+**Returns:** A Contract Factory instance
+
+#### deploy
+
+Deploys a new contract instance and returns a Contract object.
+
+```python
+from gltest import get_contract_factory, create_account
+
+def test_deploy_contract():
+    factory = get_contract_factory('Storage')
+    
+    custom_account = create_account()
+    contract = factory.deploy(
+        args=["initial_value"],  # Constructor arguments
+        account=custom_account,  # Account to deploy from
+        consensus_max_rotations=3,  # Optional: max consensus rotations
+        leader_only=False,  # Optional: whether to run only on leader
+    )
+```
+
+**Parameters:**
+- `args`: Contract constructor arguments
+- `account`: (Optional) Account to use for deployment
+- `consensus_max_rotations`: (Optional) Maximum number of consensus rotations
+- `leader_only`: (Optional) Whether to run only on leader node
+- `wait_interval`: (Optional) Wait interval in milliseconds for transaction status
+- `wait_retries`: (Optional) Number of retries for transaction status
+- `wait_transaction_status`: (Optional) Desired transaction status
+
+**Returns:** A Contract object
+
+#### build_contract
+
+Builds a Contract object from an existing deployed contract.
+
+```python
+from gltest import get_contract_factory, create_account
+
+def test_build_contract():
+    factory = get_contract_factory('Storage')
+    
+    custom_account = create_account()
+    contract = factory.build_contract(
+        contract_address="0xabcd...z",
+        account=custom_account  # Optional: use this for subsequent transaction calls
+    )
+```
+
+**Parameters:**
+- `contract_address`: The address of the deployed contract
+- `account`: (Optional) Account to use for contract interactions
+
+**Returns:** A Contract object
+
+### Contract Methods
+
+#### read methods
+
+Calls read-only methods on the contract.
+
+```python
+from gltest import get_contract_factory
+
+def test_read_methods():
+    factory = get_contract_factory('Storage')
+    contract = factory.deploy(args=["initial_value"])
+
+    # Call a read-only method
+    result = contract.get_storage(args=[])
+
+    assert result == "initial_value"
+```
+
+**Parameters:**
+- `args`: Method arguments
+
+**Returns:** The result of the contract read call
+
+#### write methods
+
+Calls state-modifying methods on the contract.
+
+```python
+from gltest import get_contract_factory
+from gltest.assertions import tx_execution_succeeded
+
+def test_write_methods():
+    factory = get_contract_factory("Storage")
+    contract = factory.deploy(args=["initial_value"])
+    
+    # Call a write method with arguments
+    tx_receipt = contract.update_storage(
+        args=["new_value"],  # Method arguments
+    )
+    
+    # Verify the transaction was successful
+    assert tx_execution_succeeded(tx_receipt)
+    
+    # Verify the value was updated
+    assert contract.get_storage() == "new_value"
+```
+
+**Parameters:**
+- `args`: Method arguments
+- `value`: (Optional) Amount of native token to send with the transaction
+- `consensus_max_rotations`: (Optional) Maximum number of consensus rotations
+- `leader_only`: (Optional) Whether to run only on leader node
+- `wait_interval`: (Optional) Wait interval in milliseconds for transaction status
+- `wait_retries`: (Optional) Number of retries for transaction status
+- `wait_transaction_status`: (Optional) Desired transaction status
+- `wait_triggered_transactions`: (Optional) Whether to wait for triggered transactions
+- `wait_triggered_transactions_status`: (Optional) Desired triggered transaction status
+
+**Returns:** The transaction receipt
+
+#### connect
+
+Creates a new contract instance that uses a different account for transactions.
+
+```python
+from gltest import create_account
+
+other_account = create_account()
+contract_with_other_account = contract.connect(other_account)
+```
+
+**Parameters:**
+- `account`: Account to use for contract interactions
+
+**Returns:** A new Contract instance using the specified account
+
+## Helpers
+
+### load_fixture
+
+Runs a fixture function and returns its value at the same state in every test. `load_fixture` sets up the state on its first call and returns to that state in subsequent tests. This is particularly useful for setting up test environments that need to be in a consistent state across multiple tests.
+
+**Environment Behavior:**
+- **Local Studio:** The fixture's state is preserved between test runs, allowing for consistent test environments.
+- **Hosted Studio:** When using `https://studio.genlayer.com/api`, the fixture executes independently for each test run without state preservation.
+
+```python
+from gltest import get_contract_factory
+from gltest.helpers import load_fixture
+from gltest.assertions import tx_execution_succeeded
+
+# Define a fixture that deploys a contract
+def deploy_contract():
+    factory = get_contract_factory("Storage")
+    contract = factory.deploy(args=["initial_value"])
+    return contract
+
+# Test A: Verify initial state
+def test_initial_state():
+    # Load the fixture - will deploy contract on first run
+    storage_contract = load_fixture(deploy_contract)
+    
+    # Verify initial state
+    current_storage = storage_contract.get_storage(args=[])
+    assert current_storage == "initial_value"
+
+# Test B: Verify state persistence and updates
+def test_state_updates():
+    # Load the same fixture - will reuse deployed contract
+    storage_contract = load_fixture(deploy_contract)
+
+    # Verify initial state is preserved
+    current_storage = storage_contract.get_storage(args=[])
+    assert current_storage == "initial_value"
+
+    # Update the storage
+    update_result = storage_contract.update_storage(
+        args=["new_value"]
+    )
+    
+    # Verify the update was successful
+    assert tx_execution_succeeded(update_result)
+    assert storage_contract.get_storage() == "new_value"
+```
+
+**Parameters:**
+- `fixture`: A callable (function) that sets up the test environment and returns a value
+
+**Returns:** The result of the fixture execution. In local studio environment, this will be the same value across all test runs. In the hosted studio environment, it will be a new value for each call.
+
+**Notes:**
+- Fixtures should be functions with no arguments
+- The fixture's return value is what gets cached and reused
+- State changes made to the fixture's return value will persist between tests in local development
+
+
+## Assertions
+
+Assertions are utility functions to verify the outcome of contract transactions in your tests.
+
+### tx_execution_succeeded
+
+Asserts that a transaction executed successfully.
+
+```python
+from gltest.assertions import tx_execution_succeeded
+
+assert tx_execution_succeeded(tx_receipt)
+```
+
+**Parameters:**
+- `transaction_receipt`: The transaction receipt object to check
+
+**Returns:** `True` if the transaction succeeded, otherwise `False`
+
+### tx_execution_failed
+
+Asserts that a transaction execution failed.
+
+```python
+from gltest.assertions import tx_execution_failed
+
+assert tx_execution_failed(tx_receipt)
+```
+
+**Parameters:**
+- `transaction_receipt`: The transaction receipt object to check
+
+**Returns:** `True` if the transaction failed, otherwise `False`
+
+## Running Tests
+
+The GenLayer Test SDK provides a command-line interface for executing tests with various configurations.
+
+### Basic Usage
+
+Run all tests in the current directory:
+```bash
+gltest
+```
+
+Run a specific test file:
+```bash
+gltest tests/test_mycontract.py
+```
+
+### Test Execution Control
+
+Filter tests by markers:
+```bash
+gltest -m "integration"  # Run only tests marked as integration
+```
+
+Control test output verbosity:
+```bash
+gltest -v              # Enable verbose output
+gltest -vv             # Enable more verbose output
+```
+
+### Configuration Options
+
+Specify a custom contracts directory (default: `contracts/`):
+```bash
+gltest --contracts-dir <path_to_contracts>
+```
+
+Set a custom RPC endpoint:
+```bash
+gltest --rpc-url <custom_rpc_url>
+```
+
+Configure transaction receipt polling:
+```bash
+# Set the polling interval in milliseconds
+gltest --default-wait-interval <milliseconds>
+
+# Set the maximum number of polling attempts
+gltest --default-wait-retries <number_of_retries>
+```
+
+**Note:** All configuration options can be combined. For example:
+```bash
+gltest -v --rpc-url https://studio.genlayer.com/api --default-wait-interval 1000
+```

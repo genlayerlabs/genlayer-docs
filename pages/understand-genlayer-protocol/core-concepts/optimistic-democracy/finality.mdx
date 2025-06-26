@@ -1,0 +1,46 @@
+# Finality
+
+Finality refers to the state in which a transaction is considered settled and unchangeable. In GenLayer, once a transaction achieves finality, it cannot be appealed or altered, providing certainty to all participants in the system. This is particularly important for applications that rely on accurate and definitive outcomes, such as financial contracts or decentralized autonomous organizations (DAOs).
+
+## Finality Window
+
+The Finality Window is a time frame during which a transaction can be challenged or appealed before it becomes final. This window serves several purposes:
+
+1. **Appeals**: During the Finality Window, any participant can appeal a transaction if they believe the validation was incorrect. This allows for a process of checks and balances, ensuring that non-deterministic transactions are evaluated properly.
+
+2. **Re-computation**: If a transaction is appealed, the system can re-evaluate the transaction with a new set of validators. The Finality Window provides the time necessary for this process to occur.
+
+3. **Security**: The window also acts as a security feature, allowing the network to correct potential errors or malicious activity before finalizing a transaction.
+
+import Image from 'next/image'
+
+<Image src="/final.png" width={1000} height={1000} />
+
+## Deterministic vs. Non-Deterministic Transactions
+
+In GenLayer, Intelligent Contracts are classified as either deterministic or non-deterministic.
+
+### Deterministic Contracts
+These contracts have a shorter Finality Window because their validation process is straightforward and not subject to appeals. However, it is essential that all interactions with the contract remain deterministic to maintain this efficiency.
+
+### Non-Deterministic Contracts
+Non-deterministic contracts involve Large Language Model (LLM) calls or web data retrieval, which introduce variability in their outcomes. These contracts require a longer Finality Window to account for potential appeals and re-computation. 
+
+import { Callout } from 'nextra-theme-docs'
+
+<Callout type="info">
+  If a specific transaction within the contract is deterministic but interacts with a non-deterministic part of the contract, it will be treated as non-deterministic. This ensures that any appeals or re-computations of previous transactions are handled consistently, maintaining the integrity of the contract's overall state.
+</Callout>
+
+
+## Fast Finality
+
+For scenarios requiring immediate finality, such as emergency decisions in a DAO, it is possible to pay for all validators to validate the transaction immediately. This approach, though more costly, allows for fast finality, bypassing the typical Finality Window.
+
+<Callout>
+  Fast finality only works if there are no previous non-deterministic transactions still within their Finality Window. Even if your transaction is considered final, if a previous transaction is reverted, your transaction will have to be recomputed as it might depend on the same state.
+</Callout>
+
+## Appealability and Gas
+
+When submitting a transaction, users can include additional gas to cover potential appeals. If a transaction lacks sufficient gas for appeals, third parties can supply additional gas during the Finality Window. Developers of Intelligent Contracts can also set minimum gas requirements for appealability, ensuring that critical transactions have adequate coverage.

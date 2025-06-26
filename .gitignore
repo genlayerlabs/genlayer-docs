@@ -1,0 +1,8 @@
+.DS_Store
+.next
+node_modules
+pnpm-lock.yaml
+public/full-documentation.txt
+.specstory/
+# SpecStory explanation file
+.specstory/.what-is-this.md

@@ -1,0 +1,408 @@
+import { Callout } from "nextra-theme-docs";
+
+# Setting Up Your GenLayer Validator
+
+Running a GenLayer Validator node ensures the security and reliability of the GenLayer network. Below are the requirements for running a GenLayer validator.
+
+## Dependencies
+
+### LLM Access
+
+Each validator needs access to a Large Language Model (LLM) for executing and evaluating Intelligent Contracts.
+
+It is up to each validator to select the model they want to use.
+
+Possible options:
+
+- Run an open-source model locally on the same machine with a GPU
+- Run an open-source model on a different machine
+- Connect to a hosted inference provider (OpenAI, Anthropic, Heurist, Atoma network etc.)
+
+### ZKSync Full Node for the GenLayer Chain
+
+Each validator needs access to a [ZKSync Full Node](https://docs.zksync.io/zksync-era/tooling/external-node) connected to the GenLayer chain. Validators use this node to read the chain state and submit transactions.
+
+One full node can be shared between multiple validators. The optimal validator-to-node ratio is currently under evaluation.
+
+## System Requirements
+
+Below are the **initial** recommended system requirements. These guidelines may change as the network grows and evolves.
+
+### RAM
+
+- **Recommended:** 16 GB
+- **Why:**
+  - GenLayer's _genvm_ can spawn multiple Sub-VMs for contract calls and non-deterministic blocks.
+  - Each Sub-VM can consume up to ~4 GB of RAM for storage.
+
+### CPU
+
+- **Recommended:** Modern multi-core processor with at least 8 cores/16 threads
+
+#### Architecture
+
+- **Recommended:** `AMD64`
+- `ARM64` is not supported at this time
+
+### Storage
+
+- **Recommended Disk Space:** 128 GB+
+- **Preferred Type:** SSD or NVMe (M.2)
+
+### Network
+
+- 100 Mbps connection
+- **Recommended:**: 1 Gbps+
+
+### GPU (Optional)
+
+- GPU is **Not Required**
+- If you want to run LLMs locally, you will need to select appropriate hardware (typically a CUDA-compatible GPU with sufficient VRAM for the model you intend to use)
+
+<Callout emoji="⚠️">
+  These requirements are a starting point. As GenLayer evolves and usage
+  patterns change (e.g., more complex AI-driven Intelligent Contracts), the
+  recommended hardware may change.
+</Callout>
+
+### Software
+
+- Operating System - 64-bit Linux (Ubuntu, Debian, CentOS, etc.)
+- `docker` - for running the WebDriver container
+
+## Setup
+
+### Download the node software
+
+1. Select the version of the node you want to run by checking the available builds
+
+   You can use this command to list available versions:
+
+   ```sh
+   curl -s "https://storage.googleapis.com/storage/v1/b/gh-af/o?prefix=genlayer-node/bin/amd64" | grep -o '"name": *"[^"]*"' | sed -n 's/.*\/\(v[^/]*\)\/.*/\1/p' | sort -ru
+   ```
+
+   You should see a list like this
+
+   ```sh
+      v0.3.2
+      v0.3.1
+      v0.3.0
+      v0.2.0-testnet007
+      v0.2.0-testnet006
+      v0.2.0-testnet005
+      v0.2.0-testnet004
+      v0.2.0-testnet003
+      v0.2.0-testnet002
+      v0.2.0-testnet001
+      v0.1.0-testnet008
+      v0.1.0-testnet007
+      v0.1.0-testnet006
+      v0.1.0-testnet005
+      v0.1.0-testnet004
+      v0.1.0-testnet003
+      v0.1.0-testnet002
+      v0.0.0-test019
+      v0.0.0-test018
+   ```
+
+   Typically you will want to run the latest version
+
+1. Download the packaged application
+   ```sh
+   export version=v0.3.2 # set your desired version here
+   wget https://storage.googleapis.com/gh-af/genlayer-node/bin/amd64/${version}/genlayer-node-linux-amd64-${version}.tar.gz
+   ```
+1. Extract the node software
+   ```sh
+   tar -xzvf genlayer-node-linux-amd64-${version}.tar.gz
+   ```
+1. Change the directory
+
+   ```sh
+   cd genlayer-node-linux-amd64
+   ```
+
+## Configuration
+
+Before you can start up the node, you need to configure it.
+
+### `config.yaml`
+
+This is the main configuration file of your node. Without it, your node won't start
+
+The file needs to be located at `configs/node/config.yaml`
+
+You can use the following example configuration. **Note:** For most users, you will only need to modify the `zksyncurl` and `zksyncwebsocketurl` values below.
+
+```yaml
+rollup:
+  zksyncurl: "TODO: Set your GenLayer Chain ZKSync HTTP RPC URL here" # ZKSync RPC URL
+  zksyncwebsocketurl: "TODO: Set your GenLayer Chain ZKSync WebSocket RPC URL here" # ZKSync WebSocket URL
+consensus:
+  contractmanageraddress: "0x12290919253844d3400432Aebb5d0706D0f5865f" # ConsensusManager Smart Contract Address
+  contractmainaddress: "0x174782d5819dD26F3d6967c995EE43db7DB824F8" # ConsensusMain Smart Contract Address
+  contractdataaddress: "0x88B0F18613Db92Bf970FfE264E02496e20a74D16" # ConsensusData Smart Contract Address
+  contractidlenessaddress: "0x2C0F0B98F52EB358410A825f68302653EAb5cc5B" # ConsensusIdleness Smart Contract Address
+datadir: "./data/node" # Cache directory
+logging:
+  level: "INFO"
+  # json: `true` for json output to console, false for human readable log formatting
+  json: false
+  # Configuration for https://github.com/natefinch/lumberjack
+  file:
+    # enabled: set to `true` to save logs to a folder
+    enabled: true
+    level: "DEBUG"
+    # folder: path to the folder where to store logs. Relative paths go under `datadir`.
+    folder: logs
+    # maxsize: maximum size in megabytes of the log file before it gets rotated. It defaults to 100 megabytes.
+    maxsize: 500
+    # maxage: maximum number of days to retain old log files based on the timestamp encoded in their filename.
+    maxage: 7
+    # maxbackups: maximum number of old log files to retain. Set to 0 for no limit
+    maxbackups: 10
+    # localtime: determines if the time used for formatting the timestamps in backup files is the computer's local time. Set to `false` to use UTC time.
+    localtime: false
+    # compress: determines if the rotated log files should be compressed using gzip
+    compress: true
+node:
+  mode: "validator" # "validator" or "archive"
+  rpc:
+    port: 9151 # JSON RPC port
+    endpoints:
+      groups:
+        ethereum: true # Enable Ethereum RPC endpoints
+        debug: false # Enable debug endpoints
+      methods: # Enabled `eth_` methods
+        eth_blockNumber: true
+        eth_getBlockByNumber: true
+        eth_getBlockByHash: true
+        eth_sendRawTransaction: false
+  ops:
+    port: 9153 # Metrics port
+    endpoints:
+      metrics: true # Enable metrics endpoint
+      health: true # Enable health endpoint
+  dev: # Configuration for development purposes
+    disableSubscription: false # Disable subscription
+
+genvm:
+  bin_dir: ./third_party/genvm/bin
+  manage_modules: true
+
+# Advanced configuration
+merkleforest:
+  maxdepth: 16
+  dbpath: "./data/node/merkle/forest/data.db"
+  indexdbpath: "./data/node/merkle/index.db"
+merkletree:
+  maxdepth: 16
+  dbpath: "./data/node/merkle/tree/"
+```
+
+### GenVM Configuration
+
+You need to set up an LLM for your node to use to provide answers to natural language prompts. You can use any LLM you wish, however the quality of its answers will affect the performance of your node.
+
+<Callout>
+  GenLayer has partnered with multiple LLM providers to offer free credits for validators:
+
+  **[Heurist](https://www.heurist.ai/)** - A Layer 2 network for AI model hosting and inference, built on the ZK Stack. It offers serverless access to open-source AI models through a decentralized network. GenLayer Validators can obtain free [Heurist API credits](https://dev-api-form.heurist.ai) by using the referral code: _"genlayer"_.
+
+  **[Comput3](https://genlayer.comput3.ai/)** - A decentralized compute network providing access to various AI models. GenLayer Validators can use the Comput3.ai inferencing API with access to llama3, hermes3 and qwen3 models. Validators can obtain free [Comput3 API credits](https://genlayer.comput3.ai/) to get started with their validator setup.
+</Callout>
+
+The GenVM configuration files are located at `third_party/genvm/config/`
+
+#### `genvm-module-llm.yaml`
+
+This is the configuration file of the LLM module. In this file you can set up and configure various LLM providers, as well as the system prompts of your validator.
+
+You can turn on and off various LLMs by setting the `enabled` field to `false`.
+
+At this stage, select one LLM and set all other to disabled.
+
+Note environment variable names for LLM API keys (e.g., `HEURISTKEY`, `COMPUT3KEY`). You will need to ensure the appropriate key is correctly set before [running the node](#running-the-node).
+
+#### `genvm-module-web.yaml`
+
+This is the configuration of webdriver module that enables the GenVM to access the internet. You should not need to modify this.
+
+#### `genvm.yaml`
+
+This is the configuration of the GenVM itself, such as how many threads it can use and what are the addresses of various modules. You should not need to edit this file either.
+
+2. Run precompilation of pre-delivered wasm modules (this step is optional but is **highly** recommended for improved performance)
+   ```bash
+   ./third_party/genvm/bin/genvm precompile
+   ```
+   Precompilation should be re-run after switching to a different node release
+
+#### Greyboxing LLMs
+
+Greyboxing is a way to further customise your LLM setup to improve its performance as well as security.
+
+<Callout type="info" emoji="💡">
+  Greyboxing is an advanced feature. Familiarity with Lua scripting and LLM
+  prompt engineering is recommended for customization.
+</Callout>
+
+`genvm-modules llm` provides user with ability to customize [greyboxing](/_temp/security-and-best-practices/grey-boxing) via lua scripting. Right now users can customize prompt templates, specify temperature and system prompt.
+
+Related scripts are located at:
+
+1. `./scripts/genvm-greyboxing.lua` – user defined script
+2. `./share/lib/genvm/greyboxing/lib-greyboxing.lua` – more low-level library
+
+<Callout emoji="🏗️">
+  More features and built-in filters will be added soon
+</Callout>
+
+### Set Up The Validator Key
+
+In this step we'll generate your validator key and address.
+
+    ```sh
+    ./bin/genlayernode account new -c $(pwd)/configs/node/config.yaml --setup --password "your secret password" # Remember it! You will need it to unlock your account when running the node
+    ```
+
+    You should see the following output:
+
+    ```sh
+    Account created:
+      New address: 0xA0b12Fd2f3F7e86fEC458D114A5E7a6f571160a8
+      Account setup as a validator
+    ```
+
+<Callout type="info">
+  Currently the GenLayer Testnet is permissioned. You can apply to be selected
+  [by filling out the following
+  form](https://docs.google.com/forms/d/e/1FAIpQLSc7YujY6S6knB9XC8kL-2wsgNHrweqULstgc-OOMERlRsfg0A/viewform)
+</Callout>
+
+### Backing Up Your Validator Key
+
+After generating your validator key, it is critical to back it up securely.
+
+You can export your key using the following command:
+
+```sh
+./bin/genlayernode account export \
+--password "your node password" \
+--address "your validator address" \
+--passphrase "your backup encryption passphrase" \
+--path "/path/to/your/secure/backup.key" \
+-c $(pwd)/configs/node/config.yaml
+```
+
+<Callout type="warning" emoji="🚨">
+  **Important: Back up your validator key!** Losing access to this key means
+  losing control of your validator and any associated rewards. Store the backup
+  securely. Remember both the node password (used during setup) and the backup
+  encryption passphrase.
+</Callout>
+
+To print (display) the private key from your exported backup file, you can use the `--print` flag
+with the account export command. This will output the private key in plain text to your terminal.
+**Keep this private key secure and never share it.** You can use this private key to set up any other
+EVM-compatible wallet such as MetaMask.
+
+### Importing (Restoring) Your Validator Key
+
+If you need to restore your validator key from a backup (for example, after migrating to a new server or recovering from data loss), you can import it using the following command:
+
+```sh
+./bin/genlayernode account import \
+  --password "your node password" \
+  --passphrase "your backup encryption passphrase" \
+  --path "/path/to/your/secure/backup.key" \
+  -c $(pwd)/configs/node/config.yaml \
+  --setup
+```
+
+You should see the following output:
+
+```sh
+  Account imported:
+    Address: 0xA0b12Fd2f3F7e86fEC458D114A5E7a6f571160a8
+    Account setup as a validator
+```
+
+- The validator key will be imported and available for use by your node.
+
+- You can now start your node as usual.
+
+<Callout type="warning" emoji="🚨">
+  Important: Always verify that your imported key works by checking your
+  validator address.
+</Callout>
+
+## Checking Your Configuration
+
+To ensure your node is correctly configured, you can run the following command:
+
+```sh
+./bin/genlayernode doctor -c $(pwd)/configs/node/config.yaml
+```
+
+## Running the node
+
+    Once you have configured everything, you are ready to start the node.
+
+1.  Set the LLM Provider API Key
+
+    Set the appropriate environment variable for your chosen LLM provider:
+
+    ```sh
+    # For Heurist
+    export HEURISTKEY='your_heurist_api_key'
+    
+    # For Comput3
+    export COMPUT3KEY='your_comput3_api_key'
+    
+    # For other providers, use the appropriate environment variable name
+    ```
+
+2.  Run the WebDriver container
+
+    ```sh
+    docker compose up -d # Starts the WebDriver needed by the GenVM web module
+    ```
+
+3.  (Optional) Run two services (modules) in background (this is a crucial step for running _Intelligent_ contracts). This can be done automatically or manually.
+    - To start them automatically in node configuration set `genvm.manage_modules` to `true`
+    - To start them manually run
+      ```bash
+       ./third_party/genvm/bin/genvm-modules web & ./third_party/genvm/bin/genvm-modules llm &
+      ```
+
+<Callout type="info">
+  Note: If you are using the default configuration, `genvm.manage_modules` is
+  set to `true` by default, meaning the node will manage these modules
+  automatically.
+</Callout>
+
+4.  Run the node
+
+    ```sh
+    ./bin/genlayernode run -c $(pwd)/configs/node/config.yaml --password "your secret password" # The same password you used when creating the account
+    ```
+
+<Callout type="info">
+  If you are running the node via SSH, the process might terminate if your
+  connection drops. To prevent this, consider using a terminal multiplexer like
+  `screen` or `tmux` to keep the node running in the background even if your SSH
+  session ends. You can find a guide on using `screen`
+  [here](https://www.networkworld.com/article/967925/how-the-linux-screen-tool-can-save-your-tasks-and-your-sanity-if-ssh-is-interrupted.html).
+</Callout>
+
+# Common Issues
+
+## Node exits with exit code 1 without any error messages
+
+Try running the node with
+
+```sh
+NODE_STARTUP_LOG_LEVEL=DEBUG ./bin/genlayernode run ...
+```

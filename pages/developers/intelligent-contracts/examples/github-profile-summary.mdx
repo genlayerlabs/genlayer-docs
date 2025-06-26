@@ -1,0 +1,128 @@
+# GitHubProfilesSummaries Contract
+
+The GitHubProfilesSummaries contract demonstrates how to fetch GitHub profile data and generate AI-powered summaries of user profiles. This contract shows how to combine web scraping with AI analysis using both [comparative](/developers/intelligent-contracts/equivalence-principle#comparative-equivalence-principle) and [non-comparative](/developers/intelligent-contracts/equivalence-principle#non-comparative-equivalence-principle) equivalence principles.
+
+```python
+# { "Depends": "py-genlayer:test" }
+
+from genlayer import *
+import typing
+import re
+
+class GitHubProfilesSummaries(gl.Contract):
+    github_profiles: TreeMap[str, str]
+
+    def __init__(self):
+        pass
+
+    @gl.public.write
+    def store_github_profile_summary(self, github_handle: str) -> typing.Any:
+        current_profile_summary = self.github_profiles.get(github_handle, None)
+
+        if not current_profile_summary is None:
+            raise Exception("profile summary already generated")
+
+        github_profile_url = "https://github.com/"+github_handle
+
+        def fetch_github_profile_summaries() -> str:
+            return gl.get_webpage(github_profile_url, mode="text")
+
+        profile_content = gl.eq_principle_strict_eq(fetch_github_profile_summaries)
+    
+        task = """Given the web page content of a github profile in HTML format, generate a comprehensive
+summary of the profile mentioning the key meta attributes and the GitHub contribution most important metrics"""
+
+        criteria = """The summary provided should include different metrics and a summary of a GitHub profile"""
+
+        profile_summary = (
+            gl.eq_principle_prompt_non_comparative(
+                lambda: profile_content,
+                task=task,
+                criteria=criteria,
+            )
+        )
+        self.github_profiles[github_handle] = profile_summary
+
+    @gl.public.view
+    def show_github_profile_summaries(self) -> str:       
+        return {profile: summary for profile, summary in self.github_profiles.items()}
+```
+
+## Code Explanation
+
+- **Initialization**: The `GitHubProfilesSummaries` class initializes with an empty TreeMap to store GitHub handles and their corresponding summaries.
+- **Write Method**: 
+  - `store_github_profile_summary(github_handle)` generates an AI summary of a GitHub profile.
+  - Checks if a summary already exists for the handle.
+  - Uses both strict and non-comparative equivalence principles for different parts of the process.
+- **Read Method**: 
+  - `show_github_profile_summaries()` returns a dictionary mapping GitHub handles to their summaries.
+
+## Key Components
+
+1. **Data Storage**: Uses `TreeMap` for efficient key-value storage of profile summaries.
+2. **Web Fetching**: Uses `gl.get_webpage()` with strict equivalence for deterministic content retrieval.
+3. **AI Analysis**: Uses non-comparative equivalence for generating profile summaries.
+4. **Duplicate Prevention**: Includes checks to prevent regenerating existing summaries.
+
+## Deploying the Contract
+
+To deploy the GitHubProfilesSummaries contract:
+
+1. **Deploy the Contract**: No initial parameters are needed for deployment.
+2. The contract will initialize with an empty TreeMap.
+
+## Checking the Contract State
+
+After deployment, you can:
+
+- Use `show_github_profile_summaries()` to view all stored profile summaries.
+- Initially, this will return an empty dictionary.
+
+## Executing Transactions
+
+To interact with the deployed contract:
+
+1. Call `store_github_profile_summary(github_handle)` with a GitHub username.
+2. The function will:
+   - Check for existing summary
+   - Fetch the profile content
+   - Generate an AI summary
+   - Store the result in the TreeMap
+
+## Understanding AI Integration
+
+This contract demonstrates several important concepts:
+
+- **Dual Equivalence Principles**: Uses both comparative and non-comparative approaches.
+- **Error Handling**: Implements checks for duplicate processing.
+- **Structured Storage**: Maintains an organized mapping of profiles to summaries.
+
+## Handling Different Scenarios
+
+- **Initial State**: The TreeMap starts empty.
+- **New Profile**: Generates and stores a new summary.
+- **Existing Profile**: Raises an exception to prevent duplicate processing.
+- **Invalid Profile**: Web content fetch would fail for non-existent profiles.
+
+## Important Notes
+
+1. Summaries are generated once and cached.
+2. The AI task is focused on extracting key metrics and attributes.
+3. Profile content is fetched deterministically using strict equivalence.
+4. Summary generation allows for semantic variation while maintaining quality.
+
+## Security Considerations
+
+1. Validate GitHub handles before processing.
+2. Handle web content fetch failures gracefully.
+3. Consider implementing rate limiting.
+4. Be mindful of storage space for summaries.
+
+## Performance Optimization
+
+1. Uses TreeMap for efficient key-value lookups.
+2. Prevents redundant summary generation.
+4. Stores only processed summaries, not raw HTML.
+
+You can monitor the contract's behavior through transaction logs, which will show the profile fetches and summary generations as they occur.

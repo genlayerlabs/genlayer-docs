@@ -1,0 +1,125 @@
+# GitHubProfilesRepositories Contract
+
+The GitHubProfilesRepositories contract demonstrates how to fetch GitHub profile data, analyze repository counts, and store profiles of high-contributing developers. This contract shows how to use the [comparative equivalence principle](/developers/intelligent-contracts/equivalence-principle#comparative-equivalence-principle) along with pattern matching to process web content.
+
+```python
+# { "Depends": "py-genlayer:test" }
+
+from genlayer import *
+import typing
+import re
+
+class GitHubProfilesRepositories(gl.Contract):
+    github_profiles: DynArray[str]
+
+    def __init__(self):
+        pass
+
+    @gl.public.write
+    def store_high_contributors_github_profile(self, github_handle: str) -> typing.Any:
+        github_profile_url = "https://github.com/"+github_handle
+
+        def fetch_github_profile_repositories() -> int:
+            profile_web_page = gl.get_webpage(github_profile_url, mode="text")
+            # Regular expression to find the number between "Repositories" and "Projects"
+            pattern = r"Repositories\s+(\d+)\s+Projects"
+
+            # Search for the pattern
+            match = re.search(pattern, profile_web_page)
+
+            # Extract the number if found
+            if match:
+                return int(match.group(1))  # Group 1 contains the captured number
+            else:
+                return 0
+    
+        repositories = gl.eq_principle_strict_eq(fetch_github_profile_repositories)
+
+        if repositories > 25:
+            self.github_profiles.append(github_handle)
+
+    @gl.public.view
+    def show_github_profiles(self) -> str:       
+        return [profile for profile in self.github_profiles]
+```
+
+## Code Explanation
+
+- **Initialization**: The `GitHubProfilesRepositories` class initializes with an empty dynamic array to store the GitHub handles of the high-contributing developers.
+- **Write Method**: 
+  - `store_high_contributors_github_profile(github_handle)` analyzes a GitHub profile's repository count.
+  - Uses regular expressions to extract the repository count from the profile page.
+  - Stores profiles with more than 25 repositories.
+- **Read Method**: 
+  - `show_github_profiles()` returns the list of stored high-contributor profiles.
+
+## Key Components
+
+1. **GitHub Integration**: Uses `gl.get_webpage()` to fetch profile content.
+2. **Pattern Matching**: Employs regular expressions to extract repository counts.
+3. **Deterministic Execution**: Uses `gl.eq_principle_strict_eq()` to ensure network consensus.
+4. **Conditional Storage**: Only stores profiles meeting specific criteria.
+
+## Deploying the Contract
+
+To deploy the GitHubProfilesRepositories contract:
+
+1. **Deploy the Contract**: No initial parameters are needed for deployment.
+2. The contract will initialize with an empty profiles array.
+
+## Checking the Contract State
+
+After deployment, you can:
+
+- Use `show_github_profiles()` to view the list of stored high-contributor profiles.
+- Initially, this will return an empty list.
+
+## Executing Transactions
+
+To interact with the deployed contract:
+
+1. Call `store_high_contributors_github_profile(github_handle)` with a GitHub username.
+2. The function will:
+   - Fetch the profile page content
+   - Extract the repository count
+   - Store the handle if repositories > 25
+   - Make the profile list available through `show_github_profiles()`
+
+## Understanding Data Processing
+
+This contract demonstrates several important concepts:
+
+- **Web Scraping**: Shows how to extract specific data from web pages.
+- **Regular Expressions**: Demonstrates pattern matching in web content.
+- **Conditional Logic**: Implements criteria-based storage decisions.
+- **Dynamic Arrays**: Shows how to maintain a growing list of data.
+
+## Handling Different Scenarios
+
+- **Initial State**: The profiles list starts empty.
+- **High Contributors**: Profiles with >25 repositories are added to the list.
+- **Low Contributors**: Profiles with ≤25 repositories are not stored.
+- **Invalid Profiles**: Returns 0 repositories and doesn't store the profile.
+
+## Important Notes
+
+1. This example focuses on public GitHub profiles only.
+2. Repository counts may change over time.
+3. The regular expression pattern assumes specific GitHub page structure.
+4. The threshold of 25 repositories is arbitrary and can be adjusted.
+
+## Security Considerations
+
+1. Be aware that GitHub's page structure might change.
+2. Consider implementing error handling for malformed profiles.
+3. Respect GitHub's rate limits and terms of service.
+4. Validate input GitHub handles before processing.
+
+## Performance Optimization
+
+1. The contract only stores handles, not full profile content.
+2. Regular expression pattern is optimized for specific data extraction.
+3. Conditional storage prevents unnecessary state bloat.
+4. Dynamic array allows for efficient list management.
+
+You can monitor the contract's behavior through transaction logs, which will show the repository counts and profile additions as they occur.

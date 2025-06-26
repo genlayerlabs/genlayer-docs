@@ -1,0 +1,79 @@
+import Image from 'next/image'
+
+# Development Tips
+Here are some valuable tips on how to develop your intelligent contract, debug it, and test it using the GenLayer Studio.
+
+## 1. Validators setup
+You need to be sure that you have at least one validator. If you don't have any, you can create one in the validators screen by providing:
+- Provider
+- Model
+- Stake (at least 1)
+- Config (optional)
+
+## 2. Add types to your contract method inputs
+Adding types to your contract method inputs helps the UI render the correct input fields. For example, if you have a method that takes a string as input, you can define it as follows:
+```python
+def update_storage(self, new_storage:str) -> None:
+    self.storage = new_storage 
+``` 
+This will allow the UI to render the form needed to call the contract with the correct input type as follows
+<br/>
+<Image src="/images/run-debug/input-types.png" alt="Node Log" width={400} height={400} />
+
+## 3. The constructor
+The constructor is a special method called when the contract is deployed. It is used to initialize the contract's storage. You can define it as follows:
+```python
+def __init__(self, initial_storage: str):
+    self.storage = initial_storage
+```
+Right now, your contract must include a constructor. Without one, the Studio won't be able to deploy your contract.
+
+## 4. Deploying a contract and sending transactions
+After you have written your contract, you can deploy it by clicking the "Deploy" button. This will deploy the contract and show you the contract's address.
+<br/>You can then call the contract's methods, shown below in the deployment section on the left panel of the Studio's UI.
+<br/>
+<Image src="/images/run-debug/read-write-methods.png" alt="Node Log" width={400} height={400} />
+
+## 5. Debugging your contract
+You can debug your contract by adding print statements to your contract methods. The Studio's Logs section will display these print statements.
+Here is an example of printing in a contract method:
+```python
+def update_storage(self, new_storage:str) -> None:
+    print("new storage value: ", new_storage)
+    self.storage = new_storage 
+```
+When a transaction is sent to this method, the print statement will be shown in the Logs section as follows:
+<br/>
+<Image src="/images/run-debug/print-logs.png" alt="Node Log" width={700} height={700} />
+
+## 6. What happened when the transaction was executed
+After a transaction is executed, you can see the details by clicking on the transaction in the Transactions section (left-bottom corner). This will show you:
+- Number: The transaction's number in the database
+- Timestamp: The time the transaction was executed
+- Type: The transaction's type (deployment or method call)
+- Status: The transaction's status (PENDING, PROPOSING, COMMITTING, REVEALING, ACCEPTED, FINALIZED)
+- Input: the parameters passed to the method
+- Execution: The status of the execution (SUCCESS or ERROR), the leader's configuration, and the validator's consensus votes
+- Equivalence principle output: The output of the equivalence principle from the leader
+<br/>
+<Image src="/images/run-debug/transaction-modal.png" alt="Node Log" width={400} height={400} />
+
+
+## 7. Knowing what happens when the LLMs are called
+If a contract method calls an LLM, you can see the Equivalence Principle Output from the leader (what's being input in the eq.set call) in the transaction details modal.
+<br/>
+<Image src="/images/run-debug/transaction-modal-eq-output.png" alt="Node Log" width={400} height={400} />
+
+## 8. Access to the contract state
+If your contract methods change the contract's state, you can query that information by adding a read method to your contract. Read methods on a contract need to be decorated with the `@gl.public.view` decorator. This method should return the state you want to query.
+<br/>For example:
+```python
+@gl.public.view
+def get_balances(self) -> dict[str, int]:
+    return self.balances
+
+@gl.public.view
+def get_balance_of(self, address: str) -> int:
+    return self.balances.get(address, 0)
+```
+These two methods allow you to query the contract's balance state. You can call them by expanding them from the left panel of the Studio's UI and clicking on the "Call Contract" button.

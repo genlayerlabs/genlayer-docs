@@ -1,0 +1,82 @@
+import { Callout } from 'nextra-theme-docs'
+
+# Your First Contract
+
+While a GenLayer Intelligent Contract is a pure Python program, there are few things that must be present in your file.
+
+### Version Comment
+First of all, you need to place a magic comment with the version of GenVM you wish to use on the **first** line of your file
+```py
+# { "Depends": "py-genlayer:test" }
+```
+It is similar to Solidity's `pragma solidity`, and `test` after a colon is a version. When GenLayer releases, it will be changed to some exact hash of a version, which will be frozen forever.
+
+### Importing the Standard Library
+After the version comment, you can import the GenLayer standard library:
+```py
+from genlayer import *
+```
+This will import all necessary types into the global scope, and everything else under `gl` namespace.
+
+### The Contract Class
+An Intelligent Contract is a regular Python class, with a regular constructor and methods, which allows you to use your favorite IDE for type checking and auto completion. However, there are some additional requirements to make a class an Intelligent Contract.
+
+#### Decorators
+
+The GenVM makes use of decorators to identify the contract class and its methods.
+
+The contract class must extend `gl.Contract` class so that GenVM knows that it's an Intelligent Contract. There can be only one contract class in a file.
+
+Furthermore, public methods must be decorated with either `@gl.public.view` for read-only methods or `@gl.public.write` (or `@gl.public.write.payable`) for methods that modify storage. Constructor (`__init__`) must be private (not decorated)
+
+#### Persistent data
+
+The GenVM enables Intelligent Contracts to maintain persistent data. This data is stored on the blockchain and can be accessed and modified via transactions.
+
+This is done by declaring fields in the contract class.
+
+<Callout emoji="🚫">
+    All persistent fields must be declared in the class body and annotated with types.
+    <br/>Fields declared outside the class body by creating new instance variables (`self.field = value`) are not persistent and will be discarded after the contract execution.
+</Callout>
+
+#### Types
+
+In your contracts, you can use any Python types, but for persisted fields, there are some restrictions:
+- `list[T]` needs to be replaced with `DynArray[T]`
+- `dict[K, V]` needs to be replaced with `TreeMap[K, V]`
+- `int` type isn't supported on purpose. You most likely wish to use some fixed-size integer type, such as `i32` or `u256`. If this is not the case and you are sure that you need big integers, you can annotate your field with `bigint`, which is just an alias for python `int`
+
+<Callout emoji="⚠️">
+    Only fully instantiated generic types can be used, so `TreeMap` is forbidden, while `TreeMap[str, u256]` is not
+</Callout>
+
+#### Example
+
+Here is a simple example of an Intelligent Contract that stores a name and allows changing it:
+
+```py
+# { "Depends": "py-genlayer:test" }
+
+from genlayer import *
+
+class Hello(gl.Contract):
+    name: str
+
+    def __init__(self, name: str):
+        self.name = name
+
+    @gl.public.view
+    def run(self) -> str:
+        return f'Hello, {self.name}'
+
+    @gl.public.write
+    def set_name(self, name: str):
+        print(f'debug old name: {self.name}') # <- you can use prints for debugging
+            # they will be included in the GenVM execution log
+        self.name = name
+```
+
+<Callout emoji="👾">
+  The GenLayer Studio automatically detects the constructor parameters from your code. When you run your contract in the Studio, it provides the UI for all parameters for both constructor and methods, making it easy to manage and modify these inputs.
+</Callout>

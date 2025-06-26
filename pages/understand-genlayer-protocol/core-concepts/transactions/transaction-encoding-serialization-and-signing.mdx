@@ -1,0 +1,5 @@
+
+## Transaction encoding, serialization, and signing
+In GenLayer, all three types of transactions needs to be properly encoded, serialized, and signed on the client-side. This process ensures that the transaction data is packaged into a relieable cross-platform efficient format, and securely signed using the sender's private key to verify the sender's identity. 
+
+Once prepared, the transaction is sent to the network via the `eth_sendRawTransaction` method on the RPC Server. This method performs the inverse process: it decodes and deserializes the transaction data, and then verifies the signature to ensure its authenticity. By handling all transaction types through `eth_sendRawTransaction`, GenLayer ensures that transactions are processed securely and efficiently while maintaining compatibility with Ethereum’s specification.

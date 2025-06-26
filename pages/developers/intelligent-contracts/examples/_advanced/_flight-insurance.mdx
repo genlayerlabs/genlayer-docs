@@ -1,0 +1,210 @@
+import { Callout } from 'nextra-theme-docs'
+
+# Flight Insurance Contract
+
+The Flight Insurance contract sets up a scenario for managing flight delay insurance. It allows passengers to buy insurance for specific flights and automatically processes claims based on flight status information from an independent source. This contract demonstrates complex real-world interactions, external data integration, and automated claim processing within a blockchain environment.
+
+<Callout type="info" emoji="🏗️">
+    This intelligent contract is currently not migrated to the real GenVM syntaxis.
+</Callout>
+
+```python
+import json
+from backend.node.genvm.icontract import IContract
+from backend.node.genvm.equivalence_principle import EquivalencePrinciple
+
+# Flight Insurance Intelligent Contract is a contract that allows passengers to buy insurance for their flights.
+# The contract is created by the insurance manager for specific flight 
+# and the passengers can buy insurance for this specific flight.
+# The contract has a method to check the flight status from an independent source of information
+# and a method to claim the insurance in case the flight is delayed.
+# The payment is done by the insurance manager to the passengers in case the flight is delayed.
+# Passenger does not need to trust on the insurance manager to get the payment.
+class FlightInsurance(IContract):
+
+    def __init__(self, _flight_number: str, _flight_date: str, _flight_time: str, _flight_from: str, _flight_to: str, _num_passengers_paid_insurance: int, _insurance_value_per_passenger: int):
+        self.flight_number = _flight_number
+        self.num_passengers_paid_insurance = _num_passengers_paid_insurance
+        self.flight_arrival_delayed = False
+        self.flight_date = _flight_date
+        self.flight_time = _flight_time
+        self.flight_from = _flight_from
+        self.flight_to = _flight_to
+        self.resolution_url = "https://flightaware.com/live/flight/" + self.flight_number  + "/history/" 
+        self.resolution_url = self.resolution_url + self.flight_date + "/" + self.flight_time + "/" 
+        self.resolution_url = self.resolution_url + self.flight_from + "/" + self.flight_to
+        self.loss_payment_value_per_passenger = _insurance_value_per_passenger
+        self.balances = {}
+        self.balances[contract_runner.from_address] = _num_passengers_paid_insurance*_insurance_value_per_passenger
+        self.insurance_manager = contract_runner.from_address
+    
+    # Example of constructor with hardcoded values to save time in the testing
+    # def __init__(self):
+    #     self.flight_number = "TAP457"
+    #     self.num_passengers_paid_insurance = 35
+    #     self.flight_arrival_delayed = False
+    #     self.flight_date = "20240818"
+    #     self.flight_time = "0510Z"
+    #     self.flight_from = "LFPO"
+    #     self.flight_to = "LPPR"
+    #     self.resolution_url = "https://flightaware.com/live/flight/" + self.flight_number  + "/history/" 
+    #     self.resolution_url = self.resolution_url + self.flight_date + "/" + self.flight_time + "/" 
+    #     self.resolution_url = self.resolution_url + self.flight_from + "/" + self.flight_to
+    #     self.loss_payment_value_per_passenger = 30
+    #     self.balances = {}
+    #     self.balances[contract_runner.from_address] = self.loss_payment_value_per_passenger*self.loss_payment_value_per_passenger
+    #     self.insurance_manager = contract_runner.from_address
+
+    async def check_flight_status(self) -> None:
+        """Check the flight status from an external source."""
+        print(f"Checking flight status: {self.resolution_url}")
+        final_result = {}
+        async with EquivalencePrinciple(
+            result=final_result,
+            principle="The arrival status should be consistent",
+            comparative=True,
+        ) as eq:
+            web_data = await eq.get_webpage(self.resolution_url)
+            print(" ")
+            print("web_data: ")
+            print(web_data)
+            print(" ")
+            print(" ")
+            prompt = f"""
+In the following web page, find if the flight arrival was late or not:
+Web page content:
+{web_data} 
+End of web page data.
+Respond using ONLY the following format:
+{{
+"arrivalstatus": bool // True if the flight arrival was delayed or False if it was on time
+}}
+It is mandatory that you respond only using the JSON format above,
+nothing else. Don't include any other words or characters,
+your output must be only JSON without any formatting prefix or suffix.
+This result should be perfectly parseable by a JSON parser without errors.
+"""
+            result = await eq.call_llm(prompt)
+            print("********************************")
+            print("result: ")
+            print(result)     
+            print("================================")   
+            result_clean = result.replace("True", "true").replace("False", "false")
+            print("********************************")
+            print("result_clean: ")
+            print(result_clean)
+            print("================================")   
+            eq.set(result_clean)
+            output = json.loads(result_clean)
+            print("********************************")
+            print("output: ")
+            print(output["arrivalstatus"])
+            print("================================")   
+            if output["arrivalstatus"] is True:
+                self.flight_arrival_delayed = True
+                print("********************************")
+                print("flight_arrival_delayed: ")
+                print(self.flight_arrival_delayed)
+                print("================================")
+    
+    def add_passenger(self, _passenger_address:str) ->None:
+        self.balances[_passenger_address] = 0
+
+    def insurance_claim(self, _passenger_address:str) ->None:
+        if self.flight_arrival_delayed is True:
+            if _passenger_address in self.balances:
+              if self.balances[_passenger_address] == 0:
+                self.balances[_passenger_address] = self.loss_payment_value_per_passenger
+                self.balances[self.insurance_manager] = (self.balances[self.insurance_manager]-self.loss_payment_value_per_passenger)
+
+    def get_flight_status(self) ->bool:
+        return self.flight_arrival_delayed
+    
+    def get_insurance_balance(self, _passenger_address:str) ->int:
+        if _passenger_address in self.balances:
+            return self.balances[_passenger_address]
+        else:
+            return 0
+
+    def get_insurance_manager_balance(self) ->int:
+        return self.balances[self.insurance_manager]
+      
+    def get_insurance_manager(self) ->str:
+        return self.insurance_manager
+      
+    def get_flight_number(self) ->str:
+        return self.flight_number
+    
+    def get_flight_date(self) ->str:
+        return self.flight_date
+    
+    def get_flight_time(self) ->str:
+        return self.flight_time
+      
+    def get_flight_from(self) ->str:
+        return self.flight_from
+      
+    def get_flight_to(self) ->str:
+        return self.flight_to
+      
+    def get_resolution_url(self) ->str:
+        return self.resolution_url
+      
+    def get_loss_payment_value_per_passenger(self) ->int:
+        return self.loss_payment_value_per_passenger
+      
+    def get_num_passengers_paid_insurance(self) ->int:
+        return self.num_passengers_paid_insurance
+```
+
+## Code Explanation
+
+- **Initialization**: The FlightInsurance class initializes the contract with specific flight details, insurance parameters, and initial balances.
+- **Key Methods**:
+  - `ask_for_flight_status()`: Checks the flight status from an external source (FlightAware) using an LLM to interpret the data.
+  - `add_passenger()`: Adds a new passenger to the insurance contract.
+  - `insurance_claim()`: Processes insurance claims for passengers if the flight is delayed.
+- **Read Methods**: Various getter methods to retrieve flight details, insurance parameters, and balances.
+
+## Deploying the Contract
+
+To deploy the Flight Insurance contract, you need to provide the flight details and insurance parameters:
+
+1. **Set Flight Details**: Provide flight number, date, time, origin, and destination.
+2. **Set Insurance Parameters**: Specify the number of insured passengers and the insurance value per passenger.
+3. **Deploy the Contract**: Once all parameters are set, deploy the contract to start the insurance coverage.
+
+## Checking the Contract State
+
+After deploying the contract, its address is displayed and you can check its state in the **Read Methods** section.
+
+- Use `get_flight_status()` to see if the flight is delayed.
+- Use `get_insurance_balance(address)` to check a passenger's insurance balance.
+- Use other getter methods to retrieve various contract details.
+
+
+## Executing Transactions
+
+To interact with the deployed contract, go to the **Write Methods** section. Here, you can:
+
+- Call `ask_for_flight_status()` to update the flight status from the external source.
+- Call `add_passenger(address)` to add a new insured passenger.
+- Call `insurance_claim(address)` for a passenger to claim their insurance if the flight is delayed.
+
+
+## Analyzing the Contract's Behavior
+
+The contract's behavior involves several complex interactions:
+
+- **External Data Integration**: The contract uses an LLM to interpret flight status data from FlightAware, an external source.
+- **Automated Claim Processing**: If a flight is determined to be delayed, the contract automatically processes claims for insured passengers.
+- **Balance Management**: The contract manages balances for both the insurance manager and insured passengers, automatically transferring funds when claims are processed.
+
+## Handling Different Scenarios
+
+- **Flight On Time**: If the flight is on time, no claims are processed, and balances remain unchanged.
+- **Flight Delayed**: If the flight is delayed, insured passengers can claim their insurance, and funds are automatically transferred from the insurance manager's balance to the passengers'.
+- **Multiple Claims**: The contract ensures that each passenger can only claim once, preventing double-dipping.
+- **New Passengers**: The contract allows adding new passengers, expanding the pool of insured individuals.
+
+This Flight Insurance contract demonstrates a practical use case for blockchain technology in the insurance industry. It showcases how smart contracts can automate complex processes, integrate external data sources, and provide transparent, trustless insurance services. The use of an LLM to interpret external data adds an innovative layer of intelligence to the contract's decision-making process.

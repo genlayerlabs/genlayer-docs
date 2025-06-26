@@ -1,0 +1,155 @@
+# Querying a Transaction
+
+Reading transactions in GenLayer allows you to inspect the details of any transaction that has been submitted to the network. This is useful for monitoring transaction status, debugging, and verifying transaction details.
+
+## Basic Transaction Reading
+
+Here's the simplest way to read a transaction:
+
+```typescript
+import { simulator } from 'genlayer-js/chains';
+import { createClient } from 'genlayer-js';
+
+const client = createClient({
+  chain: simulator,
+});
+
+const transactionHash = "0x...";
+
+const transaction = await client.getTransaction({ 
+  hash: transactionHash 
+});
+```
+{/* 
+## Transaction Data Structure
+
+When you read a transaction, you get access to its complete data structure:
+
+```typescript
+interface Transaction {
+  hash: `0x${string}`           // The unique transaction hash
+  from: `0x${string}`          // Address of the sender
+  to: `0x${string}` | null     // Address of the recipient (null for contract deployments)
+  nonce: number                // Transaction sequence number
+  value: bigint                // Amount of native tokens transferred
+  data: `0x${string}`         // Transaction input data
+  timestamp: number           // Block timestamp when transaction was included
+  status: 'success' | 'failure' | 'pending'  // Current transaction status
+  blockNumber: bigint | null  // Block number where transaction was included
+  blockHash: `0x${string}` | null  // Hash of the block
+  // ... additional fields
+}
+```
+
+## Reading Different Transaction Types
+
+### Basic Transfer Transaction
+```typescript
+const transferTx = await client.getTransaction({
+  hash: "0x123...",
+});
+
+console.log({
+  from: transferTx.from,
+  to: transferTx.to,
+  value: transferTx.value,
+  status: transferTx.status
+});
+```
+
+### Contract Interaction Transaction
+```typescript
+const contractTx = await client.getTransaction({
+  hash: "0x456...",
+});
+
+// Decode the transaction input data
+const decodedInput = client.decodeTransactionInput({
+  data: contractTx.data,
+  abi: contractABI, // You need the contract's ABI
+});
+
+console.log({
+  contractAddress: contractTx.to,
+  functionName: decodedInput.functionName,
+  arguments: decodedInput.args
+});
+```
+
+### Contract Deployment Transaction
+```typescript
+const deployTx = await client.getTransaction({
+  hash: "0x789...",
+});
+
+console.log({
+  deployer: deployTx.from,
+  contractAddress: deployTx.creates, // Address of deployed contract
+  deploymentData: deployTx.data
+});
+``` */}
+
+## Error Handling
+
+```typescript
+async function getTransactionWithRetry(
+  client: GenLayerClient,
+  hash: string,
+  maxAttempts = 3
+): Promise<Transaction> {
+  for (let attempt = 1; attempt <= maxAttempts; attempt++) {
+    try {
+      const tx = await client.getTransaction({ hash });
+      if (!tx) throw new Error('Transaction not found');
+      return tx;
+    } catch (error) {
+      if (attempt === maxAttempts) throw error;
+      if (error.message.includes('not found')) {
+        // Wait longer between retries for not found errors
+        await new Promise(resolve => setTimeout(resolve, 2000 * attempt));
+        continue;
+      }
+      throw error; // Rethrow other errors immediately
+    }
+  }
+  throw new Error('Failed to fetch transaction after max retries');
+}
+```
+
+
+## Monitoring Transaction Status
+
+```typescript
+async function monitorTransaction(
+  client: GenLayerClient,
+  hash: string,
+  interval = 1000
+): Promise<Transaction> {
+  return new Promise((resolve, reject) => {
+    const checkStatus = async () => {
+      try {
+        const tx = await client.getTransaction({ hash });
+        
+        if (!tx) {
+          setTimeout(checkStatus, interval);
+          return;
+        }
+
+        if (tx.status === 'pending') {
+          setTimeout(checkStatus, interval);
+          return;
+        }
+
+        resolve(tx);
+      } catch (error) {
+        reject(error);
+      }
+    };
+
+    checkStatus();
+  });
+}
+
+// Usage
+const finalTx = await monitorTransaction(client, "0x...");
+```

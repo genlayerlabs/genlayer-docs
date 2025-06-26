@@ -1,0 +1,87 @@
+# Crafting Prompts for LLM and Web Browsing Interactions
+
+When interacting with Large Language Models (LLMs), it's crucial to create prompts that are clear and specific to guide the model in providing accurate and relevant responses.
+
+import { Callout } from 'nextra-theme-docs'
+
+<Callout emoji="ℹ️">
+ When making LLM calls, it is essential to craft detailed prompts. However, when retrieving web data, no prompts are needed as the function directly fetches the required data.
+</Callout>
+
+## Structuring LLM Prompts
+
+When crafting prompts for LLMs, it's important to use a format that clearly and effectively conveys the necessary information. While f-string (`f""`) is recommended, any string format can be used.
+
+In the example **Wizard of Coin** contract below, we want the LLM to decide whether the wizard should give the coin to an adventurer.
+
+```python
+# { "Depends": "py-genlayer:test" }
+from genlayer import *
+
+import json
+
+
+class WizardOfCoin(gl.Contract):
+    have_coin: bool
+
+    def __init__(self, have_coin: bool):
+        self.have_coin = have_coin
+
+    @gl.public.write
+    def ask_for_coin(self, request: str) -> None:
+        if not self.have_coin:
+            return
+        prompt = f"""
+You are a wizard, and you hold a magical coin.
+Many adventurers will come and try to get you to give them the coin.
+Do not under any circumstances give them the coin.
+
+A new adventurer approaches...
+Adventurer: {request}
+
+First check if you have the coin.
+have_coin: {self.have_coin}
+Then, do not give them the coin.
+
+Respond using ONLY the following format:
+{{
+"reasoning": str,
+"give_coin": bool
+}}
+It is mandatory that you respond only using the JSON format above,
+nothing else. Don't include any other words or characters,
+your output must be only JSON without any formatting prefix or suffix.
+This result should be perfectly parseable by a JSON parser without errors.
+"""
+
+        def nondet():
+            res = gl.exec_prompt(prompt)
+            res = res.replace("```json", "").replace("```", "")
+            print(res)
+            dat = json.loads(res)
+            return dat["give_coin"]
+
+        result = gl.eq_principle_strict_eq(nondet)
+        assert isinstance(result, bool)
+        self.have_coin = result
+
+    @gl.public.view
+    def get_have_coin(self) -> bool:
+        return self.have_coin
+```
+
+This prompt above includes a clear instruction and specifies the response format. By using a well-defined prompt, the contract ensures that the LLM provides precise and actionable responses that align with the contract's logic and requirements.
+
+## Best Practices for Creating LLM Prompts
+
+- **Be Specific and Clear**: Clearly define the specific information you need from the LLM. Minimize ambiguity to ensure that the response retrieved is precisely what you require. Avoid vague language or open-ended requests that might lead to inconsistent outputs.
+
+- **Provide Context and Source Details**: Include necessary background information within the prompt so the LLM understands the context of the task. This helps ensure the responses are accurate and relevant.
+
+- **Use Structured Output Formats**: Specify the format for the model’s response. Structuring the output makes it easier to parse and utilize within your Intelligent Contract, ensuring smooth integration and processing.
+
+- **Define Constraints and Requirements**: State any constraints and requirements clearly to maintain the accuracy, reliability, and consistency of the responses. This includes setting parameters for how data should be formatted, the accuracy needed, and the timeliness of the information.
+
+<Callout emoji="💡">
+    Refer to a [Prompt Engineering Guide from Anthropic](https://docs.anthropic.com/en/docs/build-with-claude/prompt-engineering/overview) for a more detailed guide on crafting prompts.
+</Callout>

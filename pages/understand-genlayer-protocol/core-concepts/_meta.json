@@ -1,0 +1,12 @@
+{
+  "validators-and-validator-roles": "Validators",
+  "genvm": "GenVM",
+  "optimistic-democracy": "Optimistic Democracy",
+  "rollup-integration": "Rollup Integration",
+  "non-deterministic-operations-handling": "Non-deterministic Operations",
+  "large-language-model-llm-integration": "LLM Integration",
+  "web-data-access": "Web Data Access",
+  "transactions": "Transactions",
+  "economic-model": "Economic Model",
+  "accounts-and-addresses": "Accounts and Addresses"
+}

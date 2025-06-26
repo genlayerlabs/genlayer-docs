@@ -1,0 +1,26 @@
+# Transaction Processing
+In GenLayer, transactions are processed through an account-based queue system that ensures orderliness. Here’s how transactions transition through different statuses:
+
+## 1. Pending
+When a transaction is first submitted, it enters the pending state. This means it has been received by the network but is waiting to be processed. Transactions are queued per account, ensuring that each account's transactions are processed in the order they were submitted.
+
+## 2. Proposing
+In this stage, the transaction is moved from the pending queue to the proposing stage. A leader and a set of voters are selected from the validator set via a weighted random selection based on total stake. The leader proposes a receipt for the transaction, which is then committed to by the validators.
+
+## 3. Committing
+The transaction enters the committing stage, where validators commit their votes and cost estimates for processing the transaction. This stage is crucial for reaching consensus on the transaction's execution.
+
+## 4. Revealing
+After the committing stage, validators reveal their votes and cost estimates, allowing the network to finalize the transaction's execution cost and validate the consensus.
+
+## 5. Accepted
+Once the majority of validators agree on the transaction's validity and cost, the transaction is marked as accepted. This status indicates that the transaction has passed through the initial validation process successfully.
+
+## 6. Finalized
+After all validations are completed and any potential appeals have been resolved, the transaction is finalized. In this state, the transaction is considered irreversible and is permanently recorded in the blockchain.
+
+## 7. Undetermined
+If the transaction fails to reach consensus after all voting rounds, it enters the undetermined state. This status indicates that the transaction's outcome is unresolved, and it may require further validation or be subject to an appeal process.
+
+## 8. Canceled
+A transaction can be canceled by the user or by the system if it fails to meet certain criteria (e.g., insufficient funds). Once canceled, the transaction is removed from the processing queue and will not be executed.

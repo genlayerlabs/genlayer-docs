@@ -1,0 +1,21 @@
+{
+  "index": "Welcome to GenLayer",
+  "understand-genlayer-protocol": "Discover the Protocol",
+  "developers": "Build on GenLayer",
+  "validators": "Run a Validator",
+  "partners": "Partners",
+  "api-references": "API References",
+  "FAQ": "FAQ",
+  "blog": {
+    "title": "Blog 📚",
+    "type": "page",
+    "href": "https://blog.genlayer.com/",
+    "newWindow": true
+  },
+  "bulkdownload": {
+    "title": "Bulk Download 🤖",
+    "type": "page",
+    "href": "/full-documentation.txt",
+    "newWindow": true
+  }
+}

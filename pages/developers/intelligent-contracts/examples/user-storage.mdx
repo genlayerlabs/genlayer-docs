@@ -1,0 +1,74 @@
+
+# UserStorage Contract
+
+The UserStorage contract sets up a scenario to store and retrieve string values associated with different user accounts. This contract demonstrates basic per-user data storage and retrieval functionality within a blockchain environment.
+
+```python
+# { "Depends": "py-genlayer:test" }
+
+from genlayer import *
+
+
+class UserStorage(gl.Contract):
+    storage: TreeMap[Address, str]
+
+    # constructor
+    def __init__(self):
+        pass
+
+    # read methods must be annotated
+    @gl.public.view
+    def get_complete_storage(self) -> dict[str, str]:
+        return {k.as_hex: v for k, v in self.storage.items()}
+
+    @gl.public.view
+    def get_account_storage(self, account_address: str) -> str:
+        return self.storage[Address(account_address)]
+
+    @gl.public.write
+    def update_storage(self, new_storage: str) -> None:
+        self.storage[gl.message.sender_address] = new_storage
+```
+## Code Explanation
+
+- **Initialization**: The `UserStorage` class initializes the contract with an empty dictionary `self.storage` to store user-specific data.
+- **Read Methods**:
+  - `get_complete_storage()` returns the entire storage dictionary, containing all user data.
+  - `get_account_storage(account_address)` returns the stored value for a specific user account.
+- **Write Method**: `update_storage(new_storage)` allows updating the stored value for the user who called the contract (identified by `contract_runner.from_address`).
+
+## Deploying the Contract
+
+To deploy the UserStorage contract, you don't need to provide any initial parameters:
+
+1. **Deploy the Contract**: Simply deploy the contract to make it ready for interaction.
+
+## Checking the Contract State
+
+After deploying the contract, its address is displayed and you can check its state in the **Read Methods** section.
+
+- Use `get_complete_storage()` to see all stored user data.
+- Use `get_account_storage(account_address)` to see the data for a specific user account.
+
+## Executing Transactions
+
+To interact with the deployed contract, go to the **Write Methods** section. Here, you can call the `update_storage` method to change the stored value for the calling user. This triggers the contract's logic to update the storage with the new value.
+
+## Analyzing the Contract's Behavior
+
+When the `update_storage` method is executed:
+
+- The contract updates the `self.storage` dictionary, associating the new value with the address of the user who called the function (`contract_runner.from_address`).
+- You can then use the `get_account_storage()` or `get_complete_storage()` methods to verify that the value has been updated for the specific user.
+
+## Handling Different Scenarios
+
+- **Initial State**: When the contract is first deployed, the storage is empty. `get_complete_storage()` will return an empty dictionary.
+- **First Update for a User**: When a user first calls `update_storage`, a new entry is created in the storage dictionary for that user's address.
+- **Subsequent Updates**: If a user calls `update_storage` again, their existing entry in the storage is updated with the new value.
+- **Multiple Users**: Different users can store and retrieve their own values independently.
+- **Accessing Non-existent Data**: If `get_account_storage()` is called with an address that hasn't stored any data yet, it will raise a `KeyError`.
+
+You can view the logs to see detailed information about the contract interaction, including the values being stored and retrieved for different user accounts.
+
+This UserStorage contract provides a simple example of how user-specific data can be stored and retrieved on a blockchain, demonstrating basic multi-user state management within a smart contract.

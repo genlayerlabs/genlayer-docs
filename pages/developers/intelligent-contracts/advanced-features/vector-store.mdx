@@ -1,0 +1,102 @@
+# Vector Store
+The Vector Store feature in GenLayer allows developers to enhance their Intelligent Contracts by efficiently storing, retrieving, and calculating similarities between texts using vector embeddings. This feature is particularly useful for tasks that require natural language processing (NLP), such as creating context-aware applications or indexing text data for semantic search.
+
+## Key Features of Vector Store
+The Vector Store provides several powerful features for managing text data:
+
+#### 1. Text Embedding Storage
+You can store text data as vector embeddings, which are mathematical representations of the text, allowing for efficient similarity comparisons. Each stored text is associated with a vector and metadata.
+
+#### 2. Similarity Calculation
+The Vector Store allows you to calculate the similarity between a given text and stored vectors using cosine similarity. This is useful for finding the most semantically similar texts, enabling applications like recommendation systems or text-based search.
+
+#### 3. Metadata Management
+Along with the text and vectors, you can store additional metadata (any data type) associated with each text entry. This allows developers to link additional information (e.g., IDs or tags) to the text for retrieval.
+
+#### 4. CRUD Operations
+The Vector Store provides standard CRUD (Create, Read, Update, Delete) operations, allowing developers to add, update, retrieve, and delete text and vector entries efficiently.
+
+## How to Use Vector Store in Your Contracts
+To use the Vector Store in your Intelligent Contracts, you will interact with its methods to add and retrieve text data, calculate similarities, and manage vector storage. Below are the details of how to use this feature.
+
+#### Importing Vector Store
+First, import the VectorStore class from the standard library in your contract:
+
+```python
+from backend.node.genvm.std.vector_store import VectorStore
+```
+
+#### Creating a Contract with Vector Store
+Here’s an example of a contract using the Vector Store for indexing and searching text logs:
+
+```python
+# {
+#   "Seq": [
+#     { "Depends": "py-lib-genlayermodelwrappers:test" },
+#     { "Depends": "py-genlayer:test" }
+#   ]
+# }
+
+from genlayer import *
+import genlayermodelwrappers
+import numpy as np
+from dataclasses import dataclass
+
+
+@dataclass
+class StoreValue:
+    log_id: u256
+    text: str
+
+
+# contract class
+class LogIndexer(gl.Contract):
+    vector_store: VecDB[np.float32, typing.Literal[384], StoreValue]
+
+    def __init__(self):
+        pass
+
+    def get_embedding_generator(self):
+        return genlayermodelwrappers.SentenceTransformer("all-MiniLM-L6-v2")
+
+    def get_embedding(
+        self, txt: str
+    ) -> np.ndarray[tuple[typing.Literal[384]], np.dtypes.Float32DType]:
+        return self.get_embedding_generator()(txt)
+
+    @gl.public.view
+    def get_closest_vector(self, text: str) -> dict | None:
+        emb = self.get_embedding(text)
+        result = list(self.vector_store.knn(emb, 1))
+        if len(result) == 0:
+            return None
+        result = result[0]
+        return {
+            "vector": list(str(x) for x in result.key),
+            "similarity": str(1 - result.distance),
+            "id": result.value.log_id,
+            "text": result.value.text,
+        }
+
+    @gl.public.write
+    def add_log(self, log: str, log_id: int) -> None:
+        emb = self.get_embedding(log)
+        self.vector_store.insert(emb, StoreValue(text=log, log_id=u256(log_id)))
+
+    @gl.public.write
+    def update_log(self, log_id: int, log: str) -> None:
+        emb = self.get_embedding(log)
+        for elem in self.vector_store.knn(emb, 2):
+            if elem.value.text == log:
+                elem.value.log_id = u256(log_id)
+
+    @gl.public.write
+    def remove_log(self, id: int) -> None:
+        for el in self.vector_store:
+            if el.value.log_id == id:
+                el.remove()
+
+```
+
+
+

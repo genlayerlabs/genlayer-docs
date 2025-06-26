@@ -1,0 +1,190 @@
+import { Callout } from 'nextra-theme-docs'
+
+# GitBounties Contract
+
+The GitBounties contract sets up a scenario to manage bounties for GitHub issues, allowing developers to claim points for resolving issues. This contract demonstrates more complex interactions involving external data (GitHub) and multi-step processes within a blockchain environment.
+
+<Callout type="info" emoji="🏗️">
+    This intelligent contract is currently not migrated to the real GenVM syntaxis.
+</Callout>
+
+```python
+import json
+import math
+from backend.node.genvm.icontract import IContract
+from backend.node.genvm.equivalence_principle import (
+    EquivalencePrinciple,
+    get_webpage_with_principle,
+)
+
+
+class BountyData:
+    issue: int
+    points: int
+    claimed: bool
+
+    def __init__(self, issue, points):
+        self.issue = issue
+        self.points = points
+        self.claimed = False
+
+
+class GitBounties(IContract):
+    def __init__(self, github_repository: str):
+        self.owner = contract_runner.from_address
+        self.repository = "https://github.com/" + github_repository
+        self.developers = {}  # Mapping from: GitHub username -> Address
+        self.points = {}  # Mapping from: GitHub username -> points earned
+        self.bounties = {}  # Mapping from: Issue number -> BountyData
+        pass
+
+    def get_developers(self) -> dict:
+        return self.developers
+
+    def get_points(self) -> dict:
+        return self.points
+
+    def get_bounties(self) -> dict:
+        bounties = {}
+        for k, v in self.bounties.items():
+            bounties[k] = {"issue": v.issue, "points": v.points, "claimed": v.claimed}
+        return bounties
+
+    def add_bounty(self, issue: int, points: int):
+        if self.owner != contract_runner.from_address:
+            raise Exception("only owner")
+
+        bounty = self.bounties.setdefault(issue, BountyData(issue, points))
+        if bounty.claimed:
+            raise Exception("can't add bounty to claimed issue")
+
+    async def register(self, github_username: str) -> None:
+        dev_github_profile = f"https://github.com/{github_username}"
+        developer_address = contract_runner.from_address
+
+        web_data = await get_webpage_with_principle(
+            dev_github_profile, "The result should be exactly the same"
+        )
+        if developer_address in web_data["output"]:
+            self.developers[github_username] = developer_address
+        else:
+            raise Exception(
+                "Couldn't verify the developer, GitHub profile page must have the given address on its bio"
+            )
+
+    async def claim(self, pull: int) -> None:
+        final_result = {}
+        async with EquivalencePrinciple(
+            result=final_result,
+            principle="The result should be exactly the same",
+            comparative=True,
+        ) as eq:
+            web_data = await eq.get_webpage(self.repository + "/pull/" + str(pull))
+            task = f"""
+            The following web page content corresponds to a GitHub pull request.
+
+            Web page content:
+            {web_data}
+            End of web page data.
+
+            In that Pull Request, a developer should be fixing an issue from the repository 
+            issues list: located at: https://github.com/cristiam86/genlayer-hackaton/issues
+
+            To fin the issue, you should look for a text like "Fixes: #<issue_number>" in the 
+            Pull Request first comment.
+            It is very important to also include information about how many times a given PR has
+            ben rejected (changes requested), son include the number of those as well.
+
+            Respond with the following JSON format:
+            {{
+                "merged":  boolean, // if pull request was merged
+                "username": string, // GitHub username of the developer who opened a pull request
+                "issue":  int, // number of the closed issue
+                "changes_requested": int // number of changes requested for the given pull request  
+            }}
+
+            It is mandatory that you respond only using the JSON format above, nothing else.
+            Don't include any other words or characters, your output must be only JSON without any
+            formatting prefix or suffix. This result should be perfectly parseable by a
+            JSON parser without errors.
+            """
+            result = await eq.call_llm(task)
+            print("\nresult: ", result)
+            eq.set(result)
+
+        res = json.loads(final_result["output"])
+        if not res["merged"]:
+            raise Exception("pull is not mergerd")
+
+        bounty_issue = res["issue"]
+        bounty_username = res["username"]
+        pull_request_changes_requested = res["changes_requested"]
+        bounty = self.bounties.get(bounty_issue, None)
+
+        if bounty and not bounty.claimed:
+            bounty.claimed = True
+            if not bounty_username in self.points:
+                self.points[bounty_username] = 0
+            total_points = math.floor(
+                bounty.points / (pull_request_changes_requested + 1)
+            )
+            print("total_points", total_points)
+            self.points[bounty_username] += 1 if total_points <= 1 else total_points
+
+    ```
+## Code Explanation
+
+- **Initialization**: The `GitBounties` class initializes the contract with a GitHub repository, setting up data structures for developers, points, and bounties.
+- **Read Methods**:
+  - `get_developers()`: Returns the mapping of GitHub usernames to blockchain addresses.
+  - `get_points()`: Returns the mapping of GitHub usernames to earned points.
+  - `get_bounties()`: Returns the current bounties and their status.
+- **Write Methods**:
+  - `add_bounty(issue, points)`: Allows the owner to add a new bounty for an issue.
+  - `register(github_username)`: Allows developers to register by linking their GitHub profile to their blockchain address.
+  - `claim(pull)`: Processes a claim for a resolved issue, awarding points based on the bounty and the number of change requests asked by reviewers.
+
+
+## Deploying the Contract
+
+To deploy the GitBounties contract, you need to provide the GitHub repository:
+
+1. **Set GitHub Repository**: Provide the GitHub repository in the format "username/repository".
+2. **Deploy the Contract**: Once the repository is set, deploy the contract to make it ready for interaction.
+
+## Checking the Contract State
+
+After deploying the contract, its address is displayed and you can check its state in the **Read Methods** section.
+
+- Use `get_developers()` to see registered developers.
+- Use `get_points()` to see points earned by developers.
+- Use `get_bounties()` to see all current bounties and their status.
+
+## Executing Transactions
+
+To interact with the deployed contract, go to the **Write Methods** section. Here, you can:
+
+- Call `add_bounty(issue, points)` to create a new bounty (owner only).
+- Call `register(github_username)` for developers to register.
+- Call `claim(pull)` to process a claim for a resolved issue.
+
+## Analyzing the Contract's Behavior
+
+The contract's behavior involves several complex interactions:
+
+- **Adding Bounties**: Only the contract owner can add bounties for specific issues.
+- **Developer Registration**: Developers must register by providing their GitHub username. The contract verifies that their address has been added to their GitHub profile.
+- **Claiming Bounties**: When a developer claims a bounty:
+  - The contract fetches the pull request data from GitHub.
+  - It verifies if the pull request is merged and identifies the associated issue.
+  - It calculates points based on the bounty value and the number of change requests.
+  - Points are awarded to the developer who resolved the issue.
+
+## Handling Different Scenarios
+
+- **Successful Claim**: When a valid claim is processed, the bounty is marked as claimed, and points are awarded to the developer.
+- **Invalid Claim**: If the pull request is not merged or doesn't reference a valid bounty, the claim is rejected.
+- **Point Calculation**: The number of change requests affects the points awarded, with more changes resulting in fewer points.
+- **Minimum Points**: A minimum of 1 point is always awarded for a successful claim.
+
+This GitBounties contract demonstrates a complex use case involving external data integration, multi-step verification processes, and dynamic point calculation. It showcases how blockchain contracts can interact with real-world systems to create incentive structures for open-source contributions.
