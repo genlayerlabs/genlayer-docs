@@ -9,7 +9,12 @@
       "Bash(git reset:*)",
       "Bash(git checkout:*)",
       "Bash(git branch:*)",
-      "Bash(git reset:*)"
+      "Bash(git reset:*)",
+      "Bash(git rev-parse:*)",
+      "Bash(mkdir:*)",
+      "Bash(git push:*)",
+      "Bash(gh pr create:*)",
+      "Bash(gh repo view:*)"
     ],
     "deny": []
   }
