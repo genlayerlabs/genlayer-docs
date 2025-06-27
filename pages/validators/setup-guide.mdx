@@ -142,11 +142,11 @@ rollup:
   zksyncurl: "TODO: Set your GenLayer Chain ZKSync HTTP RPC URL here" # ZKSync RPC URL
   zksyncwebsocketurl: "TODO: Set your GenLayer Chain ZKSync WebSocket RPC URL here" # ZKSync WebSocket URL
 consensus:
-  contractmanageraddress: "0x12290919253844d3400432Aebb5d0706D0f5865f" # ConsensusManager Smart Contract Address
-  contractmainaddress: "0x174782d5819dD26F3d6967c995EE43db7DB824F8" # ConsensusMain Smart Contract Address
-  contractdataaddress: "0x88B0F18613Db92Bf970FfE264E02496e20a74D16" # ConsensusData Smart Contract Address
-  contractidlenessaddress: "0x2C0F0B98F52EB358410A825f68302653EAb5cc5B" # ConsensusIdleness Smart Contract Address
-  genesisblocknumber: 12345678 # Genesis block number for faster startup (optional)
+  contractmanageraddress: "0x0761ff3847294eb3234f37Bf63fd7F1CA1E840bB" # ConsensusManager Smart Contract Address
+  contractmainaddress: "0xe30293d600fF9B2C865d91307826F28006A458f4" # ConsensusMain Smart Contract Address
+  contractdataaddress: "0x2a50afD9d3E0ACC824aC4850d7B4c5561aB5D27a" # ConsensusData Smart Contract Address
+  contractidlenessaddress: "0xD1D09c2743DD26d718367Ba249Ee1629BE88CF33" # Idleness Smart Contract Address
+  genesis: 817855 # (Optional) Genesis block number for this consensus deployment. If not provided, it will be auto-detected by searching for the first log from the ConsensusMain contract.
 datadir: "./data/node" # Cache directory
 logging:
   level: "INFO"
@@ -348,7 +348,7 @@ You should see the following output:
 To ensure your node is correctly configured, you can run the following command:
 
 ```sh
-./bin/genlayernode doctor -c $(pwd)/configs/node/config.yaml
+./bin/genlayernode doctor
 ```
 
 The `doctor` command now includes comprehensive GenVM diagnostics integration to validate:
