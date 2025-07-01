@@ -1,4 +1,5 @@
 import Image from 'next/image'
+import { Callout } from 'nextra-theme-docs'
 
 # Inference Providers
 
@@ -25,6 +26,26 @@ Providers have the following properties:
 You can add a new provider by clicking the **New Config** button at the top of the providers list.
 
 <Image src="/create-providers.png" width={700} height={700} />
+
+To configure your provider:
+
+1. In the top-right corner, use the toggle switch to select between "Standard" or "Custom" provider types.
+2. Fill in the required provider details in the form:
+   - Provider: Enter a descriptive name for your provider
+   - Model: Specify a valid model name supported by your provider
+   - Plugin: Select the plugin that implements your custom provider's functionality
+   - Config: Set up your API credentials
+3. Important: For the API key configuration:
+   - Add your API key to your `.env` file
+   - In the `api_key_env_var` field, reference the environment variable name you created
+4. Click "Create" to add your provider. It will appear in your providers list marked as custom.
+
+<Callout emoji="⚠️">
+If you see a yellow warning triangle next to your provider, it indicates a configuration issue that needs your attention. 
+</Callout>
+The example below shows a custom configuration for Comput3:
+
+<Image src="/custom-provider-preset.png" width={400} height={400} />
 
 ## Updating an Existing Provider
 
