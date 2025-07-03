@@ -11,7 +11,7 @@ const config: DocsThemeConfig = {
   project: {
     link: "https://github.com/genlayerlabs/genlayer-simulator",
   },
-  docsRepositoryBase: "https://github.com/genlayerlabs/genlayer-docs",
+  docsRepositoryBase: "https://github.com/genlayerlabs/genlayer-docs/tree/main",
   footer: {
     text: "GenLayer Documentation",
   },
