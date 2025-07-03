@@ -410,13 +410,3 @@ The `doctor` command now includes comprehensive GenVM diagnostics integration to
   session ends. You can find a guide on using `screen`
   [here](https://www.networkworld.com/article/967925/how-the-linux-screen-tool-can-save-your-tasks-and-your-sanity-if-ssh-is-interrupted.html).
 </Callout>
-
-# Common Issues
-
-## Node exits with exit code 1 without any error messages
-
-Try running the node with
-
-```sh
-NODE_STARTUP_LOG_LEVEL=DEBUG ./bin/genlayernode run ...
-```
