@@ -54,14 +54,15 @@ function generateChangelog() {
     sections.push(content);
   }
   
-  // Generate the final changelog content
+  // Generate the final changelog content with a timestamp comment
   const changelogContent = `# Changelog
+{/* Generated at ${new Date().toISOString()} */}
 
 ${sections.join('\n\n')}`;
   
   // Write to the target file
   fs.writeFileSync(targetFile, changelogContent);
-  console.log(`Generated changelog with ${files.length} versions`);
+  console.log(`Generated changelog with ${files.length} versions at ${new Date().toISOString()}`);
 }
 
 // Run the script
