@@ -1,0 +1,154 @@
+### gen_getTransactionReceipt
+
+Retrieves the transaction receipt for a given transaction ID. This endpoint is a proxy to the underlying consensus layer's `getTransactionAllData` function, providing detailed information about a transaction that has been processed.
+
+**Method:** `gen_getTransactionReceipt`
+
+**Parameters:**
+
+- `request` (object, required):
+  - `txId` (`string`, required): The 32-byte transaction hash as a hexadecimal string with a `0x` prefix.
+
+**Returns:**
+
+A `Transaction` object which contains the details of the transaction. The structure is based on `ITransactionsTransaction` from the consensus contracts. The object has the following fields:
+
+- `id` (`string`): The transaction ID as a hex string.
+- `txOrigin` (`address`): The original address that initiated the transaction.
+- `sender` (`address`): The address of the sender.
+- `recipient` (`address`): The destination address of the transaction.
+- `activator` (`address`): The address of the validator that activated the transaction.
+- `status` (`uint8`): The current status of the transaction.
+- `previousStatus` (`uint8`): The previous status of the transaction.
+- `txSlot` (`uint256`): The transaction slot number.
+- `initialRotations` (`uint256`): The initial number of rotations.
+- `numOfInitialValidators` (`uint256`): The number of initial validators.
+- `randomSeed` (`string`): The random seed used for the transaction as a hex string.
+- `txExecutionHash` (`string`): The execution hash of the transaction as a hex string.
+- `otherExecutionFieldsHash` (`string`): Hash of other execution fields as a hex string.
+- `txData` (`string`): The transaction data as a hex string.
+- `eqBlocksOutputs` (`string`): The equivalent blocks outputs as a hex string.
+- `timestamps` (`object`): Object containing various timestamps:
+  - `Created` (`uint256`): When the transaction was created.
+  - `Pending` (`uint256`): When the transaction became pending.
+  - `Activated` (`uint256`): When the transaction was activated.
+  - `Proposed` (`uint256`): When the transaction was proposed.
+  - `Committed` (`uint256`): When the transaction was committed.
+  - `LastVote` (`uint256`): When the last vote was cast.
+  - `AppealSubmitted` (`uint256`): When an appeal was submitted.
+  - `LeaderRevealed` (`uint256`): When the leader was revealed.
+- `result` (`uint256`): The result of the transaction execution.
+- `readStateBlockRange` (`object`): Block range information:
+  - `ActivationBlock` (`uint256`): The activation block number.
+  - `ProcessingBlock` (`uint256`): The processing block number.
+  - `ProposalBlock` (`uint256`): The proposal block number.
+- `consumedValidators` (`array`): Array of validator addresses that participated.
+- `roundData` (`array`): Array of round data objects containing:
+  - `round` (`uint256`): The round number.
+  - `leaderIndex` (`uint256`): Index of the round leader.
+  - `votesCommitted` (`uint256`): Number of votes committed.
+  - `votesRevealed` (`uint256`): Number of votes revealed.
+  - `appealBond` (`uint256`): The appeal bond amount.
+  - `rotationsLeft` (`uint256`): Number of rotations remaining.
+  - `result` (`uint256`): The round result.
+  - `roundValidators` (`array`): Array of validator addresses for this round.
+  - `validatorVotes` (`string`): Base64-encoded validator votes.
+  - `validatorVotesHash` (`array`): Array of vote hashes as hex strings.
+  - `validatorResultHash` (`array`): Array of result hashes as hex strings.
+
+**Example Request:**
+
+```json
+{
+  "jsonrpc": "2.0",
+  "method": "gen_getTransactionReceipt",
+  "params": [
+    {
+      "txId": "0x635060dd514082096d18c8eb64682cc6a944f9ce1ae6982febf7a71e9f656f49"
+    }
+  ],
+  "id": 1
+}
+```
+
+**Example Response:**
+
+```json
+{
+  "jsonrpc": "2.0",
+  "id": 1,
+  "result": {
+    "id": "0x635060dd514082096d18c8eb64682cc6a944f9ce1ae6982febf7a71e9f656f49",
+    "txOrigin": "0x5b70759760a85d92bf972b67ee8558e8e8da87d4",
+    "sender": "0x5b70759760a85d92bf972b67ee8558e8e8da87d4",
+    "recipient": "0x73ca5a2b51edf506ceaf110a41780ec51294d89f",
+    "activator": "0xf27b07d36ff5b9dcd37fd3a09811d6456dd4483a",
+    "status": 14,
+    "previousStatus": 0,
+    "txSlot": 1,
+    "initialRotations": 1,
+    "numOfInitialValidators": 5,
+    "randomSeed": "0x3d0bdff63bce1cf84b155f1557bb15e303b903b1b559325b6492794a5e498954",
+    "txExecutionHash": "0x76744dc491b1725eb2ba08cf516855c14aac310e36711368c04442fd39d61853",
+    "otherExecutionFieldsHash": "0x0000000000000000000000000000000000000000000000000000000000000000",
+    "txData": "f5b31604617267730da4017570646174656420746573742073746f72616765066d6574686f64747570646174655f73746f7261676500",
+    "eqBlocksOutputs": "c0",
+    "timestamps": {
+      "Created": 1750774777,
+      "Pending": 1750774777,
+      "Activated": 1750774781,
+      "Proposed": 1750774786,
+      "Committed": 1750774791,
+      "LastVote": 0,
+      "AppealSubmitted": 0,
+      "LeaderRevealed": 0
+    },
+    "result": 0,
+    "readStateBlockRange": {
+      "ActivationBlock": 1377797,
+      "ProcessingBlock": 1377797,
+      "ProposalBlock": 1377798
+    },
+    "consumedValidators": [
+      "0xa707a1d9dd946242f921f0ad62f61e1b7df30c85",
+      "0xf27b07d36ff5b9dcd37fd3a09811d6456dd4483a",
+      "0xf3738216c3208d77a9db79a1d31824e5133083c4",
+      "0x56394354538bff1e0ee5021c2b6d3522fce30257",
+      "0xcfdbac032f82f388d9eca76efa6610b98e7f59fe"
+    ],
+    "roundData": [
+      {
+        "round": 0,
+        "leaderIndex": 3,
+        "votesCommitted": 5,
+        "votesRevealed": 0,
+        "appealBond": 0,
+        "rotationsLeft": 1,
+        "result": 0,
+        "roundValidators": [
+          "0xa707a1d9dd946242f921f0ad62f61e1b7df30c85",
+          "0xf27b07d36ff5b9dcd37fd3a09811d6456dd4483a",
+          "0xf3738216c3208d77a9db79a1d31824e5133083c4",
+          "0x56394354538bff1e0ee5021c2b6d3522fce30257",
+          "0xcfdbac032f82f388d9eca76efa6610b98e7f59fe"
+        ],
+        "validatorVotes": "AAAAAAA=",
+        "validatorVotesHash": [
+          "54e3478b02dfb009a35d46b19ac7c967b65416430a33d3860e9301a0f2b19d57",
+          "f74a48e7283c91757bf2c612e40f8a9eb69ea0f02cf5e6b89c3c9b6ad629a3c1",
+          "2f51c3b1d9ff35140260fb42330fbed12303a9915b8da786c9b8ed060983fa6c",
+          "730127e27167fcf2450fe506250b85d916fbf07dd874b7f0c69a2f8ceb9e44a6",
+          "473d57953f7e7c1a6fb1d2335618f21088025e02bd9fa30d6f85f20a55c24d15"
+        ],
+        "validatorResultHash": [
+          "0000000000000000000000000000000000000000000000000000000000000000",
+          "0000000000000000000000000000000000000000000000000000000000000000",
+          "0000000000000000000000000000000000000000000000000000000000000000",
+          "0000000000000000000000000000000000000000000000000000000000000000",
+          "0000000000000000000000000000000000000000000000000000000000000000"
+        ]
+      }
+    ]
+  }
+}
+```

@@ -1,0 +1,94 @@
+# gen_getContractState
+
+Retrieves the current state of a GenLayer intelligent contract at a specific block height and transaction status.
+
+**Method:** `gen_getContractState`
+
+**Parameters:**
+
+- `request` (object, required): The contract state request parameters
+  - `address` (string, required): The contract address to query
+  - `blockNumber` (string, optional): The block number to query at (hex-encoded). If not provided, uses latest block
+  - `status` (string, optional): The transaction status filter (`"finalized"` or `"accepted"`). If not provided, uses finalized state
+
+**Returns:** Hex-encoded contract state data
+
+**Example Request - Latest Finalized State:**
+
+```json
+{
+  "jsonrpc": "2.0",
+  "method": "gen_getContractState",
+  "params": [
+    {
+      "address": "0x73ca5a2b51edf506ceaf110a41780ec51294d89f"
+    }
+  ],
+  "id": 1
+}
+```
+
+**Example Request - Specific Block and Status:**
+
+```json
+{
+  "jsonrpc": "2.0",
+  "method": "gen_getContractState",
+  "params": [
+    {
+      "address": "0x73ca5a2b51edf506ceaf110a41780ec51294d89f",
+      "blockNumber": "0x151ec5",
+      "status": "accepted"
+    }
+  ],
+  "id": 1
+}
+```
+
+**Example Response:**
+
+```json
+{
+  "jsonrpc": "2.0",
+  "result": "0xd9960e0773746f726167656c6e757064617465642074657374207374",
+  "id": 1
+}
+```
+
+**Notes:**
+
+- The `blockNumber` parameter should be hex-encoded with a `0x` prefix
+- Valid `status` values are `"finalized"` (default) and `"accepted"`
+- The returned state is hex-encoded binary data with a `0x` prefix
+- Empty contract state returns `"0x"`
+- If the contract doesn't exist at the specified block/status, an error will be returned
+
+**cURL Example:**
+
+```bash
+# Get latest finalized state
+curl -X POST http://localhost:9151 \
+  -H "Content-Type: application/json" \
+  -d '{
+    "jsonrpc": "2.0",
+    "method": "gen_getContractState",
+    "params": [{
+      "address": "0x73ca5a2b51edf506ceaf110a41780ec51294d89f"
+    }],
+    "id": 1
+  }'
+
+# Get state at specific block with accepted status
+curl -X POST http://localhost:9151 \
+  -H "Content-Type: application/json" \
+  -d '{
+    "jsonrpc": "2.0",
+    "method": "gen_getContractState",
+    "params": [{
+      "address": "0x73ca5a2b51edf506ceaf110a41780ec51294d89f",
+      "blockNumber": "0x151ec5",
+      "status": "accepted"
+    }],
+    "id": 1
+  }'
+```

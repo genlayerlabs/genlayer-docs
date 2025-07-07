@@ -1,0 +1,38 @@
+### gen_dbg_trie
+
+Get trie information for debugging node internal DB state.
+
+**Method:** `gen_dbg_trie`
+
+**Parameters:**
+
+- `request` (object, required): The trie debug request
+  - `txID` (string, required): Transaction ID (hex-encoded)
+  - `round` (integer, required): Round number
+
+**Returns:** Trie debug information string
+
+**Example:**
+
+```json
+{
+  "jsonrpc": "2.0",
+  "method": "gen_dbg_trie",
+  "params": [
+    {
+      "txID": "0x742d35Cc6634C0532925a3b8D4C9db96c4b4d8b6742d35Cc6634C0532925a3b8",
+      "round": 0
+    }
+  ],
+  "id": 1
+}
+```
+
+**Response:**
+
+```json
+{
+  "jsonrpc": "2.0",
+  "result": "graph TD\nnode0@{label: \"br  seq=1\"}\nnode1@{label: \"ext seq=1 0x00000000000000000000000000000000000000000000000000000000000000000000000\"}\nnode1 --\u003e data2@{label: \"seq=1\n[21 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0]\"}\nnode0 --\u003e|0| node1\nnode3@{label: \"ext seq=1 0x72d46c3ada9f897c74d349bbfe0e450c798167c9f580f8daf85def57e96c3ea00000000\"}\nnode3 --\u003e data4@{label: \"seq=1\n[105 110 105 116 105 97 108 32 115 116 111 114 97 103 101 32 118 97 108 117 101 0 0 0 0 0 0 0 0 0 0 0]\"}\nnode0 --\u003e|3| node3\n",
+  "id": 1
+}

@@ -14,7 +14,16 @@
       "Bash(mkdir:*)",
       "Bash(git push:*)",
       "Bash(gh pr create:*)",
-      "Bash(gh repo view:*)"
+      "Bash(gh repo view:*)",
+      "Bash(chmod:*)",
+      "Bash(node:*)",
+      "Bash(npm run build:*)",
+      "Bash(pnpm install:*)",
+      "Bash(npm install)",
+      "Bash(npm start)",
+      "Bash(rm:*)",
+      "Bash(npm run generate-api-docs:*)",
+      "Bash(mv:*)"
     ],
     "deny": []
   }
