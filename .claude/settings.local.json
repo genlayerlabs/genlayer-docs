@@ -25,7 +25,8 @@
       "Bash(npm run generate-api-docs:*)",
       "Bash(mv:*)",
       "Bash(find:*)",
-      "Bash(ls:*)"
+      "Bash(ls:*)",
+      "Bash(git restore:*)"
     ],
     "deny": []
   }

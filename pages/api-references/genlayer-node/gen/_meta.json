@@ -1,6 +1,5 @@
 {
   "gen_call": "gen_call",
   "gen_getContractSchema": "gen_getContractSchema",
-  "gen_getTransactionReceipt": "gen_getTransactionReceipt",
-  "gen_getContractState": "gen_getContractState"
+  "gen_getTransactionReceipt": "gen_getTransactionReceipt"
 }
