@@ -1,35 +1,126 @@
 # Changelog
 
-import V034 from '../../content/validators/changelog/v0.3.4.mdx'
-import V033 from '../../content/validators/changelog/v0.3.3.mdx'
-import V032 from '../../content/validators/changelog/v0.3.2.mdx'
-import V031 from '../../content/validators/changelog/v0.3.1.mdx'
-import V030 from '../../content/validators/changelog/v0.3.0.mdx'
-import V020Testnet007 from '../../content/validators/changelog/v0.2.0-testnet007.mdx'
-import V020Testnet005 from '../../content/validators/changelog/v0.2.0-testnet005.mdx'
-import V020Testnet004 from '../../content/validators/changelog/v0.2.0-testnet004.mdx'
-import V020Testnet003 from '../../content/validators/changelog/v0.2.0-testnet003.mdx'
-import V020Testnet002 from '../../content/validators/changelog/v0.2.0-testnet002.mdx'
-import V020Testnet001 from '../../content/validators/changelog/v0.2.0-testnet001.mdx'
+## v0.3.4
 
-<V034 />
+### New features
 
-<V033 />
+- Added genesis block configuration support for faster node startup
+- Enhanced `doctor` command with GenVM diagnostics integration
+- Updated consensus contract addresses for network upgrade
 
-<V032 />
+### Misc
 
-<V031 />
+- Improved node synchronization performance with genesis block hints
+- Enhanced validator configuration validation and error reporting
 
-<V030 />
+## v0.3.3
 
-<V020Testnet007 />
+### New features
 
-<V020Testnet005 />
+- Added [Comput3](/validators/setup-guide#genvm-configuration) as a supported LLM provider for validators
 
-<V020Testnet004 />
+## v0.3.2
 
-<V020Testnet003 />
+### New features
 
-<V020Testnet002 />
+- Add command `doctor` to check Consensus Contract configuration
 
-<V020Testnet001 />
+### Misc
+
+- Implement retry logic with double-checked locking for `GetTimeouts`
+- Update ABI for consensus contracts.
+- Decode error returns from the network to improve error handling.
+
+## v0.3.1
+
+### Misc
+
+- Add logs details
+
+## v0.3.0
+
+### New features
+
+- Added appeals functionality
+- Added gen_getContractSchema
+- Added admin checkpoint endpoint
+- Added admin "stop at block" endpoint
+- Handle leader timeout
+- Handle validator timeout
+- Added `version` command
+
+### Bug fixes
+
+- Mitigate TxAccepted events being dropped
+- Waiting on event timeouts is now absolute
+- Patch up genvm timeouts
+- Add retry mechanism for genvm contracts interaction
+- Listen to leader timeout event to finalize transaction
+
+## v0.2.0-testnet007
+
+### New features
+
+- Activator idle replacement
+- Leader idle replacement
+- Validator idle replacement
+- Check for genvm on startup
+- Log file support for node
+- Ability to export private key in account command
+
+### Bug fixes
+
+- Build info logs now display correctly
+- Fixed config relative path
+- Node now fails fast when accepted transaction processing fails
+
+### Misc
+
+- Updated module github.com/btcsuite/btcd to v0.24.2 (security)
+- Improved sync speed on node startup
+
+## v0.2.0-testnet005
+
+### New features
+
+- Discover Consensus main genesis from deployment (contracts)
+
+### Bug fixes
+
+- All accepted sync transactions are now processed atomically per block
+- Fixed deadlock on cancelled context
+
+## v0.2.0-testnet004
+
+### Bug fixes
+
+- Updated genvm to v0.0.18
+
+## v0.2.0-testnet003
+
+### New features
+
+- Updated genvm to v0.0.17
+
+## v0.2.0-testnet002
+
+### New features
+
+- Use different address to run e2e tests
+- Updated consensus contract addresses in config
+
+## v0.2.0-testnet001
+
+### New features
+
+- Updated genvm to v0.0.16
+
+### Bug fixes
+
+- Log level is no longer ignored
+- Revived trie dumping and enhanced logging
+- Always kill genvm modules
+
+### Misc
+
+- Updated module golang.org/x/net to v0.38.0 (security)

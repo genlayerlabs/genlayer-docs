@@ -3,10 +3,11 @@
   "version": "0.0.1",
   "description": "GenLayer documentation",
   "scripts": {
-    "dev": "node scripts/generate-full-docs.js && next dev",
-    "build": "node scripts/generate-full-docs.js && next build",
+    "dev": "node scripts/generate-changelog.js && node scripts/generate-full-docs.js && next dev",
+    "build": "node scripts/generate-changelog.js && node scripts/generate-full-docs.js && next build",
     "start": "next start",
-    "generate-sitemap": "node scripts/generate-sitemap-xml.js"
+    "generate-sitemap": "node scripts/generate-sitemap-xml.js",
+    "generate-changelog": "node scripts/generate-changelog.js"
   },
   "repository": {
     "type": "git",
