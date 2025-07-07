@@ -23,7 +23,9 @@
       "Bash(npm start)",
       "Bash(rm:*)",
       "Bash(npm run generate-api-docs:*)",
-      "Bash(mv:*)"
+      "Bash(mv:*)",
+      "Bash(find:*)",
+      "Bash(ls:*)"
     ],
     "deny": []
   }
