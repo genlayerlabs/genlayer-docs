@@ -27,7 +27,8 @@
       "Bash(find:*)",
       "Bash(ls:*)",
       "Bash(git restore:*)",
-      "Bash(grep:*)"
+      "Bash(grep:*)",
+      "Bash(npm run:*)"
     ],
     "deny": []
   }
