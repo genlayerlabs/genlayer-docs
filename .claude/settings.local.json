@@ -26,7 +26,8 @@
       "Bash(mv:*)",
       "Bash(find:*)",
       "Bash(ls:*)",
-      "Bash(git restore:*)"
+      "Bash(git restore:*)",
+      "Bash(grep:*)"
     ],
     "deny": []
   }
