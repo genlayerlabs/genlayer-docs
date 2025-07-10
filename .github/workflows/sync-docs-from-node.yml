@@ -1,0 +1,301 @@
+name: Sync Documentation from Node Repository
+
+on:
+  repository_dispatch:
+    types: [sync-docs]
+  workflow_dispatch:
+    inputs:
+      source_branch:
+        description: 'Branch to sync from genlayer-node repo'
+        required: false
+        default: 'main'
+
+jobs:
+  sync-and-create-pr:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      pull-requests: write
+    
+    steps:
+      - name: Checkout documentation repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '18'
+          
+      - name: Install dependencies
+        run: npm install
+
+      - name: Set up Git
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+
+      - name: Extract sync parameters
+        id: params
+        run: |
+          if [ "${{ github.event_name }}" = "repository_dispatch" ]; then
+            echo "source_branch=${{ github.event.client_payload.source_branch || 'main' }}" >> $GITHUB_OUTPUT
+            echo "changelog_path=${{ github.event.client_payload.changelog_path || 'docs/changelog' }}" >> $GITHUB_OUTPUT
+            echo "api_gen_path=${{ github.event.client_payload.api_gen_path || 'docs/api/rpc/gen' }}" >> $GITHUB_OUTPUT
+            echo "api_debug_path=${{ github.event.client_payload.api_debug_path || 'docs/api/rpc/debug' }}" >> $GITHUB_OUTPUT
+          else
+            echo "source_branch=${{ github.event.inputs.source_branch }}" >> $GITHUB_OUTPUT
+            echo "changelog_path=docs/changelog" >> $GITHUB_OUTPUT
+            echo "api_gen_path=docs/api/gen" >> $GITHUB_OUTPUT
+            echo "api_debug_path=docs/api/debug" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Clone genlayer-node repository
+        run: |
+          git clone --branch ${{ steps.params.outputs.source_branch }} \
+            https://github.com/genlayerlabs/genlayer-node.git source-repo
+        env:
+          GITHUB_TOKEN: ${{ secrets.NODE_REPO_TOKEN || secrets.GITHUB_TOKEN }}
+
+      - name: Get latest tag from source repository
+        id: get_latest_tag
+        run: |
+          cd source-repo
+          # Fetch all tags
+          git fetch --tags
+          # Get the latest tag
+          LATEST_TAG=$(git describe --tags --abbrev=0 2>/dev/null || echo "")
+          if [ -z "$LATEST_TAG" ]; then
+            # Fallback to timestamp if no tags found
+            LATEST_TAG="notag-$(date +%Y%m%d-%H%M%S)"
+          fi
+          echo "latest_tag=$LATEST_TAG" >> $GITHUB_OUTPUT
+          cd ..
+
+      - name: Create branch for changes
+        run: |
+          BRANCH_NAME="sync-node-docs-${{ steps.get_latest_tag.outputs.latest_tag }}"
+          git checkout -b $BRANCH_NAME
+          echo "branch_name=$BRANCH_NAME" >> $GITHUB_ENV
+
+      - name: Sync changelog files
+        id: sync_changelog
+        run: |
+          SOURCE_CHANGELOG="source-repo/${{ steps.params.outputs.changelog_path }}"
+          DEST_CHANGELOG="content/validators/changelog"
+          
+          echo "## Changelog Sync" >> sync_report.md
+          echo "" >> sync_report.md
+          
+          if [ -d "$SOURCE_CHANGELOG" ]; then
+            mkdir -p "$DEST_CHANGELOG"
+            COPIED=0
+            
+            # Process both .mdx and .md files
+            for file in "$SOURCE_CHANGELOG"/*.mdx "$SOURCE_CHANGELOG"/*.md; do
+              if [ -f "$file" ]; then
+                basename_no_ext=$(basename "$file" | sed 's/\.[^.]*$//')
+                dest_filename="${basename_no_ext}.mdx"
+                
+                if ! cmp -s "$file" "$DEST_CHANGELOG/$dest_filename" 2>/dev/null; then
+                  cp "$file" "$DEST_CHANGELOG/$dest_filename"
+                  echo "- Added/Updated: \`$dest_filename\` (from $(basename "$file"))" >> sync_report.md
+                  COPIED=$((COPIED + 1))
+                fi
+              fi
+            done
+            
+            if [ $COPIED -eq 0 ]; then
+              echo "- No changelog updates found" >> sync_report.md
+            fi
+            echo "changelog_updated=$COPIED" >> $GITHUB_OUTPUT
+          else
+            echo "- Source changelog directory not found: \`${{ steps.params.outputs.changelog_path }}\`" >> sync_report.md
+            echo "changelog_updated=0" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Sync API gen method files
+        id: sync_api_gen
+        run: |
+          SOURCE_API_GEN="source-repo/${{ steps.params.outputs.api_gen_path }}"
+          DEST_API_GEN="pages/api-references/genlayer-node/gen"
+          
+          echo "" >> sync_report.md
+          echo "## API Gen Methods Sync" >> sync_report.md
+          echo "" >> sync_report.md
+          
+          if [ -d "$SOURCE_API_GEN" ]; then
+            mkdir -p "$DEST_API_GEN"
+            COPIED=0
+            
+            # Process both .mdx and .md files
+            for file in "$SOURCE_API_GEN"/*.mdx "$SOURCE_API_GEN"/*.md; do
+              if [ -f "$file" ]; then
+                basename_no_ext=$(basename "$file" | sed 's/\.[^.]*$//')
+                dest_filename="${basename_no_ext}.mdx"
+                
+                if ! cmp -s "$file" "$DEST_API_GEN/$dest_filename" 2>/dev/null; then
+                  cp "$file" "$DEST_API_GEN/$dest_filename"
+                  echo "- Added/Updated: \`$dest_filename\` (from $(basename "$file"))" >> sync_report.md
+                  COPIED=$((COPIED + 1))
+                fi
+              fi
+            done
+            
+            # Copy _meta.json if it exists
+            if [ -f "$SOURCE_API_GEN/_meta.json" ]; then
+              cp "$SOURCE_API_GEN/_meta.json" "$DEST_API_GEN/"
+            fi
+            
+            if [ $COPIED -eq 0 ]; then
+              echo "- No API gen method updates found" >> sync_report.md
+            fi
+            echo "api_gen_updated=$COPIED" >> $GITHUB_OUTPUT
+          else
+            echo "- Source API gen directory not found: \`${{ steps.params.outputs.api_gen_path }}\`" >> sync_report.md
+            echo "api_gen_updated=0" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Sync API debug method files
+        id: sync_api_debug
+        run: |
+          SOURCE_API_DEBUG="source-repo/${{ steps.params.outputs.api_debug_path }}"
+          DEST_API_DEBUG="pages/api-references/genlayer-node/debug"
+          
+          echo "" >> sync_report.md
+          echo "## API Debug Methods Sync" >> sync_report.md
+          echo "" >> sync_report.md
+          
+          if [ -d "$SOURCE_API_DEBUG" ]; then
+            mkdir -p "$DEST_API_DEBUG"
+            COPIED=0
+            
+            # Process both .mdx and .md files
+            for file in "$SOURCE_API_DEBUG"/*.mdx "$SOURCE_API_DEBUG"/*.md; do
+              if [ -f "$file" ]; then
+                basename_no_ext=$(basename "$file" | sed 's/\.[^.]*$//')
+                dest_filename="${basename_no_ext}.mdx"
+                
+                if ! cmp -s "$file" "$DEST_API_DEBUG/$dest_filename" 2>/dev/null; then
+                  cp "$file" "$DEST_API_DEBUG/$dest_filename"
+                  echo "- Added/Updated: \`$dest_filename\` (from $(basename "$file"))" >> sync_report.md
+                  COPIED=$((COPIED + 1))
+                fi
+              fi
+            done
+            
+            # Copy _meta.json if it exists
+            if [ -f "$SOURCE_API_DEBUG/_meta.json" ]; then
+              cp "$SOURCE_API_DEBUG/_meta.json" "$DEST_API_DEBUG/"
+            fi
+            
+            if [ $COPIED -eq 0 ]; then
+              echo "- No API debug method updates found" >> sync_report.md
+            fi
+            echo "api_debug_updated=$COPIED" >> $GITHUB_OUTPUT
+          else
+            echo "- Source API debug directory not found: \`${{ steps.params.outputs.api_debug_path }}\`" >> sync_report.md
+            echo "api_debug_updated=0" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Run documentation generation scripts
+        run: |
+          echo "" >> sync_report.md
+          echo "## Documentation Generation" >> sync_report.md
+          echo "" >> sync_report.md
+          
+          npm run generate-changelog
+          echo "- ✅ Generated changelog" >> sync_report.md
+          
+          npm run update-setup-guide
+          echo "- ✅ Updated setup guide versions" >> sync_report.md
+          
+          npm run generate-api-docs
+          echo "- ✅ Generated API documentation" >> sync_report.md
+
+      - name: Check for changes
+        id: check_changes
+        run: |
+          if [ -n "$(git status --porcelain)" ]; then
+            echo "has_changes=true" >> $GITHUB_OUTPUT
+            
+            # Count total updates
+            TOTAL_UPDATES=$(( ${{ steps.sync_changelog.outputs.changelog_updated }} + \
+                            ${{ steps.sync_api_gen.outputs.api_gen_updated }} + \
+                            ${{ steps.sync_api_debug.outputs.api_debug_updated }} ))
+            echo "total_updates=$TOTAL_UPDATES" >> $GITHUB_OUTPUT
+          else
+            echo "has_changes=false" >> $GITHUB_OUTPUT
+            echo "total_updates=0" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Commit changes
+        if: steps.check_changes.outputs.has_changes == 'true'
+        run: |
+          git add .
+          git commit -m "docs: Sync documentation from node repository ${{ steps.get_latest_tag.outputs.latest_tag }}
+
+          - Source: genlayerlabs/genlayer-node@${{ steps.params.outputs.source_branch }}
+          - Tag: ${{ steps.get_latest_tag.outputs.latest_tag }}
+          - Changelog updates: ${{ steps.sync_changelog.outputs.changelog_updated }}
+          - API gen updates: ${{ steps.sync_api_gen.outputs.api_gen_updated }}
+          - API debug updates: ${{ steps.sync_api_debug.outputs.api_debug_updated }}"
+
+      - name: Push changes
+        if: steps.check_changes.outputs.has_changes == 'true'
+        run: |
+          git push origin ${{ env.branch_name }}
+
+      - name: Create Pull Request
+        if: steps.check_changes.outputs.has_changes == 'true'
+        uses: peter-evans/create-pull-request@v5
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          branch: ${{ env.branch_name }}
+          title: "docs: Sync documentation from genlayer-node ${{ steps.get_latest_tag.outputs.latest_tag }}"
+          body: |
+            ## 🔄 Documentation Sync from Node Repository
+
+            This PR automatically syncs documentation from the genlayer-node repository.
+
+            ### 📋 Summary
+            - **Source Repository**: `genlayerlabs/genlayer-node`
+            - **Source Branch**: `${{ steps.params.outputs.source_branch }}`
+            - **Latest Tag**: `${{ steps.get_latest_tag.outputs.latest_tag }}`
+            - **Total Files Updated**: ${{ steps.check_changes.outputs.total_updates }}
+            - **Timestamp**: ${{ github.event.repository.updated_at }}
+
+            ### 📝 Changes
+
+            ${{ steps.check_changes.outputs.has_changes == 'true' && 'See details below:' || 'No changes detected.' }}
+
+            ---
+
+            $(cat sync_report.md)
+
+            ---
+
+            ### 🤖 Automated Process
+
+            This PR was automatically generated by the documentation sync workflow. The following scripts were run:
+            - `npm run generate-changelog`
+            - `npm run update-setup-guide`
+            - `npm run generate-api-docs`
+
+            Please review the changes and merge if everything looks correct.
+          labels: |
+            documentation
+            automated
+          draft: false
+
+      - name: Summary
+        run: |
+          if [ "${{ steps.check_changes.outputs.has_changes }}" == "true" ]; then
+            echo "✅ Successfully created PR with documentation updates" >> $GITHUB_STEP_SUMMARY
+            echo "" >> $GITHUB_STEP_SUMMARY
+            cat sync_report.md >> $GITHUB_STEP_SUMMARY
+          else
+            echo "ℹ️ No documentation changes detected. No PR created." >> $GITHUB_STEP_SUMMARY
+          fi

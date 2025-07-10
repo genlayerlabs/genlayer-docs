@@ -1,0 +1,43 @@
+# Example workflow for genlayer-node repository
+# Copy this file to .github/workflows/ in the genlayer-node repository
+# and rename it to trigger-docs-sync.yml
+
+name: Trigger Documentation Sync
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - 'docs/**'
+      - 'CHANGELOG.md'
+  workflow_dispatch:
+
+jobs:
+  trigger-docs-sync:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Trigger documentation sync
+        uses: peter-evans/repository-dispatch@v2
+        with:
+          # Create a Personal Access Token with 'repo' scope in the genlayer-docs repository
+          # Add it as a secret named DOCS_REPO_TOKEN in the genlayer-node repository
+          token: ${{ secrets.DOCS_REPO_TOKEN }}
+          repository: genlayerlabs/genlayer-docs
+          event-type: sync-docs
+          client-payload: |
+            {
+              "source_branch": "${{ github.ref_name }}",
+              "changelog_path": "docs/changelog",
+              "api_gen_path": "docs/api/gen",
+              "api_debug_path": "docs/api/debug"
+            }
+
+      - name: Summary
+        run: |
+          echo "✅ Triggered documentation sync" >> $GITHUB_STEP_SUMMARY
+          echo "- Target repository: genlayerlabs/genlayer-docs" >> $GITHUB_STEP_SUMMARY
+          echo "- Source branch: ${{ github.ref_name }}" >> $GITHUB_STEP_SUMMARY
