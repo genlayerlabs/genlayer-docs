@@ -52,10 +52,22 @@ jobs:
             echo "api_debug_path=docs/api/debug" >> $GITHUB_OUTPUT
           fi
 
-      - name: Clone genlayer-node repository
+      - name: Clone genlayer-node repository (docs folder only)
         run: |
-          git clone --branch ${{ steps.params.outputs.source_branch }} \
-            https://github.com/genlayerlabs/genlayer-node.git source-repo
+          # Create directory and initialize git
+          mkdir -p source-repo
+          cd source-repo
+          git init
+          
+          # Configure sparse checkout to only get docs folder
+          git config core.sparseCheckout true
+          echo "docs/*" > .git/info/sparse-checkout
+          
+          # Add remote and fetch
+          git remote add origin https://github.com/genlayerlabs/genlayer-node.git
+          git fetch --depth 1 origin ${{ steps.params.outputs.source_branch }}
+          git checkout ${{ steps.params.outputs.source_branch }}
+          cd ..
         env:
           GITHUB_TOKEN: ${{ secrets.NODE_REPO_TOKEN || secrets.GITHUB_TOKEN }}
 
@@ -63,8 +75,8 @@ jobs:
         id: get_latest_tag
         run: |
           cd source-repo
-          # Fetch all tags
-          git fetch --tags
+          # Fetch tags without checking out (sparse checkout doesn't need all files for tags)
+          git fetch --tags --no-recurse-submodules
           # Get the latest tag
           LATEST_TAG=$(git describe --tags --abbrev=0 2>/dev/null || echo "")
           if [ -z "$LATEST_TAG" ]; then
