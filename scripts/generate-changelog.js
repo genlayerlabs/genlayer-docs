@@ -32,7 +32,7 @@ function generateChangelog() {
           parseInt(match[1]), 
           parseInt(match[2]), 
           parseInt(match[3]), 
-          parseInt(match[4] || '999') // Regular versions come after testnet versions
+          parseInt(match[4] || '999') // Regular versions come before testnet versions
         ];
       };
       
@@ -56,7 +56,6 @@ function generateChangelog() {
   
   // Generate the final changelog content with a timestamp comment
   const changelogContent = `# Changelog
-{/* Generated at ${new Date().toISOString()} */}
 
 ${sections.join('\n\n')}`;
   

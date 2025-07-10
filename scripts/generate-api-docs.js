@@ -3,6 +3,14 @@
 const fs = require('fs');
 const path = require('path');
 
+// Configuration constants - can be overridden by environment variables
+const CONFIG = {
+  API_DIR: process.env.API_DOCS_DIR || 'pages/api-references/genlayer-node',
+  TARGET_FILE: process.env.API_DOCS_TARGET || 'pages/api-references/genlayer-node.mdx',
+  GEN_SUBDIR: process.env.API_GEN_SUBDIR || 'gen',
+  DEBUG_SUBDIR: process.env.API_DEBUG_SUBDIR || 'debug'
+};
+
 /**
  * Update _meta.json to match existing .mdx files
  */
@@ -61,8 +69,10 @@ function updateMetaJson(dirPath) {
  * Read all API method files and generate the combined content
  */
 function generateApiDocs() {
-  const apiDir = path.join(process.cwd(), 'pages/api-references/genlayer-node');
-  const targetFile = path.join(process.cwd(), 'pages/api-references/genlayer-node.mdx');
+  console.log('Generating API documentation with configuration:', CONFIG);
+  
+  const apiDir = path.join(process.cwd(), CONFIG.API_DIR);
+  const targetFile = path.join(process.cwd(), CONFIG.TARGET_FILE);
   
   if (!fs.existsSync(apiDir)) {
     console.error(`API directory ${apiDir} does not exist`);
@@ -70,10 +80,11 @@ function generateApiDocs() {
   }
   
   // Read gen methods
-  const genDir = path.join(apiDir, 'gen');
+  const genDir = path.join(apiDir, CONFIG.GEN_SUBDIR);
   const genMethods = [];
   
   if (fs.existsSync(genDir)) {
+    console.log(`Processing gen methods from ${genDir}`);
     // Update _meta.json and get file order
     const fileOrder = updateMetaJson(genDir);
     
@@ -85,13 +96,17 @@ function generateApiDocs() {
         genMethods.push(content);
       }
     }
+    console.log(`Found ${genMethods.length} gen methods`);
+  } else {
+    console.warn(`Gen methods directory ${genDir} does not exist - skipping`);
   }
   
   // Read debug methods
-  const debugDir = path.join(apiDir, 'debug');
+  const debugDir = path.join(apiDir, CONFIG.DEBUG_SUBDIR);
   const debugMethods = [];
   
   if (fs.existsSync(debugDir)) {
+    console.log(`Processing debug methods from ${debugDir}`);
     // Update _meta.json and get file order
     const fileOrder = updateMetaJson(debugDir);
     
@@ -103,6 +118,9 @@ function generateApiDocs() {
         debugMethods.push(content);
       }
     }
+    console.log(`Found ${debugMethods.length} debug methods`);
+  } else {
+    console.warn(`Debug methods directory ${debugDir} does not exist - skipping`);
   }
   
   // Generate the final API docs content

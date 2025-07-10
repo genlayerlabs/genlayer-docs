@@ -28,7 +28,11 @@
       "Bash(ls:*)",
       "Bash(git restore:*)",
       "Bash(grep:*)",
-      "Bash(npm run:*)"
+      "Bash(npm run:*)",
+      "Bash(gh pr view:*)",
+      "Bash(gh api:*)",
+      "Bash(API_GEN_SUBDIR=gen API_DEBUG_SUBDIR=debug npm run generate-api-docs)",
+      "Bash(npx yaml-lint:*)"
     ],
     "deny": []
   }

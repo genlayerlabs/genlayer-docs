@@ -28,7 +28,7 @@ function updateSetupGuideVersions() {
           parseInt(match[1]), 
           parseInt(match[2]), 
           parseInt(match[3]), 
-          parseInt(match[4] || '999') // Regular versions come after testnet versions
+          parseInt(match[4] || '999') // Regular versions come before testnet versions
         ];
       };
       
@@ -48,6 +48,12 @@ function updateSetupGuideVersions() {
   
   // Get the latest version
   const latestVersion = versions[0];
+  
+  // Check that the setup guide file exists
+  if (!fs.existsSync(setupGuidePath)) {
+    console.error(`Setup guide file ${setupGuidePath} does not exist`);
+    return;
+  }
   
   // Read the setup guide
   let setupGuideContent = fs.readFileSync(setupGuidePath, 'utf8');
