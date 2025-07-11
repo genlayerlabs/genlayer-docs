@@ -1,0 +1,58 @@
+### gen_call
+
+Executes a new message call immediately without creating a transaction on the blockchain. This method supports read operations, write operations, and contract deployments.
+
+**Method:** `gen_call`
+
+**Parameters:**
+
+- `request` (object, required): The contract call request parameters
+  - `from` (string, required): The address making the call
+  - `to` (string, required): The contract address to call
+  - `Data` (string, required): The encoded function call data
+  - `Type` (string, required): The type of call (`"read"`, `"write"`, or `"deploy"`)
+  - `transaction_hash_variant` (string, required): `"latest-nonfinal"`
+  - `value` (string, optional): The value to send with the call (hex-encoded)
+    **Returns:** Hex-encoded result data
+
+**Example - Read Call:**
+
+```json
+{
+  "jsonrpc": "2.0",
+  "method": "gen_call",
+  "params": [
+    {
+      "Type": "read",
+      "Data": "0xd8960e066d6574686f646c6765745f686176655f636f696e00",
+      "from": "0xf6A60752C24Cd3BFcAf8d387a5EB62d3746F44EE",
+      "to": "0xCe5712E63fd5475288aB1B7c0a368B9417357b81",
+      "transaction_hash_variant": "latest-nonfinal",
+      "gas": "0x5208",
+      "value": "0x0"
+    }
+  ],
+  "id": 1
+}
+```
+
+**Example - Write Call:**
+
+```json
+{
+  "jsonrpc": "2.0",
+  "method": "gen_call",
+  "params": [
+    {
+      "from": "0x742d35Cc6634C0532925a3b8D4C9db96c4b4d8b6",
+      "to":   "0x742d35Cc6634C0532925a3b8D4C9db96c4b4d8b6",
+      "data": "0xa9059cbb000000000000000000000000742d35cc6634c0532925a3b8d4c9db96c4b4d8b6",
+      "type": "write",
+      "transaction_hash_variant": "latest-nonfinal",
+      "gas":  "0x5208",
+      "value":"0x0"
+    }
+  ],
+  "id": 1
+}
+```

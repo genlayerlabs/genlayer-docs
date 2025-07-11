@@ -1,0 +1,75 @@
+### gen_getContractSchema
+
+Retrieve the schema/interface of a GenLayer contract to understand its available methods and properties.
+
+**Method:** `gen_getContractSchema`
+
+**Parameters:**
+
+- `request` (object, required): The contract schema request
+  - `code` (string, required): Base64-encoded contract code
+
+**Returns:** Contract schema object with methods and properties
+
+```json
+{
+  "ctor": { // constructor info
+    "kwparams": {}, // dict
+    "params": [["value", "type"]] // list of tuples
+  },
+  "methods": { // dict from method name to method info
+    "method_name": {
+      "kwparams": {}, // dict
+      "params": [["value", "type"]], // list of tuples
+      "payable": false, // bool
+      "readonly": false, // bool
+      "ret": "null" // string
+    },
+  }
+}
+```
+
+**Example:**
+
+```json
+{
+  "jsonrpc": "2.0",
+  "method": "gen_getContractSchema",
+  "params": [
+    {
+      "code": "IyB7ICJEZXBlbmRzIjogInB5LWdlbmxheWVyOnRlc3QiIH0KCmZyb20gZ2VubGF5ZXIgaW1wb3J0ICoKCgojIGNvbnRyYWN0IGNsYXNzCmNsYXNzIFN0b3JhZ2UoZ2wuQ29udHJhY3QpOgogICAgc3RvcmFnZTogc3RyCgogICAgIyBjb25zdHJ1Y3RvcgogICAgZGVmIF9faW5pdF9fKHNlbGYsIGluaXRpYWxfc3RvcmFnZTogc3RyKToKICAgICAgICBzZWxmLnN0b3JhZ2UgPSBpbml0aWFsX3N0b3JhZ2UKCiAgICAjIHJlYWQgbWV0aG9kcyBtdXN0IGJlIGFubm90YXRlZCB3aXRoIHZpZXcKICAgIEBnbC5wdWJsaWMudmlldwogICAgZGVmIGdldF9zdG9yYWdlKHNlbGYpIC0+IHN0cjoKICAgICAgICByZXR1cm4gc2VsZi5zdG9yYWdlCgogICAgIyB3cml0ZSBtZXRob2QKICAgIEBnbC5wdWJsaWMud3JpdGUKICAgIGRlZiB1cGRhdGVfc3RvcmFnZShzZWxmLCBuZXdfc3RvcmFnZTogc3RyKSAtPiBOb25lOgogICAgICAgIHNlbGYuc3RvcmFnZSA9IG5ld19zdG9yYWdlCg=="
+    }
+  ],
+  "id": 1
+}
+```
+
+**Response:**
+
+```json
+{
+  "jsonrpc": "2.0",
+  "result": {
+    "ctor": {
+      "kwparams": {},
+      "params": [["initial_storage", "string"]]
+    },
+    "methods": {
+      "get_storage": {
+        "kwparams": {},
+        "params": [],
+        "readonly": true,
+        "ret": "string"
+      },
+      "update_storage": {
+        "kwparams": {},
+        "params": [["new_storage", "string"]],
+        "payable": false,
+        "readonly": false,
+        "ret": "null"
+      }
+    }
+  },
+  "id": 1
+}
+```
