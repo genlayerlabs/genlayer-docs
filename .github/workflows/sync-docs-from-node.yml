@@ -9,6 +9,9 @@ on:
         description: 'Branch to sync from genlayer-node repo'
         required: false
         default: 'main'
+      tag:
+        description: 'Tag/version for branch naming (e.g., v0.3.5)'
+        required: true
 
 jobs:
   sync-and-create-pr:
@@ -16,6 +19,8 @@ jobs:
     permissions:
       contents: write
       pull-requests: write
+    env:
+      SYNC_REPORT: ${{ runner.temp }}/sync_report.md
     
     steps:
       - name: Checkout documentation repository
@@ -42,53 +47,31 @@ jobs:
         run: |
           if [ "${{ github.event_name }}" = "repository_dispatch" ]; then
             echo "source_branch=${{ github.event.client_payload.source_branch || 'main' }}" >> $GITHUB_OUTPUT
+            echo "tag=${{ github.event.client_payload.tag }}" >> $GITHUB_OUTPUT
             echo "changelog_path=${{ github.event.client_payload.changelog_path || 'docs/changelog' }}" >> $GITHUB_OUTPUT
             echo "api_gen_path=${{ github.event.client_payload.api_gen_path || 'docs/api/rpc/gen' }}" >> $GITHUB_OUTPUT
             echo "api_debug_path=${{ github.event.client_payload.api_debug_path || 'docs/api/rpc/debug' }}" >> $GITHUB_OUTPUT
           else
             echo "source_branch=${{ github.event.inputs.source_branch }}" >> $GITHUB_OUTPUT
+            echo "tag=${{ github.event.inputs.tag }}" >> $GITHUB_OUTPUT
             echo "changelog_path=docs/changelog" >> $GITHUB_OUTPUT
             echo "api_gen_path=docs/api/gen" >> $GITHUB_OUTPUT
             echo "api_debug_path=docs/api/debug" >> $GITHUB_OUTPUT
           fi
 
       - name: Clone genlayer-node repository (docs folder only)
-        run: |
-          # Create directory and initialize git
-          mkdir -p source-repo
-          cd source-repo
-          git init
-          
-          # Configure sparse checkout to only get docs folder
-          git config core.sparseCheckout true
-          echo "docs/*" > .git/info/sparse-checkout
-          
-          # Add remote and fetch
-          git remote add origin https://github.com/genlayerlabs/genlayer-node.git
-          git fetch --depth 1 origin ${{ steps.params.outputs.source_branch }}
-          git checkout ${{ steps.params.outputs.source_branch }}
-          cd ..
-        env:
-          GITHUB_TOKEN: ${{ secrets.NODE_REPO_TOKEN || secrets.GITHUB_TOKEN }}
-
-      - name: Get latest tag from source repository
-        id: get_latest_tag
-        run: |
-          cd source-repo
-          # Fetch tags without checking out (sparse checkout doesn't need all files for tags)
-          git fetch --tags --no-recurse-submodules
-          # Get the latest tag
-          LATEST_TAG=$(git describe --tags --abbrev=0 2>/dev/null || echo "")
-          if [ -z "$LATEST_TAG" ]; then
-            # Fallback to timestamp if no tags found
-            LATEST_TAG="notag-$(date +%Y%m%d-%H%M%S)"
-          fi
-          echo "latest_tag=$LATEST_TAG" >> $GITHUB_OUTPUT
-          cd ..
+        uses: actions/checkout@v4
+        with:
+          repository: genlayerlabs/genlayer-node
+          ref: ${{ steps.params.outputs.source_branch }}
+          token: ${{ secrets.NODE_REPO_TOKEN || secrets.GITHUB_TOKEN }}
+          sparse-checkout: |
+            docs
+          path: source-repo
 
       - name: Create branch for changes
         run: |
-          BRANCH_NAME="sync-node-docs-${{ steps.get_latest_tag.outputs.latest_tag }}"
+          BRANCH_NAME="docs/node/${{ steps.params.outputs.tag }}"
           git checkout -b $BRANCH_NAME
           echo "branch_name=$BRANCH_NAME" >> $GITHUB_ENV
 
@@ -98,8 +81,8 @@ jobs:
           SOURCE_CHANGELOG="source-repo/${{ steps.params.outputs.changelog_path }}"
           DEST_CHANGELOG="content/validators/changelog"
           
-          echo "## Changelog Sync" >> sync_report.md
-          echo "" >> sync_report.md
+          echo "## Changelog Sync" >> $SYNC_REPORT
+          echo "" >> $SYNC_REPORT
           
           if [ -d "$SOURCE_CHANGELOG" ]; then
             mkdir -p "$DEST_CHANGELOG"
@@ -113,18 +96,18 @@ jobs:
                 
                 if ! cmp -s "$file" "$DEST_CHANGELOG/$dest_filename" 2>/dev/null; then
                   cp "$file" "$DEST_CHANGELOG/$dest_filename"
-                  echo "- Added/Updated: \`$dest_filename\` (from $(basename "$file"))" >> sync_report.md
+                  echo "- Added/Updated: \`$dest_filename\` (from $(basename "$file"))" >> $SYNC_REPORT
                   COPIED=$((COPIED + 1))
                 fi
               fi
             done
             
             if [ $COPIED -eq 0 ]; then
-              echo "- No changelog updates found" >> sync_report.md
+              echo "- No changelog updates found" >> $SYNC_REPORT
             fi
             echo "changelog_updated=$COPIED" >> $GITHUB_OUTPUT
           else
-            echo "- Source changelog directory not found: \`${{ steps.params.outputs.changelog_path }}\`" >> sync_report.md
+            echo "- Source changelog directory not found: \`${{ steps.params.outputs.changelog_path }}\`" >> $SYNC_REPORT
             echo "changelog_updated=0" >> $GITHUB_OUTPUT
           fi
 
@@ -134,9 +117,9 @@ jobs:
           SOURCE_API_GEN="source-repo/${{ steps.params.outputs.api_gen_path }}"
           DEST_API_GEN="pages/api-references/genlayer-node/gen"
           
-          echo "" >> sync_report.md
-          echo "## API Gen Methods Sync" >> sync_report.md
-          echo "" >> sync_report.md
+          echo "" >> $SYNC_REPORT
+          echo "## API Gen Methods Sync" >> $SYNC_REPORT
+          echo "" >> $SYNC_REPORT
           
           if [ -d "$SOURCE_API_GEN" ]; then
             mkdir -p "$DEST_API_GEN"
@@ -150,7 +133,7 @@ jobs:
                 
                 if ! cmp -s "$file" "$DEST_API_GEN/$dest_filename" 2>/dev/null; then
                   cp "$file" "$DEST_API_GEN/$dest_filename"
-                  echo "- Added/Updated: \`$dest_filename\` (from $(basename "$file"))" >> sync_report.md
+                  echo "- Added/Updated: \`$dest_filename\` (from $(basename "$file"))" >> $SYNC_REPORT
                   COPIED=$((COPIED + 1))
                 fi
               fi
@@ -162,11 +145,11 @@ jobs:
             fi
             
             if [ $COPIED -eq 0 ]; then
-              echo "- No API gen method updates found" >> sync_report.md
+              echo "- No API gen method updates found" >> $SYNC_REPORT
             fi
             echo "api_gen_updated=$COPIED" >> $GITHUB_OUTPUT
           else
-            echo "- Source API gen directory not found: \`${{ steps.params.outputs.api_gen_path }}\`" >> sync_report.md
+            echo "- Source API gen directory not found: \`${{ steps.params.outputs.api_gen_path }}\`" >> $SYNC_REPORT
             echo "api_gen_updated=0" >> $GITHUB_OUTPUT
           fi
 
@@ -176,9 +159,9 @@ jobs:
           SOURCE_API_DEBUG="source-repo/${{ steps.params.outputs.api_debug_path }}"
           DEST_API_DEBUG="pages/api-references/genlayer-node/debug"
           
-          echo "" >> sync_report.md
-          echo "## API Debug Methods Sync" >> sync_report.md
-          echo "" >> sync_report.md
+          echo "" >> $SYNC_REPORT
+          echo "## API Debug Methods Sync" >> $SYNC_REPORT
+          echo "" >> $SYNC_REPORT
           
           if [ -d "$SOURCE_API_DEBUG" ]; then
             mkdir -p "$DEST_API_DEBUG"
@@ -192,7 +175,7 @@ jobs:
                 
                 if ! cmp -s "$file" "$DEST_API_DEBUG/$dest_filename" 2>/dev/null; then
                   cp "$file" "$DEST_API_DEBUG/$dest_filename"
-                  echo "- Added/Updated: \`$dest_filename\` (from $(basename "$file"))" >> sync_report.md
+                  echo "- Added/Updated: \`$dest_filename\` (from $(basename "$file"))" >> $SYNC_REPORT
                   COPIED=$((COPIED + 1))
                 fi
               fi
@@ -204,28 +187,28 @@ jobs:
             fi
             
             if [ $COPIED -eq 0 ]; then
-              echo "- No API debug method updates found" >> sync_report.md
+              echo "- No API debug method updates found" >> $SYNC_REPORT
             fi
             echo "api_debug_updated=$COPIED" >> $GITHUB_OUTPUT
           else
-            echo "- Source API debug directory not found: \`${{ steps.params.outputs.api_debug_path }}\`" >> sync_report.md
+            echo "- Source API debug directory not found: \`${{ steps.params.outputs.api_debug_path }}\`" >> $SYNC_REPORT
             echo "api_debug_updated=0" >> $GITHUB_OUTPUT
           fi
 
       - name: Run documentation generation scripts
         run: |
-          echo "" >> sync_report.md
-          echo "## Documentation Generation" >> sync_report.md
-          echo "" >> sync_report.md
+          echo "" >> $SYNC_REPORT
+          echo "## Documentation Generation" >> $SYNC_REPORT
+          echo "" >> $SYNC_REPORT
           
           npm run node-generate-changelog
-          echo "- ✅ Generated changelog" >> sync_report.md
+          echo "- ✅ Generated changelog" >> $SYNC_REPORT
           
           npm run node-update-setup-guide
-          echo "- ✅ Updated setup guide versions" >> sync_report.md
+          echo "- ✅ Updated setup guide versions" >> $SYNC_REPORT
           
           npm run node-generate-api-docs
-          echo "- ✅ Generated API documentation" >> sync_report.md
+          echo "- ✅ Generated API documentation" >> $SYNC_REPORT
 
       - name: Check for changes
         id: check_changes
@@ -247,10 +230,10 @@ jobs:
         if: steps.check_changes.outputs.has_changes == 'true'
         run: |
           git add .
-          git commit -m "docs: Sync documentation from node repository ${{ steps.get_latest_tag.outputs.latest_tag }}
+          git commit -m "docs: Sync documentation from node repository ${{ steps.params.outputs.tag }}
 
           - Source: genlayerlabs/genlayer-node@${{ steps.params.outputs.source_branch }}
-          - Tag: ${{ steps.get_latest_tag.outputs.latest_tag }}
+          - Tag: ${{ steps.params.outputs.tag }}
           - Changelog updates: ${{ steps.sync_changelog.outputs.changelog_updated }}
           - API gen updates: ${{ steps.sync_api_gen.outputs.api_gen_updated }}
           - API debug updates: ${{ steps.sync_api_debug.outputs.api_debug_updated }}"
@@ -260,10 +243,10 @@ jobs:
         if: steps.check_changes.outputs.has_changes == 'true'
         run: |
           # Read the sync report content and escape for GitHub Actions
-          SYNC_REPORT=$(cat sync_report.md)
+          SYNC_REPORT_CONTENT=$(cat $SYNC_REPORT)
           # Use EOF delimiter to handle multi-line content
           echo "content<<EOF" >> $GITHUB_OUTPUT
-          echo "$SYNC_REPORT" >> $GITHUB_OUTPUT
+          echo "$SYNC_REPORT_CONTENT" >> $GITHUB_OUTPUT
           echo "EOF" >> $GITHUB_OUTPUT
 
       - name: Push changes
@@ -277,7 +260,7 @@ jobs:
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
           branch: ${{ env.branch_name }}
-          title: "docs: Sync documentation from genlayer-node ${{ steps.get_latest_tag.outputs.latest_tag }}"
+          title: "docs: Sync documentation from genlayer-node ${{ steps.params.outputs.tag }}"
           body: |
             ## 🔄 Documentation Sync from Node Repository
 
@@ -286,7 +269,7 @@ jobs:
             ### 📋 Summary
             - **Source Repository**: `genlayerlabs/genlayer-node`
             - **Source Branch**: `${{ steps.params.outputs.source_branch }}`
-            - **Latest Tag**: `${{ steps.get_latest_tag.outputs.latest_tag }}`
+            - **Latest Tag**: `${{ steps.params.outputs.tag }}`
             - **Total Files Updated**: ${{ steps.check_changes.outputs.total_updates }}
             - **Timestamp**: ${{ github.event.repository.updated_at }}
 
