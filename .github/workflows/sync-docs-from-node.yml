@@ -31,6 +31,7 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: '18'
+          cache: 'npm'
 
       - name: Install dependencies
         run: npm install
@@ -74,7 +75,7 @@ jobs:
         run: |
           set -euo pipefail
           BRANCH_NAME="docs/node/${{ steps.params.outputs.tag }}"
-          git checkout -b $BRANCH_NAME
+          git switch --force-create $BRANCH_NAME
           echo "branch_name=$BRANCH_NAME" >> $GITHUB_ENV
 
       - name: Sync changelog files
@@ -90,23 +91,34 @@ jobs:
 
           if [ -d "$SOURCE_CHANGELOG" ]; then
             mkdir -p "$DEST_CHANGELOG"
+            
+            # Track existing files before sync
+            BEFORE_FILES=$(find "$DEST_CHANGELOG" -name "*.mdx" -type f | sort)
+            
+            # First, remove all existing files to handle deletions
+            find "$DEST_CHANGELOG" -name "*.mdx" -type f -delete
+            
+            # Copy all files from source, converting .md to .mdx
             COPIED=0
-
-            # Process both .mdx and .md files
             for file in "$SOURCE_CHANGELOG"/*.mdx "$SOURCE_CHANGELOG"/*.md; do
               if [ -f "$file" ]; then
                 basename_no_ext=$(basename "$file" | sed 's/\.[^.]*$//')
                 dest_filename="${basename_no_ext}.mdx"
-
-                if ! cmp -s "$file" "$DEST_CHANGELOG/$dest_filename" 2>/dev/null; then
-                  cp "$file" "$DEST_CHANGELOG/$dest_filename"
-                  echo "- Added/Updated: \`$dest_filename\` (from $(basename "$file"))" >> $SYNC_REPORT
-                  COPIED=$((COPIED + 1))
-                fi
+                cp "$file" "$DEST_CHANGELOG/$dest_filename"
+                echo "- Synced: \`$dest_filename\` (from $(basename "$file"))" >> $SYNC_REPORT
+                COPIED=$((COPIED + 1))
               fi
             done
-
-            if [ $COPIED -eq 0 ]; then
+            
+            # Check for deleted files
+            AFTER_FILES=$(find "$DEST_CHANGELOG" -name "*.mdx" -type f | sort)
+            DELETED_FILES=$(comm -23 <(echo "$BEFORE_FILES") <(echo "$AFTER_FILES") | wc -l)
+            
+            if [ $DELETED_FILES -gt 0 ]; then
+              echo "- Removed $DELETED_FILES stale file(s)" >> $SYNC_REPORT
+            fi
+            
+            if [ $COPIED -eq 0 ] && [ $DELETED_FILES -eq 0 ]; then
               echo "- No changelog updates found" >> $SYNC_REPORT
             fi
             echo "changelog_updated=$COPIED" >> $GITHUB_OUTPUT
@@ -129,28 +141,42 @@ jobs:
 
           if [ -d "$SOURCE_API_GEN" ]; then
             mkdir -p "$DEST_API_GEN"
+            
+            # Track existing files before sync
+            BEFORE_FILES=$(find "$DEST_API_GEN" -name "*.mdx" -type f | sort)
+            
+            # First, remove all existing .mdx files to handle deletions
+            find "$DEST_API_GEN" -name "*.mdx" -type f -delete
+            
+            # Copy all files from source, converting .md to .mdx
             COPIED=0
-
-            # Process both .mdx and .md files
             for file in "$SOURCE_API_GEN"/*.mdx "$SOURCE_API_GEN"/*.md; do
               if [ -f "$file" ]; then
                 basename_no_ext=$(basename "$file" | sed 's/\.[^.]*$//')
                 dest_filename="${basename_no_ext}.mdx"
-
-                if ! cmp -s "$file" "$DEST_API_GEN/$dest_filename" 2>/dev/null; then
-                  cp "$file" "$DEST_API_GEN/$dest_filename"
-                  echo "- Added/Updated: \`$dest_filename\` (from $(basename "$file"))" >> $SYNC_REPORT
-                  COPIED=$((COPIED + 1))
-                fi
+                cp "$file" "$DEST_API_GEN/$dest_filename"
+                echo "- Synced: \`$dest_filename\` (from $(basename "$file"))" >> $SYNC_REPORT
+                COPIED=$((COPIED + 1))
               fi
             done
             
-            # Copy _meta.json if it exists
+            # Always sync _meta.json if it exists
             if [ -f "$SOURCE_API_GEN/_meta.json" ]; then
               cp "$SOURCE_API_GEN/_meta.json" "$DEST_API_GEN/"
+            elif [ -f "$DEST_API_GEN/_meta.json" ]; then
+              # Remove _meta.json if it doesn't exist in source
+              rm "$DEST_API_GEN/_meta.json"
             fi
-
-            if [ $COPIED -eq 0 ]; then
+            
+            # Check for deleted files
+            AFTER_FILES=$(find "$DEST_API_GEN" -name "*.mdx" -type f | sort)
+            DELETED_FILES=$(comm -23 <(echo "$BEFORE_FILES") <(echo "$AFTER_FILES") | wc -l)
+            
+            if [ $DELETED_FILES -gt 0 ]; then
+              echo "- Removed $DELETED_FILES stale file(s)" >> $SYNC_REPORT
+            fi
+            
+            if [ $COPIED -eq 0 ] && [ $DELETED_FILES -eq 0 ]; then
               echo "- No API gen method updates found" >> $SYNC_REPORT
             fi
             echo "api_gen_updated=$COPIED" >> $GITHUB_OUTPUT
@@ -173,28 +199,42 @@ jobs:
 
           if [ -d "$SOURCE_API_DEBUG" ]; then
             mkdir -p "$DEST_API_DEBUG"
+            
+            # Track existing files before sync
+            BEFORE_FILES=$(find "$DEST_API_DEBUG" -name "*.mdx" -type f | sort)
+            
+            # First, remove all existing .mdx files to handle deletions
+            find "$DEST_API_DEBUG" -name "*.mdx" -type f -delete
+            
+            # Copy all files from source, converting .md to .mdx
             COPIED=0
-
-            # Process both .mdx and .md files
             for file in "$SOURCE_API_DEBUG"/*.mdx "$SOURCE_API_DEBUG"/*.md; do
               if [ -f "$file" ]; then
                 basename_no_ext=$(basename "$file" | sed 's/\.[^.]*$//')
                 dest_filename="${basename_no_ext}.mdx"
-                
-                if ! cmp -s "$file" "$DEST_API_DEBUG/$dest_filename" 2>/dev/null; then
-                  cp "$file" "$DEST_API_DEBUG/$dest_filename"
-                  echo "- Added/Updated: \`$dest_filename\` (from $(basename "$file"))" >> $SYNC_REPORT
-                  COPIED=$((COPIED + 1))
-                fi
+                cp "$file" "$DEST_API_DEBUG/$dest_filename"
+                echo "- Synced: \`$dest_filename\` (from $(basename "$file"))" >> $SYNC_REPORT
+                COPIED=$((COPIED + 1))
               fi
             done
             
-            # Copy _meta.json if it exists
+            # Always sync _meta.json if it exists
             if [ -f "$SOURCE_API_DEBUG/_meta.json" ]; then
               cp "$SOURCE_API_DEBUG/_meta.json" "$DEST_API_DEBUG/"
+            elif [ -f "$DEST_API_DEBUG/_meta.json" ]; then
+              # Remove _meta.json if it doesn't exist in source
+              rm "$DEST_API_DEBUG/_meta.json"
             fi
-
-            if [ $COPIED -eq 0 ]; then
+            
+            # Check for deleted files
+            AFTER_FILES=$(find "$DEST_API_DEBUG" -name "*.mdx" -type f | sort)
+            DELETED_FILES=$(comm -23 <(echo "$BEFORE_FILES") <(echo "$AFTER_FILES") | wc -l)
+            
+            if [ $DELETED_FILES -gt 0 ]; then
+              echo "- Removed $DELETED_FILES stale file(s)" >> $SYNC_REPORT
+            fi
+            
+            if [ $COPIED -eq 0 ] && [ $DELETED_FILES -eq 0 ]; then
               echo "- No API debug method updates found" >> $SYNC_REPORT
             fi
             echo "api_debug_updated=$COPIED" >> $GITHUB_OUTPUT
@@ -241,7 +281,7 @@ jobs:
         if: steps.check_changes.outputs.has_changes == 'true'
         run: |
           set -euo pipefail
-          git add .
+          git add content/validators/changelog pages/api-references pages/validators
           git commit -m "docs: Sync documentation from node repository ${{ steps.params.outputs.tag }}
 
           - Source: genlayerlabs/genlayer-node@${{ steps.params.outputs.source_branch }}
