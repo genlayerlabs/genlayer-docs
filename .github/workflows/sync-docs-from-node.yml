@@ -19,8 +19,6 @@ jobs:
     permissions:
       contents: write
       pull-requests: write
-    env:
-      SYNC_REPORT: ${{ runner.temp }}/sync_report.md
     
     steps:
       - name: Checkout documentation repository
@@ -78,6 +76,7 @@ jobs:
       - name: Sync changelog files
         id: sync_changelog
         run: |
+          SYNC_REPORT="${{ runner.temp }}/sync_report.md"
           SOURCE_CHANGELOG="source-repo/${{ steps.params.outputs.changelog_path }}"
           DEST_CHANGELOG="content/validators/changelog"
           
@@ -114,6 +113,7 @@ jobs:
       - name: Sync API gen method files
         id: sync_api_gen
         run: |
+          SYNC_REPORT="${{ runner.temp }}/sync_report.md"
           SOURCE_API_GEN="source-repo/${{ steps.params.outputs.api_gen_path }}"
           DEST_API_GEN="pages/api-references/genlayer-node/gen"
           
@@ -156,6 +156,7 @@ jobs:
       - name: Sync API debug method files
         id: sync_api_debug
         run: |
+          SYNC_REPORT="${{ runner.temp }}/sync_report.md"
           SOURCE_API_DEBUG="source-repo/${{ steps.params.outputs.api_debug_path }}"
           DEST_API_DEBUG="pages/api-references/genlayer-node/debug"
           
@@ -197,6 +198,7 @@ jobs:
 
       - name: Run documentation generation scripts
         run: |
+          SYNC_REPORT="${{ runner.temp }}/sync_report.md"
           echo "" >> $SYNC_REPORT
           echo "## Documentation Generation" >> $SYNC_REPORT
           echo "" >> $SYNC_REPORT
@@ -243,6 +245,7 @@ jobs:
         if: steps.check_changes.outputs.has_changes == 'true'
         run: |
           # Read the sync report content and escape for GitHub Actions
+          SYNC_REPORT="${{ runner.temp }}/sync_report.md"
           SYNC_REPORT_CONTENT=$(cat $SYNC_REPORT)
           # Use EOF delimiter to handle multi-line content
           echo "content<<EOF" >> $GITHUB_OUTPUT
