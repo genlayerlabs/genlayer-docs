@@ -67,6 +67,7 @@ jobs:
           token: ${{ secrets.NODE_REPO_TOKEN || secrets.GITHUB_TOKEN }}
           sparse-checkout: |
             docs
+          sparse-checkout-cone-mode: true
           path: source-repo
 
       - name: Create branch for changes
