@@ -446,12 +446,13 @@ jobs:
         if: steps.check_changes.outputs.has_changes == 'true'
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           set -euo pipefail
           # Check if PR already exists for this branch
-          if gh pr view "${{ env.BRANCH_NAME }}" --json number &>/dev/null; then
+          if PR_JSON=$(gh pr view "${{ env.BRANCH_NAME }}" --json url 2>/dev/null); then
             echo "PR already exists for branch ${{ env.BRANCH_NAME }} – skipping creation"
-            echo "View existing PR: $(gh pr view "${{ env.BRANCH_NAME }}" --json url -q .url)"
+            echo "View existing PR: $(echo "$PR_JSON" | jq -r .url)"
           else
             # Create PR body in temp file
             PR_BODY_FILE="${{ runner.temp }}/pr_body.md"
