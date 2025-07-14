@@ -495,7 +495,7 @@ jobs:
               --title "docs: Sync documentation from genlayer-node ${{ steps.params.outputs.tag }}" \
               --body-file "$PR_BODY_FILE" \
               --label "documentation" \
-              --label "automated" \
+              --label "node" \
               --base "main" \
               --head "${{ env.BRANCH_NAME }}"
           fi
