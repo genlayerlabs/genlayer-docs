@@ -1,5 +1,33 @@
 # Changelog
 
+## v0.3.5
+
+### New features
+
+- Add Transport with exponential backoff retry logic
+- Add timeout delay mechanism for RPC resilience
+- Add status and blockNumber parameters to gen_call
+- Enhance health endpoint with version info and validator ban detection
+- Add balance endpoint for validator nodes
+- Add gas estimation failover to all consensus transaction functions
+- Implement gen_getContractState endpoint
+- Add ionet as inference provider
+- Add gen_getTransactionStatus endpoint
+- Implement gen_getTransactionReceipt
+- Add log upload system for validator diagnostics
+
+### Misc
+
+- Add comprehensive API documentation system and operations endpoints
+- Move retry logic to infrastructure and update DI
+- Improve timeout detection with type-based checking
+- Enhance WebDriver health check validation
+
+### Bug fixes
+
+- Fix validator idleness commit flow
+- Handle methods and groups configuration for RPC methods
+
 ## v0.3.4
 
 ### New features
