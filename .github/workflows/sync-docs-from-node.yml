@@ -68,15 +68,15 @@ jobs:
           token: ${{ secrets.NODE_REPO_TOKEN || secrets.GITHUB_TOKEN }}
           sparse-checkout: |
             docs
-          sparse-checkout-cone-mode: true
+          sparse-checkout-cone: true
           path: source-repo
 
       - name: Create branch for changes
         run: |
           set -euo pipefail
           BRANCH_NAME="docs/node/${{ steps.params.outputs.tag }}"
-          git switch --force-create $BRANCH_NAME
-          echo "branch_name=$BRANCH_NAME" >> $GITHUB_ENV
+          git switch --force-create "$BRANCH_NAME"
+          echo "BRANCH_NAME=$BRANCH_NAME" >> $GITHUB_ENV
 
       - name: Sync changelog files
         id: sync_changelog
@@ -91,40 +91,72 @@ jobs:
 
           if [ -d "$SOURCE_CHANGELOG" ]; then
             mkdir -p "$DEST_CHANGELOG"
-            
+
             # Track existing files before sync
-            BEFORE_FILES=$(find "$DEST_CHANGELOG" -name "*.mdx" -type f | sort)
-            
-            # First, remove all existing files to handle deletions
-            find "$DEST_CHANGELOG" -name "*.mdx" -type f -delete
-            
-            # Copy all files from source, converting .md to .mdx
-            COPIED=0
+            declare -A EXISTING_FILES
+            while IFS= read -r file; do
+              [ -n "$file" ] && EXISTING_FILES["$(basename "$file")"]="$file"
+            done < <(find "$DEST_CHANGELOG" -name "*.mdx" -type f)
+
+            # Track what we'll be syncing
+            ADDED=0
+            UPDATED=0
+
+            # Process all source files
             for file in "$SOURCE_CHANGELOG"/*.mdx "$SOURCE_CHANGELOG"/*.md; do
               if [ -f "$file" ]; then
                 basename_no_ext=$(basename "$file" | sed 's/\.[^.]*$//')
                 dest_filename="${basename_no_ext}.mdx"
-                cp "$file" "$DEST_CHANGELOG/$dest_filename"
-                echo "- Synced: \`$dest_filename\` (from $(basename "$file"))" >> $SYNC_REPORT
-                COPIED=$((COPIED + 1))
+                dest_path="$DEST_CHANGELOG/$dest_filename"
+
+                if [ -f "$dest_path" ]; then
+                  # File exists - check if it's different
+                  if ! cmp -s "$file" "$dest_path"; then
+                    cp "$file" "$dest_path"
+                    echo "- Updated: \`$dest_filename\`" >> $SYNC_REPORT
+                    UPDATED=$((UPDATED + 1))
+                  fi
+                  # Remove from tracking to identify deletions later
+                  unset EXISTING_FILES["$dest_filename"]
+                else
+                  # New file
+                  cp "$file" "$dest_path"
+                  echo "- Added: \`$dest_filename\`" >> $SYNC_REPORT
+                  ADDED=$((ADDED + 1))
+                fi
               fi
             done
-            
-            # Check for deleted files
-            AFTER_FILES=$(find "$DEST_CHANGELOG" -name "*.mdx" -type f | sort)
-            DELETED_FILES=$(comm -23 <(echo "$BEFORE_FILES") <(echo "$AFTER_FILES") | wc -l)
-            
-            if [ $DELETED_FILES -gt 0 ]; then
-              echo "- Removed $DELETED_FILES stale file(s)" >> $SYNC_REPORT
-            fi
-            
-            if [ $COPIED -eq 0 ] && [ $DELETED_FILES -eq 0 ]; then
+
+            # Remove files that no longer exist in source
+            DELETED=0
+            for dest_file in "${EXISTING_FILES[@]}"; do
+              if [ -f "$dest_file" ]; then
+                rm "$dest_file"
+                echo "- Deleted: \`$(basename "$dest_file")\`" >> $SYNC_REPORT
+                DELETED=$((DELETED + 1))
+              fi
+            done
+
+            # Summary
+            TOTAL=$((ADDED + UPDATED + DELETED))
+            if [ $TOTAL -eq 0 ]; then
               echo "- No changelog updates found" >> $SYNC_REPORT
+            else
+              echo "" >> $SYNC_REPORT
+              echo "Summary: $ADDED added, $UPDATED updated, $DELETED deleted" >> $SYNC_REPORT
             fi
-            echo "changelog_updated=$COPIED" >> $GITHUB_OUTPUT
+
+            # Output all metrics
+            echo "changelog_added=$ADDED" >> $GITHUB_OUTPUT
+            echo "changelog_updated=$UPDATED" >> $GITHUB_OUTPUT
+            echo "changelog_deleted=$DELETED" >> $GITHUB_OUTPUT
+            echo "changelog_total=$TOTAL" >> $GITHUB_OUTPUT
           else
             echo "- Source changelog directory not found: \`${{ steps.params.outputs.changelog_path }}\`" >> $SYNC_REPORT
+            echo "changelog_added=0" >> $GITHUB_OUTPUT
             echo "changelog_updated=0" >> $GITHUB_OUTPUT
+            echo "changelog_deleted=0" >> $GITHUB_OUTPUT
+            echo "changelog_total=0" >> $GITHUB_OUTPUT
           fi
 
       - name: Sync API gen method files
@@ -141,48 +173,92 @@ jobs:
 
           if [ -d "$SOURCE_API_GEN" ]; then
             mkdir -p "$DEST_API_GEN"
-            
+
             # Track existing files before sync
-            BEFORE_FILES=$(find "$DEST_API_GEN" -name "*.mdx" -type f | sort)
-            
-            # First, remove all existing .mdx files to handle deletions
-            find "$DEST_API_GEN" -name "*.mdx" -type f -delete
-            
-            # Copy all files from source, converting .md to .mdx
-            COPIED=0
+            declare -A EXISTING_FILES
+            while IFS= read -r file; do
+              [ -n "$file" ] && EXISTING_FILES["$(basename "$file")"]="$file"
+            done < <(find "$DEST_API_GEN" -name "*.mdx" -type f)
+
+            # Track what we'll be syncing
+            ADDED=0
+            UPDATED=0
+
+            # Process all source files
             for file in "$SOURCE_API_GEN"/*.mdx "$SOURCE_API_GEN"/*.md; do
               if [ -f "$file" ]; then
                 basename_no_ext=$(basename "$file" | sed 's/\.[^.]*$//')
                 dest_filename="${basename_no_ext}.mdx"
-                cp "$file" "$DEST_API_GEN/$dest_filename"
-                echo "- Synced: \`$dest_filename\` (from $(basename "$file"))" >> $SYNC_REPORT
-                COPIED=$((COPIED + 1))
+                dest_path="$DEST_API_GEN/$dest_filename"
+
+                if [ -f "$dest_path" ]; then
+                  # File exists - check if it's different
+                  if ! cmp -s "$file" "$dest_path"; then
+                    cp "$file" "$dest_path"
+                    echo "- Updated: \`$dest_filename\`" >> $SYNC_REPORT
+                    UPDATED=$((UPDATED + 1))
+                  fi
+                  # Remove from tracking to identify deletions later
+                  unset EXISTING_FILES["$dest_filename"]
+                else
+                  # New file
+                  cp "$file" "$dest_path"
+                  echo "- Added: \`$dest_filename\`" >> $SYNC_REPORT
+                  ADDED=$((ADDED + 1))
+                fi
               fi
             done
-            
-            # Always sync _meta.json if it exists
+
+            # Handle _meta.json separately
             if [ -f "$SOURCE_API_GEN/_meta.json" ]; then
-              cp "$SOURCE_API_GEN/_meta.json" "$DEST_API_GEN/"
+              if [ -f "$DEST_API_GEN/_meta.json" ]; then
+                if ! cmp -s "$SOURCE_API_GEN/_meta.json" "$DEST_API_GEN/_meta.json"; then
+                  cp "$SOURCE_API_GEN/_meta.json" "$DEST_API_GEN/"
+                  echo "- Updated: \`_meta.json\`" >> $SYNC_REPORT
+                  UPDATED=$((UPDATED + 1))
+                fi
+              else
+                cp "$SOURCE_API_GEN/_meta.json" "$DEST_API_GEN/"
+                echo "- Added: \`_meta.json\`" >> $SYNC_REPORT
+                ADDED=$((ADDED + 1))
+              fi
+              unset EXISTING_FILES["_meta.json"]
             elif [ -f "$DEST_API_GEN/_meta.json" ]; then
-              # Remove _meta.json if it doesn't exist in source
               rm "$DEST_API_GEN/_meta.json"
+              echo "- Deleted: \`_meta.json\`" >> $SYNC_REPORT
+              DELETED=$((DELETED + 1))
             fi
-            
-            # Check for deleted files
-            AFTER_FILES=$(find "$DEST_API_GEN" -name "*.mdx" -type f | sort)
-            DELETED_FILES=$(comm -23 <(echo "$BEFORE_FILES") <(echo "$AFTER_FILES") | wc -l)
-            
-            if [ $DELETED_FILES -gt 0 ]; then
-              echo "- Removed $DELETED_FILES stale file(s)" >> $SYNC_REPORT
-            fi
-            
-            if [ $COPIED -eq 0 ] && [ $DELETED_FILES -eq 0 ]; then
+
+            # Remove files that no longer exist in source
+            DELETED=${DELETED:-0}
+            for dest_file in "${EXISTING_FILES[@]}"; do
+              if [ -f "$dest_file" ]; then
+                rm "$dest_file"
+                echo "- Deleted: \`$(basename "$dest_file")\`" >> $SYNC_REPORT
+                DELETED=$((DELETED + 1))
+              fi
+            done
+
+            # Summary
+            TOTAL=$((ADDED + UPDATED + DELETED))
+            if [ $TOTAL -eq 0 ]; then
               echo "- No API gen method updates found" >> $SYNC_REPORT
+            else
+              echo "" >> $SYNC_REPORT
+              echo "Summary: $ADDED added, $UPDATED updated, $DELETED deleted" >> $SYNC_REPORT
             fi
-            echo "api_gen_updated=$COPIED" >> $GITHUB_OUTPUT
+
+            # Output all metrics
+            echo "api_gen_added=$ADDED" >> $GITHUB_OUTPUT
+            echo "api_gen_updated=$UPDATED" >> $GITHUB_OUTPUT
+            echo "api_gen_deleted=$DELETED" >> $GITHUB_OUTPUT
+            echo "api_gen_total=$TOTAL" >> $GITHUB_OUTPUT
           else
             echo "- Source API gen directory not found: \`${{ steps.params.outputs.api_gen_path }}\`" >> $SYNC_REPORT
+            echo "api_gen_added=0" >> $GITHUB_OUTPUT
             echo "api_gen_updated=0" >> $GITHUB_OUTPUT
+            echo "api_gen_deleted=0" >> $GITHUB_OUTPUT
+            echo "api_gen_total=0" >> $GITHUB_OUTPUT
           fi
 
       - name: Sync API debug method files
@@ -199,48 +275,92 @@ jobs:
 
           if [ -d "$SOURCE_API_DEBUG" ]; then
             mkdir -p "$DEST_API_DEBUG"
-            
+
             # Track existing files before sync
-            BEFORE_FILES=$(find "$DEST_API_DEBUG" -name "*.mdx" -type f | sort)
-            
-            # First, remove all existing .mdx files to handle deletions
-            find "$DEST_API_DEBUG" -name "*.mdx" -type f -delete
-            
-            # Copy all files from source, converting .md to .mdx
-            COPIED=0
+            declare -A EXISTING_FILES
+            while IFS= read -r file; do
+              [ -n "$file" ] && EXISTING_FILES["$(basename "$file")"]="$file"
+            done < <(find "$DEST_API_DEBUG" -name "*.mdx" -type f)
+
+            # Track what we'll be syncing
+            ADDED=0
+            UPDATED=0
+
+            # Process all source files
             for file in "$SOURCE_API_DEBUG"/*.mdx "$SOURCE_API_DEBUG"/*.md; do
               if [ -f "$file" ]; then
                 basename_no_ext=$(basename "$file" | sed 's/\.[^.]*$//')
                 dest_filename="${basename_no_ext}.mdx"
-                cp "$file" "$DEST_API_DEBUG/$dest_filename"
-                echo "- Synced: \`$dest_filename\` (from $(basename "$file"))" >> $SYNC_REPORT
-                COPIED=$((COPIED + 1))
+                dest_path="$DEST_API_DEBUG/$dest_filename"
+
+                if [ -f "$dest_path" ]; then
+                  # File exists - check if it's different
+                  if ! cmp -s "$file" "$dest_path"; then
+                    cp "$file" "$dest_path"
+                    echo "- Updated: \`$dest_filename\`" >> $SYNC_REPORT
+                    UPDATED=$((UPDATED + 1))
+                  fi
+                  # Remove from tracking to identify deletions later
+                  unset EXISTING_FILES["$dest_filename"]
+                else
+                  # New file
+                  cp "$file" "$dest_path"
+                  echo "- Added: \`$dest_filename\`" >> $SYNC_REPORT
+                  ADDED=$((ADDED + 1))
+                fi
               fi
             done
-            
-            # Always sync _meta.json if it exists
+
+            # Handle _meta.json separately
             if [ -f "$SOURCE_API_DEBUG/_meta.json" ]; then
-              cp "$SOURCE_API_DEBUG/_meta.json" "$DEST_API_DEBUG/"
+              if [ -f "$DEST_API_DEBUG/_meta.json" ]; then
+                if ! cmp -s "$SOURCE_API_DEBUG/_meta.json" "$DEST_API_DEBUG/_meta.json"; then
+                  cp "$SOURCE_API_DEBUG/_meta.json" "$DEST_API_DEBUG/"
+                  echo "- Updated: \`_meta.json\`" >> $SYNC_REPORT
+                  UPDATED=$((UPDATED + 1))
+                fi
+              else
+                cp "$SOURCE_API_DEBUG/_meta.json" "$DEST_API_DEBUG/"
+                echo "- Added: \`_meta.json\`" >> $SYNC_REPORT
+                ADDED=$((ADDED + 1))
+              fi
+              unset EXISTING_FILES["_meta.json"]
             elif [ -f "$DEST_API_DEBUG/_meta.json" ]; then
-              # Remove _meta.json if it doesn't exist in source
               rm "$DEST_API_DEBUG/_meta.json"
+              echo "- Deleted: \`_meta.json\`" >> $SYNC_REPORT
+              DELETED=$((DELETED + 1))
             fi
-            
-            # Check for deleted files
-            AFTER_FILES=$(find "$DEST_API_DEBUG" -name "*.mdx" -type f | sort)
-            DELETED_FILES=$(comm -23 <(echo "$BEFORE_FILES") <(echo "$AFTER_FILES") | wc -l)
-            
-            if [ $DELETED_FILES -gt 0 ]; then
-              echo "- Removed $DELETED_FILES stale file(s)" >> $SYNC_REPORT
-            fi
-            
-            if [ $COPIED -eq 0 ] && [ $DELETED_FILES -eq 0 ]; then
+
+            # Remove files that no longer exist in source
+            DELETED=${DELETED:-0}
+            for dest_file in "${EXISTING_FILES[@]}"; do
+              if [ -f "$dest_file" ]; then
+                rm "$dest_file"
+                echo "- Deleted: \`$(basename "$dest_file")\`" >> $SYNC_REPORT
+                DELETED=$((DELETED + 1))
+              fi
+            done
+
+            # Summary
+            TOTAL=$((ADDED + UPDATED + DELETED))
+            if [ $TOTAL -eq 0 ]; then
               echo "- No API debug method updates found" >> $SYNC_REPORT
+            else
+              echo "" >> $SYNC_REPORT
+              echo "Summary: $ADDED added, $UPDATED updated, $DELETED deleted" >> $SYNC_REPORT
             fi
-            echo "api_debug_updated=$COPIED" >> $GITHUB_OUTPUT
+
+            # Output all metrics
+            echo "api_debug_added=$ADDED" >> $GITHUB_OUTPUT
+            echo "api_debug_updated=$UPDATED" >> $GITHUB_OUTPUT
+            echo "api_debug_deleted=$DELETED" >> $GITHUB_OUTPUT
+            echo "api_debug_total=$TOTAL" >> $GITHUB_OUTPUT
           else
             echo "- Source API debug directory not found: \`${{ steps.params.outputs.api_debug_path }}\`" >> $SYNC_REPORT
+            echo "api_debug_added=0" >> $GITHUB_OUTPUT
             echo "api_debug_updated=0" >> $GITHUB_OUTPUT
+            echo "api_debug_deleted=0" >> $GITHUB_OUTPUT
+            echo "api_debug_total=0" >> $GITHUB_OUTPUT
           fi
 
       - name: Run documentation generation scripts
@@ -253,10 +373,10 @@ jobs:
 
           npm run node-generate-changelog
           echo "- ✅ Generated changelog" >> $SYNC_REPORT
-          
+
           npm run node-update-setup-guide
           echo "- ✅ Updated setup guide versions" >> $SYNC_REPORT
-          
+
           npm run node-generate-api-docs
           echo "- ✅ Generated API documentation" >> $SYNC_REPORT
 
@@ -266,15 +386,29 @@ jobs:
           set -euo pipefail
           if [ -n "$(git status --porcelain)" ]; then
             echo "has_changes=true" >> $GITHUB_OUTPUT
-            
-            # Count total updates
-            TOTAL_UPDATES=$(( ${{ steps.sync_changelog.outputs.changelog_updated }} + \
-                            ${{ steps.sync_api_gen.outputs.api_gen_updated }} + \
-                            ${{ steps.sync_api_debug.outputs.api_debug_updated }} ))
-            echo "total_updates=$TOTAL_UPDATES" >> $GITHUB_OUTPUT
+
+            # Count all changes
+            TOTAL_ADDED=$(( ${{ steps.sync_changelog.outputs.changelog_added || 0 }} + \
+                          ${{ steps.sync_api_gen.outputs.api_gen_added || 0 }} + \
+                          ${{ steps.sync_api_debug.outputs.api_debug_added || 0 }} ))
+            TOTAL_UPDATED=$(( ${{ steps.sync_changelog.outputs.changelog_updated || 0 }} + \
+                            ${{ steps.sync_api_gen.outputs.api_gen_updated || 0 }} + \
+                            ${{ steps.sync_api_debug.outputs.api_debug_updated || 0 }} ))
+            TOTAL_DELETED=$(( ${{ steps.sync_changelog.outputs.changelog_deleted || 0 }} + \
+                            ${{ steps.sync_api_gen.outputs.api_gen_deleted || 0 }} + \
+                            ${{ steps.sync_api_debug.outputs.api_debug_deleted || 0 }} ))
+            TOTAL_CHANGES=$(( TOTAL_ADDED + TOTAL_UPDATED + TOTAL_DELETED ))
+
+            echo "total_added=$TOTAL_ADDED" >> $GITHUB_OUTPUT
+            echo "total_updated=$TOTAL_UPDATED" >> $GITHUB_OUTPUT
+            echo "total_deleted=$TOTAL_DELETED" >> $GITHUB_OUTPUT
+            echo "total_changes=$TOTAL_CHANGES" >> $GITHUB_OUTPUT
           else
             echo "has_changes=false" >> $GITHUB_OUTPUT
-            echo "total_updates=0" >> $GITHUB_OUTPUT
+            echo "total_added=0" >> $GITHUB_OUTPUT
+            echo "total_updated=0" >> $GITHUB_OUTPUT
+            echo "total_deleted=0" >> $GITHUB_OUTPUT
+            echo "total_changes=0" >> $GITHUB_OUTPUT
           fi
 
       - name: Commit changes
@@ -286,9 +420,10 @@ jobs:
 
           - Source: genlayerlabs/genlayer-node@${{ steps.params.outputs.source_branch }}
           - Tag: ${{ steps.params.outputs.tag }}
-          - Changelog updates: ${{ steps.sync_changelog.outputs.changelog_updated }}
-          - API gen updates: ${{ steps.sync_api_gen.outputs.api_gen_updated }}
-          - API debug updates: ${{ steps.sync_api_debug.outputs.api_debug_updated }}"
+          - Total changes: ${{ steps.check_changes.outputs.total_changes }}
+          - Added: ${{ steps.check_changes.outputs.total_added }} files
+          - Updated: ${{ steps.check_changes.outputs.total_updated }} files
+          - Deleted: ${{ steps.check_changes.outputs.total_deleted }} files"
 
       - name: Read sync report
         id: read_sync_report
@@ -307,14 +442,14 @@ jobs:
         if: steps.check_changes.outputs.has_changes == 'true'
         run: |
           set -euo pipefail
-          git push origin ${{ env.branch_name }}
+          git push origin ${{ env.BRANCH_NAME }}
 
       - name: Create Pull Request
         if: steps.check_changes.outputs.has_changes == 'true'
         uses: peter-evans/create-pull-request@v7.0.8
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
-          branch: ${{ env.branch_name }}
+          branch: ${{ env.BRANCH_NAME }}
           title: "docs: Sync documentation from genlayer-node ${{ steps.params.outputs.tag }}"
           body: |
             ## 🔄 Documentation Sync from Node Repository
@@ -325,7 +460,10 @@ jobs:
             - **Source Repository**: `genlayerlabs/genlayer-node`
             - **Source Branch**: `${{ steps.params.outputs.source_branch }}`
             - **Latest Tag**: `${{ steps.params.outputs.tag }}`
-            - **Total Files Updated**: ${{ steps.check_changes.outputs.total_updates }}
+            - **Total Files Changed**: ${{ steps.check_changes.outputs.total_changes }}
+              - Added: ${{ steps.check_changes.outputs.total_added }} files
+              - Updated: ${{ steps.check_changes.outputs.total_updated }} files
+              - Deleted: ${{ steps.check_changes.outputs.total_deleted }} files
             - **Timestamp**: ${{ github.event.repository.updated_at }}
 
             ### 📝 Changes
