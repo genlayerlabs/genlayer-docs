@@ -44,31 +44,26 @@ Add this to a workflow in the genlayer-node repository:
       }
 ```
 
-### Required Secrets
+### Tokens and Authentication
+
+#### Built-in Tokens (Automatic)
 
 - `GITHUB_TOKEN`: Automatically provided by GitHub Actions, no setup needed. Used for:
   - Repository checkout
-  - Creating pull requests via GitHub CLI
+  - Creating pull requests via GitHub CLI (automatically detected by `gh`)
   - General workflow authentication
+
+#### Personal Access Tokens (User-Managed)
+
 - `NODE_REPO_TOKEN` (optional): Personal Access Token for accessing private genlayer-node repository. Used for:
   - Cloning private genlayer-node repository
   - Falls back to `GITHUB_TOKEN` if not provided
+  
 - `DOCS_REPO_TOKEN` (in genlayer-node): Token with `repo` scope for triggering this workflow. Used for:
   - Triggering repository dispatch events from genlayer-node
   - Must have `repo` scope to trigger workflows
+  - Add this as a secret in the genlayer-node repository
 
-### Authentication
-
-The workflow uses the following tokens for authentication:
-
-- **`GITHUB_TOKEN`**: Automatically provided by GitHub Actions, used for:
-  - Checking out the documentation repository
-  - Creating pull requests via GitHub CLI (`gh pr create`)
-  - Setting as `GH_TOKEN` environment variable for GitHub CLI commands
-  
-- **`NODE_REPO_TOKEN`**: Optional, used for:
-  - Accessing private genlayer-node repository during checkout
-  - Falls back to `GITHUB_TOKEN` if not provided
 
 ### Manual Trigger
 
