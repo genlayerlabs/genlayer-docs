@@ -68,7 +68,7 @@ jobs:
           token: ${{ secrets.NODE_REPO_TOKEN || secrets.GITHUB_TOKEN }}
           sparse-checkout: |
             docs
-          sparse-checkout-cone: true
+          sparse-checkout-cone-mode: true
           path: source-repo
 
       - name: Create branch for changes
@@ -215,18 +215,15 @@ jobs:
                 if ! cmp -s "$SOURCE_API_GEN/_meta.json" "$DEST_API_GEN/_meta.json"; then
                   cp "$SOURCE_API_GEN/_meta.json" "$DEST_API_GEN/"
                   echo "- Updated: \`_meta.json\`" >> $SYNC_REPORT
-                  UPDATED=$((UPDATED + 1))
                 fi
               else
                 cp "$SOURCE_API_GEN/_meta.json" "$DEST_API_GEN/"
                 echo "- Added: \`_meta.json\`" >> $SYNC_REPORT
-                ADDED=$((ADDED + 1))
               fi
               unset EXISTING_FILES["_meta.json"]
             elif [ -f "$DEST_API_GEN/_meta.json" ]; then
               rm "$DEST_API_GEN/_meta.json"
               echo "- Deleted: \`_meta.json\`" >> $SYNC_REPORT
-              DELETED=$((DELETED + 1))
             fi
 
             # Remove files that no longer exist in source
@@ -317,18 +314,15 @@ jobs:
                 if ! cmp -s "$SOURCE_API_DEBUG/_meta.json" "$DEST_API_DEBUG/_meta.json"; then
                   cp "$SOURCE_API_DEBUG/_meta.json" "$DEST_API_DEBUG/"
                   echo "- Updated: \`_meta.json\`" >> $SYNC_REPORT
-                  UPDATED=$((UPDATED + 1))
                 fi
               else
                 cp "$SOURCE_API_DEBUG/_meta.json" "$DEST_API_DEBUG/"
                 echo "- Added: \`_meta.json\`" >> $SYNC_REPORT
-                ADDED=$((ADDED + 1))
               fi
               unset EXISTING_FILES["_meta.json"]
             elif [ -f "$DEST_API_DEBUG/_meta.json" ]; then
               rm "$DEST_API_DEBUG/_meta.json"
               echo "- Deleted: \`_meta.json\`" >> $SYNC_REPORT
-              DELETED=$((DELETED + 1))
             fi
 
             # Remove files that no longer exist in source
@@ -464,7 +458,7 @@ jobs:
               - Added: ${{ steps.check_changes.outputs.total_added }} files
               - Updated: ${{ steps.check_changes.outputs.total_updated }} files
               - Deleted: ${{ steps.check_changes.outputs.total_deleted }} files
-            - **Timestamp**: ${{ github.event.repository.updated_at }}
+            - **Timestamp**: ${{ github.run_started_at }}
 
             ### 📝 Changes
 
