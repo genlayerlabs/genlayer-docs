@@ -444,6 +444,8 @@ jobs:
 
       - name: Create Pull Request
         if: steps.check_changes.outputs.has_changes == 'true'
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           set -euo pipefail
           # Check if PR already exists for this branch
@@ -453,7 +455,7 @@ jobs:
           else
             # Create PR body in temp file
             PR_BODY_FILE="${{ runner.temp }}/pr_body.md"
-            cat >"$PR_BODY_FILE" <<EOF
+            cat >"$PR_BODY_FILE" <<'EOF'
           ## 🔄 Documentation Sync from Node Repository
 
           This PR automatically syncs documentation from the genlayer-node repository.
