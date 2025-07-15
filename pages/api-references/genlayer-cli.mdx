@@ -180,11 +180,17 @@ Configure network settings.
 
 ```bash
 USAGE:
-   genlayer network set <networkUrl>
+   genlayer network [network]
+
+ARGUMENTS:
+   [network]  Optional network name or alias to set. If omitted, displays an interactive selection menu.
+              Valid options: localnet, studionet, testnet-asimov
 
 EXAMPLES:
-   genlayer network set http://localhost:8545
-   genlayer network set https://rpc.genlayer.com
+   genlayer network                    # Interactive selection menu
+   genlayer network localnet           # Set network to localnet
+   genlayer network studionet          # Set network to studionet  
+   genlayer network testnet-asimov     # Set network to testnet-asimov
 ```
 
 ### Keypair Management
