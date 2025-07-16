@@ -113,22 +113,86 @@ Deploy and interact with intelligent contracts.
 USAGE:
    genlayer deploy [options]
    genlayer call <contractAddress> <method> [options]
+   genlayer write <contractAddress> <method> [options]
 
 OPTIONS (deploy):
    --contract <contractPath>  (Optional) Path to the intelligent contract to deploy
    --args <args...>           Positional arguments for the contract (space-separated, use quotes for multi-word arguments)
+   --rpc <rpcUrl>             RPC URL for the network
 
 OPTIONS (call):
    --args <args...>           Positional arguments for the method (space-separated, use quotes for multi-word arguments)
+   --rpc <rpcUrl>             RPC URL for the network
+
+OPTIONS (write):
+   --args <args...>           Positional arguments for the method (space-separated, use quotes for multi-word arguments)
+   --rpc <rpcUrl>             RPC URL for the network
 
 EXAMPLES:
    genlayer deploy
    genlayer deploy --contract ./my_contract.gpy
    genlayer call 0x123456789abcdef greet --args "Hello World!"
+   genlayer write 0x123456789abcdef setValue --args 42 "New Value"
 ```
 #### Deploy Behavior
 - If `--contract` is specified, the command will **deploy the given contract**.
 - If `--contract` is omitted, the CLI will **search for scripts inside the `deploy` folder**, sort them, and execute them sequentially.
+
+#### Call vs Write
+- **call**: Read-only operations that don't modify contract state
+- **write**: Operations that modify contract state and require transaction confirmation
+
+### Transaction Management
+
+Manage and query transaction receipts and appeals.
+
+```bash
+USAGE:
+   genlayer receipt <txId> [options]
+   genlayer appeal <txId> [options]
+
+OPTIONS (receipt):
+   --status <status>       Transaction status to wait for (default: "FINALIZED")
+                           Valid values: UNINITIALIZED, PENDING, PROPOSING, COMMITTING, 
+                           REVEALING, ACCEPTED, UNDETERMINED, FINALIZED, CANCELED, 
+                           APPEAL_REVEALING, APPEAL_COMMITTING, READY_TO_FINALIZE, 
+                           VALIDATORS_TIMEOUT, LEADER_TIMEOUT
+   --retries <retries>     Maximum number of retry attempts (default: 100)
+   --interval <interval>   Interval between retries in milliseconds (default: 5000)
+   --rpc <rpcUrl>          RPC URL for the network
+
+OPTIONS (appeal):
+   --rpc <rpcUrl>          RPC URL for the network
+
+EXAMPLES:
+   genlayer receipt 0x1234567890abcdef
+   genlayer receipt 0x1234567890abcdef --status ACCEPTED
+   genlayer receipt 0x1234567890abcdef --status FINALIZED --retries 50 --interval 3000
+   genlayer receipt 0x1234567890abcdef --rpc http://localhost:8545
+   
+   genlayer appeal 0x1234567890abcdef
+   genlayer appeal 0x1234567890abcdef --rpc http://localhost:8545
+```
+
+### Network Management
+
+Configure network settings.
+
+```bash
+USAGE:
+   genlayer network [network]
+
+ARGUMENTS:
+   [network]  Optional network name or alias to set. If omitted, displays an interactive selection menu.
+              Valid options: localnet, studionet, testnet-asimov
+
+EXAMPLES:
+   genlayer network                    # Interactive selection menu
+   genlayer network localnet           # Set network to localnet
+   genlayer network studionet          # Set network to studionet  
+   genlayer network testnet-asimov     # Set network to testnet-asimov
+```
+
 ### Keypair Management
 
 Generate and manage keypairs.
