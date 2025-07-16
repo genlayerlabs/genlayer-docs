@@ -1,0 +1,213 @@
+import { Callout } from 'nextra-theme-docs'
+
+# Deploy Scripts
+
+For more complex deployment workflows, use deploy scripts.
+
+## Script Structure
+
+Create TypeScript or JavaScript files in the `deploy/` directory:
+
+```
+your-project/
+├── deploy/
+│   ├── 001_deploy_main_contract.ts
+│   ├── 002_setup_configuration.ts
+│   └── 003_initialize_data.ts
+└── contracts/
+    └── my_contract.py
+```
+
+<Callout emoji="⚠️">
+  Deploy scripts are executed in alphabetical order. Use numeric prefixes (001_, 002_) to control execution order.
+</Callout>
+
+## Basic Deploy Script
+
+Here's a template for a deploy script (`deploy/deployScript.ts`):
+
+```typescript
+import { readFileSync } from "fs";
+import path from "path";
+import { TransactionHash, TransactionStatus, GenLayerClient } from "genlayer-js/types";
+
+export default async function main(client: GenLayerClient<any>) {
+  // Read the contract file
+  const filePath = path.resolve(process.cwd(), "contracts/my_contract.py");
+  const contractCode = new Uint8Array(readFileSync(filePath));
+
+  // Initialize consensus
+  await client.initializeConsensusSmartContract();
+
+  // Deploy the contract
+  const deployTransaction = await client.deployContract({
+    code: contractCode,
+    args: [], // Constructor arguments
+  });
+
+  // Wait for deployment confirmation
+  const receipt = await client.waitForTransactionReceipt({
+    hash: deployTransaction as TransactionHash,
+    retries: 200,
+  });
+
+  // Check deployment success
+  if (receipt.consensus_data?.leader_receipt[0]?.execution_result !== "SUCCESS") {
+    throw new Error(`Deployment failed. Receipt: ${JSON.stringify(receipt)}`);
+  }
+
+  console.log("Contract deployed successfully!", {
+    "Transaction Hash": deployTransaction,
+    "Contract Address": receipt.data?.contract_address,
+  });
+
+  return receipt.data?.contract_address;
+}
+```
+
+## Advanced Deploy Script with Configuration
+
+```typescript
+import { readFileSync } from "fs";
+import path from "path";
+import { TransactionHash, TransactionStatus, GenLayerClient } from "genlayer-js/types";
+
+export default async function main(client: GenLayerClient<any>) {
+  console.log("🚀 Starting deployment process...");
+
+  // Deploy main contract
+  const mainContractAddress = await deployContract(
+    client,
+    "contracts/main_contract.py",
+    ["Initial Config", 1000]
+  );
+
+  // Deploy helper contract
+  const helperContractAddress = await deployContract(
+    client,
+    "contracts/helper_contract.py",
+    [mainContractAddress]
+  );
+
+  // Configure the main contract
+  await configureContract(client, mainContractAddress, helperContractAddress);
+
+  console.log("✅ Deployment completed successfully!");
+  console.log({
+    mainContract: mainContractAddress,
+    helperContract: helperContractAddress,
+  });
+}
+
+async function deployContract(
+  client: GenLayerClient<any>,
+  contractPath: string,
+  args: any[] = []
+): Promise<string> {
+  const filePath = path.resolve(process.cwd(), contractPath);
+  const contractCode = new Uint8Array(readFileSync(filePath));
+
+  await client.initializeConsensusSmartContract();
+
+  const deployTransaction = await client.deployContract({
+    code: contractCode,
+    args,
+  });
+
+  const receipt = await client.waitForTransactionReceipt({
+    hash: deployTransaction as TransactionHash,
+    status: TransactionStatus.ACCEPTED,
+    retries: 200,
+  });
+
+  if (receipt.consensus_data?.leader_receipt[0]?.execution_result !== "SUCCESS") {
+    throw new Error(`Deployment failed for ${contractPath}`);
+  }
+
+  return receipt.data?.contract_address;
+}
+
+async function configureContract(
+  client: GenLayerClient<any>,
+  mainAddress: string,
+  helperAddress: string
+) {
+  // Example configuration call
+  const hash = await client.writeContract({
+    address: mainAddress as any,
+    functionName: "setHelperContract",
+    args: [helperAddress],
+    value: 0n,
+  });
+
+  await client.waitForTransactionReceipt({
+    hash,
+    retries: 100,
+    interval: 5000,
+  });
+}
+```
+
+## Running Deploy Scripts
+
+Execute all deploy scripts in order:
+
+```bash
+genlayer deploy
+```
+
+The CLI will automatically:
+1. Find all `.ts` and `.js` files in the `deploy/` directory
+2. Sort them numerically by filename prefix (001_, 002_, etc.)
+3. Execute them in order
+4. Pass a configured GenLayer client to each script
+
+## Script Organization
+
+### Recommended File Naming
+
+```
+deploy/
+├── 001_core_contracts.ts      # Core infrastructure
+├── 002_token_contracts.ts     # Token-related contracts  
+├── 003_governance.ts          # Governance setup
+├── 004_configure_system.ts    # System configuration
+└── 999_verify_deployment.ts   # Post-deployment verification
+```
+
+## Error Handling
+
+Always include proper error handling in deploy scripts:
+
+```typescript
+export default async function main(client: GenLayerClient<any>) {
+  try {
+    await client.initializeConsensusSmartContract();
+    
+    const deployTransaction = await client.deployContract({
+      code: contractCode,
+      args: [],
+    });
+
+    const receipt = await client.waitForTransactionReceipt({
+      hash: deployTransaction,
+      status: TransactionStatus.ACCEPTED,
+      retries: 200,
+    });
+
+    if (receipt.consensus_data?.leader_receipt[0]?.execution_result !== "SUCCESS") {
+      throw new Error(`Deployment failed: ${JSON.stringify(receipt)}`);
+    }
+
+    return receipt.data?.contract_address;
+  } catch (error) {
+    console.error("Deployment failed:", error);
+    throw error;
+  }
+}
+```
+
+## Next Steps
+
+- Configure your target network with [Network Selection](./network-selection)
+- Learn about different [GenLayer Networks](./genlayer-networks) 
