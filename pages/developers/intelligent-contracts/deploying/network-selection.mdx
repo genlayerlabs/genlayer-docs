@@ -1,0 +1,127 @@
+# Network Selection
+
+Configure which network to use for deployments and manage your network settings.
+
+## Setting the Default Network
+
+The GenLayer CLI allows you to set a default network that will be used for all operations unless overridden.
+
+### Interactive Network Selection
+
+```bash
+# Set network interactively
+genlayer network
+```
+
+This command will show you available networks and let you choose:
+
+```
+? Select a network:
+❯ localnet
+  studionet  
+  testnet-asimov
+  custom
+```
+
+### Direct Network Selection
+
+Set a specific network directly:
+
+```bash
+# Set to localnet
+genlayer network localnet
+
+# Set to studionet
+genlayer network studionet
+
+# Set to testnet
+genlayer network testnet-asimov
+```
+
+## Network-Specific Deployment
+
+Override the default network for specific deployments without changing your global configuration.
+
+### CLI Deployment with Custom Network
+
+```bash
+# Deploy to localnet with custom RPC
+genlayer deploy --contract contracts/my_contract.py --rpc http://localhost:4000/api
+
+# Deploy to studionet
+genlayer deploy --contract contracts/my_contract.py --rpc https://studionet-rpc-url.com
+
+# Deploy scripts to specific network
+genlayer deploy --rpc https://custom-network.com/api
+```
+
+## Network Configuration
+
+### Viewing Current Configuration
+
+```bash
+# Show all configuration
+genlayer config get
+
+# Show specific network setting
+genlayer config get network
+```
+
+## Managing Multiple Networks
+
+### Network Switching Workflow
+
+```bash
+# Development workflow
+genlayer network localnet
+genlayer deploy --contract contracts/my_contract.py
+
+# Testing workflow  
+genlayer network studionet
+genlayer deploy --contract contracts/my_contract.py
+
+# Pre-production workflow
+genlayer network testnet-asimov
+genlayer deploy --contract contracts/my_contract.py
+```
+
+## Network Configuration File
+
+The CLI stores network configuration in `~/.genlayer/genlayer-config.json`:
+
+```json
+{
+  "network": {
+    "id": 61999,
+    "name": "Genlayer Localnet",
+    "rpcUrls": {
+      ...
+    }
+  }
+}
+```
+
+### Manual Configuration
+
+Edit the configuration file directly:
+
+```bash
+# Open config file
+code ~/.genlayer/genlayer-config.json
+
+# Or edit with any editor
+nano ~/.genlayer/genlayer-config.json
+```
+
+## Best Practices
+
+### Development Workflow
+
+1. **Start Local**: Begin development on `localnet` for fast iteration
+2. **Test Shared**: Move to `studionet` for team testing
+3. **Validate Production**: Use `testnetAsimov` for final validation
+
+## Next Steps
+
+- Learn [CLI Deployment](./cli-deployment) techniques
+- Set up [Deploy Scripts](./deploy-scripts) for automated deployments
