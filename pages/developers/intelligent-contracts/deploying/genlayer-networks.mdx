@@ -1,0 +1,98 @@
+import { Callout } from 'nextra-theme-docs'
+
+# GenLayer Networks
+
+GenLayer supports three different networks, each serving specific purposes in the development lifecycle:
+
+## Localnet
+
+**Purpose**: Local development and testing
+- **When to use**: During development, debugging, and initial testing
+- **Setup**: Requires running GenLayer CLI locally with `genlayer init` and `genlayer up`
+- **URL**: `http://localhost:4000/api` (default)
+- **Benefits**: 
+  - Full control over validators and network configuration
+  - No external dependencies
+  - Fast transaction processing
+  - Ability to reset database and validators
+
+### Setting up Localnet
+
+```bash
+# Initialize local network
+genlayer init
+
+# Start the local network
+genlayer up
+
+```
+
+## Studionet
+
+**Purpose**: Hosted development environment
+- **When to use**: For development without local setup requirements
+- **Setup**: Accessible through [studio.genlayer.com/api](https://studio.genlayer.com)
+- **Benefits**:
+  - No local installation required
+  - Pre-configured validators
+  - Shared development environment
+  - Ideal for quick prototyping
+
+<Callout emoji="ℹ️">
+  Studionet is perfect for getting started quickly or when you need to share your development environment with others.
+</Callout>
+
+### Using Studionet
+
+```bash
+# Set network to studionet
+genlayer network studionet
+
+# Deploy to studionet
+genlayer deploy --contract contracts/my_contract.py
+```
+
+## TestnetAsimov
+
+**Purpose**: Production-like testing environment
+- **When to use**: For final testing
+- **Setup**: Connect using network configuration
+- **Benefits**:
+  - Production-like environment
+  - Stable for testing dApp integrations
+  - Shared testnet for community testing
+
+### Using TestnetAsimov
+
+```bash
+# Set network to testnet
+genlayer network testnet-asimov
+
+# Deploy to testnet
+genlayer deploy --contract contracts/my_contract.py
+```
+
+## Network Comparison
+
+| Feature | Localnet | Studionet | TestnetAsimov |
+|---------|----------|-----------|---------------|
+| **Setup Complexity** | Medium | None | Low |
+| **Control Level** | Full | Limited | Limited |
+| **Persistence** | Local only | Temporary | Persistent |
+| **Collaboration** | No | Yes | Yes |
+| **Performance** | Fast | Medium | Production-like |
+| **Best for** | Development | Prototyping | Pre-production testing |
+
+## Development Workflow
+
+We recommend following this progression:
+
+1. **Start with Localnet**: Develop and test your contracts locally with full control
+2. **Test on Studionet**: Validate contracts in a shared environment
+3. **Deploy to TestnetAsimov**: Final testing in a production-like environment
+
+## Next Steps
+
+- Configure your preferred network using [Network Selection](./network-selection)
+- Start deploying with [CLI Deployment](./cli-deployment)
+- Set up automated deployments with [Deploy Scripts](./deploy-scripts) 
