@@ -1,0 +1,110 @@
+import { Callout } from 'nextra-theme-docs'
+
+# CLI Deployment
+
+The GenLayer CLI provides a straightforward way to deploy contracts directly from the command line.
+
+## Direct Contract Deployment
+
+Deploy a single contract using the `deploy` command:
+
+```bash
+genlayer deploy --contract <contractPath> [options]
+```
+
+**Options:**
+- `--contract <contractPath>`: Path to the Python contract file
+- `--rpc <rpcUrl>`: Custom RPC URL (optional)
+- `--args <args...>`: Constructor arguments (space-separated)
+
+## Basic Examples
+
+### Simple Contract Deployment
+
+```bash
+# Deploy a simple contract
+genlayer deploy --contract contracts/my_contract.py
+```
+
+### Contract with Constructor Arguments
+
+```bash
+# Deploy with constructor arguments
+genlayer deploy --contract contracts/betting_contract.py --args "World Cup 2024" 1000
+```
+
+### Deploy to Specific RPC
+
+```bash
+# Deploy to a specific rpc
+genlayer deploy --contract contracts/my_contract.py --rpc https://custom-rpc-url.com
+```
+
+## Constructor Arguments
+
+When deploying contracts with constructor parameters, provide them as space-separated arguments:
+
+### String Arguments
+
+```bash
+# Single string argument
+genlayer deploy --contract contracts/my_contract.py --args Hello
+```
+
+### Multiple Arguments
+
+```bash
+# Multiple arguments (string, number, boolean)
+genlayer deploy --contract contracts/my_contract.py --args "Contract Name" 100 true
+```
+
+### Multi-word Strings
+
+```bash
+# Multi-word strings (use quotes)
+genlayer deploy --contract contracts/my_contract.py --args "Multi word string" 42
+```
+
+## Argument Types
+
+The CLI automatically handles different argument types:
+
+| Python Type | CLI Example | Notes |
+|-------------|-------------|-------|
+| `str` | `"Hello World"` | Use quotes for multi-word strings |
+| `int` | `42` | Numbers without quotes |
+| `float` | `3.14` | Decimal numbers |
+| `bool` | `true` or `false` | Lowercase boolean values |
+| `list` | Not supported | Use deploy scripts for complex types |
+
+<Callout emoji="⚠️">
+  For complex data types like lists, dictionaries, or objects, use [Deploy Scripts](./deploy-scripts) instead of CLI deployment.
+</Callout>
+
+## Deployment Output
+
+When a deployment succeeds, you'll see output similar to:
+
+```bash
+✅ Contract deployed successfully!
+Transaction Hash: 0x1234567890abcdef...
+Contract Address: 0xabcdef1234567890...
+```
+
+## Quick Deployment Workflow
+
+1. **Prepare your contract**: Ensure your `.py` file is ready
+2. **Choose your network**: Use `genlayer network` to set the target
+3. **Deploy**: Run the deploy command with appropriate arguments
+4. **Verify**: Note the contract address for future interactions
+
+```bash
+# Example workflow
+genlayer network localnet
+genlayer deploy --contract contracts/token.py --args "MyToken" "MTK" 1000000
+```
+
+## Next Steps
+
+- Learn about [Deploy Scripts](./deploy-scripts) for more complex deployments
+- Configure networks with [Network Selection](./network-selection)
