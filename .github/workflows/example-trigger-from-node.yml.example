@@ -1,0 +1,58 @@
+# Example workflow for genlayer-node repository
+# Copy this file to .github/workflows/ in the genlayer-node repository
+# and rename it to trigger-docs-sync.yml
+
+name: Trigger Documentation Sync
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - 'docs/**'
+      - 'CHANGELOG.md'
+  workflow_dispatch:
+
+jobs:
+  trigger-docs-sync:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0  # Fetch all history for tags
+
+      - name: Get latest tag
+        id: get_tag
+        run: |
+          # Get the latest tag
+          LATEST_TAG=$(git describe --tags --abbrev=0 2>/dev/null || echo "")
+          if [ -z "$LATEST_TAG" ]; then
+            # Fallback to commit SHA if no tags found
+            LATEST_TAG="commit-$(git rev-parse --short HEAD)"
+          fi
+          echo "tag=$LATEST_TAG" >> $GITHUB_OUTPUT
+
+      - name: Trigger documentation sync
+        uses: peter-evans/repository-dispatch@v2
+        with:
+          # Create a Personal Access Token with 'repo' scope in the genlayer-docs repository
+          # Add it as a secret named DOCS_REPO_TOKEN in the genlayer-node repository
+          token: ${{ secrets.DOCS_REPO_TOKEN }}
+          repository: genlayerlabs/genlayer-docs
+          event-type: sync-docs
+          client-payload: |
+            {
+              "source_branch": "${{ github.ref_name }}",
+              "tag": "${{ steps.get_tag.outputs.tag }}",
+              "changelog_path": "docs/changelog",
+              "api_gen_path": "docs/api/gen",
+              "api_debug_path": "docs/api/debug"
+            }
+
+      - name: Summary
+        run: |
+          echo "✅ Triggered documentation sync" >> $GITHUB_STEP_SUMMARY
+          echo "- Target repository: genlayerlabs/genlayer-docs" >> $GITHUB_STEP_SUMMARY
+          echo "- Source branch: ${{ github.ref_name }}" >> $GITHUB_STEP_SUMMARY
+          echo "- Tag: ${{ steps.get_tag.outputs.tag }}" >> $GITHUB_STEP_SUMMARY

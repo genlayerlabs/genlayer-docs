@@ -1,43 +1,73 @@
-# v0.3.4
+# Changelog
 
-## New features
+## v0.3.5
+
+### New features
+
+- Add Transport with exponential backoff retry logic
+- Add timeout delay mechanism for RPC resilience
+- Add status and blockNumber parameters to gen_call
+- Enhance health endpoint with version info and validator ban detection
+- Add balance endpoint for validator nodes
+- Add gas estimation failover to all consensus transaction functions
+- Implement gen_getContractState endpoint
+- Add ionet as inference provider
+- Add gen_getTransactionStatus endpoint
+- Implement gen_getTransactionReceipt
+- Add log upload system for validator diagnostics
+
+### Misc
+
+- Add comprehensive API documentation system and operations endpoints
+- Move retry logic to infrastructure and update DI
+- Improve timeout detection with type-based checking
+- Enhance WebDriver health check validation
+
+### Bug fixes
+
+- Fix validator idleness commit flow
+- Handle methods and groups configuration for RPC methods
+
+## v0.3.4
+
+### New features
 
 - Added genesis block configuration support for faster node startup
 - Enhanced `doctor` command with GenVM diagnostics integration
 - Updated consensus contract addresses for network upgrade
 
-## Misc
+### Misc
 
 - Improved node synchronization performance with genesis block hints
 - Enhanced validator configuration validation and error reporting
 
-# v0.3.3
+## v0.3.3
 
-## New features
+### New features
 
 - Added [Comput3](/validators/setup-guide#genvm-configuration) as a supported LLM provider for validators
 
-# v0.3.2
+## v0.3.2
 
-## New features
+### New features
 
 - Add command `doctor` to check Consensus Contract configuration
 
-## Misc
+### Misc
 
 - Implement retry logic with double-checked locking for `GetTimeouts`
 - Update ABI for consensus contracts.
 - Decode error returns from the network to improve error handling.
 
-# v0.3.1
+## v0.3.1
 
-## Misc
+### Misc
 
 - Add logs details
 
-# v0.3.0
+## v0.3.0
 
-## New features
+### New features
 
 - Added appeals functionality
 - Added gen_getContractSchema
@@ -47,7 +77,7 @@
 - Handle validator timeout
 - Added `version` command
 
-## Bug fixes
+### Bug fixes
 
 - Mitigate TxAccepted events being dropped
 - Waiting on event timeouts is now absolute
@@ -55,9 +85,9 @@
 - Add retry mechanism for genvm contracts interaction
 - Listen to leader timeout event to finalize transaction
 
-# v0.2.0-testnet007
+## v0.2.0-testnet007
 
-## New features
+### New features
 
 - Activator idle replacement
 - Leader idle replacement
@@ -66,59 +96,59 @@
 - Log file support for node
 - Ability to export private key in account command
 
-## Bug fixes
+### Bug fixes
 
 - Build info logs now display correctly
 - Fixed config relative path
 - Node now fails fast when accepted transaction processing fails
 
-## Misc
+### Misc
 
 - Updated module github.com/btcsuite/btcd to v0.24.2 (security)
 - Improved sync speed on node startup
 
-# v0.2.0-testnet005
+## v0.2.0-testnet005
 
-## New features
+### New features
 
 - Discover Consensus main genesis from deployment (contracts)
 
-## Bug fixes
+### Bug fixes
 
 - All accepted sync transactions are now processed atomically per block
 - Fixed deadlock on cancelled context
 
-# v0.2.0-testnet004
+## v0.2.0-testnet004
 
-## Bug fixes
+### Bug fixes
 
 - Updated genvm to v0.0.18
 
-# v0.2.0-testnet003
+## v0.2.0-testnet003
 
-## New features
+### New features
 
 - Updated genvm to v0.0.17
 
-# v0.2.0-testnet002
+## v0.2.0-testnet002
 
-## New features
+### New features
 
 - Use different address to run e2e tests
 - Updated consensus contract addresses in config
 
-# v0.2.0-testnet001
+## v0.2.0-testnet001
 
-## New features
+### New features
 
 - Updated genvm to v0.0.16
 
-## Bug fixes
+### Bug fixes
 
 - Log level is no longer ignored
 - Revived trie dumping and enhanced logging
 - Always kill genvm modules
 
-## Misc
+### Misc
 
 - Updated module golang.org/x/net to v0.38.0 (security)
