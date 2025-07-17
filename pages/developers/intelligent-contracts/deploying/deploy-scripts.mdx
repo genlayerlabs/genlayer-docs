@@ -29,7 +29,14 @@ Here's a template for a deploy script (`deploy/deployScript.ts`):
 ```typescript
 import { readFileSync } from "fs";
 import path from "path";
-import { TransactionHash, TransactionStatus, GenLayerClient } from "genlayer-js/types";
+import { 
+  TransactionHash, 
+  TransactionStatus, 
+  GenLayerClient, 
+  DecodedDeployData, 
+  GenLayerChain 
+} from "genlayer-js/types";
+import { testnetAsimov } from "genlayer-js/chains";
 
 export default async function main(client: GenLayerClient<any>) {
   // Read the contract file
@@ -52,16 +59,25 @@ export default async function main(client: GenLayerClient<any>) {
   });
 
   // Check deployment success
-  if (receipt.consensus_data?.leader_receipt[0]?.execution_result !== "SUCCESS") {
+  if (
+    receipt.statusName !== TransactionStatus.ACCEPTED &&
+    receipt.statusName !== TransactionStatus.FINALIZED
+  ) {
     throw new Error(`Deployment failed. Receipt: ${JSON.stringify(receipt)}`);
   }
+  
+  // Receipt structure differs between TestnetAsimov and localnet/studionet
+  const deployedContractAddress = 
+    (client.chain as GenLayerChain).id !== testnetAsimov.id
+      ? receipt.data.contract_address
+      : (receipt.txDataDecoded as DecodedDeployData)?.contractAddress;
 
   console.log("Contract deployed successfully!", {
     "Transaction Hash": deployTransaction,
-    "Contract Address": receipt.data?.contract_address,
+    "Contract Address": deployedContractAddress,
   });
 
-  return receipt.data?.contract_address;
+  return deployedContractAddress;
 }
 ```
 
@@ -70,7 +86,14 @@ export default async function main(client: GenLayerClient<any>) {
 ```typescript
 import { readFileSync } from "fs";
 import path from "path";
-import { TransactionHash, TransactionStatus, GenLayerClient } from "genlayer-js/types";
+import { 
+  TransactionHash, 
+  TransactionStatus, 
+  GenLayerClient,
+  DecodedDeployData,
+  GenLayerChain
+} from "genlayer-js/types";
+import { testnetAsimov } from "genlayer-js/chains";
 
 export default async function main(client: GenLayerClient<any>) {
   console.log("🚀 Starting deployment process...");
@@ -116,15 +139,24 @@ async function deployContract(
 
   const receipt = await client.waitForTransactionReceipt({
     hash: deployTransaction as TransactionHash,
-    status: TransactionStatus.ACCEPTED,
     retries: 200,
   });
 
-  if (receipt.consensus_data?.leader_receipt[0]?.execution_result !== "SUCCESS") {
-    throw new Error(`Deployment failed for ${contractPath}`);
+  // Check deployment success
+  if (
+    receipt.statusName !== TransactionStatus.ACCEPTED &&
+    receipt.statusName !== TransactionStatus.FINALIZED
+  ) {
+    throw new Error(`Deployment failed for ${contractPath}. Receipt: ${JSON.stringify(receipt)}`);
   }
 
-  return receipt.data?.contract_address;
+  // Receipt structure differs between TestnetAsimov and localnet/studionet
+  const deployedContractAddress = 
+    (client.chain as GenLayerChain).id !== testnetAsimov.id
+      ? receipt.data.contract_address
+      : (receipt.txDataDecoded as DecodedDeployData)?.contractAddress;
+
+  return deployedContractAddress;
 }
 
 async function configureContract(
@@ -190,16 +222,25 @@ export default async function main(client: GenLayerClient<any>) {
     });
 
     const receipt = await client.waitForTransactionReceipt({
-      hash: deployTransaction,
-      status: TransactionStatus.ACCEPTED,
+      hash: deployTransaction as TransactionHash,
       retries: 200,
     });
 
-    if (receipt.consensus_data?.leader_receipt[0]?.execution_result !== "SUCCESS") {
+    // Check deployment success
+    if (
+      receipt.statusName !== TransactionStatus.ACCEPTED &&
+      receipt.statusName !== TransactionStatus.FINALIZED
+    ) {
       throw new Error(`Deployment failed: ${JSON.stringify(receipt)}`);
     }
 
-    return receipt.data?.contract_address;
+    // Receipt structure differs between TestnetAsimov and localnet/studionet
+    const deployedContractAddress = 
+      (client.chain as GenLayerChain).id !== testnetAsimov.id
+        ? receipt.data.contract_address
+        : (receipt.txDataDecoded as DecodedDeployData)?.contractAddress;
+
+    return deployedContractAddress;
   } catch (error) {
     console.error("Deployment failed:", error);
     throw error;
