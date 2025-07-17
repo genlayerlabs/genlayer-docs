@@ -1,7 +1,6 @@
 {
   "deployment-methods": "Deployment Methods",
-  "genlayer-networks": "GenLayer Networks",
+  "network-configuration": "Network Configuration",
   "cli-deployment": "CLI Deployment",
-  "deploy-scripts": "Deploy Scripts",
-  "network-selection": "Network Selection"
+  "deploy-scripts": "Deploy Scripts"
 } 

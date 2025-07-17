@@ -33,11 +33,26 @@ genlayer deploy --contract contracts/my_contract.py
 genlayer deploy --contract contracts/betting_contract.py --args "World Cup 2024" 1000
 ```
 
-### Deploy to Specific RPC
+### Deploy to Specific Networks
+
+You can deploy to different networks by using the `--rpc` option or by setting your default network:
 
 ```bash
-# Deploy to a specific rpc
-genlayer deploy --contract contracts/my_contract.py --rpc https://custom-rpc-url.com
+# Deploy to localnet with custom RPC
+genlayer deploy --contract contracts/my_contract.py --rpc http://localhost:4000/api
+
+# Deploy to studionet
+genlayer deploy --contract contracts/my_contract.py --rpc https://studio.genlayer.com/api
+
+# Deploy scripts to specific network
+genlayer deploy --rpc https://custom-network.com/api
+```
+
+**Alternative: Set default network first**
+```bash
+# Set network then deploy
+genlayer network testnet-asimov
+genlayer deploy --contract contracts/my_contract.py
 ```
 
 ## Constructor Arguments
@@ -107,4 +122,4 @@ genlayer deploy --contract contracts/token.py --args "MyToken" "MTK" 1000000
 ## Next Steps
 
 - Learn about [Deploy Scripts](./deploy-scripts) for more complex deployments
-- Configure networks with [Network Selection](./network-selection)
+- Configure networks with [Network Configuration](./network-configuration)

@@ -1,6 +1,6 @@
 import { Callout } from 'nextra-theme-docs'
 
-# GenLayer Networks
+# Network Configuration
 
 GenLayer supports three different networks, each serving specific purposes in the development lifecycle:
 
@@ -110,8 +110,91 @@ We recommend following this progression:
 2. **Test on Studionet**: Validate contracts in a shared environment
 3. **Deploy to TestnetAsimov**: Final testing in a production-like environment
 
+## Managing Network Settings
+
+### Viewing Current Configuration
+
+```bash
+# Show all configuration
+genlayer config get
+
+# Show specific network setting
+genlayer config get network
+```
+
+### Setting Networks
+
+The GenLayer CLI allows you to set a default network that will be used for all operations unless overridden.
+
+**Interactive Network Selection:**
+```bash
+# Set network interactively
+genlayer network
+```
+
+This command will show you available networks and let you choose:
+
+```
+? Select a network:
+❯ localnet
+  studionet  
+  testnet-asimov
+  custom
+```
+
+**Direct Network Selection:**
+```bash
+# Set specific network directly
+genlayer network localnet
+genlayer network studionet
+genlayer network testnet-asimov
+```
+
+### Network Switching Workflow
+
+```bash
+# Development workflow
+genlayer network localnet
+genlayer deploy --contract contracts/my_contract.py
+
+# Testing workflow  
+genlayer network studionet
+genlayer deploy --contract contracts/my_contract.py
+
+# Pre-production workflow
+genlayer network testnet-asimov
+genlayer deploy --contract contracts/my_contract.py
+```
+
+## Network Configuration File
+
+The CLI stores network configuration in `~/.genlayer/genlayer-config.json`:
+
+```json
+{
+  "network": {
+    "id": 61999,
+    "name": "Genlayer Localnet",
+    "rpcUrls": {
+      ...
+    }
+  }
+}
+```
+
+### Manual Configuration
+
+If needed, you can edit the configuration file directly:
+
+```bash
+# Open config file
+code ~/.genlayer/genlayer-config.json
+
+# Or edit with any editor
+nano ~/.genlayer/genlayer-config.json
+```
+
 ## Next Steps
 
-- Configure your preferred network using [Network Selection](./network-selection)
 - Start deploying with [CLI Deployment](./cli-deployment)
 - Set up automated deployments with [Deploy Scripts](./deploy-scripts) 
