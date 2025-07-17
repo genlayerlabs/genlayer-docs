@@ -62,6 +62,24 @@ genlayer deploy --contract contracts/my_contract.py
   - Stable for testing dApp integrations
   - Shared testnet for community testing
 
+### Getting Testnet Tokens
+
+Before deploying to TestnetAsimov, you'll need testnet tokens. Use the faucet to get free GEN tokens:
+
+```bash
+# Request testnet tokens
+curl -X POST https://genlayer-faucet.vercel.app/api/faucet \
+  -H 'Content-Type: application/json' \
+  -d '{
+    "address": "0xYourEthereumAddressHere",
+    "network": "Genlayer Testnet",
+    "token": "GEN",
+    "turnstileToken": ""
+  }'
+```
+
+**Important**: Replace `0xYourEthereumAddressHere` with your actual Ethereum address.
+
 ### Using TestnetAsimov
 
 ```bash
