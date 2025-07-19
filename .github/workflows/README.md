@@ -18,6 +18,7 @@ This workflow automatically synchronizes documentation from the `genlayerlabs/ge
    - API gen method docs → `pages/api-references/genlayer-node/gen/`
    - API debug method docs → `pages/api-references/genlayer-node/debug/`
    - **Note**: Both `.md` and `.mdx` files are supported. `.md` files are automatically renamed to `.mdx` when copied
+   - **Regex Filtering**: API files can be filtered using regex patterns (see Customizing section below)
 4. Runs documentation generation scripts:
    - `generate-changelog.js`
    - `update-setup-guide-versions.js`
@@ -39,8 +40,10 @@ Add this to a workflow in the genlayer-node repository:
       {
         "source_branch": "${{ github.ref_name }}",
         "changelog_path": "docs/changelog",
-        "api_gen_path": "docs/api/gen",
-        "api_debug_path": "docs/api/debug"
+        "api_gen_path": "docs/api/rpc/gen",
+        "api_debug_path": "docs/api/rpc/debug",
+        "api_gen_regex": "gen_(?!dbg_).*",
+        "api_debug_regex": "gen_dbg_.*"
       }
 ```
 
@@ -72,6 +75,9 @@ From the Actions tab:
 2. Click "Run workflow"
 3. Optionally specify:
    - Source branch (default: main)
+   - Tag for branch naming (required)
+   - API gen regex filter (optional, default: `gen_(?!dbg_).*`)
+   - API debug regex filter (optional, default: `gen_dbg_.*`)
 
 ### File Structure Expected in genlayer-node
 
@@ -92,9 +98,19 @@ docs/
 │       └── ...
 ```
 
-### Customizing Paths
+### Customizing Paths and Filtering
 
-The source paths can be customized in the event payload:
+The source paths and filters can be customized in the event payload:
+
+#### Paths
 - `changelog_path`: Path to changelog files (default: `docs/changelog`)
 - `api_gen_path`: Path to API gen methods (default: `docs/api/rpc/gen`)
 - `api_debug_path`: Path to API debug methods (default: `docs/api/rpc/debug`)
+
+#### Regex Filters
+- `api_gen_regex`: Regex pattern to filter gen API files (default: `gen_(?!dbg_).*`)
+  - This default pattern matches files starting with `gen_` but excludes those starting with `gen_dbg_`
+- `api_debug_regex`: Regex pattern to filter debug API files (default: `gen_dbg_.*`)
+  - This default pattern matches only files starting with `gen_dbg_`
+
+The regex patterns are applied to the filename (without extension) to determine which files should be synced.

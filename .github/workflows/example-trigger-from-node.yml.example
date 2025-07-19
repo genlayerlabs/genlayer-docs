@@ -46,8 +46,10 @@ jobs:
               "source_branch": "${{ github.ref_name }}",
               "tag": "${{ steps.get_tag.outputs.tag }}",
               "changelog_path": "docs/changelog",
-              "api_gen_path": "docs/api/gen",
-              "api_debug_path": "docs/api/debug"
+              "api_gen_path": "docs/api/rpc/gen",
+              "api_debug_path": "docs/api/rpc/debug",
+              "api_gen_regex": "gen_(?!dbg_).*",
+              "api_debug_regex": "gen_dbg_.*"
             }
 
       - name: Summary

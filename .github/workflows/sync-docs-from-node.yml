@@ -12,6 +12,14 @@ on:
       tag:
         description: 'Tag/version for branch naming (e.g., v0.3.5)'
         required: true
+      api_gen_regex:
+        description: 'Regex pattern to filter API gen files (e.g., "gen_.*")'
+        required: false
+        default: 'gen_(?!dbg_).*'
+      api_debug_regex:
+        description: 'Regex pattern to filter API debug files (e.g., "gen_dbg_.*")'
+        required: false
+        default: 'gen_dbg_.*'
 
 jobs:
   sync-and-create-pr:
@@ -52,12 +60,16 @@ jobs:
             echo "changelog_path=${{ github.event.client_payload.changelog_path || 'docs/changelog' }}" >> $GITHUB_OUTPUT
             echo "api_gen_path=${{ github.event.client_payload.api_gen_path || 'docs/api/rpc/gen' }}" >> $GITHUB_OUTPUT
             echo "api_debug_path=${{ github.event.client_payload.api_debug_path || 'docs/api/rpc/debug' }}" >> $GITHUB_OUTPUT
+            echo "api_gen_regex=${{ github.event.client_payload.api_gen_regex || 'gen_(?!dbg_).*' }}" >> $GITHUB_OUTPUT
+            echo "api_debug_regex=${{ github.event.client_payload.api_debug_regex || 'gen_dbg_.*' }}" >> $GITHUB_OUTPUT
           else
             echo "source_branch=${{ github.event.inputs.source_branch }}" >> $GITHUB_OUTPUT
             echo "tag=${{ github.event.inputs.tag }}" >> $GITHUB_OUTPUT
             echo "changelog_path=docs/changelog" >> $GITHUB_OUTPUT
-            echo "api_gen_path=docs/api/gen" >> $GITHUB_OUTPUT
-            echo "api_debug_path=docs/api/debug" >> $GITHUB_OUTPUT
+            echo "api_gen_path=docs/api/rpc/gen" >> $GITHUB_OUTPUT
+            echo "api_debug_path=docs/api/rpc/debug" >> $GITHUB_OUTPUT
+            echo "api_gen_regex=${{ github.event.inputs.api_gen_regex || 'gen_(?!dbg_).*' }}" >> $GITHUB_OUTPUT
+            echo "api_debug_regex=${{ github.event.inputs.api_debug_regex || 'gen_dbg_.*' }}" >> $GITHUB_OUTPUT
           fi
 
       - name: Clone genlayer-node repository (docs folder only)
@@ -166,9 +178,11 @@ jobs:
           SYNC_REPORT="${{ runner.temp }}/sync_report.md"
           SOURCE_API_GEN="source-repo/${{ steps.params.outputs.api_gen_path }}"
           DEST_API_GEN="pages/api-references/genlayer-node/gen"
+          API_GEN_REGEX="${{ steps.params.outputs.api_gen_regex }}"
 
           echo "" >> $SYNC_REPORT
           echo "## API Gen Methods Sync" >> $SYNC_REPORT
+          echo "Using regex filter: \`$API_GEN_REGEX\`" >> $SYNC_REPORT
           echo "" >> $SYNC_REPORT
 
           if [ -d "$SOURCE_API_GEN" ]; then
@@ -184,27 +198,31 @@ jobs:
             ADDED=0
             UPDATED=0
 
-            # Process all source files
+            # Process all source files that match the regex
             for file in "$SOURCE_API_GEN"/*.mdx "$SOURCE_API_GEN"/*.md; do
               if [ -f "$file" ]; then
                 basename_no_ext=$(basename "$file" | sed 's/\.[^.]*$//')
-                dest_filename="${basename_no_ext}.mdx"
-                dest_path="$DEST_API_GEN/$dest_filename"
+                
+                # Check if filename (without extension) matches the regex filter
+                if echo "$basename_no_ext" | grep -E "^($API_GEN_REGEX)$" > /dev/null 2>&1; then
+                  dest_filename="${basename_no_ext}.mdx"
+                  dest_path="$DEST_API_GEN/$dest_filename"
 
-                if [ -f "$dest_path" ]; then
-                  # File exists - check if it's different
-                  if ! cmp -s "$file" "$dest_path"; then
+                  if [ -f "$dest_path" ]; then
+                    # File exists - check if it's different
+                    if ! cmp -s "$file" "$dest_path"; then
+                      cp "$file" "$dest_path"
+                      echo "- Updated: \`$dest_filename\`" >> $SYNC_REPORT
+                      UPDATED=$((UPDATED + 1))
+                    fi
+                    # Remove from tracking to identify deletions later
+                    unset EXISTING_FILES["$dest_filename"]
+                  else
+                    # New file
                     cp "$file" "$dest_path"
-                    echo "- Updated: \`$dest_filename\`" >> $SYNC_REPORT
-                    UPDATED=$((UPDATED + 1))
+                    echo "- Added: \`$dest_filename\`" >> $SYNC_REPORT
+                    ADDED=$((ADDED + 1))
                   fi
-                  # Remove from tracking to identify deletions later
-                  unset EXISTING_FILES["$dest_filename"]
-                else
-                  # New file
-                  cp "$file" "$dest_path"
-                  echo "- Added: \`$dest_filename\`" >> $SYNC_REPORT
-                  ADDED=$((ADDED + 1))
                 fi
               fi
             done
@@ -226,13 +244,25 @@ jobs:
               echo "- Deleted: \`_meta.json\`" >> $SYNC_REPORT
             fi
 
-            # Remove files that no longer exist in source
+            # Remove files that no longer exist in source or don't match the filter
             DELETED=${DELETED:-0}
             for dest_file in "${EXISTING_FILES[@]}"; do
               if [ -f "$dest_file" ]; then
-                rm "$dest_file"
-                echo "- Deleted: \`$(basename "$dest_file")\`" >> $SYNC_REPORT
-                DELETED=$((DELETED + 1))
+                dest_basename_no_ext=$(basename "$dest_file" | sed 's/\.[^.]*$//')
+                # Check if the file should still exist based on source and filter
+                source_exists=false
+                if [ -f "$SOURCE_API_GEN/${dest_basename_no_ext}.mdx" ] || [ -f "$SOURCE_API_GEN/${dest_basename_no_ext}.md" ]; then
+                  # Source exists, check if it matches the filter
+                  if echo "$dest_basename_no_ext" | grep -E "^($API_GEN_REGEX)$" > /dev/null 2>&1; then
+                    source_exists=true
+                  fi
+                fi
+                
+                if [ "$source_exists" = false ]; then
+                  rm "$dest_file"
+                  echo "- Deleted: \`$(basename "$dest_file")\`" >> $SYNC_REPORT
+                  DELETED=$((DELETED + 1))
+                fi
               fi
             done
 
@@ -265,9 +295,11 @@ jobs:
           SYNC_REPORT="${{ runner.temp }}/sync_report.md"
           SOURCE_API_DEBUG="source-repo/${{ steps.params.outputs.api_debug_path }}"
           DEST_API_DEBUG="pages/api-references/genlayer-node/debug"
+          API_DEBUG_REGEX="${{ steps.params.outputs.api_debug_regex }}"
 
           echo "" >> $SYNC_REPORT
           echo "## API Debug Methods Sync" >> $SYNC_REPORT
+          echo "Using regex filter: \`$API_DEBUG_REGEX\`" >> $SYNC_REPORT
           echo "" >> $SYNC_REPORT
 
           if [ -d "$SOURCE_API_DEBUG" ]; then
@@ -283,27 +315,31 @@ jobs:
             ADDED=0
             UPDATED=0
 
-            # Process all source files
+            # Process all source files that match the regex
             for file in "$SOURCE_API_DEBUG"/*.mdx "$SOURCE_API_DEBUG"/*.md; do
               if [ -f "$file" ]; then
                 basename_no_ext=$(basename "$file" | sed 's/\.[^.]*$//')
-                dest_filename="${basename_no_ext}.mdx"
-                dest_path="$DEST_API_DEBUG/$dest_filename"
+                
+                # Check if filename (without extension) matches the regex filter
+                if echo "$basename_no_ext" | grep -E "^($API_DEBUG_REGEX)$" > /dev/null 2>&1; then
+                  dest_filename="${basename_no_ext}.mdx"
+                  dest_path="$DEST_API_DEBUG/$dest_filename"
 
-                if [ -f "$dest_path" ]; then
-                  # File exists - check if it's different
-                  if ! cmp -s "$file" "$dest_path"; then
+                  if [ -f "$dest_path" ]; then
+                    # File exists - check if it's different
+                    if ! cmp -s "$file" "$dest_path"; then
+                      cp "$file" "$dest_path"
+                      echo "- Updated: \`$dest_filename\`" >> $SYNC_REPORT
+                      UPDATED=$((UPDATED + 1))
+                    fi
+                    # Remove from tracking to identify deletions later
+                    unset EXISTING_FILES["$dest_filename"]
+                  else
+                    # New file
                     cp "$file" "$dest_path"
-                    echo "- Updated: \`$dest_filename\`" >> $SYNC_REPORT
-                    UPDATED=$((UPDATED + 1))
+                    echo "- Added: \`$dest_filename\`" >> $SYNC_REPORT
+                    ADDED=$((ADDED + 1))
                   fi
-                  # Remove from tracking to identify deletions later
-                  unset EXISTING_FILES["$dest_filename"]
-                else
-                  # New file
-                  cp "$file" "$dest_path"
-                  echo "- Added: \`$dest_filename\`" >> $SYNC_REPORT
-                  ADDED=$((ADDED + 1))
                 fi
               fi
             done
@@ -325,13 +361,25 @@ jobs:
               echo "- Deleted: \`_meta.json\`" >> $SYNC_REPORT
             fi
 
-            # Remove files that no longer exist in source
+            # Remove files that no longer exist in source or don't match the filter
             DELETED=${DELETED:-0}
             for dest_file in "${EXISTING_FILES[@]}"; do
               if [ -f "$dest_file" ]; then
-                rm "$dest_file"
-                echo "- Deleted: \`$(basename "$dest_file")\`" >> $SYNC_REPORT
-                DELETED=$((DELETED + 1))
+                dest_basename_no_ext=$(basename "$dest_file" | sed 's/\.[^.]*$//')
+                # Check if the file should still exist based on source and filter
+                source_exists=false
+                if [ -f "$SOURCE_API_DEBUG/${dest_basename_no_ext}.mdx" ] || [ -f "$SOURCE_API_DEBUG/${dest_basename_no_ext}.md" ]; then
+                  # Source exists, check if it matches the filter
+                  if echo "$dest_basename_no_ext" | grep -E "^($API_DEBUG_REGEX)$" > /dev/null 2>&1; then
+                    source_exists=true
+                  fi
+                fi
+                
+                if [ "$source_exists" = false ]; then
+                  rm "$dest_file"
+                  echo "- Deleted: \`$(basename "$dest_file")\`" >> $SYNC_REPORT
+                  DELETED=$((DELETED + 1))
+                fi
               fi
             done
 
@@ -465,6 +513,8 @@ jobs:
           - **Source Repository**: `genlayerlabs/genlayer-node`
           - **Source Branch**: `${{ steps.params.outputs.source_branch }}`
           - **Latest Tag**: `${{ steps.params.outputs.tag }}`
+          - **API Gen Filter**: `${{ steps.params.outputs.api_gen_regex }}`
+          - **API Debug Filter**: `${{ steps.params.outputs.api_debug_regex }}`
           - **Total Files Changed**: ${{ steps.check_changes.outputs.total_changes }}
             - Added: ${{ steps.check_changes.outputs.total_added }} files
             - Updated: ${{ steps.check_changes.outputs.total_updated }} files
