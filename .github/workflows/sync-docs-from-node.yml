@@ -12,6 +12,14 @@ on:
       tag:
         description: 'Tag/version for branch naming (e.g., v0.3.5)'
         required: true
+      api_gen_path:
+        description: 'Path to API gen files in source repo'
+        required: false
+        default: 'docs/api/rpc/gen'
+      api_debug_path:
+        description: 'Path to API debug files in source repo'
+        required: false
+        default: 'docs/api/rpc/debug'
       api_gen_regex:
         description: 'Regex pattern to filter API gen files (e.g., "gen_.*")'
         required: false
@@ -66,8 +74,8 @@ jobs:
             echo "source_branch=${{ github.event.inputs.source_branch }}" >> $GITHUB_OUTPUT
             echo "tag=${{ github.event.inputs.tag }}" >> $GITHUB_OUTPUT
             echo "changelog_path=docs/changelog" >> $GITHUB_OUTPUT
-            echo "api_gen_path=docs/api/rpc/gen" >> $GITHUB_OUTPUT
-            echo "api_debug_path=docs/api/rpc/debug" >> $GITHUB_OUTPUT
+            echo "api_gen_path=${{ github.event.inputs.api_gen_path || 'docs/api/rpc/gen' }}" >> $GITHUB_OUTPUT
+            echo "api_debug_path=${{ github.event.inputs.api_debug_path || 'docs/api/rpc/debug' }}" >> $GITHUB_OUTPUT
             echo "api_gen_regex=${{ github.event.inputs.api_gen_regex || 'gen_(?!dbg_).*' }}" >> $GITHUB_OUTPUT
             echo "api_debug_regex=${{ github.event.inputs.api_debug_regex || 'gen_dbg_.*' }}" >> $GITHUB_OUTPUT
           fi

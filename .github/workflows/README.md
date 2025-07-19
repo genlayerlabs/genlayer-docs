@@ -73,9 +73,11 @@ Add this to a workflow in the genlayer-node repository:
 From the Actions tab:
 1. Select "Sync Documentation from Node Repository"
 2. Click "Run workflow"
-3. Optionally specify:
-   - Source branch (default: main)
-   - Tag for branch naming (required)
+3. Specify parameters:
+   - Tag for branch naming (required, e.g., v0.3.5)
+   - Source branch (optional, default: main)
+   - API gen path (optional, default: `docs/api/rpc/gen`)
+   - API debug path (optional, default: `docs/api/rpc/debug`)
    - API gen regex filter (optional, default: `gen_(?!dbg_).*`)
    - API debug regex filter (optional, default: `gen_dbg_.*`)
 
