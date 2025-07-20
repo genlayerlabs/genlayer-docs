@@ -15,13 +15,18 @@ This workflow automatically synchronizes documentation from the `genlayerlabs/ge
 2. Gets the latest tag from the repository to use in the branch name
 3. Copies new or updated files:
    - Changelog files → `content/validators/changelog/`
+   - Config file → `content/validators/config.yaml` (sanitized - see note below)
    - API gen method docs → `pages/api-references/genlayer-node/gen/`
    - API debug method docs → `pages/api-references/genlayer-node/debug/`
    - **Note**: Both `.md` and `.mdx` files are supported. `.md` files are automatically renamed to `.mdx` when copied
+   - **Config Sanitization**: The config file is sanitized during sync:
+     - ZKSync URLs are replaced with TODO placeholders
+     - `node.dev` and `node.admin` sections are removed
    - **Regex Filtering**: API files can be filtered using regex patterns (see Customizing section below)
 4. Runs documentation generation scripts:
    - `generate-changelog.js`
    - `update-setup-guide-versions.js`
+   - `update-config-in-setup-guide.js`
    - `generate-api-docs.js`
 5. Creates a PR with all changes, using the tag in the branch name (e.g., `sync-node-docs-v0.3.5`)
 
@@ -98,6 +103,9 @@ docs/
 │       ├── gen_dbg_ping.md    # Will be copied as gen_dbg_ping.mdx
 │       ├── gen_dbg_trie.mdx   # Will be copied as-is
 │       └── ...
+configs/
+└── node/
+    └── config.yaml.example     # Will be copied to content/validators/config.yaml
 ```
 
 ### Customizing Paths and Filtering
