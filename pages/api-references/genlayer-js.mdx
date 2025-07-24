@@ -297,6 +297,156 @@ async function interactWithContract() {
 }
 ```
 
+
+## Contract Schema
+
+### getContractSchema
+
+Retrieves the schema of a deployed contract, showing all available methods and their parameters.
+
+```typescript
+// Get schema for a deployed contract
+const schema = await client.getContractSchema({
+  address: contractAddress,
+});
+
+console.log('Contract schema:', schema);
+// Output example:
+// {
+//   "ctor": {"kwparams": {}, "params": [["have_coin", "bool"]]},
+//   "methods": {
+//     "ask_for_coin": {
+//       "kwparams": {},
+//       "params": [["request", "string"]],
+//       "payable": false,
+//       "readonly": false,
+//       "ret": "null"
+//     },
+//     "ask_for_coin2": {
+//       "kwparams": {},
+//       "params": [["request", "string"]],
+//       "payable": false,
+//       "readonly": false,
+//       "ret": "null"
+//     },
+//     "get_have_coin": {
+//       "kwparams": {},
+//       "params": [],
+//       "readonly": true,
+//       "ret": "bool"
+//     }
+//   }
+// }
+```
+
+**Parameters:**
+- `address`: The contract address
+
+**Returns:** Contract schema object with constructor and methods information
+
+**Schema Structure:**
+- `ctor`: Constructor information with `kwparams` and `params`
+- `methods`: All available methods with:
+  - `params`: Array of `[parameter_name, parameter_type]` pairs
+  - `readonly`: Boolean indicating if method is read-only
+  - `payable`: Boolean indicating if method accepts native tokens
+  - `ret`: Return type of the method
+  - `kwparams`: Keyword parameters
+
+### getContractSchemaForCode
+
+Retrieves the schema for contract code without deploying it, useful for validating contract structure before deployment.
+
+```typescript
+import { readFileSync } from 'fs';
+
+// Read contract code from file
+const contractCode = readFileSync('./contracts/football_bets.py', 'utf-8');
+
+// Get schema for contract code
+const schema = await client.getContractSchemaForCode({
+  code: contractCode,
+});
+
+console.log('Contract schema for code:', schema);
+// Output example:
+// {
+//   "ctor": {"kwparams": {}, "params": [["have_coin", "bool"]]},
+//   "methods": {
+//     "ask_for_coin": {
+//       "kwparams": {},
+//       "params": [["request", "string"]],
+//       "payable": false,
+//       "readonly": false,
+//       "ret": "null"
+//     },
+//     "ask_for_coin2": {
+//       "kwparams": {},
+//       "params": [["request", "string"]],
+//       "payable": false,
+//       "readonly": false,
+//       "ret": "null"
+//     },
+//     "get_have_coin": {
+//       "kwparams": {},
+//       "params": [],
+//       "readonly": true,
+//       "ret": "bool"
+//     }
+//   }
+// }
+```
+
+**Parameters:**
+- `code`: Contract source code as string
+
+**Returns:** Contract schema object with constructor and methods information (same structure as deployed contract)
+
+### Complete Schema Example
+
+```typescript
+import { createClient, createAccount } from 'genlayer-js';
+import { localnet } from 'genlayer-js/chains';
+import { readFileSync } from 'fs';
+
+async function analyzeContract() {
+  const account = createAccount();
+  const client = createClient({
+    chain: localnet,
+    account: account,
+  });
+
+  await client.initializeConsensusSmartContract();
+
+  // Option 1: Get schema for deployed contract
+  const deployedContractAddress = '0x...'; // Your deployed contract address
+  const deployedSchema = await client.getContractSchema({
+    address: deployedContractAddress,
+  });
+  
+  console.log('Deployed contract schema:', deployedSchema);
+
+  // Option 2: Get schema for contract code before deployment
+  const contractCode = readFileSync('./contracts/football_bets.py', 'utf-8');
+  const codeSchema = await client.getContractSchemaForCode({
+    code: contractCode,
+  });
+  
+  console.log('Contract code schema:', codeSchema);
+
+  // Validate schema structure
+  if (codeSchema.methods && codeSchema.methods.create_bet) {
+    console.log('Contract has create_bet method with parameters:', 
+      codeSchema.methods.create_bet.params);
+  }
+
+  // Check if method is read-only
+  if (codeSchema.methods.get_bets && codeSchema.methods.get_bets.readonly) {
+    console.log('get_bets is a read-only method');
+  }
+}
+```
+
 ## Transaction Management
 
 ### getTransaction
