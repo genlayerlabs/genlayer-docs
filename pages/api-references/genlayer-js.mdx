@@ -1,72 +1,211 @@
 # GenLayerJS SDK Reference
 
-This document describes the key components and methods available in the GenLayerJS SDK for interacting with the GenLayer network.
+This document describes the key components and methods available in the GenLayerJS SDK for interacting with the GenLayer network, including comprehensive examples and integration patterns.
 
 ## Client Creation
 
 ### createClient
 
-Creates a new GenLayer client instance.
+Creates a new GenLayer client instance with various configuration options.
+
 ```typescript
 import { createClient } from 'genlayer-js';
+import { localnet, studionet, testnetAsimov } from 'genlayer-js/chains';
+
+// Basic client with localnet chain
 const client = createClient({
-  chain: simulator,
+  chain: localnet,
+});
+
+// Client with account for transaction signing
+const client = createClient({
+  chain: localnet,
   account: account, // Optional: Use this account for subsequent calls
+});
+
+// Client with address only (for MetaMask signing)
+const client = createClient({
+  chain: localnet,
+  account: '0x1234...', // Just the address - MetaMask will handle signing
+});
+
+// Client with custom RPC endpoint
+const client = createClient({
+  chain: localnet,
+  endpoint: 'http://localhost:8545',
+  account: account,
 });
 ```
 
 **Parameters:**
-- `chain`: The chain configuration (e.g., simulator)
-- `account`: (Optional) Sets an account to be used in subsequent calls
+- `chain`: The chain configuration (localnet, studionet, testnetAsimov)
+- `account`: (Optional) Can be either:
+  - An account object (from `createAccount()`) for direct signing with private key
+  - A string address (e.g., '0x1234...') for external signing (MetaMask)
+- `endpoint`: (Optional) Custom RPC endpoint URL
 
 **Returns:** A GenLayer client instance
 
-## Transaction Handling
+## Account Management
 
-### getTransaction
+### generatePrivateKey
 
-Retrieves transaction details by hash.
+Generates a new private key for account creation.
 
 ```typescript
-const transaction = await client.getTransaction({ hash: transactionHash });
+import { generatePrivateKey } from 'genlayer-js';
+
+const privateKey = generatePrivateKey();
+console.log('Generated private key:', privateKey);
+```
+
+**Parameters:** None
+
+**Returns:** A new private key as string
+
+### createAccount
+
+Creates a new account with a private key for direct transaction signing. This is different from using just an address, as it allows the SDK to sign transactions directly without external wallets.
+
+```typescript
+import { createAccount } from 'genlayer-js';
+
+// Create account with random private key
+const account = createAccount();
+
+// Create account with specific private key
+const privateKey = '0x1234567890abcdef...'; // Replace with actual private key
+const accountWithKey = createAccount(privateKey);
+
+console.log('Account address:', account.address);
+console.log('Account private key:', account.privateKey);
 ```
 
 **Parameters:**
-- `hash`: The transaction hash
+- `accountPrivateKey`: (Optional) A string representing the private key
 
-**Returns:** Transaction details object
-<br/>
-<hr/>
-### waitForTransactionReceipt
+**Returns:** A new account object with address and privateKey properties
 
-Waits for a transaction receipt.
+**Note:** Use `createAccount()` when you want the SDK to handle transaction signing directly. For MetaMask or other external wallet integration, pass just the address string to `createClient()`.
+
+## Contract Deployment
+
+### initializeConsensusSmartContract
+
+Initializes the consensus smart contract before deployment or interaction.
 
 ```typescript
+// Always call this before deploying or interacting with contracts
+await client.initializeConsensusSmartContract();
+```
+
+### deployContract
+
+Deploys a smart contract to the GenLayer network.
+
+```typescript
+import { readFileSync } from 'fs';
+import { TransactionStatus } from 'genlayer-js/types';
+
+// Read contract code from file
+const contractCode = readFileSync('./contracts/my_contract.py', 'utf-8');
+
+// Deploy contract
+const deployParams = {
+  code: contractCode,
+  args: [], // Constructor arguments
+  leaderOnly: false, // Whether only leader can execute
+};
+
+const transactionHash = await client.deployContract(deployParams);
+
+// Wait for deployment to complete
 const receipt = await client.waitForTransactionReceipt({
   hash: transactionHash,
-  status: 'FINALIZED', // or 'ACCEPTED'
+  status: TransactionStatus.ACCEPTED,
+  retries: 50,
+  interval: 5000,
 });
+
+console.log('Contract deployed at:', receipt.data?.contract_address);
 ```
 
 **Parameters:**
-- `hash`: The transaction hash
-- `status`: The desired transaction status ('FINALIZED' or 'ACCEPTED')
+- `code`: Contract source code as string
+- `args`: Array of constructor arguments
+- `leaderOnly`: Boolean indicating if only leader can execute
 
-**Returns:** Transaction receipt object
+**Returns:** Transaction hash
+
+### Complete Deployment Example
+
+```typescript
+import { createClient, createAccount } from 'genlayer-js';
+import { localnet } from 'genlayer-js/chains';
+import { readFileSync } from 'fs';
+import { TransactionStatus } from 'genlayer-js/types';
+
+async function deployContract() {
+  // Create client and account for direct signing
+  const account = createAccount();
+  const client = createClient({
+    chain: localnet,
+    account: account, // Uses private key for direct signing
+  });
+
+  // Alternative: Use address only for MetaMask signing
+  // const client = createClient({
+  //   chain: localnet,
+  //   account: '0x1234...', // MetaMask will handle signing
+  // });
+
+  // Initialize consensus
+  await client.initializeConsensusSmartContract();
+
+  // Read and deploy contract
+  const contractCode = readFileSync('./contracts/football_bets.py', 'utf-8');
+  
+  const hash = await client.deployContract({
+    code: contractCode,
+    args: [],
+    leaderOnly: false,
+  });
+
+  // Wait for deployment
+  const receipt = await client.waitForTransactionReceipt({
+    hash,
+    status: TransactionStatus.ACCEPTED,
+    retries: 50,
+    interval: 5000,
+  });
+
+  return receipt.data?.contract_address;
+}
+```
 
 ## Contract Interaction
 
 ### readContract
 
-Reads data from a deployed contract.
+Reads data from a deployed contract (view functions).
+
 ```typescript
+// Read contract data
 const result = await client.readContract({
   address: contractAddress,
-  functionName: 'get_complete_storage',
+  functionName: 'get_bets',
   args: [],
 });
-```
 
+console.log('Contract data:', result);
+
+// Read with parameters
+const playerPoints = await client.readContract({
+  address: contractAddress,
+  functionName: 'get_player_points',
+  args: ['0x1234...'], // player_address parameter
+});
+```
 
 **Parameters:**
 - `address`: The contract address
@@ -74,20 +213,30 @@ const result = await client.readContract({
 - `args`: An array of arguments for the function call
 
 **Returns:** The result of the contract function call
-<br/>
-<hr/>
+
 ### writeContract
 
 Writes data to a deployed contract.
+
 ```typescript
+// Write to contract
 const transactionHash = await client.writeContract({
   address: contractAddress,
-  functionName: 'storeData',
-  args: ['new_data'],
-  value: 0, // Optional: amount of native token to send with the transaction
+  functionName: 'create_bet',
+  args: ['2024-06-20', 'Spain', 'Italy', 1], // game_date, team1, team2, predicted_winner
+  value: 0n,
 });
-```
 
+// Wait for transaction confirmation
+const receipt = await client.waitForTransactionReceipt({
+  hash: transactionHash,
+  status: TransactionStatus.ACCEPTED,
+  retries: 100,
+  interval: 5000,
+});
+
+console.log('Transaction confirmed:', receipt);
+```
 
 **Parameters:**
 - `address`: The contract address
@@ -97,43 +246,301 @@ const transactionHash = await client.writeContract({
 
 **Returns:** The transaction hash
 
-## Account Management
+### Complete Contract Interaction Example
 
-### generatePrivateKey
-
-Generates a new private key.
 ```typescript
-import { generatePrivateKey } from 'genlayer-js';
-const privateKey = generatePrivateKey();
+import { createClient, createAccount } from 'genlayer-js';
+import { localnet } from 'genlayer-js/chains';
+import { TransactionStatus } from 'genlayer-js/types';
+
+async function interactWithContract() {
+  // Option 1: Direct signing with private key
+  const account = createAccount();
+  const client = createClient({
+    chain: localnet,
+    account: account, // SDK handles signing
+  });
+
+  // Option 2: MetaMask signing (just provide address)
+  // const client = createClient({
+  //   chain: localnet,
+  //   account: '0x1234...', // MetaMask handles signing
+  // });
+
+  await client.initializeConsensusSmartContract();
+
+  const contractAddress = '0x...'; // Your deployed contract address
+
+  // Read current bets
+  const bets = await client.readContract({
+    address: contractAddress,
+    functionName: 'get_bets',
+    args: [],
+  });
+  console.log('Current bets:', bets);
+
+  // Create a new bet
+  const txHash = await client.writeContract({
+    address: contractAddress,
+    functionName: 'create_bet',
+    args: ['2024-06-20', 'Spain', 'Italy', 1],
+    value: 0n,
+  });
+
+  // Wait for confirmation
+  const receipt = await client.waitForTransactionReceipt({
+    hash: txHash,
+    status: TransactionStatus.ACCEPTED,
+  });
+
+  console.log('Bet created successfully:', receipt);
+}
 ```
 
-**Parameters:** None
 
-**Returns:** A new private key as string
-<br/>
-<hr/>
-### createAccount
+## Contract Schema
 
-Creates a new account, optionally using a provided private key.
+### getContractSchema
+
+Retrieves the schema of a deployed contract, showing all available methods and their parameters.
+
 ```typescript
-import { createAccount } from 'genlayer-js';
-const account = createAccount();
-// Or with a specific private key:
-const accountWithKey = createAccount('0x1234...'); // Replace with actual private key
+// Get schema for a deployed contract
+const schema = await client.getContractSchema({
+  address: contractAddress,
+});
+
+console.log('Contract schema:', schema);
+// Output example:
+// {
+//   "ctor": {"kwparams": {}, "params": [["have_coin", "bool"]]},
+//   "methods": {
+//     "ask_for_coin": {
+//       "kwparams": {},
+//       "params": [["request", "string"]],
+//       "payable": false,
+//       "readonly": false,
+//       "ret": "null"
+//     },
+//     "ask_for_coin2": {
+//       "kwparams": {},
+//       "params": [["request", "string"]],
+//       "payable": false,
+//       "readonly": false,
+//       "ret": "null"
+//     },
+//     "get_have_coin": {
+//       "kwparams": {},
+//       "params": [],
+//       "readonly": true,
+//       "ret": "bool"
+//     }
+//   }
+// }
 ```
 
 **Parameters:**
-- `accountPrivateKey`: (Optional) A string representing the private key
+- `address`: The contract address
 
-**Returns:** A new account object
+**Returns:** Contract schema object with constructor and methods information
+
+**Schema Structure:**
+- `ctor`: Constructor information with `kwparams` and `params`
+- `methods`: All available methods with:
+  - `params`: Array of `[parameter_name, parameter_type]` pairs
+  - `readonly`: Boolean indicating if method is read-only
+  - `payable`: Boolean indicating if method accepts native tokens
+  - `ret`: Return type of the method
+  - `kwparams`: Keyword parameters
+
+### getContractSchemaForCode
+
+Retrieves the schema for contract code without deploying it, useful for validating contract structure before deployment.
+
+```typescript
+import { readFileSync } from 'fs';
+
+// Read contract code from file
+const contractCode = readFileSync('./contracts/football_bets.py', 'utf-8');
+
+// Get schema for contract code
+const schema = await client.getContractSchemaForCode({
+  code: contractCode,
+});
+
+console.log('Contract schema for code:', schema);
+// Output example:
+// {
+//   "ctor": {"kwparams": {}, "params": [["have_coin", "bool"]]},
+//   "methods": {
+//     "ask_for_coin": {
+//       "kwparams": {},
+//       "params": [["request", "string"]],
+//       "payable": false,
+//       "readonly": false,
+//       "ret": "null"
+//     },
+//     "ask_for_coin2": {
+//       "kwparams": {},
+//       "params": [["request", "string"]],
+//       "payable": false,
+//       "readonly": false,
+//       "ret": "null"
+//     },
+//     "get_have_coin": {
+//       "kwparams": {},
+//       "params": [],
+//       "readonly": true,
+//       "ret": "bool"
+//     }
+//   }
+// }
+```
+
+**Parameters:**
+- `code`: Contract source code as string
+
+**Returns:** Contract schema object with constructor and methods information (same structure as deployed contract)
+
+### Complete Schema Example
+
+```typescript
+import { createClient, createAccount } from 'genlayer-js';
+import { localnet } from 'genlayer-js/chains';
+import { readFileSync } from 'fs';
+
+async function analyzeContract() {
+  const account = createAccount();
+  const client = createClient({
+    chain: localnet,
+    account: account,
+  });
+
+  await client.initializeConsensusSmartContract();
+
+  // Option 1: Get schema for deployed contract
+  const deployedContractAddress = '0x...'; // Your deployed contract address
+  const deployedSchema = await client.getContractSchema({
+    address: deployedContractAddress,
+  });
+  
+  console.log('Deployed contract schema:', deployedSchema);
+
+  // Option 2: Get schema for contract code before deployment
+  const contractCode = readFileSync('./contracts/football_bets.py', 'utf-8');
+  const codeSchema = await client.getContractSchemaForCode({
+    code: contractCode,
+  });
+  
+  console.log('Contract code schema:', codeSchema);
+
+  // Validate schema structure
+  if (codeSchema.methods && codeSchema.methods.create_bet) {
+    console.log('Contract has create_bet method with parameters:', 
+      codeSchema.methods.create_bet.params);
+  }
+
+  // Check if method is read-only
+  if (codeSchema.methods.get_bets && codeSchema.methods.get_bets.readonly) {
+    console.log('get_bets is a read-only method');
+  }
+}
+```
+
+## Transaction Management
+
+### getTransaction
+
+Retrieves transaction details by hash.
+
+```typescript
+const transaction = await client.getTransaction({ 
+  hash: transactionHash 
+});
+
+console.log('Transaction details:', transaction);
+```
+
+**Parameters:**
+- `hash`: The transaction hash
+
+**Returns:** Transaction details object
+
+### waitForTransactionReceipt
+
+Waits for a transaction receipt with configurable status and retry options.
+
+```typescript
+// Wait for transaction to be accepted
+const receipt = await client.waitForTransactionReceipt({
+  hash: transactionHash,
+  status: TransactionStatus.ACCEPTED,
+  retries: 100,
+  interval: 5000,
+});
+
+// Wait for transaction to be finalized
+const finalizedReceipt = await client.waitForTransactionReceipt({
+  hash: transactionHash,
+  status: TransactionStatus.FINALIZED,
+  retries: 200,
+  interval: 3000,
+});
+
+console.log('Transaction receipt:', receipt);
+```
+
+**Parameters:**
+- `hash`: The transaction hash
+- `status`: The desired transaction status ('ACCEPTED' or 'FINALIZED')
+- `retries`: (Optional) Number of retry attempts
+- `interval`: (Optional) Interval between retries in milliseconds
+
+**Returns:** Transaction receipt object
+
+### appealTransaction
+
+Appeals a transaction to request validators to reach consensus again.
+
+```typescript
+const appealHash = await client.appealTransaction({
+  txId: transactionHash,
+});
+
+const appealReceipt = await client.waitForTransactionReceipt({
+  hash: appealHash,
+  status: TransactionStatus.ACCEPTED,
+  retries: 100,
+  interval: 5000,
+});
+
+console.log('Appeal processed:', appealReceipt);
+```
+
+**Parameters:**
+- `txId`: The transaction hash to appeal
+
+**Returns:** Appeal transaction hash
+
 
 ## Chain Information
 
-### simulator
+### Available Chains
 
-Provides configuration for the GenLayer Studio chain (the Studio used to be called "Simulator").
+GenLayerJS provides several chain configurations for different environments:
+
+- **localnet**: Local development network
+- **studionet**: Staging environment network  
+- **testnetAsimov**: Test network for production testing
+
 ```typescript
-import { simulator } from 'genlayer-js/chains';
+import { localnet, studionet, testnetAsimov } from 'genlayer-js/chains';
+
+// Use the appropriate chain for your environment
+const client = createClient({
+  chain: localnet, // or studionet, testnetAsimov
+});
 ```
-**Usage:** Used when creating a client to specify the chain
+
+This comprehensive reference covers all the major functionality available in the GenLayerJS SDK, with practical examples and integration patterns that demonstrate how to build robust applications on the GenLayer network.
 
