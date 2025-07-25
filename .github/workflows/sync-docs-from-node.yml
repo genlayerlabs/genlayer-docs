@@ -97,6 +97,14 @@ jobs:
           VERSION="${{ steps.params.outputs.version }}"
           SAFE_VERSION=$(echo "$VERSION" | sed 's/\//-/g')  # replace any '/' with '-'
           BRANCH_NAME="docs/node/${SAFE_VERSION}"
+          
+          # Check if branch exists on remote
+          if git ls-remote --exit-code --heads origin "$BRANCH_NAME" >/dev/null 2>&1; then
+            echo "Branch $BRANCH_NAME already exists on remote, will force update"
+            git fetch origin "$BRANCH_NAME"
+          fi
+          
+          # Create/recreate branch from current HEAD (main)
           git switch --force-create "$BRANCH_NAME"
           echo "BRANCH_NAME=$BRANCH_NAME" >> $GITHUB_ENV
 
@@ -550,7 +558,7 @@ jobs:
         if: steps.check_changes.outputs.has_changes == 'true'
         run: |
           set -euo pipefail
-          git push origin ${{ env.BRANCH_NAME }}
+          git push --force-with-lease origin ${{ env.BRANCH_NAME }}
 
       - name: Capture timestamp
         id: timestamp
