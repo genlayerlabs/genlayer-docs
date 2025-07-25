@@ -5,12 +5,8 @@ on:
     types: [sync-docs]
   workflow_dispatch:
     inputs:
-      source_branch:
-        description: 'Branch to sync from genlayer-node repo'
-        required: false
-        default: 'main'
-      tag:
-        description: 'Tag/version for branch naming (e.g., v0.3.5)'
+      version:
+        description: 'Version/tag to sync from genlayer-node repo (e.g., v0.3.5)'
         required: true
       api_gen_path:
         description: 'Path to API gen files in source repo'
@@ -63,16 +59,14 @@ jobs:
         run: |
           set -euo pipefail
           if [ "${{ github.event_name }}" = "repository_dispatch" ]; then
-            echo "source_branch=${{ github.event.client_payload.source_branch || 'main' }}" >> $GITHUB_OUTPUT
-            echo "tag=${{ github.event.client_payload.tag }}" >> $GITHUB_OUTPUT
+            echo "version=${{ github.event.client_payload.version }}" >> $GITHUB_OUTPUT
             echo "changelog_path=${{ github.event.client_payload.changelog_path || 'docs/changelog' }}" >> $GITHUB_OUTPUT
             echo "api_gen_path=${{ github.event.client_payload.api_gen_path || 'docs/api/rpc/gen' }}" >> $GITHUB_OUTPUT
             echo "api_debug_path=${{ github.event.client_payload.api_debug_path || 'docs/api/rpc/debug' }}" >> $GITHUB_OUTPUT
             echo "api_gen_regex=${{ github.event.client_payload.api_gen_regex || 'gen_(?!dbg_).*' }}" >> $GITHUB_OUTPUT
             echo "api_debug_regex=${{ github.event.client_payload.api_debug_regex || 'gen_dbg_.*' }}" >> $GITHUB_OUTPUT
           else
-            echo "source_branch=${{ github.event.inputs.source_branch }}" >> $GITHUB_OUTPUT
-            echo "tag=${{ github.event.inputs.tag }}" >> $GITHUB_OUTPUT
+            echo "version=${{ github.event.inputs.version }}" >> $GITHUB_OUTPUT
             echo "changelog_path=docs/changelog" >> $GITHUB_OUTPUT
             echo "api_gen_path=${{ github.event.inputs.api_gen_path || 'docs/api/rpc/gen' }}" >> $GITHUB_OUTPUT
             echo "api_debug_path=${{ github.event.inputs.api_debug_path || 'docs/api/rpc/debug' }}" >> $GITHUB_OUTPUT
@@ -84,7 +78,7 @@ jobs:
         uses: actions/checkout@v4
         with:
           repository: genlayerlabs/genlayer-node
-          ref: ${{ steps.params.outputs.source_branch }}
+          ref: ${{ steps.params.outputs.version }}
           token: ${{ secrets.NODE_REPO_TOKEN || secrets.GITHUB_TOKEN }}
           sparse-checkout: |
             docs
@@ -94,7 +88,7 @@ jobs:
       - name: Create branch for changes
         run: |
           set -euo pipefail
-          BRANCH_NAME="docs/node/${{ steps.params.outputs.tag }}"
+          BRANCH_NAME="docs/node/${{ steps.params.outputs.version }}"
           git switch --force-create "$BRANCH_NAME"
           echo "BRANCH_NAME=$BRANCH_NAME" >> $GITHUB_ENV
 
@@ -522,10 +516,10 @@ jobs:
         run: |
           set -euo pipefail
           git add content/validators pages/api-references pages/validators
-          git commit -m "docs: Sync documentation from node repository ${{ steps.params.outputs.tag }}
+          git commit -m "docs: Sync documentation from node repository ${{ steps.params.outputs.version }}
 
-          - Source: genlayerlabs/genlayer-node@${{ steps.params.outputs.source_branch }}
-          - Tag: ${{ steps.params.outputs.tag }}
+          - Source: genlayerlabs/genlayer-node@${{ steps.params.outputs.version }}
+          - Version: ${{ steps.params.outputs.version }}
           - Total changes: ${{ steps.check_changes.outputs.total_changes }}
           - Added: ${{ steps.check_changes.outputs.total_added }} files
           - Updated: ${{ steps.check_changes.outputs.total_updated }} files
@@ -575,8 +569,7 @@ jobs:
 
           ### 📋 Summary
           - **Source Repository**: `genlayerlabs/genlayer-node`
-          - **Source Branch**: `${{ steps.params.outputs.source_branch }}`
-          - **Latest Tag**: `${{ steps.params.outputs.tag }}`
+          - **Version**: `${{ steps.params.outputs.version }}`
           - **API Gen Filter**: `${{ steps.params.outputs.api_gen_regex }}`
           - **API Debug Filter**: `${{ steps.params.outputs.api_debug_regex }}`
           - **Total Files Changed**: ${{ steps.check_changes.outputs.total_changes }}
@@ -607,7 +600,7 @@ jobs:
             
             # Create PR using GitHub CLI
             gh pr create \
-              --title "docs: Sync documentation from genlayer-node ${{ steps.params.outputs.tag }}" \
+              --title "docs: Sync documentation from genlayer-node ${{ steps.params.outputs.version }}" \
               --body-file "$PR_BODY_FILE" \
               --label "documentation" \
               --label "node" \
