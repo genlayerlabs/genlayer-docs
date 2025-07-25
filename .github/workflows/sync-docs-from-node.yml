@@ -205,11 +205,11 @@ jobs:
             sed -i 's|zksyncwebsocketurl: *"[^"]*"|zksyncwebsocketurl: "TODO: Set your GenLayer Chain ZKSync WebSocket RPC URL here"|' "$TEMP_CONFIG"
             
             # Remove node.dev and node.admin sections using Python for reliable YAML parsing
-            python3 << 'EOF'
+            python3 -c "
 import yaml
-import os
+import sys
 
-config_file = os.environ.get('TEMP_CONFIG')
+config_file = sys.argv[1]
 
 # Read the YAML file
 with open(config_file, 'r') as f:
@@ -225,7 +225,7 @@ if 'node' in config:
 # Write back to file preserving the structure
 with open(config_file, 'w') as f:
     yaml.dump(config, f, default_flow_style=False, sort_keys=False, allow_unicode=True)
-EOF
+" "$TEMP_CONFIG"
             
             # Check if the config has changed
             if [ -f "$DEST_CONFIG" ]; then
