@@ -162,7 +162,7 @@ jobs:
             for dest_file in "${EXISTING_FILES[@]}"; do
               if [ -f "$dest_file" ]; then
                 rm "$dest_file"
-                echo "- Deleted: \`$(basename "$dest_file")\`" >> $SYNC_REPORT
+                printf "- Deleted: \`%s\`\n" "$(basename "$dest_file")" >> $SYNC_REPORT
                 DELETED=$((DELETED + 1))
               fi
             done
@@ -252,7 +252,7 @@ jobs:
 
           echo "" >> $SYNC_REPORT
           echo "## API Gen Methods Sync" >> $SYNC_REPORT
-          echo "Using regex filter: \`$API_GEN_REGEX\`" >> $SYNC_REPORT
+          printf "Using regex filter: \`%s\`\n" "$API_GEN_REGEX" >> $SYNC_REPORT
           echo "" >> $SYNC_REPORT
 
           if [ -d "$SOURCE_API_GEN" ]; then
@@ -330,7 +330,7 @@ jobs:
                 
                 if [ "$source_exists" = false ]; then
                   rm "$dest_file"
-                  echo "- Deleted: \`$(basename "$dest_file")\`" >> $SYNC_REPORT
+                  printf "- Deleted: \`%s\`\n" "$(basename "$dest_file")" >> $SYNC_REPORT
                   DELETED=$((DELETED + 1))
                 fi
               fi
@@ -369,7 +369,7 @@ jobs:
 
           echo "" >> $SYNC_REPORT
           echo "## API Debug Methods Sync" >> $SYNC_REPORT
-          echo "Using regex filter: \`$API_DEBUG_REGEX\`" >> $SYNC_REPORT
+          printf "Using regex filter: \`%s\`\n" "$API_DEBUG_REGEX" >> $SYNC_REPORT
           echo "" >> $SYNC_REPORT
 
           if [ -d "$SOURCE_API_DEBUG" ]; then
@@ -447,7 +447,7 @@ jobs:
                 
                 if [ "$source_exists" = false ]; then
                   rm "$dest_file"
-                  echo "- Deleted: \`$(basename "$dest_file")\`" >> $SYNC_REPORT
+                  printf "- Deleted: \`%s\`\n" "$(basename "$dest_file")" >> $SYNC_REPORT
                   DELETED=$((DELETED + 1))
                 fi
               fi
