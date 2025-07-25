@@ -238,7 +238,8 @@ jobs:
             rm -f "$TEMP_CONFIG"
           else
             # Show path relative to source repo for clarity
-            echo "- Source config file not found: \`${SOURCE_CONFIG#source-repo/}\`" >> $SYNC_REPORT
+            RELATIVE_PATH="${SOURCE_CONFIG#source-repo/}"
+            printf "- Source config file not found: \`%s\`\n" "$RELATIVE_PATH" >> $SYNC_REPORT
             echo "config_updated=0" >> $GITHUB_OUTPUT
           fi
 
