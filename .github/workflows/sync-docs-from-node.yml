@@ -254,6 +254,23 @@ jobs:
           echo "## API Gen Methods Sync" >> $SYNC_REPORT
           printf "Using regex filter: \`%s\`\n" "$API_GEN_REGEX" >> $SYNC_REPORT
           echo "" >> $SYNC_REPORT
+          
+          # Function to check if filename matches the regex pattern
+          # Uses perl if available for PCRE support, otherwise falls back to grep -E
+          matches_pattern() {
+            local filename="$1"
+            local pattern="$2"
+            
+            # Try perl first (supports PCRE including negative lookahead)
+            if command -v perl >/dev/null 2>&1; then
+              echo "$filename" | perl -ne "exit 0 if /^($pattern)\$/; exit 1"
+              return $?
+            fi
+            
+            # Fallback to grep -E (doesn't support negative lookahead)
+            echo "$filename" | grep -E "^($pattern)$" >/dev/null 2>&1
+            return $?
+          }
 
           if [ -d "$SOURCE_API_GEN" ]; then
             mkdir -p "$DEST_API_GEN"
@@ -274,7 +291,7 @@ jobs:
                 basename_no_ext=$(basename "$file" | sed 's/\.[^.]*$//')
                 
                 # Check if filename (without extension) matches the regex filter
-                if echo "$basename_no_ext" | grep -E "^($API_GEN_REGEX)$" > /dev/null 2>&1; then
+                if matches_pattern "$basename_no_ext" "$API_GEN_REGEX"; then
                   dest_filename="${basename_no_ext}.mdx"
                   dest_path="$DEST_API_GEN/$dest_filename"
 
@@ -323,7 +340,7 @@ jobs:
                 source_exists=false
                 if [ -f "$SOURCE_API_GEN/${dest_basename_no_ext}.mdx" ] || [ -f "$SOURCE_API_GEN/${dest_basename_no_ext}.md" ]; then
                   # Source exists, check if it matches the filter
-                  if echo "$dest_basename_no_ext" | grep -E "^($API_GEN_REGEX)$" > /dev/null 2>&1; then
+                  if matches_pattern "$dest_basename_no_ext" "$API_GEN_REGEX"; then
                     source_exists=true
                   fi
                 fi
@@ -371,6 +388,23 @@ jobs:
           echo "## API Debug Methods Sync" >> $SYNC_REPORT
           printf "Using regex filter: \`%s\`\n" "$API_DEBUG_REGEX" >> $SYNC_REPORT
           echo "" >> $SYNC_REPORT
+          
+          # Function to check if filename matches the regex pattern
+          # Uses perl if available for PCRE support, otherwise falls back to grep -E
+          matches_pattern() {
+            local filename="$1"
+            local pattern="$2"
+            
+            # Try perl first (supports PCRE including negative lookahead)
+            if command -v perl >/dev/null 2>&1; then
+              echo "$filename" | perl -ne "exit 0 if /^($pattern)\$/; exit 1"
+              return $?
+            fi
+            
+            # Fallback to grep -E (doesn't support negative lookahead)
+            echo "$filename" | grep -E "^($pattern)$" >/dev/null 2>&1
+            return $?
+          }
 
           if [ -d "$SOURCE_API_DEBUG" ]; then
             mkdir -p "$DEST_API_DEBUG"
@@ -391,7 +425,7 @@ jobs:
                 basename_no_ext=$(basename "$file" | sed 's/\.[^.]*$//')
                 
                 # Check if filename (without extension) matches the regex filter
-                if echo "$basename_no_ext" | grep -E "^($API_DEBUG_REGEX)$" > /dev/null 2>&1; then
+                if matches_pattern "$basename_no_ext" "$API_DEBUG_REGEX"; then
                   dest_filename="${basename_no_ext}.mdx"
                   dest_path="$DEST_API_DEBUG/$dest_filename"
 
@@ -440,7 +474,7 @@ jobs:
                 source_exists=false
                 if [ -f "$SOURCE_API_DEBUG/${dest_basename_no_ext}.mdx" ] || [ -f "$SOURCE_API_DEBUG/${dest_basename_no_ext}.md" ]; then
                   # Source exists, check if it matches the filter
-                  if echo "$dest_basename_no_ext" | grep -E "^($API_DEBUG_REGEX)$" > /dev/null 2>&1; then
+                  if matches_pattern "$dest_basename_no_ext" "$API_DEBUG_REGEX"; then
                     source_exists=true
                   fi
                 fi
