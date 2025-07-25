@@ -237,7 +237,8 @@ jobs:
             # Clean up temp file
             rm -f "$TEMP_CONFIG"
           else
-            echo "- Source config file not found: \`configs/node/config.yaml.example\`" >> $SYNC_REPORT
+            # Show path relative to source repo for clarity
+            echo "- Source config file not found: \`${SOURCE_CONFIG#source-repo/}\`" >> $SYNC_REPORT
             echo "config_updated=0" >> $GITHUB_OUTPUT
           fi
 
