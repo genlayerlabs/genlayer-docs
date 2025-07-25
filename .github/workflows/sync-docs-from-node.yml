@@ -59,6 +59,11 @@ jobs:
         run: |
           set -euo pipefail
           if [ "${{ github.event_name }}" = "repository_dispatch" ]; then
+            # Fail if the required version field is missing
+            if [ -z "${{ github.event.client_payload.version }}" ]; then
+              echo "❌ Missing required client_payload.version for repository_dispatch" >&2
+              exit 1
+            fi
             echo "version=${{ github.event.client_payload.version }}" >> $GITHUB_OUTPUT
             echo "changelog_path=${{ github.event.client_payload.changelog_path || 'docs/changelog' }}" >> $GITHUB_OUTPUT
             echo "api_gen_path=${{ github.event.client_payload.api_gen_path || 'docs/api/rpc/gen' }}" >> $GITHUB_OUTPUT
@@ -88,7 +93,9 @@ jobs:
       - name: Create branch for changes
         run: |
           set -euo pipefail
-          BRANCH_NAME="docs/node/${{ steps.params.outputs.version }}"
+          SAFE_VERSION="${{ steps.params.outputs.version }}"               # e.g. v0.3.5
+          SAFE_VERSION="${SAFE_VERSION//\//-}"  # replace any '/' with '-'
+          BRANCH_NAME="docs/node/${SAFE_VERSION}"
           git switch --force-create "$BRANCH_NAME"
           echo "BRANCH_NAME=$BRANCH_NAME" >> $GITHUB_ENV
 
