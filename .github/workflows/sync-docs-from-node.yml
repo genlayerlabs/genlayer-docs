@@ -162,7 +162,7 @@ jobs:
             for dest_file in "${EXISTING_FILES[@]}"; do
               if [ -f "$dest_file" ]; then
                 rm "$dest_file"
-                printf "- Deleted: \`%s\`\n" "$(basename "$dest_file")" >> $SYNC_REPORT
+                printf -- "- Deleted: \`%s\`\n" "$(basename "$dest_file")" >> $SYNC_REPORT
                 DELETED=$((DELETED + 1))
               fi
             done
@@ -239,7 +239,7 @@ jobs:
           else
             # Show path relative to source repo for clarity
             RELATIVE_PATH="${SOURCE_CONFIG#source-repo/}"
-            printf "- Source config file not found: \`%s\`\n" "$RELATIVE_PATH" >> $SYNC_REPORT
+            printf -- "- Source config file not found: \`%s\`\n" "$RELATIVE_PATH" >> $SYNC_REPORT
             echo "config_updated=0" >> $GITHUB_OUTPUT
           fi
 
@@ -349,7 +349,7 @@ jobs:
                 
                 if [ "$source_exists" = false ]; then
                   rm "$dest_file"
-                  printf "- Deleted: \`%s\`\n" "$(basename "$dest_file")" >> $SYNC_REPORT
+                  printf -- "- Deleted: \`%s\`\n" "$(basename "$dest_file")" >> $SYNC_REPORT
                   DELETED=$((DELETED + 1))
                 fi
               fi
@@ -483,7 +483,7 @@ jobs:
                 
                 if [ "$source_exists" = false ]; then
                   rm "$dest_file"
-                  printf "- Deleted: \`%s\`\n" "$(basename "$dest_file")" >> $SYNC_REPORT
+                  printf -- "- Deleted: \`%s\`\n" "$(basename "$dest_file")" >> $SYNC_REPORT
                   DELETED=$((DELETED + 1))
                 fi
               fi
