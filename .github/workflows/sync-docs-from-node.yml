@@ -93,8 +93,9 @@ jobs:
       - name: Create branch for changes
         run: |
           set -euo pipefail
-          SAFE_VERSION="${{ steps.params.outputs.version }}"               # e.g. v0.3.5
-          SAFE_VERSION="${SAFE_VERSION//\//-}"  # replace any '/' with '-'
+          # Sanitize version string for use in branch name
+          VERSION="${{ steps.params.outputs.version }}"
+          SAFE_VERSION=$(echo "$VERSION" | sed 's/\//-/g')  # replace any '/' with '-'
           BRANCH_NAME="docs/node/${SAFE_VERSION}"
           git switch --force-create "$BRANCH_NAME"
           echo "BRANCH_NAME=$BRANCH_NAME" >> $GITHUB_ENV
