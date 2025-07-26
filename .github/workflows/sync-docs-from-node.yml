@@ -265,12 +265,35 @@ jobs:
             sed -i 's|zksyncwebsocketurl: *"[^"]*"|zksyncwebsocketurl: "TODO: Set your GenLayer Chain ZKSync WebSocket RPC URL here"|' "$TEMP_CONFIG"
             
             # Remove node.dev and node.admin sections using Python for reliable YAML parsing
-            python3 .github/scripts/sanitize-config.py "$TEMP_CONFIG"
+            echo "::group::Debug: Running Python sanitization"
+            echo "Script path: .github/scripts/sanitize-config.py"
+            echo "Config path: $TEMP_CONFIG"
+            if [ -f ".github/scripts/sanitize-config.py" ]; then
+              echo "Sanitization script exists"
+              python3 .github/scripts/sanitize-config.py "$TEMP_CONFIG"
+              echo "Sanitization exit code: $?"
+            else
+              echo "ERROR: Sanitization script not found!"
+              ls -la .github/scripts/ || echo "Scripts directory not found"
+            fi
+            echo "::endgroup::"
             
             # Debug: Print sanitized config
             echo "::group::Sanitized config.yaml content"
             echo "After sanitization: $TEMP_CONFIG"
             cat "$TEMP_CONFIG" || echo "Failed to read sanitized config"
+            echo "::endgroup::"
+            
+            # Debug: Check destination
+            echo "::group::Debug: Destination config check"
+            echo "Destination path: $DEST_CONFIG"
+            if [ -f "$DEST_CONFIG" ]; then
+              echo "Destination config exists"
+              echo "Current destination content:"
+              cat "$DEST_CONFIG" | head -20
+            else
+              echo "Destination config does not exist"
+            fi
             echo "::endgroup::"
             
             # Check if the config has changed
@@ -279,16 +302,29 @@ jobs:
                 cp "$TEMP_CONFIG" "$DEST_CONFIG"
                 echo "- Updated: \`config.yaml\` (sanitized)" >> $SYNC_REPORT
                 echo "config_updated=1" >> $GITHUB_OUTPUT
+                echo "Config file was updated"
               else
                 echo "- No changes to \`config.yaml\`" >> $SYNC_REPORT
                 echo "config_updated=0" >> $GITHUB_OUTPUT
+                echo "Config file unchanged"
               fi
             else
               # Config doesn't exist, create it
               cp "$TEMP_CONFIG" "$DEST_CONFIG"
               echo "- Added: \`config.yaml\` (sanitized)" >> $SYNC_REPORT
               echo "config_updated=1" >> $GITHUB_OUTPUT
+              echo "Config file was created"
             fi
+            
+            # Debug: Verify copy worked
+            echo "::group::Debug: Verify config copy"
+            if [ -f "$DEST_CONFIG" ]; then
+              echo "Destination config after operation:"
+              cat "$DEST_CONFIG" | head -20
+            else
+              echo "ERROR: Destination config still doesn't exist!"
+            fi
+            echo "::endgroup::"
             
             # Clean up temp file
             rm -f "$TEMP_CONFIG"
@@ -623,7 +659,21 @@ jobs:
         if: steps.check_changes.outputs.has_changes == 'true'
         run: |
           set -euo pipefail
+          # Debug: Check what will be committed
+          echo "::group::Debug: Files to be committed"
+          echo "Checking git status before add:"
+          git status --porcelain
+          echo "::endgroup::"
+          
           git add content/validators pages/api-references pages/validators
+          
+          echo "::group::Debug: Files staged for commit"
+          echo "Checking git status after add:"
+          git status --porcelain
+          echo "Looking specifically for config.yaml:"
+          git status --porcelain | grep -i config || echo "No config files in git status"
+          echo "::endgroup::"
+          
           git commit -m "docs: Sync documentation from node repository ${{ steps.set_version.outputs.version }}
 
           - Source: genlayerlabs/genlayer-node@${{ steps.set_version.outputs.version }}
