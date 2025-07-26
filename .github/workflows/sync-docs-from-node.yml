@@ -93,7 +93,7 @@ jobs:
           fetch-depth: 0  # Fetch all history for tags
           sparse-checkout: |
             docs
-            configs
+            configs/node/config.yaml.example
           sparse-checkout-cone-mode: true
           path: source-repo
 
@@ -131,8 +131,14 @@ jobs:
           
           # Debug: Check what files we have after checkout
           echo "::group::Debug: Files after version checkout"
-          echo "Checking configs directory:"
-          find configs -type f -name "*.yaml*" 2>/dev/null || echo "No configs directory or yaml files found"
+          echo "Current directory: $(pwd)"
+          echo "All directories in source-repo:"
+          find . -type d -name "config*" | head -20
+          echo "All yaml files:"
+          find . -name "*.yaml*" -type f | head -20
+          echo "Checking specific paths:"
+          ls -la configs/ 2>/dev/null || echo "No configs directory"
+          ls -la config/ 2>/dev/null || echo "No config directory"
           echo "::endgroup::"
 
       - name: Create branch for changes
@@ -240,6 +246,7 @@ jobs:
           set -euo pipefail
           SYNC_REPORT="${{ runner.temp }}/sync_report.md"
           SOURCE_CONFIG="source-repo/configs/node/config.yaml.example"
+          
           DEST_CONFIG="content/validators/config.yaml"
 
           echo "" >> $SYNC_REPORT
@@ -248,7 +255,6 @@ jobs:
           
           # Debug: Check what files exist in source-repo/configs
           echo "::group::Debug: Checking source-repo/configs directory"
-          echo "Looking for: $SOURCE_CONFIG"
           echo "Current directory: $(pwd)"
           echo "Source repo structure:"
           ls -la source-repo/ || echo "source-repo not found"
@@ -256,11 +262,15 @@ jobs:
           ls -la source-repo/configs/ 2>/dev/null || echo "configs directory not found"
           echo "Node directory:"
           ls -la source-repo/configs/node/ 2>/dev/null || echo "node directory not found"
+          echo "All files in configs (recursive):"
+          find source-repo/configs -type f 2>/dev/null || echo "No files found in configs"
           echo "YAML files in configs:"
           find source-repo/configs -type f -name "*.yaml*" 2>/dev/null || echo "No yaml files found"
           echo "::endgroup::"
-
+          
+          # Check if the source config file exists
           if [ -f "$SOURCE_CONFIG" ]; then
+            echo "Found config file at: $SOURCE_CONFIG"
             mkdir -p "$(dirname "$DEST_CONFIG")"
             
             # Debug: Print original config
@@ -274,10 +284,27 @@ jobs:
             
             # Copy and sanitize the config
             cp "$SOURCE_CONFIG" "$TEMP_CONFIG"
+            if [ ! -f "$TEMP_CONFIG" ]; then
+              echo "ERROR: Failed to copy config to temp location"
+              exit 1
+            fi
+            
+            # Debug: Show config before sed replacements
+            echo "::group::Config before sed replacements"
+            grep -E "zksync.*url:" "$TEMP_CONFIG" || echo "No zksync URLs found"
+            echo "::endgroup::"
             
             # Replace actual URLs with TODO placeholders
-            sed -i 's|zksyncurl: *"[^"]*"|zksyncurl: "TODO: Set your GenLayer Chain ZKSync HTTP RPC URL here"|' "$TEMP_CONFIG"
-            sed -i 's|zksyncwebsocketurl: *"[^"]*"|zksyncwebsocketurl: "TODO: Set your GenLayer Chain ZKSync WebSocket RPC URL here"|' "$TEMP_CONFIG"
+            # Use sed with backup for compatibility (works on both Linux and macOS)
+            sed -i.bak 's|zksyncurl: *"[^"]*"|zksyncurl: "TODO: Set your GenLayer Chain ZKSync HTTP RPC URL here"|' "$TEMP_CONFIG"
+            sed -i.bak 's|zksyncwebsocketurl: *"[^"]*"|zksyncwebsocketurl: "TODO: Set your GenLayer Chain ZKSync WebSocket RPC URL here"|' "$TEMP_CONFIG"
+            # Remove backup files
+            rm -f "${TEMP_CONFIG}.bak"
+            
+            # Debug: Show config after sed replacements
+            echo "::group::Config after sed replacements"
+            grep -E "zksync.*url:" "$TEMP_CONFIG" || echo "No zksync URLs found after sed"
+            echo "::endgroup::"
             
             # Remove node.dev and node.admin sections using Python for reliable YAML parsing
             echo "::group::Debug: Running Python sanitization"
@@ -308,7 +335,44 @@ jobs:
             # Debug: Print sanitized config
             echo "::group::Sanitized config.yaml content"
             echo "After sanitization: $TEMP_CONFIG"
-            cat "$TEMP_CONFIG" || echo "Failed to read sanitized config"
+            if [ -f "$TEMP_CONFIG" ]; then
+              echo "File size: $(wc -c < "$TEMP_CONFIG") bytes"
+              echo "Complete sanitized config content:"
+              echo "================================="
+              cat "$TEMP_CONFIG"
+              echo "================================="
+              echo ""
+              echo "Checking for removed sections:"
+              grep -E "^\s*(dev|admin):" "$TEMP_CONFIG" && echo "WARNING: dev/admin sections still present!" || echo "Good: No dev/admin sections found"
+              
+              # Verify the sanitized file has the expected structure
+              echo "Verifying config structure:"
+              if grep -q "^node:" "$TEMP_CONFIG"; then
+                echo "✓ Found 'node:' section"
+              else
+                echo "✗ Missing 'node:' section"
+              fi
+              
+              if grep -q "^consensus:" "$TEMP_CONFIG"; then
+                echo "✓ Found 'consensus:' section"
+              else
+                echo "✗ Missing 'consensus:' section"
+              fi
+              
+              if grep -q "^genvm:" "$TEMP_CONFIG"; then
+                echo "✓ Found 'genvm:' section"
+              else
+                echo "✗ Missing 'genvm:' section"
+              fi
+              
+              if grep -q "^metrics:" "$TEMP_CONFIG"; then
+                echo "✓ Found 'metrics:' section"
+              else
+                echo "✗ Missing 'metrics:' section"
+              fi
+            else
+              echo "ERROR: Sanitized config file not found!"
+            fi
             echo "::endgroup::"
             
             # Debug: Check destination
@@ -326,10 +390,20 @@ jobs:
             # Check if the config has changed
             if [ -f "$DEST_CONFIG" ]; then
               if ! cmp -s "$TEMP_CONFIG" "$DEST_CONFIG"; then
-                cp "$TEMP_CONFIG" "$DEST_CONFIG"
+                # Force copy to ensure complete replacement
+                cp -f "$TEMP_CONFIG" "$DEST_CONFIG"
                 echo "- Updated: \`config.yaml\` (sanitized)" >> $SYNC_REPORT
                 echo "config_updated=1" >> $GITHUB_OUTPUT
                 echo "Config file was updated"
+                
+                # Debug: Show what changed
+                echo "::group::Config differences"
+                echo "File sizes:"
+                echo "  Source (sanitized): $(wc -c < "$TEMP_CONFIG") bytes"
+                echo "  Destination (after copy): $(wc -c < "$DEST_CONFIG") bytes"
+                echo "First 10 lines of updated config:"
+                head -10 "$DEST_CONFIG"
+                echo "::endgroup::"
               else
                 echo "- No changes to \`config.yaml\`" >> $SYNC_REPORT
                 echo "config_updated=0" >> $GITHUB_OUTPUT
@@ -337,7 +411,7 @@ jobs:
               fi
             else
               # Config doesn't exist, create it
-              cp "$TEMP_CONFIG" "$DEST_CONFIG"
+              cp -f "$TEMP_CONFIG" "$DEST_CONFIG"
               echo "- Added: \`config.yaml\` (sanitized)" >> $SYNC_REPORT
               echo "config_updated=1" >> $GITHUB_OUTPUT
               echo "Config file was created"
@@ -347,7 +421,15 @@ jobs:
             echo "::group::Debug: Verify config copy"
             if [ -f "$DEST_CONFIG" ]; then
               echo "Destination config after operation:"
-              cat "$DEST_CONFIG" | head -20
+              echo "File size: $(wc -c < "$DEST_CONFIG") bytes"
+              echo "First 30 lines:"
+              head -30 "$DEST_CONFIG"
+              echo "---"
+              echo "Checking final content:"
+              echo "Has node section: $(grep -q '^node:' "$DEST_CONFIG" && echo "Yes" || echo "No")"
+              echo "Has consensus section: $(grep -q '^consensus:' "$DEST_CONFIG" && echo "Yes" || echo "No")"
+              echo "Has dev section: $(grep -q '^\s*dev:' "$DEST_CONFIG" && echo "Yes - ERROR!" || echo "No - Good")"
+              echo "Has admin section: $(grep -q '^\s*admin:' "$DEST_CONFIG" && echo "Yes - ERROR!" || echo "No - Good")"
             else
               echo "ERROR: Destination config still doesn't exist!"
             fi
@@ -356,10 +438,19 @@ jobs:
             # Clean up temp file
             rm -f "$TEMP_CONFIG"
           else
-            # Show path relative to source repo for clarity
-            RELATIVE_PATH="${SOURCE_CONFIG#source-repo/}"
-            printf -- "- Source config file not found: \`%s\`\n" "$RELATIVE_PATH" >> $SYNC_REPORT
+            # Show what was searched
+            echo "::group::Config file not found"
+            echo "Expected config file at: $SOURCE_CONFIG"
+            echo "::endgroup::"
+            
+            printf -- "- Source config file not found at: \`%s\`\n" "${SOURCE_CONFIG#source-repo/}" >> $SYNC_REPORT
             echo "config_updated=0" >> $GITHUB_OUTPUT
+            
+            # Try to create a minimal config if none exists
+            echo "::group::Creating minimal config"
+            echo "No config file found in source repository."
+            echo "This might be expected for this version."
+            echo "::endgroup::"
           fi
 
       - name: Sync API gen method files
@@ -649,6 +740,24 @@ jobs:
 
           npm run node-generate-api-docs
           echo "- ✅ Generated API documentation" >> $SYNC_REPORT
+          
+          # Final config verification
+          echo "::group::Final config.yaml verification"
+          CONFIG_PATH="content/validators/config.yaml"
+          if [ -f "$CONFIG_PATH" ]; then
+            echo "Config file exists at: $CONFIG_PATH"
+            echo "File size: $(wc -c < "$CONFIG_PATH") bytes"
+            echo "First 30 lines:"
+            head -30 "$CONFIG_PATH"
+            echo "---"
+            echo "Checking for sensitive sections:"
+            grep -E "^\s*(dev|admin):" "$CONFIG_PATH" && echo "ERROR: Sensitive sections found!" || echo "✓ No sensitive sections"
+            echo "Checking for TODO placeholders:"
+            grep -i "TODO:" "$CONFIG_PATH" && echo "✓ TODO placeholders found" || echo "WARNING: No TODO placeholders"
+          else
+            echo "ERROR: Config file not found at $CONFIG_PATH"
+          fi
+          echo "::endgroup::"
 
       - name: Check for changes
         id: check_changes
