@@ -850,10 +850,25 @@ jobs:
         run: |
           set -euo pipefail
           # Check if PR already exists for this branch
-          if PR_JSON=$(gh pr view "${{ env.BRANCH_NAME }}" --json url 2>/dev/null); then
-            echo "PR already exists for branch ${{ env.BRANCH_NAME }} – skipping creation"
-            echo "View existing PR: $(echo "$PR_JSON" | jq -r .url)"
+          if PR_JSON=$(gh pr view "${{ env.BRANCH_NAME }}" --json url,state 2>/dev/null); then
+            PR_STATE=$(echo "$PR_JSON" | jq -r .state)
+            PR_URL=$(echo "$PR_JSON" | jq -r .url)
+            
+            if [ "$PR_STATE" = "OPEN" ]; then
+              echo "Open PR already exists for branch ${{ env.BRANCH_NAME }} – skipping creation"
+              echo "View existing PR: $PR_URL"
+            else
+              echo "Closed PR exists for branch ${{ env.BRANCH_NAME }} (state: $PR_STATE)"
+              echo "Creating new PR..."
+              # Continue with PR creation below
+              CREATE_PR=true
+            fi
           else
+            echo "No PR exists for branch ${{ env.BRANCH_NAME }}"
+            CREATE_PR=true
+          fi
+          
+          if [ "${CREATE_PR:-false}" = "true" ]; then
             # Create PR body in temp file
             PR_BODY_FILE="${{ runner.temp }}/pr_body.md"
             cat >"$PR_BODY_FILE" <<'EOF'
