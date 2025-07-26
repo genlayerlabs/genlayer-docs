@@ -17,11 +17,13 @@ Executes a new message call immediately without creating a transaction on the bl
   - `to` (string, required): The contract address to call
   - `Data` (string, required): The encoded function call data
   - `Type` (string, required): The type of call (`"read"`, `"write"`, or `"deploy"`)
-  - `transaction_hash_variant` (string, required): `"latest-nonfinal"`
+  - `blockNumber` (string, optional): The block number to query at (hex-encoded). If not provided, uses latest block
+  - `status` (string, optional): The transaction status filter (`"finalized"` or `"accepted"`). If not provided, uses accepted state
   - `value` (string, optional): The value to send with the call (hex-encoded)
-    **Returns:** Hex-encoded result data
 
-**Example - Read Call:**
+**Returns:** Hex-encoded result data
+
+**Example - Read Call (Latest Accepted State):**
 
 ```json
 {
@@ -33,9 +35,28 @@ Executes a new message call immediately without creating a transaction on the bl
       "Data": "0xd8960e066d6574686f646c6765745f686176655f636f696e00",
       "from": "0xf6A60752C24Cd3BFcAf8d387a5EB62d3746F44EE",
       "to": "0xCe5712E63fd5475288aB1B7c0a368B9417357b81",
-      "transaction_hash_variant": "latest-nonfinal",
       "gas": "0x5208",
       "value": "0x0"
+    }
+  ],
+  "id": 1
+}
+```
+
+**Example - Read Call with Specific Block and Status:**
+
+```json
+{
+  "jsonrpc": "2.0",
+  "method": "gen_call",
+  "params": [
+    {
+      "Type": "read",
+      "Data": "0xd8960e066d6574686f646c6765745f686176655f636f696e00",
+      "from": "0xf6A60752C24Cd3BFcAf8d387a5EB62d3746F44EE",
+      "to": "0xCe5712E63fd5475288aB1B7c0a368B9417357b81",
+      "blockNumber": "0x151ec5",
+      "status": "accepted"
     }
   ],
   "id": 1
@@ -54,7 +75,6 @@ Executes a new message call immediately without creating a transaction on the bl
       "to":   "0x742d35Cc6634C0532925a3b8D4C9db96c4b4d8b6",
       "data": "0xa9059cbb000000000000000000000000742d35cc6634c0532925a3b8d4c9db96c4b4d8b6",
       "type": "write",
-      "transaction_hash_variant": "latest-nonfinal",
       "gas":  "0x5208",
       "value":"0x0"
     }
@@ -62,6 +82,14 @@ Executes a new message call immediately without creating a transaction on the bl
   "id": 1
 }
 ```
+
+**Notes:**
+
+- The `blockNumber` parameter can be either hex-encoded with a `0x` prefix (e.g., `"0x151ec5"`) or decimal (e.g., `"1384133"`)
+- Valid `status` values are `"accepted"` (default) and `"finalized"`
+- When both parameters are omitted, the call executes against the latest accepted state
+- For `read` and `write` type calls, if the contract doesn't exist at the specified block/status combination, an error will be returned
+- For `deploy` type calls, the `status` and `blockNumber` parameters are not used for contract state validation since no contract exists yet
 
 ### gen_getContractSchema
 
@@ -292,6 +320,101 @@ A `Transaction` object which contains the details of the transaction. The struct
     ]
   }
 }
+```
+
+### gen_getContractState
+
+Retrieves the current state of a GenLayer intelligent contract at a specific block height and transaction status.
+
+**Method:** `gen_getContractState`
+
+**Parameters:**
+
+- `request` (object, required): The contract state request parameters
+  - `address` (string, required): The contract address to query
+  - `blockNumber` (string, optional): The block number to query at (hex-encoded). If not provided, uses latest block
+  - `status` (string, optional): The transaction status filter (`"finalized"` or `"accepted"`). If not provided, uses accepted state
+
+**Returns:** Hex-encoded contract state data
+
+**Example Request - Latest Accepted State:**
+
+```json
+{
+  "jsonrpc": "2.0",
+  "method": "gen_getContractState",
+  "params": [
+    {
+      "address": "0x73ca5a2b51edf506ceaf110a41780ec51294d89f"
+    }
+  ],
+  "id": 1
+}
+```
+
+**Example Request - Specific Block and Status:**
+
+```json
+{
+  "jsonrpc": "2.0",
+  "method": "gen_getContractState",
+  "params": [
+    {
+      "address": "0x73ca5a2b51edf506ceaf110a41780ec51294d89f",
+      "blockNumber": "0x151ec5",
+      "status": "accepted"
+    }
+  ],
+  "id": 1
+}
+```
+
+**Example Response:**
+
+```json
+{
+  "jsonrpc": "2.0",
+  "result": "0xd9960e0773746f726167656c6e757064617465642074657374207374",
+  "id": 1
+}
+```
+
+**Notes:**
+
+- The `blockNumber` parameter should be hex-encoded with a `0x` prefix
+- Valid `status` values are `"accepted"` (default) and `"finalized"`
+- The returned state is hex-encoded binary data with a `0x` prefix
+- Empty contract state returns `"0x"`
+- If the contract doesn't exist at the specified block/status, an error will be returned
+
+**cURL Example:**
+
+```bash
+# Get latest accepted state
+curl -X POST http://localhost:9151 \
+  -H "Content-Type: application/json" \
+  -d '{
+    "jsonrpc": "2.0",
+    "method": "gen_getContractState",
+    "params": [{
+      "address": "0x73ca5a2b51edf506ceaf110a41780ec51294d89f"
+    }],
+    "id": 1
+  }'
+
+# Get state at specific block with accepted status
+curl -X POST http://localhost:9151 \
+  -H "Content-Type: application/json" \
+  -d '{
+    "jsonrpc": "2.0",
+    "method": "gen_getContractState",
+    "params": [{
+      "address": "0x73ca5a2b51edf506ceaf110a41780ec51294d89f",
+      "blockNumber": "0x151ec5",
+      "status": "accepted"
+    }],
+    "id": 1
+  }'
 ```
 
 ## Debug Methods
