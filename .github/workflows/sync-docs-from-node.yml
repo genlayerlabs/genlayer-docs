@@ -6,16 +6,17 @@ on:
   workflow_dispatch:
     inputs:
       version:
-        description: 'Version/tag to sync from genlayer-node repo (e.g., v0.3.5)'
-        required: true
+        description: 'Version/tag to sync from genlayer-node repo (e.g., v0.3.5, or "latest" to detect)'
+        required: false
+        default: 'latest'
       api_gen_path:
         description: 'Path to API gen files in source repo'
         required: false
-        default: 'docs/api/rpc/gen'
+        default: 'docs/api/rpc'
       api_debug_path:
         description: 'Path to API debug files in source repo'
         required: false
-        default: 'docs/api/rpc/debug'
+        default: 'docs/api/rpc'
       api_gen_regex:
         description: 'Regex pattern to filter API gen files (e.g., "gen_.*")'
         required: false
@@ -59,42 +60,78 @@ jobs:
         run: |
           set -euo pipefail
           if [ "${{ github.event_name }}" = "repository_dispatch" ]; then
-            # Fail if the required version field is missing
-            if [ -z "${{ github.event.client_payload.version }}" ]; then
-              echo "❌ Missing required client_payload.version for repository_dispatch" >&2
-              exit 1
+            # Default to "latest" if version not provided
+            VERSION="${{ github.event.client_payload.version }}"
+            if [ -z "$VERSION" ]; then
+              VERSION="latest"
             fi
-            echo "version=${{ github.event.client_payload.version }}" >> $GITHUB_OUTPUT
+            echo "version=$VERSION" >> $GITHUB_OUTPUT
             echo "changelog_path=${{ github.event.client_payload.changelog_path || 'docs/changelog' }}" >> $GITHUB_OUTPUT
-            echo "api_gen_path=${{ github.event.client_payload.api_gen_path || 'docs/api/rpc/gen' }}" >> $GITHUB_OUTPUT
-            echo "api_debug_path=${{ github.event.client_payload.api_debug_path || 'docs/api/rpc/debug' }}" >> $GITHUB_OUTPUT
+            echo "api_gen_path=${{ github.event.client_payload.api_gen_path || 'docs/api/rpc' }}" >> $GITHUB_OUTPUT
+            echo "api_debug_path=${{ github.event.client_payload.api_debug_path || 'docs/api/rpc' }}" >> $GITHUB_OUTPUT
             echo "api_gen_regex=${{ github.event.client_payload.api_gen_regex || 'gen_(?!dbg_).*' }}" >> $GITHUB_OUTPUT
             echo "api_debug_regex=${{ github.event.client_payload.api_debug_regex || 'gen_dbg_.*' }}" >> $GITHUB_OUTPUT
           else
             echo "version=${{ github.event.inputs.version }}" >> $GITHUB_OUTPUT
             echo "changelog_path=docs/changelog" >> $GITHUB_OUTPUT
-            echo "api_gen_path=${{ github.event.inputs.api_gen_path || 'docs/api/rpc/gen' }}" >> $GITHUB_OUTPUT
-            echo "api_debug_path=${{ github.event.inputs.api_debug_path || 'docs/api/rpc/debug' }}" >> $GITHUB_OUTPUT
+            echo "api_gen_path=${{ github.event.inputs.api_gen_path || 'docs/api/rpc' }}" >> $GITHUB_OUTPUT
+            echo "api_debug_path=${{ github.event.inputs.api_debug_path || 'docs/api/rpc' }}" >> $GITHUB_OUTPUT
             echo "api_gen_regex=${{ github.event.inputs.api_gen_regex || 'gen_(?!dbg_).*' }}" >> $GITHUB_OUTPUT
             echo "api_debug_regex=${{ github.event.inputs.api_debug_regex || 'gen_dbg_.*' }}" >> $GITHUB_OUTPUT
           fi
 
-      - name: Clone genlayer-node repository (docs folder only)
+      - name: Clone genlayer-node repository
         uses: actions/checkout@v4
         with:
           repository: genlayerlabs/genlayer-node
-          ref: ${{ steps.params.outputs.version }}
           token: ${{ secrets.NODE_REPO_TOKEN || secrets.GITHUB_TOKEN }}
-          sparse-checkout: |
-            docs
-          sparse-checkout-cone-mode: true
+          fetch-depth: 0  # Fetch all history for tags
           path: source-repo
+
+      - name: Detect latest version (if needed)
+        id: detect_version
+        if: steps.params.outputs.version == 'latest' || steps.params.outputs.version == ''
+        run: |
+          cd source-repo
+          # Get the latest tag that's not a pre-release
+          LATEST_TAG=$(git tag -l | grep -E '^v[0-9]+\.[0-9]+\.[0-9]+$' | sort -V | tail -n1)
+          
+          if [[ -z "$LATEST_TAG" ]]; then
+            echo "No tags found in repository"
+            exit 1
+          fi
+          
+          echo "Detected latest tag: $LATEST_TAG"
+          echo "version=$LATEST_TAG" >> $GITHUB_OUTPUT
+
+      - name: Set final version
+        id: set_version
+        run: |
+          if [[ "${{ steps.params.outputs.version }}" == "latest" || -z "${{ steps.params.outputs.version }}" ]]; then
+            VERSION="${{ steps.detect_version.outputs.version }}"
+          else
+            VERSION="${{ steps.params.outputs.version }}"
+          fi
+          echo "version=$VERSION" >> $GITHUB_OUTPUT
+          echo "Using version: $VERSION"
+
+      - name: Checkout version in source repo
+        run: |
+          cd source-repo
+          git checkout ${{ steps.set_version.outputs.version }}
+          
+      - name: Set up sparse checkout
+        run: |
+          cd source-repo
+          git sparse-checkout init --cone
+          git sparse-checkout set docs configs
+          git read-tree -m -u HEAD
 
       - name: Create branch for changes
         run: |
           set -euo pipefail
           # Sanitize version string for use in branch name
-          VERSION="${{ steps.params.outputs.version }}"
+          VERSION="${{ steps.set_version.outputs.version }}"
           SAFE_VERSION=$(echo "$VERSION" | sed 's/\//-/g')  # replace any '/' with '-'
           BRANCH_NAME="docs/node/${SAFE_VERSION}"
           
@@ -568,10 +605,10 @@ jobs:
         run: |
           set -euo pipefail
           git add content/validators pages/api-references pages/validators
-          git commit -m "docs: Sync documentation from node repository ${{ steps.params.outputs.version }}
+          git commit -m "docs: Sync documentation from node repository ${{ steps.set_version.outputs.version }}
 
-          - Source: genlayerlabs/genlayer-node@${{ steps.params.outputs.version }}
-          - Version: ${{ steps.params.outputs.version }}
+          - Source: genlayerlabs/genlayer-node@${{ steps.set_version.outputs.version }}
+          - Version: ${{ steps.set_version.outputs.version }}
           - Total changes: ${{ steps.check_changes.outputs.total_changes }}
           - Added: ${{ steps.check_changes.outputs.total_added }} files
           - Updated: ${{ steps.check_changes.outputs.total_updated }} files
@@ -621,7 +658,7 @@ jobs:
 
           ### 📋 Summary
           - **Source Repository**: `genlayerlabs/genlayer-node`
-          - **Version**: `${{ steps.params.outputs.version }}`
+          - **Version**: `${{ steps.set_version.outputs.version }}`
           - **API Gen Filter**: `${{ steps.params.outputs.api_gen_regex }}`
           - **API Debug Filter**: `${{ steps.params.outputs.api_debug_regex }}`
           - **Total Files Changed**: ${{ steps.check_changes.outputs.total_changes }}
@@ -652,7 +689,7 @@ jobs:
             
             # Create PR using GitHub CLI
             gh pr create \
-              --title "docs: Sync documentation from genlayer-node ${{ steps.params.outputs.version }}" \
+              --title "docs: Sync documentation from genlayer-node ${{ steps.set_version.outputs.version }}" \
               --body-file "$PR_BODY_FILE" \
               --label "documentation" \
               --label "node" \

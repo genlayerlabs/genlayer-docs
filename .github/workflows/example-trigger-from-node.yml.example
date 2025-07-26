@@ -45,8 +45,8 @@ jobs:
             {
               "version": "${{ steps.get_version.outputs.version }}",
               "changelog_path": "docs/changelog",
-              "api_gen_path": "docs/api/rpc/gen",
-              "api_debug_path": "docs/api/rpc/debug",
+              "api_gen_path": "docs/api/rpc",
+              "api_debug_path": "docs/api/rpc",
               "api_gen_regex": "gen_(?!dbg_).*",
               "api_debug_regex": "gen_dbg_.*"
             }
