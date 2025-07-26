@@ -22,16 +22,16 @@ jobs:
         with:
           fetch-depth: 0  # Fetch all history for tags
 
-      - name: Get latest tag
-        id: get_tag
+      - name: Get version
+        id: get_version
         run: |
-          # Get the latest tag
-          LATEST_TAG=$(git describe --tags --abbrev=0 2>/dev/null || echo "")
-          if [ -z "$LATEST_TAG" ]; then
+          # Get the latest tag as the version
+          VERSION=$(git describe --tags --abbrev=0 2>/dev/null || echo "")
+          if [ -z "$VERSION" ]; then
             # Fallback to commit SHA if no tags found
-            LATEST_TAG="commit-$(git rev-parse --short HEAD)"
+            VERSION="commit-$(git rev-parse --short HEAD)"
           fi
-          echo "tag=$LATEST_TAG" >> $GITHUB_OUTPUT
+          echo "version=$VERSION" >> $GITHUB_OUTPUT
 
       - name: Trigger documentation sync
         uses: peter-evans/repository-dispatch@v2
@@ -43,11 +43,10 @@ jobs:
           event-type: sync-docs
           client-payload: |
             {
-              "source_branch": "${{ github.ref_name }}",
-              "tag": "${{ steps.get_tag.outputs.tag }}",
+              "version": "${{ steps.get_version.outputs.version }}",
               "changelog_path": "docs/changelog",
-              "api_gen_path": "docs/api/rpc/gen",
-              "api_debug_path": "docs/api/rpc/debug",
+              "api_gen_path": "docs/api/rpc",
+              "api_debug_path": "docs/api/rpc",
               "api_gen_regex": "gen_(?!dbg_).*",
               "api_debug_regex": "gen_dbg_.*"
             }
@@ -56,5 +55,4 @@ jobs:
         run: |
           echo "✅ Triggered documentation sync" >> $GITHUB_STEP_SUMMARY
           echo "- Target repository: genlayerlabs/genlayer-docs" >> $GITHUB_STEP_SUMMARY
-          echo "- Source branch: ${{ github.ref_name }}" >> $GITHUB_STEP_SUMMARY
-          echo "- Tag: ${{ steps.get_tag.outputs.tag }}" >> $GITHUB_STEP_SUMMARY
+          echo "- Version: ${{ steps.get_version.outputs.version }}" >> $GITHUB_STEP_SUMMARY

@@ -5,21 +5,18 @@ on:
     types: [sync-docs]
   workflow_dispatch:
     inputs:
-      source_branch:
-        description: 'Branch to sync from genlayer-node repo'
+      version:
+        description: 'Version/tag to sync from genlayer-node repo (e.g., v0.3.5, or "latest" to detect)'
         required: false
-        default: 'main'
-      tag:
-        description: 'Tag/version for branch naming (e.g., v0.3.5)'
-        required: true
+        default: 'latest'
       api_gen_path:
         description: 'Path to API gen files in source repo'
         required: false
-        default: 'docs/api/rpc/gen'
+        default: 'docs/api/rpc'
       api_debug_path:
         description: 'Path to API debug files in source repo'
         required: false
-        default: 'docs/api/rpc/debug'
+        default: 'docs/api/rpc'
       api_gen_regex:
         description: 'Regex pattern to filter API gen files (e.g., "gen_.*")'
         required: false
@@ -51,6 +48,11 @@ jobs:
 
       - name: Install dependencies
         run: npm install
+        
+      - name: Setup Python dependencies
+        run: |
+          python3 -m pip install --upgrade pip
+          python3 -m pip install pyyaml
 
       - name: Set up Git
         run: |
@@ -63,38 +65,97 @@ jobs:
         run: |
           set -euo pipefail
           if [ "${{ github.event_name }}" = "repository_dispatch" ]; then
-            echo "source_branch=${{ github.event.client_payload.source_branch || 'main' }}" >> $GITHUB_OUTPUT
-            echo "tag=${{ github.event.client_payload.tag }}" >> $GITHUB_OUTPUT
+            # Default to "latest" if version not provided
+            VERSION="${{ github.event.client_payload.version }}"
+            if [ -z "$VERSION" ]; then
+              VERSION="latest"
+            fi
+            echo "version=$VERSION" >> $GITHUB_OUTPUT
             echo "changelog_path=${{ github.event.client_payload.changelog_path || 'docs/changelog' }}" >> $GITHUB_OUTPUT
-            echo "api_gen_path=${{ github.event.client_payload.api_gen_path || 'docs/api/rpc/gen' }}" >> $GITHUB_OUTPUT
-            echo "api_debug_path=${{ github.event.client_payload.api_debug_path || 'docs/api/rpc/debug' }}" >> $GITHUB_OUTPUT
+            echo "api_gen_path=${{ github.event.client_payload.api_gen_path || 'docs/api/rpc' }}" >> $GITHUB_OUTPUT
+            echo "api_debug_path=${{ github.event.client_payload.api_debug_path || 'docs/api/rpc' }}" >> $GITHUB_OUTPUT
             echo "api_gen_regex=${{ github.event.client_payload.api_gen_regex || 'gen_(?!dbg_).*' }}" >> $GITHUB_OUTPUT
             echo "api_debug_regex=${{ github.event.client_payload.api_debug_regex || 'gen_dbg_.*' }}" >> $GITHUB_OUTPUT
           else
-            echo "source_branch=${{ github.event.inputs.source_branch }}" >> $GITHUB_OUTPUT
-            echo "tag=${{ github.event.inputs.tag }}" >> $GITHUB_OUTPUT
+            echo "version=${{ github.event.inputs.version }}" >> $GITHUB_OUTPUT
             echo "changelog_path=docs/changelog" >> $GITHUB_OUTPUT
-            echo "api_gen_path=${{ github.event.inputs.api_gen_path || 'docs/api/rpc/gen' }}" >> $GITHUB_OUTPUT
-            echo "api_debug_path=${{ github.event.inputs.api_debug_path || 'docs/api/rpc/debug' }}" >> $GITHUB_OUTPUT
+            echo "api_gen_path=${{ github.event.inputs.api_gen_path || 'docs/api/rpc' }}" >> $GITHUB_OUTPUT
+            echo "api_debug_path=${{ github.event.inputs.api_debug_path || 'docs/api/rpc' }}" >> $GITHUB_OUTPUT
             echo "api_gen_regex=${{ github.event.inputs.api_gen_regex || 'gen_(?!dbg_).*' }}" >> $GITHUB_OUTPUT
             echo "api_debug_regex=${{ github.event.inputs.api_debug_regex || 'gen_dbg_.*' }}" >> $GITHUB_OUTPUT
           fi
 
-      - name: Clone genlayer-node repository (docs folder only)
+      - name: Clone genlayer-node repository
         uses: actions/checkout@v4
         with:
           repository: genlayerlabs/genlayer-node
-          ref: ${{ steps.params.outputs.source_branch }}
           token: ${{ secrets.NODE_REPO_TOKEN || secrets.GITHUB_TOKEN }}
+          fetch-depth: 0  # Fetch all history for tags
           sparse-checkout: |
             docs
+            configs/node/config.yaml.example
           sparse-checkout-cone-mode: true
           path: source-repo
+
+      - name: Detect latest version (if needed)
+        id: detect_version
+        if: steps.params.outputs.version == 'latest' || steps.params.outputs.version == ''
+        run: |
+          cd source-repo
+          # Get the latest tag that's not a pre-release
+          LATEST_TAG=$(git tag -l | grep -E '^v[0-9]+\.[0-9]+\.[0-9]+$' | sort -V | tail -n1)
+          
+          if [[ -z "$LATEST_TAG" ]]; then
+            echo "No tags found in repository"
+            exit 1
+          fi
+          
+          echo "Detected latest tag: $LATEST_TAG"
+          echo "version=$LATEST_TAG" >> $GITHUB_OUTPUT
+
+      - name: Set final version
+        id: set_version
+        run: |
+          if [[ "${{ steps.params.outputs.version }}" == "latest" || -z "${{ steps.params.outputs.version }}" ]]; then
+            VERSION="${{ steps.detect_version.outputs.version }}"
+          else
+            VERSION="${{ steps.params.outputs.version }}"
+          fi
+          echo "version=$VERSION" >> $GITHUB_OUTPUT
+          echo "Using version: $VERSION"
+
+      - name: Checkout version in source repo
+        run: |
+          cd source-repo
+          git checkout ${{ steps.set_version.outputs.version }}
+          
+          # Debug: Check what files we have after checkout
+          echo "::group::Debug: Files after version checkout"
+          echo "Current directory: $(pwd)"
+          echo "All directories in source-repo:"
+          find . -type d -name "config*" | head -20
+          echo "All yaml files:"
+          find . -name "*.yaml*" -type f | head -20
+          echo "Checking specific paths:"
+          ls -la configs/ 2>/dev/null || echo "No configs directory"
+          ls -la config/ 2>/dev/null || echo "No config directory"
+          echo "::endgroup::"
 
       - name: Create branch for changes
         run: |
           set -euo pipefail
-          BRANCH_NAME="docs/node/${{ steps.params.outputs.tag }}"
+          # Sanitize version string for use in branch name
+          VERSION="${{ steps.set_version.outputs.version }}"
+          SAFE_VERSION=$(echo "$VERSION" | sed 's/\//-/g')  # replace any '/' with '-'
+          BRANCH_NAME="docs/node/${SAFE_VERSION}"
+          
+          # Check if branch exists on remote
+          if git ls-remote --exit-code --heads origin "$BRANCH_NAME" >/dev/null 2>&1; then
+            echo "Branch $BRANCH_NAME already exists on remote, will force update"
+            git fetch origin "$BRANCH_NAME"
+          fi
+          
+          # Create/recreate branch from current HEAD (main)
           git switch --force-create "$BRANCH_NAME"
           echo "BRANCH_NAME=$BRANCH_NAME" >> $GITHUB_ENV
 
@@ -152,7 +213,7 @@ jobs:
             for dest_file in "${EXISTING_FILES[@]}"; do
               if [ -f "$dest_file" ]; then
                 rm "$dest_file"
-                echo "- Deleted: \`$(basename "$dest_file")\`" >> $SYNC_REPORT
+                printf -- "- Deleted: \`%s\`\n" "$(basename "$dest_file")" >> $SYNC_REPORT
                 DELETED=$((DELETED + 1))
               fi
             done
@@ -185,50 +246,211 @@ jobs:
           set -euo pipefail
           SYNC_REPORT="${{ runner.temp }}/sync_report.md"
           SOURCE_CONFIG="source-repo/configs/node/config.yaml.example"
+          
           DEST_CONFIG="content/validators/config.yaml"
 
           echo "" >> $SYNC_REPORT
           echo "## Config File Sync" >> $SYNC_REPORT
           echo "" >> $SYNC_REPORT
-
+          
+          # Debug: Check what files exist in source-repo/configs
+          echo "::group::Debug: Checking source-repo/configs directory"
+          echo "Current directory: $(pwd)"
+          echo "Source repo structure:"
+          ls -la source-repo/ || echo "source-repo not found"
+          echo "Configs directory:"
+          ls -la source-repo/configs/ 2>/dev/null || echo "configs directory not found"
+          echo "Node directory:"
+          ls -la source-repo/configs/node/ 2>/dev/null || echo "node directory not found"
+          echo "All files in configs (recursive):"
+          find source-repo/configs -type f 2>/dev/null || echo "No files found in configs"
+          echo "YAML files in configs:"
+          find source-repo/configs -type f -name "*.yaml*" 2>/dev/null || echo "No yaml files found"
+          echo "::endgroup::"
+          
+          # Check if the source config file exists
           if [ -f "$SOURCE_CONFIG" ]; then
+            echo "Found config file at: $SOURCE_CONFIG"
             mkdir -p "$(dirname "$DEST_CONFIG")"
+            
+            # Debug: Print original config
+            echo "::group::Original config.yaml content"
+            echo "Source: $SOURCE_CONFIG"
+            cat "$SOURCE_CONFIG" || echo "Failed to read source config"
+            echo "::endgroup::"
             
             # Create a temporary file for sanitized config
             TEMP_CONFIG="${{ runner.temp }}/config_sanitized.yaml"
             
             # Copy and sanitize the config
             cp "$SOURCE_CONFIG" "$TEMP_CONFIG"
+            if [ ! -f "$TEMP_CONFIG" ]; then
+              echo "ERROR: Failed to copy config to temp location"
+              exit 1
+            fi
+            
+            # Debug: Show config before sed replacements
+            echo "::group::Config before sed replacements"
+            grep -E "zksync.*url:" "$TEMP_CONFIG" || echo "No zksync URLs found"
+            echo "::endgroup::"
             
             # Replace actual URLs with TODO placeholders
-            sed -i 's|zksyncurl: *"[^"]*"|zksyncurl: "TODO: Set your GenLayer Chain ZKSync HTTP RPC URL here"|' "$TEMP_CONFIG"
-            sed -i 's|zksyncwebsocketurl: *"[^"]*"|zksyncwebsocketurl: "TODO: Set your GenLayer Chain ZKSync WebSocket RPC URL here"|' "$TEMP_CONFIG"
+            # Use sed with backup for compatibility (works on both Linux and macOS)
+            sed -i.bak 's|zksyncurl: *"[^"]*"|zksyncurl: "TODO: Set your GenLayer Chain ZKSync HTTP RPC URL here"|' "$TEMP_CONFIG"
+            sed -i.bak 's|zksyncwebsocketurl: *"[^"]*"|zksyncwebsocketurl: "TODO: Set your GenLayer Chain ZKSync WebSocket RPC URL here"|' "$TEMP_CONFIG"
+            # Remove backup files
+            rm -f "${TEMP_CONFIG}.bak"
+            
+            # Debug: Show config after sed replacements
+            echo "::group::Config after sed replacements"
+            grep -E "zksync.*url:" "$TEMP_CONFIG" || echo "No zksync URLs found after sed"
+            echo "::endgroup::"
             
             # Remove node.dev and node.admin sections using Python for reliable YAML parsing
-            python3 .github/scripts/sanitize-config.py "$TEMP_CONFIG"
+            echo "::group::Debug: Running Python sanitization"
+            echo "Script path: .github/scripts/sanitize-config.py"
+            echo "Config path: $TEMP_CONFIG"
+            # Check Python and PyYAML
+            echo "Python version:"
+            python3 --version
+            echo "Checking PyYAML:"
+            python3 -c "import yaml; print('PyYAML version:', yaml.__version__)" || echo "PyYAML not installed"
+            
+            if [ -f ".github/scripts/sanitize-config.py" ]; then
+              echo "Sanitization script exists"
+              python3 .github/scripts/sanitize-config.py "$TEMP_CONFIG"
+              SANITIZE_EXIT_CODE=$?
+              echo "Sanitization exit code: $SANITIZE_EXIT_CODE"
+              if [ $SANITIZE_EXIT_CODE -ne 0 ]; then
+                echo "ERROR: Sanitization failed!"
+                echo "Config content before sanitization:"
+                cat "$TEMP_CONFIG" | head -20
+              fi
+            else
+              echo "ERROR: Sanitization script not found!"
+              ls -la .github/scripts/ || echo "Scripts directory not found"
+            fi
+            echo "::endgroup::"
+            
+            # Debug: Print sanitized config
+            echo "::group::Sanitized config.yaml content"
+            echo "After sanitization: $TEMP_CONFIG"
+            if [ -f "$TEMP_CONFIG" ]; then
+              echo "File size: $(wc -c < "$TEMP_CONFIG") bytes"
+              echo "Complete sanitized config content:"
+              echo "================================="
+              cat "$TEMP_CONFIG"
+              echo "================================="
+              echo ""
+              echo "Checking for removed sections:"
+              grep -E "^\s*(dev|admin):" "$TEMP_CONFIG" && echo "WARNING: dev/admin sections still present!" || echo "Good: No dev/admin sections found"
+              
+              # Verify the sanitized file has the expected structure
+              echo "Verifying config structure:"
+              if grep -q "^node:" "$TEMP_CONFIG"; then
+                echo "✓ Found 'node:' section"
+              else
+                echo "✗ Missing 'node:' section"
+              fi
+              
+              if grep -q "^consensus:" "$TEMP_CONFIG"; then
+                echo "✓ Found 'consensus:' section"
+              else
+                echo "✗ Missing 'consensus:' section"
+              fi
+              
+              if grep -q "^genvm:" "$TEMP_CONFIG"; then
+                echo "✓ Found 'genvm:' section"
+              else
+                echo "✗ Missing 'genvm:' section"
+              fi
+              
+              if grep -q "^metrics:" "$TEMP_CONFIG"; then
+                echo "✓ Found 'metrics:' section"
+              else
+                echo "✗ Missing 'metrics:' section"
+              fi
+            else
+              echo "ERROR: Sanitized config file not found!"
+            fi
+            echo "::endgroup::"
+            
+            # Debug: Check destination
+            echo "::group::Debug: Destination config check"
+            echo "Destination path: $DEST_CONFIG"
+            if [ -f "$DEST_CONFIG" ]; then
+              echo "Destination config exists"
+              echo "Current destination content:"
+              cat "$DEST_CONFIG" | head -20
+            else
+              echo "Destination config does not exist"
+            fi
+            echo "::endgroup::"
             
             # Check if the config has changed
             if [ -f "$DEST_CONFIG" ]; then
               if ! cmp -s "$TEMP_CONFIG" "$DEST_CONFIG"; then
-                cp "$TEMP_CONFIG" "$DEST_CONFIG"
+                # Force copy to ensure complete replacement
+                cp -f "$TEMP_CONFIG" "$DEST_CONFIG"
                 echo "- Updated: \`config.yaml\` (sanitized)" >> $SYNC_REPORT
                 echo "config_updated=1" >> $GITHUB_OUTPUT
+                echo "Config file was updated"
+                
+                # Debug: Show what changed
+                echo "::group::Config differences"
+                echo "File sizes:"
+                echo "  Source (sanitized): $(wc -c < "$TEMP_CONFIG") bytes"
+                echo "  Destination (after copy): $(wc -c < "$DEST_CONFIG") bytes"
+                echo "First 10 lines of updated config:"
+                head -10 "$DEST_CONFIG"
+                echo "::endgroup::"
               else
                 echo "- No changes to \`config.yaml\`" >> $SYNC_REPORT
                 echo "config_updated=0" >> $GITHUB_OUTPUT
+                echo "Config file unchanged"
               fi
             else
               # Config doesn't exist, create it
-              cp "$TEMP_CONFIG" "$DEST_CONFIG"
+              cp -f "$TEMP_CONFIG" "$DEST_CONFIG"
               echo "- Added: \`config.yaml\` (sanitized)" >> $SYNC_REPORT
               echo "config_updated=1" >> $GITHUB_OUTPUT
+              echo "Config file was created"
             fi
+            
+            # Debug: Verify copy worked
+            echo "::group::Debug: Verify config copy"
+            if [ -f "$DEST_CONFIG" ]; then
+              echo "Destination config after operation:"
+              echo "File size: $(wc -c < "$DEST_CONFIG") bytes"
+              echo "First 30 lines:"
+              head -30 "$DEST_CONFIG"
+              echo "---"
+              echo "Checking final content:"
+              echo "Has node section: $(grep -q '^node:' "$DEST_CONFIG" && echo "Yes" || echo "No")"
+              echo "Has consensus section: $(grep -q '^consensus:' "$DEST_CONFIG" && echo "Yes" || echo "No")"
+              echo "Has dev section: $(grep -q '^\s*dev:' "$DEST_CONFIG" && echo "Yes - ERROR!" || echo "No - Good")"
+              echo "Has admin section: $(grep -q '^\s*admin:' "$DEST_CONFIG" && echo "Yes - ERROR!" || echo "No - Good")"
+            else
+              echo "ERROR: Destination config still doesn't exist!"
+            fi
+            echo "::endgroup::"
             
             # Clean up temp file
             rm -f "$TEMP_CONFIG"
           else
-            echo "- Source config file not found: \`configs/node/config.yaml.example\`" >> $SYNC_REPORT
+            # Show what was searched
+            echo "::group::Config file not found"
+            echo "Expected config file at: $SOURCE_CONFIG"
+            echo "::endgroup::"
+            
+            printf -- "- Source config file not found at: \`%s\`\n" "${SOURCE_CONFIG#source-repo/}" >> $SYNC_REPORT
             echo "config_updated=0" >> $GITHUB_OUTPUT
+            
+            # Try to create a minimal config if none exists
+            echo "::group::Creating minimal config"
+            echo "No config file found in source repository."
+            echo "This might be expected for this version."
+            echo "::endgroup::"
           fi
 
       - name: Sync API gen method files
@@ -242,8 +464,25 @@ jobs:
 
           echo "" >> $SYNC_REPORT
           echo "## API Gen Methods Sync" >> $SYNC_REPORT
-          echo "Using regex filter: \`$API_GEN_REGEX\`" >> $SYNC_REPORT
+          printf "Using regex filter: \`%s\`\n" "$API_GEN_REGEX" >> $SYNC_REPORT
           echo "" >> $SYNC_REPORT
+          
+          # Function to check if filename matches the regex pattern
+          # Uses perl if available for PCRE support, otherwise falls back to grep -E
+          matches_pattern() {
+            local filename="$1"
+            local pattern="$2"
+            
+            # Try perl first (supports PCRE including negative lookahead)
+            if command -v perl >/dev/null 2>&1; then
+              echo "$filename" | perl -ne "exit 0 if /^($pattern)\$/; exit 1"
+              return $?
+            fi
+            
+            # Fallback to grep -E (doesn't support negative lookahead)
+            echo "$filename" | grep -E "^($pattern)$" >/dev/null 2>&1
+            return $?
+          }
 
           if [ -d "$SOURCE_API_GEN" ]; then
             mkdir -p "$DEST_API_GEN"
@@ -264,7 +503,7 @@ jobs:
                 basename_no_ext=$(basename "$file" | sed 's/\.[^.]*$//')
                 
                 # Check if filename (without extension) matches the regex filter
-                if echo "$basename_no_ext" | grep -E "^($API_GEN_REGEX)$" > /dev/null 2>&1; then
+                if matches_pattern "$basename_no_ext" "$API_GEN_REGEX"; then
                   dest_filename="${basename_no_ext}.mdx"
                   dest_path="$DEST_API_GEN/$dest_filename"
 
@@ -287,22 +526,9 @@ jobs:
               fi
             done
 
-            # Handle _meta.json separately
-            if [ -f "$SOURCE_API_GEN/_meta.json" ]; then
-              if [ -f "$DEST_API_GEN/_meta.json" ]; then
-                if ! cmp -s "$SOURCE_API_GEN/_meta.json" "$DEST_API_GEN/_meta.json"; then
-                  cp "$SOURCE_API_GEN/_meta.json" "$DEST_API_GEN/"
-                  echo "- Updated: \`_meta.json\`" >> $SYNC_REPORT
-                fi
-              else
-                cp "$SOURCE_API_GEN/_meta.json" "$DEST_API_GEN/"
-                echo "- Added: \`_meta.json\`" >> $SYNC_REPORT
-              fi
-              unset EXISTING_FILES["_meta.json"]
-            elif [ -f "$DEST_API_GEN/_meta.json" ]; then
-              rm "$DEST_API_GEN/_meta.json"
-              echo "- Deleted: \`_meta.json\`" >> $SYNC_REPORT
-            fi
+            # Skip _meta.json handling - it should not be touched
+            # Remove _meta.json from tracking to prevent deletion
+            unset EXISTING_FILES["_meta.json"]
 
             # Remove files that no longer exist in source or don't match the filter
             DELETED=${DELETED:-0}
@@ -313,14 +539,14 @@ jobs:
                 source_exists=false
                 if [ -f "$SOURCE_API_GEN/${dest_basename_no_ext}.mdx" ] || [ -f "$SOURCE_API_GEN/${dest_basename_no_ext}.md" ]; then
                   # Source exists, check if it matches the filter
-                  if echo "$dest_basename_no_ext" | grep -E "^($API_GEN_REGEX)$" > /dev/null 2>&1; then
+                  if matches_pattern "$dest_basename_no_ext" "$API_GEN_REGEX"; then
                     source_exists=true
                   fi
                 fi
                 
                 if [ "$source_exists" = false ]; then
                   rm "$dest_file"
-                  echo "- Deleted: \`$(basename "$dest_file")\`" >> $SYNC_REPORT
+                  printf -- "- Deleted: \`%s\`\n" "$(basename "$dest_file")" >> $SYNC_REPORT
                   DELETED=$((DELETED + 1))
                 fi
               fi
@@ -359,8 +585,25 @@ jobs:
 
           echo "" >> $SYNC_REPORT
           echo "## API Debug Methods Sync" >> $SYNC_REPORT
-          echo "Using regex filter: \`$API_DEBUG_REGEX\`" >> $SYNC_REPORT
+          printf "Using regex filter: \`%s\`\n" "$API_DEBUG_REGEX" >> $SYNC_REPORT
           echo "" >> $SYNC_REPORT
+          
+          # Function to check if filename matches the regex pattern
+          # Uses perl if available for PCRE support, otherwise falls back to grep -E
+          matches_pattern() {
+            local filename="$1"
+            local pattern="$2"
+            
+            # Try perl first (supports PCRE including negative lookahead)
+            if command -v perl >/dev/null 2>&1; then
+              echo "$filename" | perl -ne "exit 0 if /^($pattern)\$/; exit 1"
+              return $?
+            fi
+            
+            # Fallback to grep -E (doesn't support negative lookahead)
+            echo "$filename" | grep -E "^($pattern)$" >/dev/null 2>&1
+            return $?
+          }
 
           if [ -d "$SOURCE_API_DEBUG" ]; then
             mkdir -p "$DEST_API_DEBUG"
@@ -381,7 +624,7 @@ jobs:
                 basename_no_ext=$(basename "$file" | sed 's/\.[^.]*$//')
                 
                 # Check if filename (without extension) matches the regex filter
-                if echo "$basename_no_ext" | grep -E "^($API_DEBUG_REGEX)$" > /dev/null 2>&1; then
+                if matches_pattern "$basename_no_ext" "$API_DEBUG_REGEX"; then
                   dest_filename="${basename_no_ext}.mdx"
                   dest_path="$DEST_API_DEBUG/$dest_filename"
 
@@ -404,22 +647,9 @@ jobs:
               fi
             done
 
-            # Handle _meta.json separately
-            if [ -f "$SOURCE_API_DEBUG/_meta.json" ]; then
-              if [ -f "$DEST_API_DEBUG/_meta.json" ]; then
-                if ! cmp -s "$SOURCE_API_DEBUG/_meta.json" "$DEST_API_DEBUG/_meta.json"; then
-                  cp "$SOURCE_API_DEBUG/_meta.json" "$DEST_API_DEBUG/"
-                  echo "- Updated: \`_meta.json\`" >> $SYNC_REPORT
-                fi
-              else
-                cp "$SOURCE_API_DEBUG/_meta.json" "$DEST_API_DEBUG/"
-                echo "- Added: \`_meta.json\`" >> $SYNC_REPORT
-              fi
-              unset EXISTING_FILES["_meta.json"]
-            elif [ -f "$DEST_API_DEBUG/_meta.json" ]; then
-              rm "$DEST_API_DEBUG/_meta.json"
-              echo "- Deleted: \`_meta.json\`" >> $SYNC_REPORT
-            fi
+            # Skip _meta.json handling - it should not be touched
+            # Remove _meta.json from tracking to prevent deletion
+            unset EXISTING_FILES["_meta.json"]
 
             # Remove files that no longer exist in source or don't match the filter
             DELETED=${DELETED:-0}
@@ -430,14 +660,14 @@ jobs:
                 source_exists=false
                 if [ -f "$SOURCE_API_DEBUG/${dest_basename_no_ext}.mdx" ] || [ -f "$SOURCE_API_DEBUG/${dest_basename_no_ext}.md" ]; then
                   # Source exists, check if it matches the filter
-                  if echo "$dest_basename_no_ext" | grep -E "^($API_DEBUG_REGEX)$" > /dev/null 2>&1; then
+                  if matches_pattern "$dest_basename_no_ext" "$API_DEBUG_REGEX"; then
                     source_exists=true
                   fi
                 fi
                 
                 if [ "$source_exists" = false ]; then
                   rm "$dest_file"
-                  echo "- Deleted: \`$(basename "$dest_file")\`" >> $SYNC_REPORT
+                  printf -- "- Deleted: \`%s\`\n" "$(basename "$dest_file")" >> $SYNC_REPORT
                   DELETED=$((DELETED + 1))
                 fi
               fi
@@ -484,6 +714,24 @@ jobs:
 
           npm run node-generate-api-docs
           echo "- ✅ Generated API documentation" >> $SYNC_REPORT
+          
+          # Final config verification
+          echo "::group::Final config.yaml verification"
+          CONFIG_PATH="content/validators/config.yaml"
+          if [ -f "$CONFIG_PATH" ]; then
+            echo "Config file exists at: $CONFIG_PATH"
+            echo "File size: $(wc -c < "$CONFIG_PATH") bytes"
+            echo "First 30 lines:"
+            head -30 "$CONFIG_PATH"
+            echo "---"
+            echo "Checking for sensitive sections:"
+            grep -E "^\s*(dev|admin):" "$CONFIG_PATH" && echo "ERROR: Sensitive sections found!" || echo "✓ No sensitive sections"
+            echo "Checking for TODO placeholders:"
+            grep -i "TODO:" "$CONFIG_PATH" && echo "✓ TODO placeholders found" || echo "WARNING: No TODO placeholders"
+          else
+            echo "ERROR: Config file not found at $CONFIG_PATH"
+          fi
+          echo "::endgroup::"
 
       - name: Check for changes
         id: check_changes
@@ -521,11 +769,25 @@ jobs:
         if: steps.check_changes.outputs.has_changes == 'true'
         run: |
           set -euo pipefail
+          # Debug: Check what will be committed
+          echo "::group::Debug: Files to be committed"
+          echo "Checking git status before add:"
+          git status --porcelain
+          echo "::endgroup::"
+          
           git add content/validators pages/api-references pages/validators
-          git commit -m "docs: Sync documentation from node repository ${{ steps.params.outputs.tag }}
+          
+          echo "::group::Debug: Files staged for commit"
+          echo "Checking git status after add:"
+          git status --porcelain
+          echo "Looking specifically for config.yaml:"
+          git status --porcelain | grep -i config || echo "No config files in git status"
+          echo "::endgroup::"
+          
+          git commit -m "docs: Sync documentation from node repository ${{ steps.set_version.outputs.version }}
 
-          - Source: genlayerlabs/genlayer-node@${{ steps.params.outputs.source_branch }}
-          - Tag: ${{ steps.params.outputs.tag }}
+          - Source: genlayerlabs/genlayer-node@${{ steps.set_version.outputs.version }}
+          - Version: ${{ steps.set_version.outputs.version }}
           - Total changes: ${{ steps.check_changes.outputs.total_changes }}
           - Added: ${{ steps.check_changes.outputs.total_added }} files
           - Updated: ${{ steps.check_changes.outputs.total_updated }} files
@@ -548,7 +810,7 @@ jobs:
         if: steps.check_changes.outputs.has_changes == 'true'
         run: |
           set -euo pipefail
-          git push origin ${{ env.BRANCH_NAME }}
+          git push --force-with-lease origin ${{ env.BRANCH_NAME }}
 
       - name: Capture timestamp
         id: timestamp
@@ -562,10 +824,25 @@ jobs:
         run: |
           set -euo pipefail
           # Check if PR already exists for this branch
-          if PR_JSON=$(gh pr view "${{ env.BRANCH_NAME }}" --json url 2>/dev/null); then
-            echo "PR already exists for branch ${{ env.BRANCH_NAME }} – skipping creation"
-            echo "View existing PR: $(echo "$PR_JSON" | jq -r .url)"
+          if PR_JSON=$(gh pr view "${{ env.BRANCH_NAME }}" --json url,state 2>/dev/null); then
+            PR_STATE=$(echo "$PR_JSON" | jq -r .state)
+            PR_URL=$(echo "$PR_JSON" | jq -r .url)
+            
+            if [ "$PR_STATE" = "OPEN" ]; then
+              echo "Open PR already exists for branch ${{ env.BRANCH_NAME }} – skipping creation"
+              echo "View existing PR: $PR_URL"
+            else
+              echo "Closed PR exists for branch ${{ env.BRANCH_NAME }} (state: $PR_STATE)"
+              echo "Creating new PR..."
+              # Continue with PR creation below
+              CREATE_PR=true
+            fi
           else
+            echo "No PR exists for branch ${{ env.BRANCH_NAME }}"
+            CREATE_PR=true
+          fi
+          
+          if [ "${CREATE_PR:-false}" = "true" ]; then
             # Create PR body in temp file
             PR_BODY_FILE="${{ runner.temp }}/pr_body.md"
             cat >"$PR_BODY_FILE" <<'EOF'
@@ -575,8 +852,7 @@ jobs:
 
           ### 📋 Summary
           - **Source Repository**: `genlayerlabs/genlayer-node`
-          - **Source Branch**: `${{ steps.params.outputs.source_branch }}`
-          - **Latest Tag**: `${{ steps.params.outputs.tag }}`
+          - **Version**: `${{ steps.set_version.outputs.version }}`
           - **API Gen Filter**: `${{ steps.params.outputs.api_gen_regex }}`
           - **API Debug Filter**: `${{ steps.params.outputs.api_debug_regex }}`
           - **Total Files Changed**: ${{ steps.check_changes.outputs.total_changes }}
@@ -607,7 +883,7 @@ jobs:
             
             # Create PR using GitHub CLI
             gh pr create \
-              --title "docs: Sync documentation from genlayer-node ${{ steps.params.outputs.tag }}" \
+              --title "docs: Sync documentation from genlayer-node ${{ steps.set_version.outputs.version }}" \
               --body-file "$PR_BODY_FILE" \
               --label "documentation" \
               --label "node" \

@@ -7,25 +7,39 @@ for documentation by removing sensitive sections.
 """
 
 import sys
-import yaml
+import re
 
 
 def sanitize_config(config_file_path):
-    """Remove node.dev and node.admin sections from config file."""
+    """Remove node.dev and node.admin sections from config file using regex."""
+    print(f"Sanitizing config file: {config_file_path}")
+    
     # Read the YAML file
     with open(config_file_path, 'r') as f:
-        config = yaml.safe_load(f)
+        content = f.read()
     
-    # Remove node.dev and node.admin if they exist
-    if 'node' in config:
-        if 'dev' in config['node']:
-            del config['node']['dev']
-        if 'admin' in config['node']:
-            del config['node']['admin']
+    print(f"Original file size: {len(content)} bytes")
     
-    # Write back to file preserving the structure
+    # Remove node.admin section
+    # This regex matches the admin: line and all indented content that follows
+    admin_pattern = r'(\n\s+admin:\s*\n(?:\s+(?:port:\s*\d+|\S.*)\s*\n)*)'
+    if re.search(admin_pattern, content):
+        content = re.sub(admin_pattern, '\n', content)
+        print("Removed node.admin section")
+    
+    # Remove node.dev section
+    # This regex matches the dev: line and all indented content that follows
+    dev_pattern = r'(\n\s+dev:\s*\n(?:\s+\S.*\s*\n)*)'
+    if re.search(dev_pattern, content):
+        content = re.sub(dev_pattern, '\n', content)
+        print("Removed node.dev section")
+    
+    # Write back to file
     with open(config_file_path, 'w') as f:
-        yaml.dump(config, f, default_flow_style=False, sort_keys=False, allow_unicode=True)
+        f.write(content)
+    
+    print(f"Sanitized file size: {len(content)} bytes")
+    print("Config sanitization completed")
 
 
 def main():

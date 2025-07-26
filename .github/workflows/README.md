@@ -45,8 +45,8 @@ Add this to a workflow in the genlayer-node repository:
       {
         "source_branch": "${{ github.ref_name }}",
         "changelog_path": "docs/changelog",
-        "api_gen_path": "docs/api/rpc/gen",
-        "api_debug_path": "docs/api/rpc/debug",
+        "api_gen_path": "docs/api/rpc",
+        "api_debug_path": "docs/api/rpc",
         "api_gen_regex": "gen_(?!dbg_).*",
         "api_debug_regex": "gen_dbg_.*"
       }
@@ -81,8 +81,8 @@ From the Actions tab:
 3. Specify parameters:
    - Tag for branch naming (required, e.g., v0.3.5)
    - Source branch (optional, default: main)
-   - API gen path (optional, default: `docs/api/rpc/gen`)
-   - API debug path (optional, default: `docs/api/rpc/debug`)
+   - API gen path (optional, default: `docs/api/rpc`)
+   - API debug path (optional, default: `docs/api/rpc`)
    - API gen regex filter (optional, default: `gen_(?!dbg_).*`)
    - API debug regex filter (optional, default: `gen_dbg_.*`)
 
@@ -114,8 +114,8 @@ The source paths and filters can be customized in the event payload:
 
 #### Paths
 - `changelog_path`: Path to changelog files (default: `docs/changelog`)
-- `api_gen_path`: Path to API gen methods (default: `docs/api/rpc/gen`)
-- `api_debug_path`: Path to API debug methods (default: `docs/api/rpc/debug`)
+- `api_gen_path`: Path to API gen methods (default: `docs/api/rpc`)
+- `api_debug_path`: Path to API debug methods (default: `docs/api/rpc`)
 
 #### Regex Filters
 - `api_gen_regex`: Regex pattern to filter gen API files (default: `gen_(?!dbg_).*`)
