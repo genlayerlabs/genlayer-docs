@@ -48,6 +48,11 @@ jobs:
 
       - name: Install dependencies
         run: npm install
+        
+      - name: Setup Python dependencies
+        run: |
+          python3 -m pip install --upgrade pip
+          python3 -m pip install pyyaml
 
       - name: Set up Git
         run: |
@@ -86,6 +91,10 @@ jobs:
           repository: genlayerlabs/genlayer-node
           token: ${{ secrets.NODE_REPO_TOKEN || secrets.GITHUB_TOKEN }}
           fetch-depth: 0  # Fetch all history for tags
+          sparse-checkout: |
+            docs
+            configs
+          sparse-checkout-cone-mode: true
           path: source-repo
 
       - name: Detect latest version (if needed)
@@ -120,12 +129,11 @@ jobs:
           cd source-repo
           git checkout ${{ steps.set_version.outputs.version }}
           
-      - name: Set up sparse checkout
-        run: |
-          cd source-repo
-          git sparse-checkout init --cone
-          git sparse-checkout set docs configs
-          git read-tree -m -u HEAD
+          # Debug: Check what files we have after checkout
+          echo "::group::Debug: Files after version checkout"
+          echo "Checking configs directory:"
+          find configs -type f -name "*.yaml*" 2>/dev/null || echo "No configs directory or yaml files found"
+          echo "::endgroup::"
 
       - name: Create branch for changes
         run: |
@@ -241,7 +249,14 @@ jobs:
           # Debug: Check what files exist in source-repo/configs
           echo "::group::Debug: Checking source-repo/configs directory"
           echo "Looking for: $SOURCE_CONFIG"
-          echo "Directory contents of source-repo/configs:"
+          echo "Current directory: $(pwd)"
+          echo "Source repo structure:"
+          ls -la source-repo/ || echo "source-repo not found"
+          echo "Configs directory:"
+          ls -la source-repo/configs/ 2>/dev/null || echo "configs directory not found"
+          echo "Node directory:"
+          ls -la source-repo/configs/node/ 2>/dev/null || echo "node directory not found"
+          echo "YAML files in configs:"
           find source-repo/configs -type f -name "*.yaml*" 2>/dev/null || echo "No yaml files found"
           echo "::endgroup::"
 
@@ -268,10 +283,22 @@ jobs:
             echo "::group::Debug: Running Python sanitization"
             echo "Script path: .github/scripts/sanitize-config.py"
             echo "Config path: $TEMP_CONFIG"
+            # Check Python and PyYAML
+            echo "Python version:"
+            python3 --version
+            echo "Checking PyYAML:"
+            python3 -c "import yaml; print('PyYAML version:', yaml.__version__)" || echo "PyYAML not installed"
+            
             if [ -f ".github/scripts/sanitize-config.py" ]; then
               echo "Sanitization script exists"
               python3 .github/scripts/sanitize-config.py "$TEMP_CONFIG"
-              echo "Sanitization exit code: $?"
+              SANITIZE_EXIT_CODE=$?
+              echo "Sanitization exit code: $SANITIZE_EXIT_CODE"
+              if [ $SANITIZE_EXIT_CODE -ne 0 ]; then
+                echo "ERROR: Sanitization failed!"
+                echo "Config content before sanitization:"
+                cat "$TEMP_CONFIG" | head -20
+              fi
             else
               echo "ERROR: Sanitization script not found!"
               ls -la .github/scripts/ || echo "Scripts directory not found"
