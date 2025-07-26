@@ -237,9 +237,22 @@ jobs:
           echo "" >> $SYNC_REPORT
           echo "## Config File Sync" >> $SYNC_REPORT
           echo "" >> $SYNC_REPORT
+          
+          # Debug: Check what files exist in source-repo/configs
+          echo "::group::Debug: Checking source-repo/configs directory"
+          echo "Looking for: $SOURCE_CONFIG"
+          echo "Directory contents of source-repo/configs:"
+          find source-repo/configs -type f -name "*.yaml*" 2>/dev/null || echo "No yaml files found"
+          echo "::endgroup::"
 
           if [ -f "$SOURCE_CONFIG" ]; then
             mkdir -p "$(dirname "$DEST_CONFIG")"
+            
+            # Debug: Print original config
+            echo "::group::Original config.yaml content"
+            echo "Source: $SOURCE_CONFIG"
+            cat "$SOURCE_CONFIG" || echo "Failed to read source config"
+            echo "::endgroup::"
             
             # Create a temporary file for sanitized config
             TEMP_CONFIG="${{ runner.temp }}/config_sanitized.yaml"
@@ -253,6 +266,12 @@ jobs:
             
             # Remove node.dev and node.admin sections using Python for reliable YAML parsing
             python3 .github/scripts/sanitize-config.py "$TEMP_CONFIG"
+            
+            # Debug: Print sanitized config
+            echo "::group::Sanitized config.yaml content"
+            echo "After sanitization: $TEMP_CONFIG"
+            cat "$TEMP_CONFIG" || echo "Failed to read sanitized config"
+            echo "::endgroup::"
             
             # Check if the config has changed
             if [ -f "$DEST_CONFIG" ]; then
