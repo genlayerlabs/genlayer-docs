@@ -526,22 +526,9 @@ jobs:
               fi
             done
 
-            # Handle _meta.json separately
-            if [ -f "$SOURCE_API_GEN/_meta.json" ]; then
-              if [ -f "$DEST_API_GEN/_meta.json" ]; then
-                if ! cmp -s "$SOURCE_API_GEN/_meta.json" "$DEST_API_GEN/_meta.json"; then
-                  cp "$SOURCE_API_GEN/_meta.json" "$DEST_API_GEN/"
-                  echo "- Updated: \`_meta.json\`" >> $SYNC_REPORT
-                fi
-              else
-                cp "$SOURCE_API_GEN/_meta.json" "$DEST_API_GEN/"
-                echo "- Added: \`_meta.json\`" >> $SYNC_REPORT
-              fi
-              unset EXISTING_FILES["_meta.json"]
-            elif [ -f "$DEST_API_GEN/_meta.json" ]; then
-              rm "$DEST_API_GEN/_meta.json"
-              echo "- Deleted: \`_meta.json\`" >> $SYNC_REPORT
-            fi
+            # Skip _meta.json handling - it should not be touched
+            # Remove _meta.json from tracking to prevent deletion
+            unset EXISTING_FILES["_meta.json"]
 
             # Remove files that no longer exist in source or don't match the filter
             DELETED=${DELETED:-0}
@@ -660,22 +647,9 @@ jobs:
               fi
             done
 
-            # Handle _meta.json separately
-            if [ -f "$SOURCE_API_DEBUG/_meta.json" ]; then
-              if [ -f "$DEST_API_DEBUG/_meta.json" ]; then
-                if ! cmp -s "$SOURCE_API_DEBUG/_meta.json" "$DEST_API_DEBUG/_meta.json"; then
-                  cp "$SOURCE_API_DEBUG/_meta.json" "$DEST_API_DEBUG/"
-                  echo "- Updated: \`_meta.json\`" >> $SYNC_REPORT
-                fi
-              else
-                cp "$SOURCE_API_DEBUG/_meta.json" "$DEST_API_DEBUG/"
-                echo "- Added: \`_meta.json\`" >> $SYNC_REPORT
-              fi
-              unset EXISTING_FILES["_meta.json"]
-            elif [ -f "$DEST_API_DEBUG/_meta.json" ]; then
-              rm "$DEST_API_DEBUG/_meta.json"
-              echo "- Deleted: \`_meta.json\`" >> $SYNC_REPORT
-            fi
+            # Skip _meta.json handling - it should not be touched
+            # Remove _meta.json from tracking to prevent deletion
+            unset EXISTING_FILES["_meta.json"]
 
             # Remove files that no longer exist in source or don't match the filter
             DELETED=${DELETED:-0}
