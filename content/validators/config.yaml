@@ -46,7 +46,39 @@ node:
   # Mode can be "validator" or "archive".
   # Default value is "validator".
   mode: "validator"
-# genvm configuration
+  rpc:
+    port: 9151 # RPC server port
+    endpoints:
+      # Group-level configuration (enables/disables all methods in a group)
+      groups:
+        genlayer: true         # gen_* methods (call, getContractSchema, etc.)
+        genlayer_debug: true   # gen_dbg_* methods (ping, load_test, trie)
+        ethereum: true         # eth_* proxy methods
+        zksync: true           # zks_* proxy methods
+      # Method-level configuration (overrides group settings for specific methods)
+      methods:
+        gen_call: true
+        gen_getContractSchema: true
+        gen_getTransactionStatus: true
+        gen_getTransactionReceipt: true
+        gen_dbg_ping: true
+        gen_dbg_load_test: true
+        eth_blockNumber: true
+        eth_getBlockByNumber: true
+        eth_getBlockByHash: true
+        eth_getBalance: true
+        eth_getTransactionCount: true
+        eth_getTransactionReceipt: true
+        eth_getLogs: true
+        eth_getCode: true
+        eth_sendRawTransaction: false
+        debug_icStateDump: false
+  ops:
+    port: 9153 # Metrics port
+    endpoints:
+      metrics: true # Enable metrics endpoint
+      health: true # Enable health endpoint
+      balance: true # Enable balance endpoint
 genvm:
   bin_dir: ./third_party/genvm/bin
   manage_modules: true # if true node will start genvm modules itself
