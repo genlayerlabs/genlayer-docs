@@ -7,7 +7,6 @@ for documentation by removing sensitive sections.
 """
 
 import sys
-import re
 
 
 def find_section_end(lines, start_idx, base_indent):
