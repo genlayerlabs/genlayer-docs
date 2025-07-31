@@ -105,7 +105,6 @@ const CopyPage: React.FC = () => {
           <div className={styles.dropdownContent}>
             <button
               onClick={copyPageAsMarkdown}
-              data-copy-feedback
               className={styles.dropdownButton}
             >
               <CopyIcon className={styles.dropdownIcon} />
