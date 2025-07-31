@@ -1,16 +1,15 @@
 import React from "react";
 import { DocsThemeConfig } from "nextra-theme-docs";
 import { useRouter } from "next/router";
-import TelegramIcon from "./components/telegram";
+import TelegramIcon from "./components/icons/telegram";
 import Logo from "./components/icon";
-import TwitterLogo from "./components/twitter";
-import DiscordIcon from "./components/discord";
+import TwitterLogo from "./components/icons/twitter";
+import DiscordIcon from "./components/icons/discord";
+import GitHubIcon from "./components/icons/github";
+import CopyPage from "./components/copy-page";
 
 const config: DocsThemeConfig = {
   logo: <Logo />,
-  project: {
-    link: "https://github.com/genlayerlabs",
-  },
   docsRepositoryBase: "https://github.com/genlayerlabs/genlayer-docs/tree/main",
   footer: {
     text: "GenLayer Documentation",
@@ -27,6 +26,10 @@ const config: DocsThemeConfig = {
   navbar: {
     extraContent: (
       <div style={{ display: "flex", alignItems: "center" }}>
+        <CopyPage />
+        <a href="https://github.com/genlayerlabs" style={{ marginRight: 10 }}>
+          <GitHubIcon />
+        </a>
         <a href="https://t.me/genlayer" style={{ marginRight: 10 }}>
           <TelegramIcon />
         </a>
@@ -39,6 +42,7 @@ const config: DocsThemeConfig = {
       </div>
     ),
   },
+
   useNextSeoProps: () => {
     const { asPath } = useRouter();
     const isHomePage = asPath === "/";
