@@ -1,9 +1,9 @@
 #!/usr/bin/env python3
 """
-Sanitize GenLayer node configuration by removing dev and admin sections.
+Sanitize GenLayer node configuration by removing dev sections.
 
 This script is used by the GitHub Actions workflow to prepare the config
-for documentation by removing sensitive sections.
+for documentation by removing development-only sections.
 """
 
 import sys
@@ -34,7 +34,7 @@ def find_section_end(lines, start_idx, base_indent):
 
 
 def sanitize_config(config_file_path):
-    """Remove node.dev and node.admin sections from config file."""
+    """Remove node.dev sections from config file."""
     print(f"Sanitizing config file: {config_file_path}")
     
     # Read the YAML file
@@ -49,14 +49,14 @@ def sanitize_config(config_file_path):
     # Track lines to remove
     lines_to_remove = set()
     
-    # Find and mark node.admin and node.dev sections
+    # Find and mark node.dev sections
     i = 0
     while i < len(lines):
         line = lines[i]
         stripped = line.strip()
         
-        # Check if this is an admin: or dev: line under node:
-        if stripped in ['admin:', 'dev:']:
+        # Check if this is a dev: line under node:
+        if stripped == 'dev:':
             # Get the indentation of this line
             indent = len(line) - len(line.lstrip())
             

@@ -306,7 +306,7 @@ jobs:
             grep -E "zksync.*url:" "$TEMP_CONFIG" || echo "No zksync URLs found after sed"
             echo "::endgroup::"
             
-            # Remove node.dev and node.admin sections using Python for reliable YAML parsing
+            # Remove node.dev sections using Python for reliable YAML parsing
             echo "::group::Debug: Running Python sanitization"
             echo "Script path: .github/scripts/sanitize-config.py"
             echo "Config path: $TEMP_CONFIG"
@@ -343,7 +343,7 @@ jobs:
               echo "================================="
               echo ""
               echo "Checking for removed sections:"
-              grep -E "^\s*(dev|admin):" "$TEMP_CONFIG" && echo "WARNING: dev/admin sections still present!" || echo "Good: No dev/admin sections found"
+              grep -E "^\s*dev:" "$TEMP_CONFIG" && echo "WARNING: dev sections still present!" || echo "Good: No dev sections found"
               
               # Verify the sanitized file has the expected structure
               echo "Verifying config structure:"
@@ -429,7 +429,7 @@ jobs:
               echo "Has node section: $(grep -q '^node:' "$DEST_CONFIG" && echo "Yes" || echo "No")"
               echo "Has consensus section: $(grep -q '^consensus:' "$DEST_CONFIG" && echo "Yes" || echo "No")"
               echo "Has dev section: $(grep -q '^\s*dev:' "$DEST_CONFIG" && echo "Yes - ERROR!" || echo "No - Good")"
-              echo "Has admin section: $(grep -q '^\s*admin:' "$DEST_CONFIG" && echo "Yes - ERROR!" || echo "No - Good")"
+              echo "Has admin section: $(grep -q '^\s*admin:' "$DEST_CONFIG" && echo "Yes" || echo "No")"
             else
               echo "ERROR: Destination config still doesn't exist!"
             fi
@@ -725,7 +725,7 @@ jobs:
             head -30 "$CONFIG_PATH"
             echo "---"
             echo "Checking for sensitive sections:"
-            grep -E "^\s*(dev|admin):" "$CONFIG_PATH" && echo "ERROR: Sensitive sections found!" || echo "✓ No sensitive sections"
+            grep -E "^\s*dev:" "$CONFIG_PATH" && echo "ERROR: Dev section found!" || echo "✓ No dev section"
             echo "Checking for TODO placeholders:"
             grep -i "TODO:" "$CONFIG_PATH" && echo "✓ TODO placeholders found" || echo "WARNING: No TODO placeholders"
           else
