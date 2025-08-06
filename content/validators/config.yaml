@@ -9,7 +9,7 @@ consensus:
   contractmainaddress: "0xe30293d600fF9B2C865d91307826F28006A458f4" # ConsensusMain Smart Contract Address
   contractdataaddress: "0x2a50afD9d3E0ACC824aC4850d7B4c5561aB5D27a" # ConsensusData Smart Contract Address
   contractidlenessaddress: "0xD1D09c2743DD26d718367Ba249Ee1629BE88CF33" # Idleness Smart Contract Address
-  contractstakingaddress: "0x143d20974FA35f72B8103f54D8A47F2991940d99" # Staking Smart Contract Address
+  contractstakingaddress: "0x31Cb4018ccB7d4F30419d367b6C5c7677AAE30E7" # Staking Smart Contract Address
   genesis: 817855 # (Optional) Genesis block number for this consensus deployment. If not provided, it will be auto-detected by searching for the first log from the ConsensusMain contract.
 
 # data directory
@@ -46,6 +46,8 @@ node:
   # Mode can be "validator" or "archive".
   # Default value is "validator".
   mode: "validator"
+  admin:
+    port: 9155
   rpc:
     port: 9151 # RPC server port
     endpoints:

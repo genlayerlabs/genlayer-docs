@@ -11,6 +11,37 @@ import { Callout } from "nextra-theme-docs";
   A fully Zero-downtime upgrade procedure is coming in a future update. 
 </Callout>
 
+## Configuration Change
+
+`v0.3.8` introduces updated consensus contract deployment with new contract addresses. **Critical**: Some consensus contract addresses have changed, and validators must update their consensus configuration to continue participating in the network.
+
+- Stop the node if it is running.
+- Back up your `configs/node/config.yaml` file to preserve your current settings.
+- Download and install the new `v0.3.8` packaged binary.
+- **Update the new configuration with any changes you had previously applied (you can check your config.yaml backup) and make sure you have the following consensus contracts** in your `configs/node/config.yaml`:
+  ```yaml
+  consensus:
+    # Asimov - Phase 3
+    contractmanageraddress: "0x0761ff3847294eb3234f37Bf63fd7F1CA1E840bB" # ConsensusManager Smart Contract Address
+    contractmainaddress: "0xe30293d600fF9B2C865d91307826F28006A458f4" # ConsensusMain Smart Contract Address
+    contractdataaddress: "0x2a50afD9d3E0ACC824aC4850d7B4c5561aB5D27a" # ConsensusData Smart Contract Address
+    contractidlenessaddress: "0xD1D09c2743DD26d718367Ba249Ee1629BE88CF33" # Idleness Smart Contract Address
+    contractstakingaddress: "0x31Cb4018ccB7d4F30419d367b6C5c7677AAE30E7" # Staking Smart Contract Address
+    genesis: 817855 # Genesis block number for this consensus deployment
+  ```
+- **Verify your configuration** by running `genlayernode doctor` - this will validate all contract addresses and connectivity.
+- Start the node with the updated configuration.
+
+<Callout type="error" emoji="🚨">
+  **Critical: Staking Address Update Required**
+  
+  Failure to update the consensus contract addresses will prevent your validator from:
+  - Participating in consensus rounds
+  - Being selected as an activator, a leader or activator
+  
+  The `doctor` command will now specifically validate these addresses - ensure it passes before starting your node.
+</Callout>
+
 ## v0.2 → v0.3 (Breaking Change)
 
 `v0.3` switches to a new consensus deployment. For this reason, the validator must be set up from scratch without reusing the old database stored at `data/node/genlayer.db`.
