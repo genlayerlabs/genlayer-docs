@@ -91,7 +91,7 @@ class UserArrayOperations(gl.Contract):
         self.user_ids.append(f"user_{len(self.users)}")
     
     @gl.public.view
-    def find_user_by_name(self, name: str) -> dict[str, typing.Any]:
+    def find_user_by_name(self, name: str) -> TreeMap[str, typing.Any]:
         for user in self.users:
             if user.name == name:
                 return user
@@ -124,7 +124,7 @@ class MapOperations(gl.Contract):
         self.names[key] = name
     
     @gl.public.view
-    def get_balance(self, address: str) -> dict[str, typing.Any]:
+    def get_balance(self, address: str) -> TreeMap[str, typing.Any]:
         account = Address(address)
         return self.balances.get(account, u256(0))
     
@@ -176,7 +176,7 @@ class UserProfileMap(gl.Contract):
             self.user_permissions[account].append(permission)
     
     @gl.public.view
-    def get_profile(self, address: str) -> dict[str, typing.Any]:
+    def get_profile(self, address: str) -> TreeMap[str, typing.Any]:
         account = Address(address)
         return self.profiles.get(account, UserProfile("", "", u256(0), False))
     
