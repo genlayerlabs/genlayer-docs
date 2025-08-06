@@ -124,7 +124,7 @@ class MapOperations(gl.Contract):
         self.names[key] = name
     
     @gl.public.view
-    def get_balance(self, address: str) -> TreeMap[str, typing.Any]:
+    def get_balance(self, address: str) -> int:
         account = Address(address)
         return self.balances.get(account, u256(0))
     
