@@ -96,7 +96,7 @@ class User:
     data: TreeMap[str, str]
 
 User() # error: data is absent (from dataclass)
-User(gl.storage_inmem_allocate(TreeMap[str, str])) # works fine, this function takes a type and `*args, **kwargs` for corresponding `__init__`. Also note that type must be fully instantiated and have no type variables.
+User(gl.storage.inmem_allocate(TreeMap[str, str])) # works fine, this function takes a type and `*args, **kwargs` for corresponding `__init__`. Also note that type must be fully instantiated and have no type variables.
 ```
 
 ## Default values
@@ -112,6 +112,90 @@ By default storage is zero-initialized:
 
 Struct types are zero-initialized "recursively"
 
+
+---
+## Memory Management
+
+### `gl.storage.inmem_allocate`
+
+Required for **generic storage classes** only. Regular dataclasses use normal initialization.
+
+```python
+# { "Depends": "py-genlayer:test" }
+
+from genlayer import *
+from dataclasses import dataclass
+import datetime
+
+@allow_storage
+@dataclass
+class User:
+    name: str
+    birthday: datetime.datetime
+
+@allow_storage
+@dataclass
+class Gen[T]:
+    name: T
+    birthday: datetime.datetime
+
+class Contract(gl.Contract):
+    user: User
+    gen_user: Gen[bytes]
+
+    @gl.public.write
+    def plain(self):
+        user = User('Ada', datetime.datetime.now())
+        self.user = user
+
+        read_user = self.user
+        copied_out = gl.storage.copy_to_memory(read_user)
+
+        def nd():
+            print('inmem: ok', user)
+            try:
+                print('storage: not ok', str(read_user))
+            except Exception as e:
+                print('storage: not ok', e)
+            print('copied out: ok', copied_out)
+
+        gl.eq_principle.strict_eq(nd)
+
+    @gl.public.write
+    def generic(self):
+        user = gl.storage.inmem_allocate(Gen[bytes], b'Ada', datetime.datetime.now())
+        self.gen_user = user
+
+        read_user = self.gen_user
+        copied_out = gl.storage.copy_to_memory(read_user)
+
+        def nd():
+            print('inmem: ok', user)
+            try:
+                print('storage: not ok', str(read_user))
+            except Exception as e:
+                print('storage: not ok', e)
+            print('copied out: ok', copied_out)
+
+        gl.eq_principle.strict_eq(nd)
+```
+
+### `gl.storage.copy_to_memory`
+
+Storage objects cannot be converted to string safely. Copy them to memory first:
+
+```python
+# Read from storage
+storage_user = self.user
+
+# Copy to memory for safe usage
+memory_user = gl.storage.copy_to_memory(storage_user)
+
+# String conversion works with memory objects
+print('copied out: ok', memory_user)  # Works!
+print('storage: not ok', str(storage_user))  # Error!
+
+```
 
 ---
 ## Differences from regular python types
