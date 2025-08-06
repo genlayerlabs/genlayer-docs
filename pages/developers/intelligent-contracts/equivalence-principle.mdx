@@ -82,6 +82,144 @@ In this example:
 - `task` defines what operation to perform
 - `criteria` ensures consistent validation across validators without requiring exact output matching
 
+### Strict Equivalence Principle
+
+Method that requires exact matches between validator outputs. Use this when you need deterministic results or when dealing with objective, factual data.
+
+**When to use:**
+- Fetching specific data that should be identical (web content, API responses)
+- Boolean operations or exact classifications
+- When network consensus on exact values is critical
+
+**How it works:**
+- All validators execute the same function
+- Results must match exactly
+
+```python
+def fetch_content():
+    response = gl.nondet.web.get("https://example.com")
+    body = json.loads(response.body)
+    return body["valid"]
+
+self.valid = gl.eq_principle_strict_eq(fetch_content)
+```
+
+```python
+def check_condition():
+    web_data = gl.get_webpage(url)
+    prompt = f"Is this text positive? Answer only 'true' or 'false': {web_data}"
+    return gl.exec_prompt(prompt).strip()
+
+result = gl.eq_principle_strict_eq(check_condition)
+```
+
+### Custom Leader/Validator Pattern
+
+For advanced use cases, you can implement your own equivalence logic using the leader/validator pattern. GenLayer provides two variants with different error handling approaches.
+
+#### Safe Custom Pattern (`gl.vm.run_nondet`)
+
+Provides comprehensive error handling by running validators in a sandbox.
+
+**When to use:**
+- Production environments where stability is critical
+- Complex validation logic that might have errors
+- When you want automatic error comparison and fallback handling
+
+**How it works:**
+- Leader function executes the main operation
+- Validator function runs in a sandbox for safety
+- Automatic error handling with customizable comparison functions
+
+```python
+def analyze_article_quality(self, assignment_id: str, article_text: str):
+    assignment = self.assignments[assignment_id]
+    prompt = f"""
+    Analyze this article's quality and provide a score from 0 to 2.
+    Article: {article_text}
+    Guidelines: {assignment.title} - {assignment.description}
+    Return JSON: {{"analysis": "detailed explanation", "score": 0-2}}
+    """
+
+    def leader_fn():
+        response = gl.nondet.exec_prompt(prompt)
+        return json.loads(response)
+
+    def validator_fn(leader_res: gl.vm.Result) -> bool:
+        if not isinstance(leader_res, gl.vm.Return):
+            return False
+        
+        validator_res = leader_fn()
+        leader_score = leader_res.calldata["score"]
+        validator_score = validator_res["score"]
+        
+        # Exact match for score 0, ±1 tolerance for others
+        if validator_score == 0 or leader_score == 0:
+            return validator_score == leader_score
+        return abs(validator_score - leader_score) <= 1
+
+    return gl.vm.run_nondet(leader_fn, validator_fn)
+```
+
+#### Fast Custom Pattern (`gl.vm.run_nondet_unsafe`)
+
+The most generic API for non-deterministic execution. Does not use extra sandbox for catching validator errors - validator errors result in `Disagree` error in executor (same as if the function returned `False`).
+
+**When to use:**
+- Performance-critical applications where sandbox overhead matters
+- Simple validators that are unlikely to error
+- When you want direct control over error handling
+
+**Note:** Use `run_nondet` instead if you want to catch and inspect validator errors, or use sandbox inside of it.
+
+```python
+def analyze_sentiment_fast(self, text: str):
+    def leader_fn():
+        prompt = f"Rate sentiment 1-10: {text}"
+        result = gl.nondet.exec_prompt(prompt)
+        return int(result.strip())
+    
+    def validator_fn(leader_result: gl.vm.Result) -> bool:
+        if not isinstance(leader_result, gl.vm.Return):
+            return False
+        
+        score = leader_result.calldata
+        return isinstance(score, int) and 1 <= score <= 10
+    
+    return gl.vm.run_nondet_unsafe(leader_fn, validator_fn)
+```
+
+#### Advanced Error Handling with `run_nondet`
+
+```python
+# Custom error comparison functions
+def custom_validation_with_error_handling(self, data: str):
+    def leader_fn():
+        # Note: process_external_data() is not provided by GenVM - implement your own logic
+        return process_external_data(data)
+    
+    def validator_fn(leader_result):
+        if not isinstance(leader_result, gl.vm.Return):
+            return False
+        # Note: validate_result() is not provided by GenVM - implement your own logic
+        return validate_result(leader_result.calldata)
+    
+    def compare_user_errors(error1: gl.vm.UserError, error2: gl.vm.UserError) -> bool:
+        # Custom logic for comparing user errors
+        return "timeout" in error1.message and "timeout" in error2.message
+    
+    def compare_vm_errors(error1: gl.vm.VMError, error2: gl.vm.VMError) -> bool:
+        # Custom logic for comparing VM errors
+        return "memory" in error1.message and "memory" in error2.message
+    
+    return gl.vm.run_nondet(
+        leader_fn, 
+        validator_fn,
+        compare_user_errors=compare_user_errors,
+        compare_vm_errors=compare_vm_errors
+    )
+```
+
 ### Data Flow
 <Fragment>
   <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'stretch' }}>
