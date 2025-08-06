@@ -5,6 +5,8 @@ Dataclasses provide structured data types for Intelligent Contracts. Use `@allow
 ## Method Parameters and Returns
 
 ```python
+import typing
+
 @allow_storage
 @dataclass
 class UserData:
@@ -30,6 +32,8 @@ class SimpleContract(gl.Contract):
 ## Generic Types
 
 ```python
+import typing
+
 @allow_storage
 @dataclass
 class Item[T]:
