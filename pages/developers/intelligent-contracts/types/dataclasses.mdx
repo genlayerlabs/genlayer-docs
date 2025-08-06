@@ -1,0 +1,53 @@
+# Dataclasses
+
+Dataclasses provide structured data types for Intelligent Contracts. Use `@allow_storage` decorator for storage compatibility.
+
+## Method Parameters and Returns
+
+```python
+@allow_storage
+@dataclass
+class UserData:
+    name: str
+    balance: u256
+ 
+class SimpleContract(gl.Contract):
+    users: TreeMap[Address, UserData]
+    
+    def __init__(self):
+        pass
+    
+    @gl.public.write
+    def create_user(self, name: str, balance: int):
+        self.users[gl.message.sender_address] = UserData(name, balance)
+
+    @gl.public.view
+    def get_user(self, user_address: str) -> TreeMap[str, typing.Any]:
+        address = Address(user_address)
+        return self.users.get(address, UserData("", u256(0)))
+```
+
+## Generic Types
+
+```python
+@allow_storage
+@dataclass
+class Item[T]:
+    data: T
+    label: str
+
+class GenericContract(gl.Contract):
+    string_items: DynArray[Item[str]]
+    
+    def __init__(self):
+        pass
+    
+    @gl.public.write
+    def add_item(self, data: str, label: str):
+        item = gl.storage.inmem_allocate(Item[str], data, label)
+        self.string_items.append(item)
+    
+    @gl.public.view
+    def get_items(self) -> DynArray[TreeMap[str, typing.Any]]:
+        return self.string_items
+```
