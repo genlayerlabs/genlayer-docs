@@ -398,19 +398,6 @@ You should see the following output:
   validator address.
 </Callout>
 
-## Checking Your Configuration
-
-To ensure your node is correctly configured, you can run the following command:
-
-```sh
-./bin/genlayernode doctor
-```
-
-The `doctor` command now includes comprehensive GenVM diagnostics integration to validate:
-- Consensus contract configuration and accessibility
-- GenVM module connectivity and health status
-- LLM provider configuration and API connectivity
-- Network configuration and ZKSync node accessibility
 
 ## Running the node
 
@@ -452,7 +439,21 @@ The `doctor` command now includes comprehensive GenVM diagnostics integration to
   automatically.
 </Callout>
 
-4.  Run the node
+4. Checking Your Configuration
+
+    To ensure your node is correctly configured, you can run the following command:
+
+    ```sh
+    ./bin/genlayernode doctor
+    ```
+
+    The `doctor` command now includes comprehensive GenVM diagnostics integration to validate:
+    - Consensus contract configuration and accessibility
+    - GenVM module connectivity and health status
+    - LLM provider configuration and API connectivity
+    - Network configuration and ZKSync node accessibility
+
+5.  Run the node
 
     ```sh
     ./bin/genlayernode run -c $(pwd)/configs/node/config.yaml --password "your secret password" # The same password you used when creating the account
