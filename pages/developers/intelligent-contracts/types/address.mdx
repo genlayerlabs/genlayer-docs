@@ -1,0 +1,130 @@
+# Address Type
+
+The `Address` type represents a 20-byte blockchain address, similar to Ethereum addresses. It's one of the most important types in Intelligent Contracts for handling user accounts, contract addresses, and cross-contract interactions.
+
+## Creating Address Instances
+
+```python
+# From hex string (most common)
+address1 = Address("0x742d35Cc6634C0532925a3b8D4C9db96C4b4d8b6")
+address2 = Address("0x0000000000000000000000000000000000000000")  # Zero address
+
+# From base64 encoded string
+address3 = Address("WzjaanAcVoVF3PywP8uHX1a+3cQ=")
+
+# From bytes (20 bytes)
+address4 = Address(b'\x5b\x38\xda\x6a\x70\x1c\x56\x85\x45\xdc\xfc\xb0\x3f\xcb\x87\x5f\x56\xbe\xdd\xc4')
+```
+
+## Address Properties and Conversions
+
+```python
+class AddressConverter(gl.Contract):
+    stored_address: Address
+    
+    def __init__(self, initial_address: str):
+        self.stored_address = Address(initial_address)
+    
+    @gl.public.view
+    def get_address_hex(self) -> str:
+        # Get checksum hex representation
+        return self.stored_address.as_hex
+    
+    @gl.public.view
+    def get_address_bytes(self) -> bytes:
+        # Get raw 20-byte representation
+        return self.stored_address.as_bytes
+    
+    @gl.public.view
+    def get_address_b64(self) -> str:
+        # Get base64 representation
+        return self.stored_address.as_b64
+    
+    @gl.public.view
+    def get_address_int(self) -> int:
+        # Get integer representation (little endian)
+        return self.stored_address.as_int
+    
+    @gl.public.view
+    def get_address_string(self) -> str:
+        # Get string representation (same as as_hex)
+        return str(self.stored_address)
+    
+    @gl.public.view
+    def format_address(self, fmt: str) -> str:
+        # Format with specific format specifier
+        if fmt == "x":
+            return f"{self.stored_address:x}"  # hex
+        elif fmt == "b64":
+            return f"{self.stored_address:b64}"  # base64
+        elif fmt == "cd":
+            return f"{self.stored_address:cd}"  # calldata format
+        else:
+            return str(self.stored_address)
+```
+
+## Address in Contract State
+
+```python
+class AddressStorage(gl.Contract):
+    # Single address storage
+    owner: Address
+    admin: Address
+    
+    # Address collections
+    authorized_users: DynArray[Address]
+    contract_registry: TreeMap[str, Address]
+    
+    def __init__(self):
+        self.owner = gl.message.sender_address
+        self.admin = gl.message.sender_address
+    
+    @gl.public.write
+    def add_authorized_user(self, user_address: str):
+        address = Address(user_address)
+        self.authorized_users.append(address)
+    
+    @gl.public.write
+    def register_contract(self, name: str, contract_address: str):
+        address = Address(contract_address)
+        self.contract_registry[name] = address
+    
+    @gl.public.view
+    def is_authorized(self, user_address: str) -> bool:
+        address = Address(user_address)
+        return address in self.authorized_users
+```
+
+## Address in Method Parameters and Returns
+
+```python
+class AddressOperations(gl.Contract):
+    balances: TreeMap[Address, u256]
+    
+    def __init__(self):
+        pass    
+        
+    
+    # Method accepting hex string and converting to Address
+    @gl.public.write
+    def set_balance_from_hex(self, account_hex: str, amount: int):
+        account = Address(account_hex)
+        self.balances[account] = amount
+    
+    # Method returning my balance
+    @gl.public.view
+    def get_my_balance(self) -> int:
+        return self.balances.get(gl.message.sender_address)
+
+     # Method returning balance
+    @gl.public.view
+    def get_balance(self, account_hex: str) -> int:
+        account = Address(account_hex)
+        return self.balances.get(account)
+    
+    # Method returning hex string representation
+    @gl.public.view
+    def get_my_address(self) -> str:
+        return str(gl.message.sender_address)
+    
+```
