@@ -35,7 +35,7 @@ jobs:
 
     steps:
       - name: Checkout documentation repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
         with:
           fetch-depth: 0
           token: ${{ secrets.GITHUB_TOKEN }}
@@ -86,7 +86,7 @@ jobs:
           fi
 
       - name: Clone genlayer-node repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
         with:
           repository: genlayerlabs/genlayer-node
           token: ${{ secrets.NODE_REPO_TOKEN || secrets.GITHUB_TOKEN }}
