@@ -10,6 +10,7 @@
 .mainButton {
   display: flex;
   align-items: center;
+  gap: 2px;
   padding: 6px 10px;
   font-size: 12px;
   font-weight: 500;
@@ -124,4 +125,10 @@
   font-size: 12px;
   color: #6b7280;
   margin-top: 2px;
+}
+
+@media (max-width: 640px) {
+  .container {
+    display: none;
+  }
 } 
