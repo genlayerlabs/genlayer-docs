@@ -3,6 +3,7 @@
 node_modules
 pnpm-lock.yaml
 public/full-documentation.txt
+public/pages
 .specstory/
 # SpecStory explanation file
 .specstory/.what-is-this.md
