@@ -3,14 +3,15 @@
   "version": "0.0.1",
   "description": "GenLayer documentation",
   "scripts": {
-    "dev": "npm run node-generate-changelog && npm run node-update-setup-guide && npm run node-update-config && npm run node-generate-api-docs && node scripts/generate-full-docs.js && next dev",
-    "build": "npm run node-generate-changelog && npm run node-update-setup-guide && npm run node-update-config && npm run node-generate-api-docs && node scripts/generate-full-docs.js && next build",
+    "dev": "npm run node-generate-changelog && npm run node-update-setup-guide && npm run node-update-config && npm run node-generate-api-docs && node scripts/generate-full-docs.js && npm run sync-mdx && next dev",
+    "build": "npm run node-generate-changelog && npm run node-update-setup-guide && npm run node-update-config && npm run node-generate-api-docs && node scripts/generate-full-docs.js && npm run sync-mdx && next build",
     "start": "next start",
     "generate-sitemap": "node scripts/generate-sitemap-xml.js",
     "node-generate-changelog": "node scripts/generate-changelog.js",
     "node-generate-api-docs": "node scripts/generate-api-docs.js",
     "node-update-setup-guide": "node scripts/update-setup-guide-versions.js",
-    "node-update-config": "node scripts/update-config-in-setup-guide.js"
+    "node-update-config": "node scripts/update-config-in-setup-guide.js",
+    "sync-mdx": "node scripts/process-mdx-to-md.js"
   },
   "repository": {
     "type": "git",

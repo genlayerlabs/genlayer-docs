@@ -12,6 +12,7 @@ const CopyPage: React.FC = () => {
   const [isOpen, setIsOpen] = useState(false);
   const [isCopied, setIsCopied] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
+  const router = useRouter();
 
   // Close dropdown when clicking outside
   useEffect(() => {
@@ -27,14 +28,21 @@ const CopyPage: React.FC = () => {
 
   const copyPageAsMarkdown = async () => {
     try {
-      // Get the current page content
-      const pageContent = document.querySelector('main')?.innerText || '';
-      const pageTitle = document.title;
+      const currentPath = router.asPath;
       
-      // Create markdown content
-      const markdownContent = `# ${pageTitle}\n\n${pageContent}`;
+      // Remove query params and hash from path
+      const cleanPath = currentPath.split('?')[0].split('#')[0];
       
-      await navigator.clipboard.writeText(markdownContent);
+      // Convert path to static file URL
+      const mdUrl = cleanPath === '/' ? '/pages/index.md' : `/pages${cleanPath}.md`;
+      const response = await fetch(mdUrl);
+      
+      if (!response.ok) {
+        throw new Error('Failed to fetch MDX content');
+      }
+      
+      const mdContent = await response.text();
+      await navigator.clipboard.writeText(mdContent);
       
       // Show success feedback
       setIsCopied(true);
@@ -48,21 +56,26 @@ const CopyPage: React.FC = () => {
   };
 
   const viewAsMarkdown = () => {
-    const pageContent = document.querySelector('main')?.innerText || '';
-    const pageTitle = document.title;
-    const markdownContent = `# ${pageTitle}\n\n${pageContent}`;
+    const currentPath = router.asPath;
     
-    // Open in new window/tab
-    const blob = new Blob([markdownContent], { type: 'text/markdown' });
-    const url = URL.createObjectURL(blob);
-    window.open(url, '_blank');
-    URL.revokeObjectURL(url);
+    // Remove query params and hash from path
+    const cleanPath = currentPath.split('?')[0].split('#')[0];
+    
+    // Open the .md file directly (no blob needed!)
+    const mdUrl = cleanPath === '/' ? '/pages/index.md' : `/pages${cleanPath}.md`;
+    window.open(mdUrl, '_blank');
     setIsOpen(false);
   };
 
   const openInAI = (platform: 'chatgpt' | 'claude') => {
-    const currentUrl = window.location.href;
-    const prompt = `I'm building with GenLayer - can you read this docs page ${currentUrl} so I can ask you questions about it?`;
+    const currentPath = router.asPath;
+    const cleanPath = currentPath.split('?')[0].split('#')[0];
+    
+    // Use the .md file URL instead of the docs page URL
+    const mdUrl = cleanPath === '/' ? '/pages/index.md' : `/pages${cleanPath}.md`;
+    const fullMdUrl = `${window.location.origin}${mdUrl}`;
+    
+    const prompt = `I'm building with GenLayer - can you read this markdown file ${fullMdUrl} so I can ask you questions about it?`;
     const encodedPrompt = encodeURIComponent(prompt);
     
     const urls = {
