@@ -1,0 +1,189 @@
+# Collection Types
+
+GenVM provides storage-compatible collection types that replace Python's built-in collections. These are essential for managing dynamic data structures in Intelligent Contracts.
+
+## DynArray (Dynamic Arrays)
+
+`DynArray[T]` replaces Python's `list[T]` and provides dynamic array functionality with storage compatibility.
+
+### Basic DynArray Usage
+
+```python
+class ArrayOperations(gl.Contract):
+    # Simple arrays
+    numbers: DynArray[u256]
+    names: DynArray[str]
+    addresses: DynArray[Address]
+    
+    # Nested arrays
+    matrix: DynArray[DynArray[u256]]
+    
+    def __init__(self):
+        pass
+    
+    @gl.public.write
+    def add_number(self, num: int):
+        self.numbers.append(num)
+    
+    @gl.public.write
+    def add_name(self, name: str):
+        self.names.append(name)
+    
+    @gl.public.write
+    def add_address(self, addr: str):
+        address = Address(addr)
+        self.addresses.append(address)
+    
+    @gl.public.view
+    def get_number_at(self, index: int) -> int:
+        if index < len(self.numbers):
+            return self.numbers[index]
+        return u256(0)
+    
+    @gl.public.view
+    def get_array_length(self) -> int:
+        return u256(len(self.numbers))
+    
+    @gl.public.write
+    def remove_last(self):
+        if len(self.numbers) > 0:
+            self.numbers.pop()
+    
+    # Matrix operations
+    @gl.public.write
+    def add_row(self, row: DynArray[int]):
+        self.matrix.append(row)
+    
+    @gl.public.view
+    def get_matrix_element(self, row: int, col: int) -> int:
+        if row < len(self.matrix) and col < len(self.matrix[row]):
+            return self.matrix[row][col]
+        return u256(0)
+```
+
+### DynArray with Custom Types
+
+```python
+from genlayer import *
+from dataclasses import dataclass
+
+import json
+import typing
+
+@allow_storage
+@dataclass
+class User:
+    name: str
+    age: u8
+    balance: u256
+ 
+class UserArrayOperations(gl.Contract):
+    users: DynArray[User]
+    user_ids: DynArray[str]
+    
+    def __init__(self):
+        pass
+    
+    @gl.public.write
+    def add_user(self, name: str, age: int, balance: int):
+        user = User(name=name, age=age, balance=balance)
+        self.users.append(user)
+        self.user_ids.append(f"user_{len(self.users)}")
+    
+    @gl.public.view
+    def find_user_by_name(self, name: str) -> TreeMap[str, typing.Any]:
+        for user in self.users:
+            if user.name == name:
+                return user
+        return User("", u8(0), u256(0))
+```
+
+## TreeMap (Ordered Maps)
+
+`TreeMap[K, V]` replaces Python's `dict[K, V]` and provides ordered map functionality with storage compatibility.
+
+### Basic TreeMap Usage
+
+```python
+class MapOperations(gl.Contract):
+    # Simple maps
+    balances: TreeMap[Address, u256]
+    names: TreeMap[str, str]
+    flags: TreeMap[str, bool]
+    
+    def __init__(self):
+        pass
+    
+    @gl.public.write
+    def set_balance(self, address: str, amount: int):
+        account = Address(address)
+        self.balances[account] = amount
+    
+    @gl.public.write
+    def set_name(self, key: str, name: str):
+        self.names[key] = name
+    
+    @gl.public.view
+    def get_balance(self, address: str) -> int:
+        account = Address(address)
+        return self.balances.get(account, u256(0))
+    
+    @gl.public.view
+    def get_name(self, key: str) -> str:
+        return self.names.get(key, "")
+    
+    @gl.public.view
+    def has_balance(self, address: str) -> bool:
+        account = Address(address)
+        return account in self.balances
+```
+
+### TreeMap with Complex Values
+
+```python
+@allow_storage
+@dataclass
+class UserProfile:
+    name: str
+    email: str
+    balance: u256
+    is_active: bool
+ 
+class UserProfileMap(gl.Contract):
+    profiles: TreeMap[Address, UserProfile]
+    permissions: DynArray[str]
+    user_permissions: TreeMap[Address, DynArray[str]]
+    
+    def __init__(self):
+        pass
+    
+    @gl.public.write
+    def create_profile(self, name: str, email: str):
+        address = gl.message.sender_address
+        profile = UserProfile(
+            name=name,
+            email=email,
+            balance=u256(0),
+            is_active=True
+        )
+        self.profiles[address] = profile
+        self.user_permissions[address] = self.permissions
+    
+    @gl.public.write
+    def add_permission(self, user: str, permission: str):
+        account = Address(user)
+        if account in self.user_permissions:
+            self.user_permissions[account].append(permission)
+    
+    @gl.public.view
+    def get_profile(self, address: str) -> TreeMap[str, typing.Any]:
+        account = Address(address)
+        return self.profiles.get(account, UserProfile("", "", u256(0), False))
+    
+    @gl.public.view
+    def has_permission(self, user: str, permission: str) -> bool:
+        account = Address(user)
+        if account in self.user_permissions:
+            return permission in self.user_permissions[account]
+        return False
+```
