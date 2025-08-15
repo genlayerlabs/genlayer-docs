@@ -1,6 +1,12 @@
+import { Callout } from 'nextra-theme-docs'
+
 # Primitive Types
 
-GenVM provides comprehensive sized integer types for efficient storage and operations.
+GenVM provides comprehensive sized integer types for efficient storage. These types are primarily used for type annotations in storage fields and enforce range constraints only when assigned to storage.
+
+<Callout emoji="ℹ️">
+**Important**: Sized integer types (`u8`, `u256`, etc.) are `typing.NewType` aliases that behave like regular Python `int` outside of storage context. Range checking and overflow protection only occur when assigning values to storage fields.
+</Callout>
 
 ## Integer Types
 
@@ -22,11 +28,11 @@ class IntegerTypes(gl.Contract):
     
     
     def __init__(self):
-        # Initialize with example values
-        self.uint8_val = u8(255)
-        self.uint256_val = u256(2**256 - 1)
-        self.int64_val = i64(-9223372036854775808)
-        self.uint24_val = u24(16777215)
+        # Storage assignment enforces type constraints
+        self.uint8_val = 255          # Range checked: must be 0-255
+        self.uint256_val = 2**256 - 1  # Range checked: must fit in u256
+        self.int64_val = -9223372036854775808  # Range checked: must fit in i64
+        self.uint24_val = 16777215     # Range checked: must be 0-16777215
     
     @gl.public.view
     def get_uint8(self) -> int:
@@ -38,8 +44,9 @@ class IntegerTypes(gl.Contract):
 
     @gl.public.view
     def calculate_sum(self, a: int, b: int) -> int:
-        # Convert to u256 for calculation
-        return u256(a) + u256(b)
+        # Note: u256(a) + u256(b) behaves exactly like a + b in Python
+        # The u256() calls don't actually enforce range constraints here
+        return a + b
 
     @gl.public.view
     def get_int64(self) -> int:
@@ -68,11 +75,11 @@ class StringBytesTypes(gl.Contract):
     
     @gl.public.view
     def get_text_length(self) -> int:
-        return u256(len(self.text_data))
+        return len(self.text_data)  # Return type annotation handles the conversion
     
     @gl.public.view
     def get_bytes_length(self) -> int:
-        return u256(len(self.binary_data))
+        return len(self.binary_data)  # Return type annotation handles the conversion
     
     # String operations
     @gl.public.view
