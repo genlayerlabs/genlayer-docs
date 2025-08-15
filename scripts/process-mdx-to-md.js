@@ -22,19 +22,39 @@ function processMdxToMarkdown(content) {
 
   // Convert CustomCard components to markdown links
   processed = processed.replace(
-    /<CustomCard[^>]*\s+title="([^"]*)"[^>]*\s+description="([^"]*)"[^>]*\s+href="([^"]*)"[^>]*\/>/g,
-    (match, title, description, href) => {
-      const absoluteUrl = makeAbsoluteUrl(href);
-      return `- **[${title}](${absoluteUrl})**: ${description}`;
+    /<CustomCard([^>]*)\/>/g,
+    (match, attrs) => {
+      // Extract attributes regardless of order
+      const titleMatch = attrs.match(/title="([^"]*)"/);
+      const descMatch = attrs.match(/description="([^"]*)"/);
+      const hrefMatch = attrs.match(/href="([^"]*)"/);
+      
+      if (titleMatch && hrefMatch) {
+        const title = titleMatch[1];
+        const description = descMatch ? descMatch[1] : '';
+        const absoluteUrl = makeAbsoluteUrl(hrefMatch[1]);
+        return description 
+          ? `- **[${title}](${absoluteUrl})**: ${description}`
+          : `- **[${title}](${absoluteUrl})**`;
+      }
+      return match; // Return unchanged if required attributes are missing
     }
   );
 
   // Convert Card components to markdown links
   processed = processed.replace(
-    /<Card[^>]*\s+title="([^"]*)"[^>]*\s+href="([^"]*)"[^>]*\/>/g,
-    (match, title, href) => {
-      const absoluteUrl = makeAbsoluteUrl(href);
-      return `- **[${title}](${absoluteUrl})**`;
+    /<Card([^>]*)\/>/g,
+    (match, attrs) => {
+      // Extract attributes regardless of order
+      const titleMatch = attrs.match(/title="([^"]*)"/);
+      const hrefMatch = attrs.match(/href="([^"]*)"/);
+      
+      if (titleMatch && hrefMatch) {
+        const title = titleMatch[1];
+        const absoluteUrl = makeAbsoluteUrl(hrefMatch[1]);
+        return `- **[${title}](${absoluteUrl})**`;
+      }
+      return match; // Return unchanged if required attributes are missing
     }
   );
 
