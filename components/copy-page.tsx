@@ -11,6 +11,7 @@ import AnthropicIcon from './icons/anthropic';
 const CopyPage: React.FC = () => {
   const [isOpen, setIsOpen] = useState(false);
   const [isCopied, setIsCopied] = useState(false);
+  const [prefetchedContent, setPrefetchedContent] = useState<string | null>(null);
   const dropdownRef = useRef<HTMLDivElement>(null);
   const router = useRouter();
 
@@ -26,23 +27,30 @@ const CopyPage: React.FC = () => {
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
 
+  // Prefetch markdown content when component mounts
+  useEffect(() => {
+    const prefetchContent = async () => {
+      try {
+        const currentPath = router.asPath;
+        const cleanPath = currentPath.split('?')[0].split('#')[0];
+        const mdUrl = cleanPath === '/' ? '/pages/index.md' : `/pages${cleanPath}.md`;
+        
+        const response = await fetch(mdUrl);
+        if (response.ok) {
+          const content = await response.text();
+          setPrefetchedContent(content);
+        }
+      } catch (error) {
+        console.log('Prefetch failed, will use fallback:', error);
+      }
+    };
+
+    prefetchContent();
+  }, [router.asPath]); // Re-prefetch when route changes
+
   const copyPageAsMarkdown = async () => {
     try {
-      const currentPath = router.asPath;
-      
-      // Remove query params and hash from path
-      const cleanPath = currentPath.split('?')[0].split('#')[0];
-      
-      // Convert path to static file URL
-      const mdUrl = cleanPath === '/' ? '/pages/index.md' : `/pages${cleanPath}.md`;
-      const response = await fetch(mdUrl);
-      
-      if (!response.ok) {
-        throw new Error('Failed to fetch MDX content');
-      }
-      
-      const mdContent = await response.text();
-      await navigator.clipboard.writeText(mdContent);
+      await navigator.clipboard.writeText(prefetchedContent || '');
       
       // Show success feedback
       setIsCopied(true);
