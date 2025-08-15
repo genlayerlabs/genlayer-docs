@@ -69,8 +69,11 @@ function processMdxToMarkdown(content) {
 
   // Convert Callout components to markdown blockquotes
   processed = processed.replace(
-    /<Callout[^>]*type="([^"]*)"[^>]*>([\s\S]*?)<\/Callout>/g,
-    (match, type, content) => {
+    /<Callout([^>]*)>([\s\S]*?)<\/Callout>/g,
+    (match, attrs, content) => {
+      // Extract attributes regardless of order
+      const typeMatch = attrs.match(/type="([^"]*)"/);
+      const type = typeMatch ? typeMatch[1] : '';
       const cleanContent = content.trim();
       const prefix = type === 'warning' ? '⚠️ ' : type === 'info' ? 'ℹ️ ' : '';
       return `> ${prefix}${cleanContent}`;
