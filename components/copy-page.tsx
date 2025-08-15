@@ -28,7 +28,7 @@ const CopyPage: React.FC = () => {
   }, []);
 
   // Prefetch markdown content when component mounts
-  // this is needed to avoid a security issue on safari where you cant fetch and paste in the clipboard
+  // this is needed to avoid a security issue on safari where you can't fetch and paste in the clipboard
   useEffect(() => {
     const prefetchContent = async () => {
       try {
