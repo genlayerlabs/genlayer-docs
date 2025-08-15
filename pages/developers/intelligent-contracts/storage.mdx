@@ -143,6 +143,9 @@ class Contract(gl.Contract):
     user: User
     gen_user: Gen[bytes]
 
+    def __init__(self):
+        pass
+
     @gl.public.write
     def plain(self):
         user = User('Ada', datetime.datetime.now())
@@ -182,19 +185,24 @@ class Contract(gl.Contract):
 
 ### `gl.storage.copy_to_memory`
 
-Storage objects cannot be converted to string safely. Copy them to memory first:
+Storage objects need to be copied to memory when you want to use them in non-deterministic blocks, since non-deterministic blocks cannot access storage directly:
 
 ```python
 # Read from storage
 storage_user = self.user
 
-# Copy to memory for safe usage
+# Copy to memory for use in non-deterministic blocks or other operations
 memory_user = gl.storage.copy_to_memory(storage_user)
 
-# String conversion works with memory objects
-print('copied out: ok', memory_user)  # Works!
-print('storage: not ok', str(storage_user))  # Error!
+def my_nondet_function():
+    # Storage objects cannot be used directly in nondet blocks
+    # print('storage: not accessible', storage_user)  # Error - storage not accessible!
+    
+    # But memory objects work fine
+    print('copied out: ok', memory_user)  # Works!
+    return str(memory_user)  # String conversion also works with memory objects
 
+gl.eq_principle.strict_eq(my_nondet_function)
 ```
 
 ---
