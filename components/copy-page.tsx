@@ -28,6 +28,7 @@ const CopyPage: React.FC = () => {
   }, []);
 
   // Prefetch markdown content when component mounts
+  // this is needed to avoid a security issue on safari where you cant fetch and paste in the clipboard
   useEffect(() => {
     const prefetchContent = async () => {
       try {
@@ -46,7 +47,7 @@ const CopyPage: React.FC = () => {
     };
 
     prefetchContent();
-  }, [router.asPath]); // Re-prefetch when route changes
+  }, [router.asPath]);
 
   const copyPageAsMarkdown = async () => {
     try {
@@ -66,10 +67,8 @@ const CopyPage: React.FC = () => {
   const viewAsMarkdown = () => {
     const currentPath = router.asPath;
     
-    // Remove query params and hash from path
     const cleanPath = currentPath.split('?')[0].split('#')[0];
     
-    // Open the .md file directly (no blob needed!)
     const mdUrl = cleanPath === '/' ? '/pages/index.md' : `/pages${cleanPath}.md`;
     window.open(mdUrl, '_blank');
     setIsOpen(false);
@@ -79,7 +78,6 @@ const CopyPage: React.FC = () => {
     const currentPath = router.asPath;
     const cleanPath = currentPath.split('?')[0].split('#')[0];
     
-    // Use the .md file URL instead of the docs page URL
     const mdUrl = cleanPath === '/' ? '/pages/index.md' : `/pages${cleanPath}.md`;
     const fullMdUrl = `${window.location.origin}${mdUrl}`;
     
