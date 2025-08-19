@@ -6,13 +6,21 @@ function processMdxToMarkdown(content) {
   
   // Helper function to convert relative URLs to absolute
   function makeAbsoluteUrl(url) {
+    // Keep anchors as-is
+    if (url.startsWith('#')) return url;
+
+    // Absolute URLs
     if (url.startsWith('http://') || url.startsWith('https://')) {
-      return url; // Already absolute
+      return encodeURI(url);
     }
+
+    // Relative to root
     if (url.startsWith('/')) {
-      return baseUrl + url; // Relative to root
+      return encodeURI(baseUrl + url);
     }
-    return url; // Keep as-is for anchors (#) or other formats
+
+    // Other relative paths
+    return encodeURI(url);
   }
 
   let processed = content;
@@ -80,36 +88,84 @@ function processMdxToMarkdown(content) {
     }
   );
 
+  // Convert Tabs with labeled items into headings with their respective content
+  processed = processed.replace(
+    /<Tabs[^>]*items=\{\[([\s\S]*?)\]\}[^>]*>([\s\S]*?)<\/Tabs>/g,
+    (match, itemsRaw, inner) => {
+      const tabTitles = itemsRaw
+        .split(',')
+        .map(s => s.trim())
+        .map(s => s.replace(/^["']|["']$/g, ''))
+        .filter(Boolean);
+
+      const tabContents = [];
+      const tabRegex = /<Tabs\.Tab[^>]*>([\s\S]*?)<\/Tabs\.Tab>/g;
+      let m;
+      while ((m = tabRegex.exec(inner)) !== null) {
+        tabContents.push(m[1].trim());
+      }
+
+      // Map titles to contents; if counts mismatch, best-effort pairing
+      const sections = [];
+      const count = Math.max(tabTitles.length, tabContents.length);
+      for (let i = 0; i < count; i++) {
+        const title = tabTitles[i] || `Tab ${i + 1}`;
+        const content = (tabContents[i] || '').trim();
+        if (content) {
+          sections.push(`### ${title}\n\n${content}`);
+        } else {
+          sections.push(`### ${title}`);
+        }
+      }
+      return sections.join('\n\n');
+    }
+  );
+
+  // Fallback: strip any remaining Tabs wrappers (keep inner content)
+  processed = processed.replace(/<Tabs[^>]*>/g, '');
+  processed = processed.replace(/<\/Tabs>/g, '');
+  processed = processed.replace(/<Tabs\.Tab[^>]*>/g, '');
+  processed = processed.replace(/<\/Tabs\.Tab>/g, '');
+
+  // Strip Cards container (individual <Card/> handled above)
+  processed = processed.replace(/<Cards[^>]*>/g, '');
+  processed = processed.replace(/<\/Cards>/g, '');
+
+  // Strip Bleed wrapper
+  processed = processed.replace(/<Bleed[^>]*>/g, '');
+  processed = processed.replace(/<\/Bleed>/g, '');
+
+  // Strip Fragment wrapper
+  processed = processed.replace(/<Fragment[^>]*>/g, '');
+  processed = processed.replace(/<\/Fragment>/g, '');
+
   // Convert simple HTML divs to text (remove div tags but keep content)
   processed = processed.replace(/<div[^>]*>([\s\S]*?)<\/div>/g, '$1');
 
   // Convert <br/> tags to line breaks
-  processed = processed.replace(/<br\s*\/?>/g, '\n');
+  processed = processed.replace(/<br\s*\/?>(?!\s*<\/)/g, '\n');
 
-  // Convert Image components to markdown images (with alt)
+  // Convert Image components to markdown images (with alt) - leave src as-is to avoid double-encoding
   processed = processed.replace(
-    /<Image[^>]*\s+src="([^"]*)"[^>]*\s+alt="([^"]*)"[^>]*\/?>/g,
+    /<Image[^>]*\s+src="([^"]*)"[^>]*\s+alt="([^"]*)"[^>]*\/?>(?!\s*<\/Image>)/g,
     (match, src, alt) => {
-      const absoluteUrl = makeAbsoluteUrl(src);
-      return `![${alt}](${absoluteUrl})`;
+      return `![${alt}](${src})`;
     }
   );
 
-  // Convert Image components to markdown images (without alt)
+  // Convert Image components to markdown images (without alt) - leave src as-is
   processed = processed.replace(
-    /<Image[^>]*\s+src="([^"]*)"[^>]*\/?>/g,
+    /<Image[^>]*\s+src="([^"]*)"[^>]*\/?>(?!\s*<\/Image>)/g,
     (match, src) => {
-      const absoluteUrl = makeAbsoluteUrl(src);
-      return `![Image](${absoluteUrl})`;
+      return `![Image](${src})`;
     }
   );
 
-  // Convert regular <img> tags to markdown images
+  // Convert regular <img> tags to markdown images - leave src as-is
   processed = processed.replace(
-    /<img[^>]*\s+src="([^"]*)"[^>]*\s+alt="([^"]*)"[^>]*\/?>/g,
+    /<img[^>]*\s+src="([^"]*)"[^>]*\s+alt="([^"]*)"[^>]*\/?>(?!\s*<\/img>)/g,
     (match, src, alt) => {
-      const absoluteUrl = makeAbsoluteUrl(src);
-      return `![${alt}](${absoluteUrl})`;
+      return `![${alt}](${src})`;
     }
   );
 
@@ -122,12 +178,12 @@ function processMdxToMarkdown(content) {
     }
   );
 
-  // Convert regular markdown links to absolute URLs
+  // Convert regular markdown links to absolute URLs (skip images)
   processed = processed.replace(
-    /\[([^\]]*)\]\(([^)]*)\)/g,
-    (match, text, href) => {
+    /(^|[^!])\[([^\]]*)\]\(([^)]*)\)/gm,
+    (match, prefix, text, href) => {
       const absoluteUrl = makeAbsoluteUrl(href);
-      return `[${text}](${absoluteUrl})`;
+      return `${prefix}[${text}](${absoluteUrl})`;
     }
   );
 
@@ -143,6 +199,9 @@ function processMdxToMarkdown(content) {
     })
     .join('\n')
     .trim();
+
+  // Normalize list indentation (remove unintended leading spaces before list markers)
+  processed = processed.replace(/^[ \t]+- /gm, '- ');
 
   return processed;
 }
