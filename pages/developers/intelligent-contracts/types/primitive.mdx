@@ -1,0 +1,165 @@
+import { Callout } from 'nextra-theme-docs'
+
+# Primitive Types
+
+GenVM provides comprehensive sized integer types for efficient storage. These types are primarily used for type annotations in storage fields and enforce range constraints only when assigned to storage.
+
+<Callout emoji="ℹ️">
+**Important**: Sized integer types (`u8`, `u256`, etc.) are `typing.NewType` aliases that behave like regular Python `int` outside of storage context. Range checking and overflow protection only occur when assigning values to storage fields.
+</Callout>
+
+## Integer Types
+
+### Standard Integer Types (Most Commonly Used)
+- `u8`, `u16`, `u32`, `u64`, `u128`, `u256` - Unsigned integers of various sizes
+- `i8`, `i16`, `i32`, `i64`, `i128`, `i256` - Signed integers of various sizes
+- `bigint` - Arbitrary precision integer (use with caution, prefer sized integers)
+
+### Full Range Available
+GenVM also supports all intermediate sizes from 8-bit to 256-bit (e.g., `u24`, `u40`, `u48`, `u56`, `u72`, `u80`, `u88`, `u96`, `u104`, `u112`, `u120`, `u136`, `u144`, `u152`, `u160`, `u168`, `u176`, `u184`, `u192`, `u200`, `u208`, `u216`, `u224`, `u232`, `u240`, `u248` and their signed counterparts).
+
+```python
+class IntegerTypes(gl.Contract):
+
+    uint8_val: u8
+    uint256_val: u256
+    uint24_val: u24    # 3-byte integers
+    int64_val: i64
+    
+    
+    def __init__(self):
+        # Storage assignment enforces type constraints
+        self.uint8_val = 255          # Range checked: must be 0-255
+        self.uint256_val = 2**256 - 1  # Range checked: must fit in u256
+        self.int64_val = -9223372036854775808  # Range checked: must fit in i64
+        self.uint24_val = 16777215     # Range checked: must be 0-16777215
+    
+    @gl.public.view
+    def get_uint8(self) -> int:
+        return self.uint8_val
+    
+    @gl.public.write
+    def set_uint256(self, value: int):
+        self.uint256_val = value
+
+    @gl.public.view
+    def calculate_sum(self, a: int, b: int) -> int:
+        # Note: u256(a) + u256(b) behaves exactly like a + b in Python
+        # The u256() calls don't actually enforce range constraints here
+        return a + b
+
+    @gl.public.view
+    def get_int64(self) -> int:
+        return self.int64_val
+
+    @gl.public.view
+    def get_uint24(self) -> int:
+        return self.uint24_val
+```
+
+## String and Bytes Types
+
+```python
+class StringBytesTypes(gl.Contract):
+    text_data: str
+    binary_data: bytes
+    
+    def __init__(self):
+        self.text_data = "Hello, GenLayer!"
+        self.binary_data = b"binary_data_here"
+    
+    @gl.public.write
+    def store_text(self, text: str):
+        self.text_data = text
+    
+    
+    @gl.public.view
+    def get_text_length(self) -> int:
+        return len(self.text_data)  # Return type annotation handles the conversion
+    
+    @gl.public.view
+    def get_bytes_length(self) -> int:
+        return len(self.binary_data)  # Return type annotation handles the conversion
+    
+    # String operations
+    @gl.public.view
+    def concatenate_strings(self, str1: str, str2: str) -> str:
+        return str1 + str2
+```
+
+## Boolean Type
+
+```python
+class BooleanTypes(gl.Contract):
+    flag: bool
+    flags: DynArray[bool]
+    flag_map: TreeMap[str, bool]
+    
+    def __init__(self):
+        self.flag = True
+    
+    @gl.public.write
+    def toggle_flag(self):
+        self.flag = not self.flag
+    
+    @gl.public.write
+    def set_flag(self, flag_value: bool):
+        self.flag = flag_value
+    
+    @gl.public.write
+    def set_named_flag(self, name: str, value: bool):
+        self.flag_map[name] = value
+    
+    @gl.public.view
+    def get_flag_status(self) -> bool:
+        return self.flag
+    
+    @gl.public.view
+    def check_named_flag(self, name: str) -> bool:
+        return self.flag_map.get(name, False)
+```
+
+## Type Conversion Utilities
+
+```python
+class TypeConversionUtils(gl.Contract):
+    def __init__(self):
+        pass
+        
+    @gl.public.view
+    def string_to_bytes(self, text: str) -> bytes:
+        return text.encode('utf-8')
+    
+    @gl.public.view
+    def bytes_to_string(self) -> str:
+        return b"binary_data_here".decode('utf-8')
+    
+    @gl.public.view
+    def int_to_string(self, value: int) -> str:
+        return str(value)
+    
+    @gl.public.view
+    def string_to_int(self, value_str: str) -> int:
+        return int(value_str)
+```
+
+## Type Ranges
+
+| Type | Range | Use Case |
+|------|-------|----------|
+| `u8` | 0 to 255 | Small counters, flags |
+| `u16` | 0 to 65,535 | Medium counters |
+| `u32` | 0 to 4,294,967,295 | Large counters, timestamps |
+| `u64` | 0 to 18,446,744,073,709,551,615 | Very large numbers |
+| `u128` | 0 to 2^128 - 1 | Cryptographic values |
+| `u256` | 0 to 2^256 - 1 | Token amounts, hashes |
+| `u160` | 0 to 2^160 - 1 | Address integers |
+
+| Type | Range | Use Case |
+|------|-------|----------|
+| `i8` | -128 to 127 | Small signed values |
+| `i16` | -32,768 to 32,767 | Medium signed values |
+| `i32` | -2,147,483,648 to 2,147,483,647 | Large signed values |
+| `i64` | -9,223,372,036,854,775,808 to 9,223,372,036,854,775,807 | Very large signed values |
+| `i128` | -2^127 to 2^127 - 1 | Large signed calculations |
+| `i256` | -2^255 to 2^255 - 1 | Maximum signed precision | 
