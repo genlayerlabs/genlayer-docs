@@ -188,7 +188,6 @@ def test_deploy_contract():
         args=["initial_value"],  # Constructor arguments
         account=custom_account,  # Account to deploy from
         consensus_max_rotations=3,  # Optional: max consensus rotations
-        leader_only=False,  # Optional: whether to run only on leader
     )
 ```
 
@@ -196,7 +195,6 @@ def test_deploy_contract():
 - `args`: Contract constructor arguments
 - `account`: (Optional) Account to use for deployment
 - `consensus_max_rotations`: (Optional) Maximum number of consensus rotations
-- `leader_only`: (Optional) Whether to run only on leader node
 - `wait_interval`: (Optional) Wait interval in milliseconds for transaction status
 - `wait_retries`: (Optional) Number of retries for transaction status
 - `wait_transaction_status`: (Optional) Desired transaction status
@@ -283,7 +281,6 @@ def test_write_methods():
 - `args`: Method arguments
 - `value`: (Optional) Amount of native token to send with the transaction
 - `consensus_max_rotations`: (Optional) Maximum number of consensus rotations
-- `leader_only`: (Optional) Whether to run only on leader node
 - `wait_interval`: (Optional) Wait interval in milliseconds for transaction status
 - `wait_retries`: (Optional) Number of retries for transaction status
 - `wait_transaction_status`: (Optional) Desired transaction status
