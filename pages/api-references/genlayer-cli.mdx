@@ -114,6 +114,7 @@ USAGE:
    genlayer deploy [options]
    genlayer call <contractAddress> <method> [options]
    genlayer write <contractAddress> <method> [options]
+   genlayer schema <contractAddress> [options]
 
 OPTIONS (deploy):
    --contract <contractPath>  (Optional) Path to the intelligent contract to deploy
@@ -128,19 +129,26 @@ OPTIONS (write):
    --args <args...>           Positional arguments for the method (space-separated, use quotes for multi-word arguments)
    --rpc <rpcUrl>             RPC URL for the network
 
+OPTIONS (schema):
+   --rpc <rpcUrl>             RPC URL for the network
+
 EXAMPLES:
    genlayer deploy
    genlayer deploy --contract ./my_contract.gpy
    genlayer call 0x123456789abcdef greet --args "Hello World!"
    genlayer write 0x123456789abcdef setValue --args 42 "New Value"
+   genlayer schema 0x123456789abcdef
 ```
 #### Deploy Behavior
 - If `--contract` is specified, the command will **deploy the given contract**.
 - If `--contract` is omitted, the CLI will **search for scripts inside the `deploy` folder**, sort them, and execute them sequentially.
 
 #### Call vs Write
-- **call**: Read-only operations that don't modify contract state
-- **write**: Operations that modify contract state and require transaction confirmation
+- **call**: Read-only operations that don't modify contract state.
+- **write**: Operations that modify contract state and require transaction confirmation.
+
+#### Schema Command
+- Retrieve the contract schema showing all available methods and their parameters.
 
 ### Transaction Management
 
