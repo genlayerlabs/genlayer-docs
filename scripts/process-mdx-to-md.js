@@ -1,6 +1,24 @@
 const fs = require('fs');
 const path = require('path');
 
+function stripTopLevelImports(input) {
+  const lines = input.split('\n');
+  let inFence = false;
+  return lines
+    .map((line) => {
+      const trimmed = line.trim();
+      if (trimmed.startsWith('```')) {
+        inFence = !inFence;
+        return line;
+      }
+      if (!inFence && /^import\s+.*$/.test(line)) {
+        return '';
+      }
+      return line;
+    })
+    .join('\n');
+}
+
 function processMdxToMarkdown(content) {
   const baseUrl = 'https://docs.genlayer.com';
   
@@ -25,8 +43,8 @@ function processMdxToMarkdown(content) {
 
   let processed = content;
 
-  // Remove import statements
-  processed = processed.replace(/^import\s+.*$/gm, '');
+  // Remove top-level MDX import statements (skip fenced code blocks)
+  processed = stripTopLevelImports(processed);
 
   // Convert CustomCard components to markdown links
   processed = processed.replace(
