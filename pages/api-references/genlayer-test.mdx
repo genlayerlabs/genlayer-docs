@@ -21,19 +21,33 @@ The GenLayer Testing Suite can be configured using an optional `gltest.config.ya
 networks:
   default: localnet  # Default network to use
 
-  localnet:  # Local development network configuration
+  localnet:  # Local development network configuration (pre-configured)
     url: "http://127.0.0.1:4000/api"
+    leader_only: false  # Run in leader-only mode by default
 
-  testnet_asimov:  # Test network configuration
-    id: 4221
-    url: "http://34.32.169.58:9151"
+  studionet:  # Studio network configuration (pre-configured)
+    # Pre-configured network - accounts are automatically generated
+    # You can override any settings if needed
+
+  testnet_asimov:  # Test network configuration (pre-configured)
+    # Pre-configured network - requires accounts to be specified
     accounts:
       - "${ACCOUNT_PRIVATE_KEY_1}"
       - "${ACCOUNT_PRIVATE_KEY_2}"
       - "${ACCOUNT_PRIVATE_KEY_3}"
+    from: "${ACCOUNT_PRIVATE_KEY_2}"  # Optional: specify default account
+
+  custom_network:  # Custom network configuration
+    id: 1234
+    url: "http://custom.network:8545"
+    accounts:
+      - "${CUSTOM_ACCOUNT_1}"
+      - "${CUSTOM_ACCOUNT_2}"
+    from: "${CUSTOM_ACCOUNT_1}"  # Optional: specify default account
 
 paths:
-  contracts: "contracts"  # Path to your contracts directory
+  contracts: "contracts"   # Path to your contracts directory
+  artifacts: "artifacts"   # Path to your artifacts directory
 
 environment: .env  # Path to your environment file containing private keys and other secrets
 ```
@@ -42,16 +56,21 @@ environment: .env  # Path to your environment file containing private keys and o
 
 1. **Networks**: Define different network environments
    - `default`: Specifies which network to use by default
+   - Pre-configured networks:
+     - `localnet`: Local development network with auto-generated test accounts
+     - `studionet`: GenLayer Studio network with auto-generated test accounts
+     - `testnet_asimov`: Public test network (requires account configuration)
    - Network configurations can include:
-     - `url`: The RPC endpoint for the network
-     - `id`: Chain ID
+     - `url`: The RPC endpoint for the network (optional for pre-configured networks)
+     - `id`: Chain ID (optional for pre-configured networks)
      - `accounts`: List of account private keys (using environment variables)
-   - Special case for `localnet`:
-     - If a network is named `localnet`, missing fields will be filled with default values
-     - For all other network names, `id`, `url`, and `accounts` are required fields
+     - `from`: Which account to use by default for transactions (optional; defaults to first account)
+     - `leader_only`: Whether to run deployments/writes only on the leader node
+   - For custom networks (non-pre-configured), `id`, `url`, and `accounts` are required fields
 
 2. **Paths**: Define important directory paths
    - `contracts`: Location of your contract files
+   - `artifacts`: Location to store analysis results and artifacts
 
 3. **Environment**: Path to your `.env` file containing sensitive information like private keys
 
@@ -221,7 +240,7 @@ def test_read_methods():
     contract = factory.deploy(args=["initial_value"])
 
     # Call a read-only method
-    result = contract.get_storage(args=[])
+    result = contract.get_storage(args=[]).call()
 
     assert result == "initial_value"
 ```
@@ -246,13 +265,18 @@ def test_write_methods():
     # Call a write method with arguments
     tx_receipt = contract.update_storage(
         args=["new_value"],  # Method arguments
+    ).transact(
+        value=0,  # Optional amount of native token to send
+        consensus_max_rotations=3,
+        wait_interval=1,
+        wait_retries=10,
     )
     
     # Verify the transaction was successful
     assert tx_execution_succeeded(tx_receipt)
     
     # Verify the value was updated
-    assert contract.get_storage() == "new_value"
+    assert contract.get_storage().call() == "new_value"
 ```
 
 **Parameters:**
@@ -311,7 +335,7 @@ def test_initial_state():
     storage_contract = load_fixture(deploy_contract)
     
     # Verify initial state
-    current_storage = storage_contract.get_storage(args=[])
+    current_storage = storage_contract.get_storage(args=[]).call()
     assert current_storage == "initial_value"
 
 # Test B: Verify state persistence and updates
@@ -320,28 +344,82 @@ def test_state_updates():
     storage_contract = load_fixture(deploy_contract)
 
     # Verify initial state is preserved
-    current_storage = storage_contract.get_storage(args=[])
+    current_storage = storage_contract.get_storage(args=[]).call()
     assert current_storage == "initial_value"
 
     # Update the storage
-    update_result = storage_contract.update_storage(
+    tx_receipt = storage_contract.update_storage(
         args=["new_value"]
-    )
-    
+    ).transact()
+
     # Verify the update was successful
-    assert tx_execution_succeeded(update_result)
-    assert storage_contract.get_storage() == "new_value"
+    assert tx_execution_succeeded(tx_receipt)
+    assert storage_contract.get_storage().call() == "new_value"
 ```
 
-**Parameters:**
-- `fixture`: A callable (function) that sets up the test environment and returns a value
 
-**Returns:** The result of the fixture execution. In local studio environment, this will be the same value across all test runs. In the hosted studio environment, it will be a new value for each call.
+## Fixtures
 
-**Notes:**
-- Fixtures should be functions with no arguments
-- The fixture's return value is what gets cached and reused
-- State changes made to the fixture's return value will persist between tests in local development
+The GenLayer Testing Suite provides reusable pytest fixtures in `gltest.fixtures` to simplify common testing operations. These fixtures can be imported and used in your test files to avoid repetitive setup code.
+
+### Available Fixtures
+
+- `gl_client` (session scope): GenLayer client instance for network operations
+- `default_account` (session scope): Default account for testing and deployments
+- `accounts` (session scope): List of test accounts for multi-account scenarios
+- `setup_validators` (function scope): Function to create test validators for LLM operations
+
+#### gl_client
+
+Provides a GenLayer PY client instance that's created once per test session.
+
+```python
+def test_client_operations(gl_client):
+    tx_hash = "0x1234..."
+    transaction = gl_client.get_transaction(tx_hash)
+```
+
+#### default_account
+
+Default account used when no account is specified.
+
+```python
+def test_with_default_account(default_account):
+    factory = get_contract_factory("MyContract")
+    contract = factory.deploy(account=default_account)
+```
+
+#### accounts
+
+List of account objects loaded from the current network config or pre-created test accounts.
+
+```python
+def test_multiple_accounts(accounts):
+    sender = accounts[0]
+    receiver = accounts[1]
+    tx_receipt = contract.transfer(args=[receiver.address, 100]).transact()
+```
+
+#### setup_validators
+
+Creates test validators for localnet environment. Useful for testing LLM-based contract methods and consensus behavior.
+
+```python
+def test_with_validators(setup_validators):
+    # Default configuration
+    setup_validators()
+    
+    # With custom mock responses and validator count
+    mock_response = {"result": "mocked LLM response"}
+    setup_validators(mock_response=mock_response, n_validators=3)
+    
+    contract = factory.deploy()
+    result = contract.llm_based_method()
+```
+
+Parameters for `setup_validators`:
+- `mock_response` (dict, optional): Mock validator response when using `--test-with-mocks`
+- `n_validators` (int, optional): Number of validators to create (default: 5)
 
 
 ## Assertions
@@ -367,15 +445,38 @@ assert tx_execution_succeeded(tx_receipt, match_std_out="Process completed")
 # Regex pattern matching
 assert tx_execution_succeeded(tx_receipt, match_std_out=r".*code \d+")
 ```
+## Statistical Analysis with .analyze()
 
-**Parameters:**
-- `transaction_receipt`: The transaction receipt object to check
-- `match_std_out` (optional): String or regex pattern to match in stdout
-- `match_std_err` (optional): String or regex pattern to match in stderr
+The `.analyze()` method performs statistical analysis for contract methods over multiple runs. This is particularly useful for testing LLM-based contracts where outputs may vary.
 
-**Returns:** `True` if the transaction succeeded and patterns match (if provided), otherwise `False`
+```python
+from gltest import get_contract_factory
 
-**Note:** The stdout/stderr matching feature is only available when running on **studionet** and **localnet**. These features are not supported on testnet.
+def test_analyze_method():
+    factory = get_contract_factory("LlmContract")
+    contract = factory.deploy()
+    
+    analysis = contract.process_with_llm(args=["input_data"]).analyze(
+        provider="openai",
+        model="gpt-4o",
+        runs=100,
+        config=None,
+        plugin=None,
+        plugin_config=None,
+    )
+    
+    print(f"Method: {analysis.method}")
+    print(f"Success rate: {analysis.success_rate:.2f}%")
+    print(f"Reliability score: {analysis.reliability_score:.2f}%")
+    print(f"Unique states: {analysis.unique_states}")
+    print(f"Execution time: {analysis.execution_time:.1f}s")
+```
+
+The analysis returns a summary object with:
+- method, args
+- total_runs, successful_runs, failed_runs
+- unique_states, reliability_score
+- execution_time
 
 ### tx_execution_failed
 
@@ -386,6 +487,81 @@ from gltest.assertions import tx_execution_failed
 
 assert tx_execution_failed(tx_receipt)
 ```
+
+## Mock LLM Responses
+
+The Mock LLM system allows you to simulate Large Language Model responses in GenLayer tests. This enables deterministic tests by providing predefined responses instead of relying on actual LLM calls.
+
+### Basic Structure
+
+```python
+mock_response = {
+    "response": {},                               # Optional: mocks gl.nondet.exec_prompt
+    "eq_principle_prompt_comparative": {},        # Optional: mocks gl.eq_principle.prompt_comparative
+    "eq_principle_prompt_non_comparative": {}     # Optional: mocks gl.eq_principle.prompt_non_comparative
+}
+
+setup_validators(mock_response)
+```
+
+### Method Mappings
+
+- "response" -> gl.nondet.exec_prompt
+- "eq_principle_prompt_comparative" -> gl.eq_principle.prompt_comparative
+- "eq_principle_prompt_non_comparative" -> gl.eq_principle.prompt_non_comparative
+
+### How It Works
+
+The mock system performs substring matching on the internally constructed user message. If a key in your mock dictionary is contained within the actual user message, the associated response is returned.
+
+#### Substring Matching Examples
+
+Will work (partial match):
+```python
+"eq_principle_prompt_comparative": {
+    "The value of give_coin": True
+}
+```
+
+Won't work (extra words break the match):
+```python
+"eq_principle_prompt_comparative": {
+    "The good value of give_coin": True
+}
+```
+
+#### Complete Example
+
+```python
+from gltest import get_contract_factory
+
+def test_with_mocked_llm(setup_validators):
+    mock_response = {
+        "response": {
+            "What is the weather?": "It's sunny today",
+            "Calculate 2+2": "4"
+        },
+        "eq_principle_prompt_comparative": {
+            "values must be equal": True,
+            "amounts should match": False
+        },
+        "eq_principle_prompt_non_comparative": {
+            "Is this valid?": True
+        }
+    }
+    
+    setup_validators(mock_response)
+    
+    factory = get_contract_factory("MyLLMContract")
+    contract = factory.deploy()
+    result = contract.check_weather()
+```
+
+Notes:
+- Mock responses are available when running tests on localnet
+- Use with the `--test-with-mocks` flag to enable mocking
+
+
 
 You can also match specific patterns in the transaction's stderr output:
 
@@ -442,10 +618,18 @@ Specify a custom contracts directory (default: `contracts/`):
 gltest --contracts-dir <path_to_contracts>
 ```
 
+Specify artifacts directory (default: `artifacts/`):
+```bash
+gltest --artifacts-dir <path_to_artifacts>
+```
+
 Select a network configuration from your `gltest.config.yaml`:
 ```bash
 # Run tests on localnet (default)
 gltest --network localnet
+
+# Run tests on Studio
+gltest --network studionet
 
 # Run tests on testnet
 gltest --network testnet_asimov
@@ -464,6 +648,17 @@ gltest --default-wait-interval <milliseconds>
 # Set the maximum number of polling attempts
 gltest --default-wait-retries <number_of_retries>
 ```
+
+Run tests with mocked LLM responses (localnet only):
+```bash
+gltest --test-with-mocks
+```
+
+Run tests with leader-only mode enabled (studio-based networks only: localhost, 127.0.0.1, *.genlayer.com, *.genlayerlabs.com):
+```bash
+gltest --leader-only
+```
+When enabled, deployments and write operations run only on the leader node. On unsupported networks, this flag has no effect and a warning is logged.
 
 **Note:** All configuration options can be combined. For example:
 ```bash
