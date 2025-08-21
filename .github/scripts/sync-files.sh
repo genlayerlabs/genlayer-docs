@@ -61,6 +61,7 @@ sync_files() {
     echo "🔍 report_file: $report_file"
     
     # Get proper title for sync type
+    echo "🔍 Getting sync title for: $sync_type"
     local sync_title
     case "$sync_type" in
         "changelog") sync_title="Changelog" ;;
@@ -70,13 +71,25 @@ sync_files() {
         "api_ops") sync_title="API Ops Methods" ;;
         *) sync_title="$(echo "$sync_type" | tr '[:lower:]' '[:upper:]')" ;;
     esac
+    echo "🔍 sync_title resolved to: $sync_title"
+    echo "🔍 Writing to report_file: $report_file"
     echo "## ${sync_title} Sync" >> "$report_file"
+    echo "🔍 Successfully wrote title to report file"
+    echo "🔍 Checking file_filter: $file_filter"
     if [[ "$file_filter" != ".*" ]]; then
+        echo "🔍 Writing filter info to report"
         printf "Using regex filter: \`%s\`\n" "$file_filter" >> "$report_file"
+        echo "🔍 Filter info written"
+    else
+        echo "🔍 No filter info needed (filter is .*)"
     fi
+    echo "🔍 Adding empty line to report"
     echo "" >> "$report_file"
+    echo "🔍 Empty line added"
     
+    echo "🔍 Checking if source directory exists: $source_path"
     if [[ ! -d "$source_path" ]]; then
+        echo "🔍 Source directory does not exist"
         echo "- Source directory not found: \`${source_path#source-repo/}\`" >> "$report_file"
         echo "added=0" >> "$GITHUB_OUTPUT"
         echo "updated=0" >> "$GITHUB_OUTPUT"
