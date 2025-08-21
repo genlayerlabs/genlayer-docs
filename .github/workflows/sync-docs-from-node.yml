@@ -158,148 +158,17 @@ jobs:
           path: source-repo
           ref: ${{ needs.prepare.outputs.version }}
 
-      - name: Sync files based on matrix type
+      - name: Sync files using composite action
         id: sync
-        run: |
-          set -euo pipefail
-          SYNC_REPORT="${{ runner.temp }}/sync_report_${{ matrix.sync_type }}.md"
-          
-          case "${{ matrix.sync_type }}" in
-            "changelog")
-              SOURCE_PATH="source-repo/docs/changelog"
-              DEST_PATH="content/validators/changelog"
-              
-              echo "## Changelog Sync" >> "$SYNC_REPORT"
-              echo "" >> "$SYNC_REPORT"
-
-              if [ -d "$SOURCE_PATH" ]; then
-                mkdir -p "$DEST_PATH"
-                
-                # Track existing files
-                declare -A EXISTING_FILES
-                while IFS= read -r file; do
-                  [ -n "$file" ] && EXISTING_FILES["$(basename "$file")"]="$file"
-                done < <(find "$DEST_PATH" -name "*.mdx" -type f 2>/dev/null || true)
-                
-                ADDED=0
-                UPDATED=0
-                
-                # Process source files
-                for file in "$SOURCE_PATH"/*.mdx "$SOURCE_PATH"/*.md; do
-                  if [ -f "$file" ]; then
-                    basename_no_ext=$(basename "$file" | sed 's/\.[^.]*$//')
-                    dest_filename="${basename_no_ext}.mdx"
-                    dest_path="$DEST_PATH/$dest_filename"
-
-                    if [ -f "$dest_path" ]; then
-                      if ! cmp -s "$file" "$dest_path"; then
-                        cp "$file" "$dest_path"
-                        echo "- Updated: \`$dest_filename\`" >> "$SYNC_REPORT"
-                        UPDATED=$((UPDATED + 1))
-                      fi
-                      unset EXISTING_FILES["$dest_filename"]
-                    else
-                      cp "$file" "$dest_path"
-                      echo "- Added: \`$dest_filename\`" >> "$SYNC_REPORT"
-                      ADDED=$((ADDED + 1))
-                    fi
-                  fi
-                done
-                
-                # Remove orphaned files
-                DELETED=0
-                for dest_file in "${EXISTING_FILES[@]}"; do
-                  if [ -f "$dest_file" ]; then
-                    rm "$dest_file"
-                    printf -- "- Deleted: \`%s\`\n" "$(basename "$dest_file")" >> "$SYNC_REPORT"
-                    DELETED=$((DELETED + 1))
-                  fi
-                done
-                
-                TOTAL=$((ADDED + UPDATED + DELETED))
-                if [ $TOTAL -eq 0 ]; then
-                  echo "- No changelog updates found" >> "$SYNC_REPORT"
-                else
-                  echo "" >> "$SYNC_REPORT"
-                  echo "Summary: $ADDED added, $UPDATED updated, $DELETED deleted" >> "$SYNC_REPORT"
-                fi
-                
-                echo "added=$ADDED" >> "$GITHUB_OUTPUT"
-                echo "updated=$UPDATED" >> "$GITHUB_OUTPUT"
-                echo "deleted=$DELETED" >> "$GITHUB_OUTPUT"
-                echo "total=$TOTAL" >> "$GITHUB_OUTPUT"
-                
-                # Store total for aggregation
-                echo "$TOTAL" > "${{ runner.temp }}/changes_${{ matrix.sync_type }}.txt"
-              else
-                echo "- Source changelog directory not found" >> "$SYNC_REPORT"
-                echo "added=0" >> "$GITHUB_OUTPUT"
-                echo "updated=0" >> "$GITHUB_OUTPUT"
-                echo "deleted=0" >> "$GITHUB_OUTPUT"
-                echo "total=0" >> "$GITHUB_OUTPUT"
-                echo "0" > "${{ runner.temp }}/changes_${{ matrix.sync_type }}.txt"
-              fi
-              ;;
-            "config")
-              echo "## Config File Sync" >> "$SYNC_REPORT"
-              echo "- Config sync - simplified for now" >> "$SYNC_REPORT"
-              echo "added=0" >> "$GITHUB_OUTPUT"
-              echo "updated=0" >> "$GITHUB_OUTPUT"
-              echo "deleted=0" >> "$GITHUB_OUTPUT"
-              echo "total=0" >> "$GITHUB_OUTPUT"
-              echo "0" > "${{ runner.temp }}/changes_${{ matrix.sync_type }}.txt"
-              ;;
-            "api_gen")
-              echo "## API Gen Methods Sync" >> "$SYNC_REPORT"
-              echo "- API gen sync - simplified for now" >> "$SYNC_REPORT"
-              echo "added=0" >> "$GITHUB_OUTPUT"
-              echo "updated=0" >> "$GITHUB_OUTPUT"
-              echo "deleted=0" >> "$GITHUB_OUTPUT"
-              echo "total=0" >> "$GITHUB_OUTPUT"
-              echo "0" > "${{ runner.temp }}/changes_${{ matrix.sync_type }}.txt"
-              ;;
-            "api_debug")
-              echo "## API Debug Methods Sync" >> "$SYNC_REPORT"
-              echo "- API debug sync - simplified for now" >> "$SYNC_REPORT"
-              echo "added=0" >> "$GITHUB_OUTPUT"
-              echo "updated=0" >> "$GITHUB_OUTPUT"
-              echo "deleted=0" >> "$GITHUB_OUTPUT"
-              echo "total=0" >> "$GITHUB_OUTPUT"
-              echo "0" > "${{ runner.temp }}/changes_${{ matrix.sync_type }}.txt"
-              ;;
-          esac
-
-      - name: Collect reports
-        id: collect_reports
-        run: |
-          # Store sync reports as artifacts for aggregation
-          REPORT_FILE="${{ runner.temp }}/sync_report_${{ matrix.sync_type }}.md"
-          
-          echo "🔍 Debug: Looking for report file: $REPORT_FILE"
-          ls -la "${{ runner.temp }}" | grep sync_report || echo "No sync_report files found in temp"
-          
-          if [[ -f "$REPORT_FILE" ]]; then
-            echo "✅ Found report file, creating artifacts"
-            # Create artifacts directory
-            mkdir -p artifacts
-            cp "$REPORT_FILE" "artifacts/sync_report_${{ matrix.sync_type }}.md"
-            echo "📄 Created artifact: artifacts/sync_report_${{ matrix.sync_type }}.md"
-            ls -la artifacts/
-            
-            # Also output the changes count for this sync type
-            if [[ -f "${{ runner.temp }}/changes_${{ matrix.sync_type }}.txt" ]]; then
-              echo "changes_${{ matrix.sync_type }}=$(cat "${{ runner.temp }}/changes_${{ matrix.sync_type }}.txt")" >> "$GITHUB_OUTPUT"
-            else
-              echo "changes_${{ matrix.sync_type }}=0" >> "$GITHUB_OUTPUT"
-            fi
-          else
-            echo "⚠️ Report file not found, creating empty artifact"
-            mkdir -p artifacts
-            echo "## ${{ matrix.sync_type }} Sync" > "artifacts/sync_report_${{ matrix.sync_type }}.md"
-            echo "" >> "artifacts/sync_report_${{ matrix.sync_type }}.md"
-            echo "No sync operations performed." >> "artifacts/sync_report_${{ matrix.sync_type }}.md"
-            echo "changes_${{ matrix.sync_type }}=0" >> "$GITHUB_OUTPUT"
-          fi
+        uses: ./.github/actions/sync-files
+        with:
+          sync_type: ${{ matrix.sync_type }}
+          version: ${{ needs.prepare.outputs.version }}
+          changelog_path: docs/changelog
+          api_gen_path: docs/api/rpc  
+          api_debug_path: docs/api/rpc
+          api_gen_regex: 'gen_(?!dbg_).*'
+          api_debug_regex: 'gen_dbg_.*'
 
       - name: Upload sync reports
         uses: actions/upload-artifact@v4
