@@ -41,8 +41,16 @@ sync_files() {
     local sync_type="$4"
     local report_file="$5"
     
-    # Capitalize first letter of sync_type for title
-    local sync_title="$(echo "$sync_type" | sed 's/^./\U&/')"
+    # Get proper title for sync type
+    local sync_title
+    case "$sync_type" in
+        "changelog") sync_title="Changelog" ;;
+        "config") sync_title="Config File" ;;
+        "api_gen") sync_title="API Gen Methods" ;;
+        "api_debug") sync_title="API Debug Methods" ;;
+        "api_ops") sync_title="API Ops Methods" ;;
+        *) sync_title="$(echo "$sync_type" | tr '[:lower:]' '[:upper:]')" ;;
+    esac
     echo "## ${sync_title} Sync" >> "$report_file"
     if [[ "$file_filter" != ".*" ]]; then
         printf "Using regex filter: \`%s\`\n" "$file_filter" >> "$report_file"
@@ -253,7 +261,15 @@ create_sync_artifacts() {
     else
         echo "⚠️ Report file not found, creating empty artifact"
         mkdir -p artifacts
-        local sync_title="$(echo "$sync_type" | sed 's/^./\U&/')"
+        local sync_title
+        case "$sync_type" in
+            "changelog") sync_title="Changelog" ;;
+            "config") sync_title="Config File" ;;
+            "api_gen") sync_title="API Gen Methods" ;;
+            "api_debug") sync_title="API Debug Methods" ;;
+            "api_ops") sync_title="API Ops Methods" ;;
+            *) sync_title="$(echo "$sync_type" | tr '[:lower:]' '[:upper:]')" ;;
+        esac
         echo "## ${sync_title} Sync" > "artifacts/sync_report_${sync_type}.md"
         echo "" >> "artifacts/sync_report_${sync_type}.md"
         echo "No sync operations performed." >> "artifacts/sync_report_${sync_type}.md"
