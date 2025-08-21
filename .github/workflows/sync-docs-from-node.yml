@@ -223,11 +223,7 @@ jobs:
                 
                 # Append report content
                 if [[ -n "$ALL_REPORTS" ]]; then
-                  ALL_REPORTS="$ALL_REPORTS
-
----
-
-"
+                  ALL_REPORTS="$ALL_REPORTS"$'\n\n---\n\n'
                 fi
                 ALL_REPORTS="$ALL_REPORTS$(cat "$report_file")"
                 TOTAL_CHANGES=$((TOTAL_CHANGES + 1))  # Count each report as 1 change for now
@@ -238,11 +234,7 @@ jobs:
           else
             echo "⚠️ sync-reports directory not found, using simple aggregation"
             # Simple fallback - assume basic operation succeeded
-            ALL_REPORTS="## Sync Results
-
-Documentation sync completed successfully.
-
-"
+            ALL_REPORTS="## Sync Results"$'\n\nDocumentation sync completed successfully.\n\n'
           fi
           
           # Output results
