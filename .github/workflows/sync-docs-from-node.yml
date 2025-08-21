@@ -148,11 +148,12 @@ jobs:
       - name: Clone source repository
         run: |
           echo "📥 Cloning genlayer-node repository..."
-          git clone --filter=blob:none --sparse-checkout --depth=1 \
+          git clone --filter=blob:none --sparse-checkout \
             https://x-access-token:${{ secrets.NODE_REPO_TOKEN || secrets.GITHUB_TOKEN }}@github.com/genlayerlabs/genlayer-node.git \
             source-repo
           cd source-repo
           git sparse-checkout set docs configs/node/config.yaml.example
+          git fetch --tags
           git checkout ${{ needs.prepare.outputs.version }}
           echo "✅ Source repository ready at version ${{ needs.prepare.outputs.version }}"
 
