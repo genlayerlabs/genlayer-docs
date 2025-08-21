@@ -1,6 +1,14 @@
 #!/bin/bash
 set -eo pipefail
 
+echo "🔍 SYNC SCRIPT STARTED"
+echo "🔍 Script: $0"
+echo "🔍 Args: $*"
+echo "🔍 Arg count: $#"
+echo "🔍 PWD: $(pwd)"
+echo "🔍 RUNNER_TEMP: ${RUNNER_TEMP:-not set}"
+echo "🔍 GITHUB_OUTPUT: ${GITHUB_OUTPUT:-not set}"
+
 # Unified file synchronization script
 # Handles all sync types: changelog, config, api_gen, api_debug, api_ops
 # Can be used as a library (sourced) or executed directly with arguments
@@ -8,6 +16,7 @@ set -eo pipefail
 # Set default temp directory if RUNNER_TEMP is not available (for local testing)
 if [[ -z "${RUNNER_TEMP:-}" ]]; then
     RUNNER_TEMP="${TMPDIR:-/tmp}"
+    echo "🔍 Set RUNNER_TEMP to: $RUNNER_TEMP"
 fi
 
 # Set default output file if GITHUB_OUTPUT is not available (for local testing)
@@ -15,6 +24,7 @@ if [[ -z "${GITHUB_OUTPUT:-}" ]]; then
     GITHUB_OUTPUT="${TMPDIR:-/tmp}/github_output.txt"
     # Create the file if it doesn't exist
     touch "$GITHUB_OUTPUT"
+    echo "🔍 Set GITHUB_OUTPUT to: $GITHUB_OUTPUT"
 fi
 
 # Pattern matching function (supports both perl and grep fallback)
@@ -35,11 +45,20 @@ matches_pattern() {
 
 # Generic file synchronization function
 sync_files() {
+    echo "🔍 SYNC_FILES FUNCTION STARTED"
+    echo "🔍 sync_files args: $*"
+    
     local source_path="$1"
     local dest_path="$2"
     local file_filter="$3"
     local sync_type="$4"
     local report_file="$5"
+    
+    echo "🔍 source_path: $source_path"
+    echo "🔍 dest_path: $dest_path"
+    echo "🔍 file_filter: $file_filter"
+    echo "🔍 sync_type: $sync_type"
+    echo "🔍 report_file: $report_file"
     
     # Get proper title for sync type
     local sync_title
@@ -154,9 +173,16 @@ sync_files() {
 
 # Main orchestrator function to handle different sync types
 main() {
+    echo "🔍 MAIN FUNCTION STARTED"
+    echo "🔍 Received args: $*"
+    
     local sync_type="$1"
     local version="$2"
     local sync_report="${RUNNER_TEMP}/sync_report_${sync_type}.md"
+    
+    echo "🔍 sync_type: $sync_type"
+    echo "🔍 version: $version"
+    echo "🔍 sync_report: $sync_report"
     
     # Get input parameters (with defaults)
     local changelog_path="${3:-docs/changelog}"
@@ -166,20 +192,27 @@ main() {
     local api_gen_regex="${7:-gen_(?!dbg_).*}"
     local api_debug_regex="${8:-gen_dbg_.*}"
     
+    echo "🔍 Starting case statement for sync_type: $sync_type"
+    
     case "$sync_type" in
         "changelog")
+            echo "🔍 Processing changelog sync"
             sync_changelog "$changelog_path" "$sync_report"
             ;;
         "config")
+            echo "🔍 Processing config sync"
             sync_config "$sync_report"
             ;;
         "api_gen")
+            echo "🔍 Processing api_gen sync"
             sync_files "source-repo/$api_gen_path" "pages/api-references/genlayer-node/gen" "$api_gen_regex" "api_gen" "$sync_report"
             ;;
         "api_debug")
+            echo "🔍 Processing api_debug sync"
             sync_files "source-repo/$api_debug_path" "pages/api-references/genlayer-node/debug" "$api_debug_regex" "api_debug" "$sync_report"
             ;;
         "api_ops")
+            echo "🔍 Processing api_ops sync"
             sync_files "source-repo/$api_ops_path" "pages/api-references/genlayer-node/ops" ".*" "api_ops" "$sync_report"
             ;;
         *)
@@ -187,6 +220,8 @@ main() {
             exit 1
             ;;
     esac
+    
+    echo "🔍 Case statement completed"
     
     # Create artifacts
     create_sync_artifacts "$sync_type" "$sync_report"
