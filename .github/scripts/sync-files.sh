@@ -1,5 +1,5 @@
 #!/bin/bash
-set -eo pipefail
+set -e
 
 echo "🔍 SYNC SCRIPT STARTED"
 echo "🔍 Script: $0"
@@ -88,9 +88,15 @@ sync_files() {
     echo "🔍 Empty line added"
     
     echo "🔍 Checking if source directory exists: $source_path"
+    echo "🔍 Testing directory with simple test command"
+    test -d "$source_path"
+    echo "🔍 Test result: $?"
+    
     if [ ! -d "$source_path" ]; then
         echo "🔍 Source directory does not exist"
-        echo "- Source directory not found: \`${source_path#source-repo/}\`" >> "$report_file"
+        # Use simpler path substitution to avoid parameter expansion issues
+        local short_path=$(echo "$source_path" | sed 's|^source-repo/||')
+        echo "- Source directory not found: \`$short_path\`" >> "$report_file"
         echo "added=0" >> "$GITHUB_OUTPUT"
         echo "updated=0" >> "$GITHUB_OUTPUT"
         echo "deleted=0" >> "$GITHUB_OUTPUT"
