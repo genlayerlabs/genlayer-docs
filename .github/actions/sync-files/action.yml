@@ -7,9 +7,26 @@ inputs:
   version:
     description: 'Version being synced'
     required: true
-  config:
-    description: 'Sync configuration JSON'
-    required: true
+  changelog_path:
+    description: 'Path to changelog files in source repo'
+    required: false
+    default: 'docs/changelog'
+  api_gen_path:
+    description: 'Path to API gen files in source repo'  
+    required: false
+    default: 'docs/api/rpc'
+  api_debug_path:
+    description: 'Path to API debug files in source repo'
+    required: false
+    default: 'docs/api/rpc'
+  api_gen_regex:
+    description: 'Regex pattern to filter API gen files'
+    required: false
+    default: 'gen_(?!dbg_).*'
+  api_debug_regex:
+    description: 'Regex pattern to filter API debug files'
+    required: false
+    default: 'gen_dbg_.*'
 outputs:
   files_added:
     description: 'Number of files added'
@@ -26,104 +43,246 @@ outputs:
 runs:
   using: 'composite'
   steps:
-    - name: Setup sync parameters
-      id: setup
-      shell: bash
-      run: |
-        # Parse configuration for this sync type
-        CONFIG='${{ inputs.config }}'
-        SYNC_TYPE='${{ inputs.sync_type }}'
-        
-        echo "🔧 Setting up sync parameters for: $SYNC_TYPE"
-        echo "📋 Config received: $CONFIG"
-        
-        # Check if jq is available
-        if ! command -v jq &> /dev/null; then
-            echo "::error::jq command not found"
-            exit 1
-        fi
-        
-        # Extract paths and settings based on sync type
-        case "$SYNC_TYPE" in
-          "changelog")
-            SOURCE_PATH="source-repo/$(echo "$CONFIG" | jq -r '.paths.changelog.source' || echo 'docs/changelog')"
-            DEST_PATH="$(echo "$CONFIG" | jq -r '.paths.changelog.destination' || echo 'content/validators/changelog')"
-            FILE_FILTER=".*"
-            ;;
-          "config")
-            SOURCE_FILE="source-repo/$(echo "$CONFIG" | jq -r '.paths.config.source' || echo 'configs/node/config.yaml.example')"
-            DEST_FILE="$(echo "$CONFIG" | jq -r '.paths.config.destination' || echo 'content/validators/config.yaml')"
-            echo "source_file=$SOURCE_FILE" >> "$GITHUB_OUTPUT"
-            echo "dest_file=$DEST_FILE" >> "$GITHUB_OUTPUT"
-            echo "is_single_file=true" >> "$GITHUB_OUTPUT"
-            exit 0
-            ;;
-          "api_gen")
-            SOURCE_PATH="source-repo/$(echo "$CONFIG" | jq -r '.paths.api_gen.source' || echo 'docs/api/rpc')"
-            DEST_PATH="$(echo "$CONFIG" | jq -r '.paths.api_gen.destination' || echo 'pages/api-references/genlayer-node/gen')"
-            FILE_FILTER="$(echo "$CONFIG" | jq -r '.filters.api_gen_regex' || echo 'gen_(?!dbg_).*')"
-            ;;
-          "api_debug")
-            SOURCE_PATH="source-repo/$(echo "$CONFIG" | jq -r '.paths.api_debug.source' || echo 'docs/api/rpc')"
-            DEST_PATH="$(echo "$CONFIG" | jq -r '.paths.api_debug.destination' || echo 'pages/api-references/genlayer-node/debug')"
-            FILE_FILTER="$(echo "$CONFIG" | jq -r '.filters.api_debug_regex' || echo 'gen_dbg_.*')"
-            ;;
-          *)
-            echo "::error::Unknown sync type: $SYNC_TYPE"
-            exit 1
-            ;;
-        esac
-        
-        if [[ "$SYNC_TYPE" != "config" ]]; then
-          echo "📁 Source: $SOURCE_PATH"
-          echo "📁 Dest: $DEST_PATH"
-          echo "🔍 Filter: $FILE_FILTER"
-        else
-          echo "📁 Source file: $SOURCE_FILE"
-          echo "📁 Dest file: $DEST_FILE"
-        fi
-        
-        if [[ "$SYNC_TYPE" != "config" ]]; then
-          echo "source_path=$SOURCE_PATH" >> "$GITHUB_OUTPUT"
-          echo "dest_path=$DEST_PATH" >> "$GITHUB_OUTPUT"
-          echo "file_filter=$FILE_FILTER" >> "$GITHUB_OUTPUT"
-          echo "is_single_file=false" >> "$GITHUB_OUTPUT"
-        fi
-
-    - name: Sync files
+    - name: Sync files based on type
       id: sync
       shell: bash
       run: |
         set -euo pipefail
+        SYNC_REPORT="${{ runner.temp }}/sync_report_${{ inputs.sync_type }}.md"
         
-        # Load sync utilities
-        source .github/scripts/sync-files.sh
-        
+        case "${{ inputs.sync_type }}" in
+          "changelog")
+            SOURCE_PATH="source-repo/${{ inputs.changelog_path }}"
+            DEST_PATH="content/validators/changelog"
+            
+            echo "## Changelog Sync" >> "$SYNC_REPORT"
+            echo "" >> "$SYNC_REPORT"
+
+            if [ -d "$SOURCE_PATH" ]; then
+              mkdir -p "$DEST_PATH"
+              
+              # Track existing files
+              declare -A EXISTING_FILES
+              while IFS= read -r file; do
+                [ -n "$file" ] && EXISTING_FILES["$(basename "$file")"]="$file"
+              done < <(find "$DEST_PATH" -name "*.mdx" -type f 2>/dev/null || true)
+              
+              ADDED=0
+              UPDATED=0
+              
+              # Process source files
+              for file in "$SOURCE_PATH"/*.mdx "$SOURCE_PATH"/*.md; do
+                if [ -f "$file" ]; then
+                  basename_no_ext=$(basename "$file" | sed 's/\.[^.]*$//')
+                  dest_filename="${basename_no_ext}.mdx"
+                  dest_path="$DEST_PATH/$dest_filename"
+
+                  if [ -f "$dest_path" ]; then
+                    if ! cmp -s "$file" "$dest_path"; then
+                      cp "$file" "$dest_path"
+                      echo "- Updated: \`$dest_filename\`" >> "$SYNC_REPORT"
+                      UPDATED=$((UPDATED + 1))
+                    fi
+                    unset EXISTING_FILES["$dest_filename"]
+                  else
+                    cp "$file" "$dest_path"
+                    echo "- Added: \`$dest_filename\`" >> "$SYNC_REPORT"
+                    ADDED=$((ADDED + 1))
+                  fi
+                fi
+              done
+              
+              # Remove orphaned files
+              DELETED=0
+              for dest_file in "${EXISTING_FILES[@]}"; do
+                if [ -f "$dest_file" ]; then
+                  rm "$dest_file"
+                  printf -- "- Deleted: \`%s\`\n" "$(basename "$dest_file")" >> "$SYNC_REPORT"
+                  DELETED=$((DELETED + 1))
+                fi
+              done
+              
+              TOTAL=$((ADDED + UPDATED + DELETED))
+              if [ $TOTAL -eq 0 ]; then
+                echo "- No changelog updates found" >> "$SYNC_REPORT"
+              else
+                echo "" >> "$SYNC_REPORT"
+                echo "Summary: $ADDED added, $UPDATED updated, $DELETED deleted" >> "$SYNC_REPORT"
+              fi
+              
+              echo "added=$ADDED" >> "$GITHUB_OUTPUT"
+              echo "updated=$UPDATED" >> "$GITHUB_OUTPUT"
+              echo "deleted=$DELETED" >> "$GITHUB_OUTPUT"
+              echo "total=$TOTAL" >> "$GITHUB_OUTPUT"
+              
+              # Store total for aggregation
+              echo "$TOTAL" > "${{ runner.temp }}/changes_${{ inputs.sync_type }}.txt"
+            else
+              echo "- Source directory not found: $SOURCE_PATH" >> "$SYNC_REPORT"
+              echo "added=0" >> "$GITHUB_OUTPUT"
+              echo "updated=0" >> "$GITHUB_OUTPUT"  
+              echo "deleted=0" >> "$GITHUB_OUTPUT"
+              echo "total=0" >> "$GITHUB_OUTPUT"
+              echo "0" > "${{ runner.temp }}/changes_${{ inputs.sync_type }}.txt"
+            fi
+            ;;
+            
+          "config")
+            SOURCE_FILE="source-repo/configs/node/config.yaml.example"
+            DEST_FILE="content/validators/config.yaml"
+            
+            echo "## Config Sync" >> "$SYNC_REPORT"
+            echo "" >> "$SYNC_REPORT"
+            
+            if [ -f "$SOURCE_FILE" ]; then
+              mkdir -p "$(dirname "$DEST_FILE")"
+              
+              if [ -f "$DEST_FILE" ]; then
+                if ! cmp -s "$SOURCE_FILE" "$DEST_FILE"; then
+                  cp "$SOURCE_FILE" "$DEST_FILE"
+                  echo "- Updated: \`config.yaml\`" >> "$SYNC_REPORT"
+                  echo "added=0" >> "$GITHUB_OUTPUT"
+                  echo "updated=1" >> "$GITHUB_OUTPUT"
+                  echo "deleted=0" >> "$GITHUB_OUTPUT"
+                  echo "total=1" >> "$GITHUB_OUTPUT"
+                  echo "1" > "${{ runner.temp }}/changes_${{ inputs.sync_type }}.txt"
+                else
+                  echo "- No config updates needed" >> "$SYNC_REPORT"
+                  echo "added=0" >> "$GITHUB_OUTPUT"
+                  echo "updated=0" >> "$GITHUB_OUTPUT"
+                  echo "deleted=0" >> "$GITHUB_OUTPUT"
+                  echo "total=0" >> "$GITHUB_OUTPUT"
+                  echo "0" > "${{ runner.temp }}/changes_${{ inputs.sync_type }}.txt"
+                fi
+              else
+                cp "$SOURCE_FILE" "$DEST_FILE"
+                echo "- Added: \`config.yaml\`" >> "$SYNC_REPORT"
+                echo "added=1" >> "$GITHUB_OUTPUT"
+                echo "updated=0" >> "$GITHUB_OUTPUT"
+                echo "deleted=0" >> "$GITHUB_OUTPUT"
+                echo "total=1" >> "$GITHUB_OUTPUT"
+                echo "1" > "${{ runner.temp }}/changes_${{ inputs.sync_type }}.txt"
+              fi
+            else
+              echo "- Source config file not found: $SOURCE_FILE" >> "$SYNC_REPORT"
+              echo "added=0" >> "$GITHUB_OUTPUT"
+              echo "updated=0" >> "$GITHUB_OUTPUT"
+              echo "deleted=0" >> "$GITHUB_OUTPUT"
+              echo "total=0" >> "$GITHUB_OUTPUT"
+              echo "0" > "${{ runner.temp }}/changes_${{ inputs.sync_type }}.txt"
+            fi
+            ;;
+            
+          "api_gen"|"api_debug")
+            if [ "${{ inputs.sync_type }}" = "api_gen" ]; then
+              SOURCE_PATH="source-repo/${{ inputs.api_gen_path }}"
+              DEST_PATH="pages/api-references/genlayer-node/gen"
+              FILTER_REGEX="${{ inputs.api_gen_regex }}"
+              TITLE="API Gen Sync"
+            else
+              SOURCE_PATH="source-repo/${{ inputs.api_debug_path }}"
+              DEST_PATH="pages/api-references/genlayer-node/debug"
+              FILTER_REGEX="${{ inputs.api_debug_regex }}"
+              TITLE="API Debug Sync"
+            fi
+            
+            echo "## $TITLE" >> "$SYNC_REPORT"
+            echo "" >> "$SYNC_REPORT"
+            
+            if [ -d "$SOURCE_PATH" ]; then
+              mkdir -p "$DEST_PATH"
+              
+              # Track existing files
+              declare -A EXISTING_FILES
+              while IFS= read -r file; do
+                [ -n "$file" ] && EXISTING_FILES["$(basename "$file")"]="$file"
+              done < <(find "$DEST_PATH" -name "*.mdx" -type f 2>/dev/null || true)
+              
+              ADDED=0
+              UPDATED=0
+              
+              # Process source files with regex filter
+              for file in "$SOURCE_PATH"/*.mdx "$SOURCE_PATH"/*.md; do
+                if [ -f "$file" ]; then
+                  basename_file=$(basename "$file")
+                  basename_no_ext=$(echo "$basename_file" | sed 's/\.[^.]*$//')
+                  
+                  # Apply regex filter
+                  if echo "$basename_no_ext" | grep -qE "$FILTER_REGEX"; then
+                    dest_filename="${basename_no_ext}.mdx"
+                    dest_path="$DEST_PATH/$dest_filename"
+
+                    if [ -f "$dest_path" ]; then
+                      if ! cmp -s "$file" "$dest_path"; then
+                        cp "$file" "$dest_path"
+                        echo "- Updated: \`$dest_filename\`" >> "$SYNC_REPORT"
+                        UPDATED=$((UPDATED + 1))
+                      fi
+                      unset EXISTING_FILES["$dest_filename"]
+                    else
+                      cp "$file" "$dest_path"
+                      echo "- Added: \`$dest_filename\`" >> "$SYNC_REPORT"
+                      ADDED=$((ADDED + 1))
+                    fi
+                  fi
+                fi
+              done
+              
+              # Remove orphaned files
+              DELETED=0
+              for dest_file in "${EXISTING_FILES[@]}"; do
+                if [ -f "$dest_file" ]; then
+                  rm "$dest_file"
+                  printf -- "- Deleted: \`%s\`\n" "$(basename "$dest_file")" >> "$SYNC_REPORT"
+                  DELETED=$((DELETED + 1))
+                fi
+              done
+              
+              TOTAL=$((ADDED + UPDATED + DELETED))
+              if [ $TOTAL -eq 0 ]; then
+                echo "- No ${{ inputs.sync_type }} updates found" >> "$SYNC_REPORT"
+              else
+                echo "" >> "$SYNC_REPORT"
+                echo "Summary: $ADDED added, $UPDATED updated, $DELETED deleted" >> "$SYNC_REPORT"
+              fi
+              
+              echo "added=$ADDED" >> "$GITHUB_OUTPUT"
+              echo "updated=$UPDATED" >> "$GITHUB_OUTPUT"
+              echo "deleted=$DELETED" >> "$GITHUB_OUTPUT"
+              echo "total=$TOTAL" >> "$GITHUB_OUTPUT"
+              
+              # Store total for aggregation
+              echo "$TOTAL" > "${{ runner.temp }}/changes_${{ inputs.sync_type }}.txt"
+            else
+              echo "- Source directory not found: $SOURCE_PATH" >> "$SYNC_REPORT"
+              echo "added=0" >> "$GITHUB_OUTPUT"
+              echo "updated=0" >> "$GITHUB_OUTPUT"
+              echo "deleted=0" >> "$GITHUB_OUTPUT"
+              echo "total=0" >> "$GITHUB_OUTPUT"
+              echo "0" > "${{ runner.temp }}/changes_${{ inputs.sync_type }}.txt"
+            fi
+            ;;
+            
+          *)
+            echo "::error::Unknown sync type: ${{ inputs.sync_type }}"
+            exit 1
+            ;;
+        esac
+
+    - name: Create sync artifacts
+      shell: bash
+      run: |
+        # Ensure report file exists and create artifact
         REPORT_FILE="${{ runner.temp }}/sync_report_${{ inputs.sync_type }}.md"
-        
-        # Handle single file vs directory sync
-        if [[ "${{ steps.setup.outputs.is_single_file }}" == "true" ]]; then
-          # Special handling for config file
-          source .github/scripts/config-processor.sh
-          process_config_file \
-            "${{ steps.setup.outputs.source_file }}" \
-            "${{ steps.setup.outputs.dest_file }}" \
-            "$REPORT_FILE"
-        else
-          # Standard file sync
-          sync_files \
-            "${{ steps.setup.outputs.source_path }}" \
-            "${{ steps.setup.outputs.dest_path }}" \
-            "${{ steps.setup.outputs.file_filter }}" \
-            "${{ inputs.sync_type }}" \
-            "$REPORT_FILE"
-        fi
-        
-        echo "Sync completed for ${{ inputs.sync_type }}"
-        
-        # Store report content for later use
         if [[ -f "$REPORT_FILE" ]]; then
-          echo "report_content<<EOF" >> "$GITHUB_OUTPUT"
-          cat "$REPORT_FILE" >> "$GITHUB_OUTPUT"
-          echo "EOF" >> "$GITHUB_OUTPUT"
+          # Create artifacts directory
+          mkdir -p artifacts
+          cp "$REPORT_FILE" "artifacts/sync_report_${{ inputs.sync_type }}.md"
+          echo "📄 Created artifact: artifacts/sync_report_${{ inputs.sync_type }}.md"
+        else
+          echo "⚠️ Report file not found, creating empty artifact"
+          mkdir -p artifacts
+          echo "## ${{ inputs.sync_type }} Sync" > "artifacts/sync_report_${{ inputs.sync_type }}.md"
+          echo "" >> "artifacts/sync_report_${{ inputs.sync_type }}.md"
+          echo "No sync operations performed." >> "artifacts/sync_report_${{ inputs.sync_type }}.md"
         fi
