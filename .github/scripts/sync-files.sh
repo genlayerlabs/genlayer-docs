@@ -88,12 +88,7 @@ sync_files() {
     echo "🔍 Empty line added"
     
     echo "🔍 Checking if source directory exists: $source_path"
-    echo "🔍 Running: ls -la \"$source_path\" 2>/dev/null || echo 'ls failed'"
-    ls -la "$source_path" 2>/dev/null || echo "ls failed for $source_path"
-    echo "🔍 Running: test -d \"$source_path\" && echo 'test -d succeeded' || echo 'test -d failed'"
-    test -d "$source_path" && echo "test -d succeeded" || echo "test -d failed"
-    echo "🔍 Now testing with [[ ! -d ]]"
-    if [[ ! -d "$source_path" ]]; then
+    if [ ! -d "$source_path" ]; then
         echo "🔍 Source directory does not exist"
         echo "- Source directory not found: \`${source_path#source-repo/}\`" >> "$report_file"
         echo "added=0" >> "$GITHUB_OUTPUT"
@@ -116,7 +111,7 @@ sync_files() {
     
     # Process all source files that match the filter
     for file in "$source_path"/*.mdx "$source_path"/*.md; do
-        [[ ! -f "$file" ]] && continue
+        [ ! -f "$file" ] && continue
         
         local basename_no_ext
         basename_no_ext=$(basename "$file" | sed 's/\.[^.]*$//')
@@ -126,7 +121,7 @@ sync_files() {
             local dest_filename="${basename_no_ext}.mdx"
             local dest_file_path="$dest_path/$dest_filename"
             
-            if [[ -f "$dest_file_path" ]]; then
+            if [ -f "$dest_file_path" ]; then
                 # File exists - check if it's different
                 if ! cmp -s "$file" "$dest_file_path"; then
                     cp "$file" "$dest_file_path"
@@ -149,20 +144,20 @@ sync_files() {
     
     # Remove files that no longer exist in source or don't match the filter
     for dest_file in "${existing_files[@]}"; do
-        if [[ -f "$dest_file" ]]; then
+        if [ -f "$dest_file" ]; then
             local dest_basename_no_ext
             dest_basename_no_ext=$(basename "$dest_file" | sed 's/\.[^.]*$//')
             
             # Check if the file should still exist based on source and filter
             local source_exists=false
-            if [[ -f "$source_path/${dest_basename_no_ext}.mdx" ]] || [[ -f "$source_path/${dest_basename_no_ext}.md" ]]; then
+            if [ -f "$source_path/${dest_basename_no_ext}.mdx" ] || [ -f "$source_path/${dest_basename_no_ext}.md" ]; then
                 # Source exists, check if it matches the filter
                 if matches_pattern "$dest_basename_no_ext" "$file_filter"; then
                     source_exists=true
                 fi
             fi
             
-            if [[ "$source_exists" == "false" ]]; then
+            if [ "$source_exists" = "false" ]; then
                 rm "$dest_file"
                 printf -- "- Deleted: \`%s\`\n" "$(basename "$dest_file")" >> "$report_file"
                 ((deleted++))
@@ -172,7 +167,7 @@ sync_files() {
     
     # Summary
     local total=$((added + updated + deleted))
-    if [[ $total -eq 0 ]]; then
+    if [ $total -eq 0 ]; then
         echo "- No ${sync_type} updates found" >> "$report_file"
     else
         echo "" >> "$report_file"
@@ -265,7 +260,7 @@ sync_config() {
     if [[ -f "$source_file" ]]; then
         mkdir -p "$(dirname "$dest_file")"
         
-        if [[ -f "$dest_file" ]]; then
+        if [ -f "$dest_file" ]; then
             if ! cmp -s "$source_file" "$dest_file"; then
                 cp "$source_file" "$dest_file"
                 echo "- Updated: \`config.yaml\`" >> "$sync_report"
