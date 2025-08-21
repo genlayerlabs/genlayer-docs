@@ -1,8 +1,9 @@
 #!/bin/bash
 set -euo pipefail
 
-# Generic file synchronization script
-# Extracted from the duplicated sync logic in the workflow
+# Unified file synchronization script
+# Handles all sync types: changelog, config, api_gen, api_debug, api_ops
+# Can be used as a library (sourced) or executed directly with arguments
 
 # Pattern matching function (supports both perl and grep fallback)
 matches_pattern() {
@@ -128,3 +129,123 @@ sync_files() {
     # Store total changes for aggregation
     echo "$total" > "${RUNNER_TEMP}/changes_${sync_type}.txt"
 }
+
+# Main orchestrator function to handle different sync types
+main() {
+    local sync_type="$1"
+    local version="$2"
+    local sync_report="${RUNNER_TEMP}/sync_report_${sync_type}.md"
+    
+    # Get input parameters (with defaults)
+    local changelog_path="${3:-docs/changelog}"
+    local api_gen_path="${4:-docs/api/rpc}"
+    local api_debug_path="${5:-docs/api/rpc}"
+    local api_ops_path="${6:-docs/api/ops}"
+    local api_gen_regex="${7:-gen_(?!dbg_).*}"
+    local api_debug_regex="${8:-gen_dbg_.*}"
+    
+    case "$sync_type" in
+        "changelog")
+            sync_changelog "$changelog_path" "$sync_report"
+            ;;
+        "config")
+            sync_config "$sync_report"
+            ;;
+        "api_gen")
+            sync_files "source-repo/$api_gen_path" "pages/api-references/genlayer-node/gen" "$api_gen_regex" "api_gen" "$sync_report"
+            ;;
+        "api_debug")
+            sync_files "source-repo/$api_debug_path" "pages/api-references/genlayer-node/debug" "$api_debug_regex" "api_debug" "$sync_report"
+            ;;
+        "api_ops")
+            sync_files "source-repo/$api_ops_path" "pages/api-references/genlayer-node/ops" ".*" "api_ops" "$sync_report"
+            ;;
+        *)
+            echo "::error::Unknown sync type: $sync_type"
+            exit 1
+            ;;
+    esac
+    
+    # Create artifacts
+    create_sync_artifacts "$sync_type" "$sync_report"
+}
+
+# Changelog sync function
+sync_changelog() {
+    local changelog_path="$1"
+    local sync_report="$2"
+    
+    sync_files "source-repo/$changelog_path" "content/validators/changelog" ".*" "changelog" "$sync_report"
+}
+
+# Config sync function
+sync_config() {
+    local sync_report="$1"
+    local source_file="source-repo/configs/node/config.yaml.example"
+    local dest_file="content/validators/config.yaml"
+    
+    echo "## Config Sync" >> "$sync_report"
+    echo "" >> "$sync_report"
+    
+    if [[ -f "$source_file" ]]; then
+        mkdir -p "$(dirname "$dest_file")"
+        
+        if [[ -f "$dest_file" ]]; then
+            if ! cmp -s "$source_file" "$dest_file"; then
+                cp "$source_file" "$dest_file"
+                echo "- Updated: \`config.yaml\`" >> "$sync_report"
+                echo "added=0" >> "$GITHUB_OUTPUT"
+                echo "updated=1" >> "$GITHUB_OUTPUT"
+                echo "deleted=0" >> "$GITHUB_OUTPUT"
+                echo "total=1" >> "$GITHUB_OUTPUT"
+                echo "1" > "${RUNNER_TEMP}/changes_config.txt"
+            else
+                echo "- No config updates needed" >> "$sync_report"
+                echo "added=0" >> "$GITHUB_OUTPUT"
+                echo "updated=0" >> "$GITHUB_OUTPUT"
+                echo "deleted=0" >> "$GITHUB_OUTPUT"
+                echo "total=0" >> "$GITHUB_OUTPUT"
+                echo "0" > "${RUNNER_TEMP}/changes_config.txt"
+            fi
+        else
+            cp "$source_file" "$dest_file"
+            echo "- Added: \`config.yaml\`" >> "$sync_report"
+            echo "added=1" >> "$GITHUB_OUTPUT"
+            echo "updated=0" >> "$GITHUB_OUTPUT"
+            echo "deleted=0" >> "$GITHUB_OUTPUT"
+            echo "total=1" >> "$GITHUB_OUTPUT"
+            echo "1" > "${RUNNER_TEMP}/changes_config.txt"
+        fi
+    else
+        echo "- Source config file not found: $source_file" >> "$sync_report"
+        echo "added=0" >> "$GITHUB_OUTPUT"
+        echo "updated=0" >> "$GITHUB_OUTPUT"
+        echo "deleted=0" >> "$GITHUB_OUTPUT"
+        echo "total=0" >> "$GITHUB_OUTPUT"
+        echo "0" > "${RUNNER_TEMP}/changes_config.txt"
+    fi
+}
+
+# Create sync artifacts
+create_sync_artifacts() {
+    local sync_type="$1"
+    local report_file="$2"
+    
+    if [[ -f "$report_file" ]]; then
+        # Create artifacts directory
+        mkdir -p artifacts
+        cp "$report_file" "artifacts/sync_report_${sync_type}.md"
+        echo "📄 Created artifact: artifacts/sync_report_${sync_type}.md"
+    else
+        echo "⚠️ Report file not found, creating empty artifact"
+        mkdir -p artifacts
+        echo "## ${sync_type^} Sync" > "artifacts/sync_report_${sync_type}.md"
+        echo "" >> "artifacts/sync_report_${sync_type}.md"
+        echo "No sync operations performed." >> "artifacts/sync_report_${sync_type}.md"
+    fi
+}
+
+# If script is called directly (not sourced), run main function
+if [[ "${BASH_SOURCE[0]}" == "${0}" ]]; then
+    main "$@"
+fi
