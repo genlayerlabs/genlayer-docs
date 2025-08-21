@@ -88,6 +88,11 @@ sync_files() {
     echo "🔍 Empty line added"
     
     echo "🔍 Checking if source directory exists: $source_path"
+    echo "🔍 Running: ls -la \"$source_path\" 2>/dev/null || echo 'ls failed'"
+    ls -la "$source_path" 2>/dev/null || echo "ls failed for $source_path"
+    echo "🔍 Running: test -d \"$source_path\" && echo 'test -d succeeded' || echo 'test -d failed'"
+    test -d "$source_path" && echo "test -d succeeded" || echo "test -d failed"
+    echo "🔍 Now testing with [[ ! -d ]]"
     if [[ ! -d "$source_path" ]]; then
         echo "🔍 Source directory does not exist"
         echo "- Source directory not found: \`${source_path#source-repo/}\`" >> "$report_file"
