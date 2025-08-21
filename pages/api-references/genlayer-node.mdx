@@ -575,3 +575,58 @@ curl -X POST http://localhost:9151 \
     "id": 1
   }'
 ```
+
+## Ops Methods
+
+These methods provide operational endpoints for monitoring the GenLayer node.
+
+### example_ops_method
+
+Example operational endpoint for monitoring the GenLayer node status.
+
+**Method:** `example_ops_method`
+
+**Parameters:**
+
+- `request` (object, required): The ops request parameters
+  - `includeDetails` (boolean, optional): Whether to include detailed information. Defaults to false
+
+**Returns:** Node status information object
+
+**Example:**
+
+```json
+{
+  "jsonrpc": "2.0",
+  "method": "example_ops_method",
+  "params": [
+    {
+      "includeDetails": true
+    }
+  ],
+  "id": 1
+}
+```
+
+**Response:**
+
+```json
+{
+  "jsonrpc": "2.0",
+  "result": {
+    "status": "healthy",
+    "uptime": "5d 12h 30m",
+    "details": {
+      "memory_usage": "2.1GB",
+      "cpu_usage": "15%"
+    }
+  },
+  "id": 1
+}
+```
+
+**Notes:**
+
+- This is an example ops method to demonstrate the format
+- Replace with actual ops endpoints provided by the node
+- The script will automatically include this in the generated documentation
