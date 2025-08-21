@@ -5,6 +5,18 @@ set -euo pipefail
 # Handles all sync types: changelog, config, api_gen, api_debug, api_ops
 # Can be used as a library (sourced) or executed directly with arguments
 
+# Set default temp directory if RUNNER_TEMP is not available (for local testing)
+if [[ -z "${RUNNER_TEMP:-}" ]]; then
+    RUNNER_TEMP="${TMPDIR:-/tmp}"
+fi
+
+# Set default output file if GITHUB_OUTPUT is not available (for local testing)
+if [[ -z "${GITHUB_OUTPUT:-}" ]]; then
+    GITHUB_OUTPUT="${TMPDIR:-/tmp}/github_output.txt"
+    # Create the file if it doesn't exist
+    touch "$GITHUB_OUTPUT"
+fi
+
 # Pattern matching function (supports both perl and grep fallback)
 matches_pattern() {
     local filename="$1"
@@ -29,7 +41,9 @@ sync_files() {
     local sync_type="$4"
     local report_file="$5"
     
-    echo "## ${sync_type^} Sync" >> "$report_file"
+    # Capitalize first letter of sync_type for title
+    local sync_title="$(echo "$sync_type" | sed 's/^./\U&/')"
+    echo "## ${sync_title} Sync" >> "$report_file"
     if [[ "$file_filter" != ".*" ]]; then
         printf "Using regex filter: \`%s\`\n" "$file_filter" >> "$report_file"
     fi
@@ -239,7 +253,8 @@ create_sync_artifacts() {
     else
         echo "⚠️ Report file not found, creating empty artifact"
         mkdir -p artifacts
-        echo "## ${sync_type^} Sync" > "artifacts/sync_report_${sync_type}.md"
+        local sync_title="$(echo "$sync_type" | sed 's/^./\U&/')"
+        echo "## ${sync_title} Sync" > "artifacts/sync_report_${sync_type}.md"
         echo "" >> "artifacts/sync_report_${sync_type}.md"
         echo "No sync operations performed." >> "artifacts/sync_report_${sync_type}.md"
     fi

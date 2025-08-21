@@ -4,6 +4,13 @@ set -euo pipefail
 # Aggregate sync reports and calculate totals
 # Used by the GitHub Actions workflow to process sync results
 
+# Set default output file if GITHUB_OUTPUT is not available (for local testing)
+if [[ -z "${GITHUB_OUTPUT:-}" ]]; then
+    GITHUB_OUTPUT="${TMPDIR:-/tmp}/github_output.txt"
+    # Create the file if it doesn't exist
+    touch "$GITHUB_OUTPUT"
+fi
+
 aggregate_sync_reports() {
     # Initialize counters
     local TOTAL_CHANGES=0
