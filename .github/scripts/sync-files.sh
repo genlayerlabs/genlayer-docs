@@ -8,6 +8,8 @@ echo "🔍 Arg count: $#"
 echo "🔍 PWD: $(pwd)"
 echo "🔍 RUNNER_TEMP: ${RUNNER_TEMP:-not set}"
 echo "🔍 GITHUB_OUTPUT: ${GITHUB_OUTPUT:-not set}"
+echo "🔍 Bash version: $BASH_VERSION"
+echo "🔍 Shell: $0"
 
 # Unified file synchronization script
 # Handles all sync types: changelog, config, api_gen, api_debug, api_ops
@@ -113,9 +115,11 @@ sync_files() {
     echo "🔍 Destination directory created"
     
     # Track existing files before sync
+    echo "🔍 About to declare associative array"
     declare -A existing_files
+    echo "🔍 Associative array declared successfully"
     while IFS= read -r file; do
-        [[ -n "$file" ]] && existing_files["$(basename "$file")"]="$file"
+        [ -n "$file" ] && existing_files["$(basename "$file")"]="$file"
     done < <(find "$dest_path" -name "*.mdx" -type f 2>/dev/null || true)
     
     # Track what we'll be syncing
