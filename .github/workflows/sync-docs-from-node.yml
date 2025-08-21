@@ -158,6 +158,15 @@ jobs:
           path: source-repo
           ref: ${{ needs.prepare.outputs.version }}
 
+      - name: Debug sync configuration
+        run: |
+          echo "🔍 Debugging sync configuration for: ${{ matrix.sync_type }}"
+          echo "📋 Config received:"
+          echo '${{ needs.prepare.outputs.sync_config }}'
+          echo ""
+          echo "🧪 Testing jq parsing:"
+          echo '${{ needs.prepare.outputs.sync_config }}' | jq -r '.paths.changelog.source' || echo "jq parsing failed"
+
       - name: Sync files based on matrix type
         id: sync
         uses: ./.github/actions/sync-files
