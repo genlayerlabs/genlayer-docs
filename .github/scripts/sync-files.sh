@@ -1,5 +1,5 @@
 #!/bin/bash
-set -euo pipefail
+set -eo pipefail
 
 # Unified file synchronization script
 # Handles all sync types: changelog, config, api_gen, api_debug, api_ops
