@@ -324,24 +324,41 @@ jobs:
             exit 0
           fi
       
-      - name: Create Pull Request
+      - name: Print diff of changes for PR
         if: steps.check_changes.outputs.has_changes == 'true'
-        env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          source .github/scripts/pr-utils.sh
+          echo "::group::📋 Diff of changes that will be included in the PR"
+          echo "Showing diff between main and current sync branch:"
+          echo ""
           
-          # Use aggregated sync reports and metrics
-          SYNC_REPORTS="${{ needs.aggregate-results.outputs.sync_reports }}"
+          # Show a concise summary first
+          echo "📊 Files changed:"
+          git diff --name-status main HEAD || git diff --name-status origin/main HEAD || echo "Could not determine diff with main branch"
+          echo ""
           
-          create_documentation_pr \
-            "${{ needs.prepare.outputs.version }}" \
-            '${{ needs.prepare.outputs.sync_config }}' \
-            "$SYNC_REPORTS" \
-            "${{ steps.get_results.outputs.total_changes }}" \
-            "${{ steps.get_results.outputs.total_added }}" \
-            "${{ steps.get_results.outputs.total_updated }}" \
-            "${{ steps.get_results.outputs.total_deleted }}"
+          # Show the actual diff with some formatting
+          echo "📝 Detailed changes:"
+          git diff main HEAD || git diff origin/main HEAD || echo "Could not show detailed diff with main branch"
+          echo "::endgroup::"
+      
+#      - name: Create Pull Request
+#        if: steps.check_changes.outputs.has_changes == 'true'
+#        env:
+#          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+#        run: |
+#          source .github/scripts/pr-utils.sh
+#
+#          # Use aggregated sync reports and metrics
+#          SYNC_REPORTS="${{ needs.aggregate-results.outputs.sync_reports }}"
+#
+#          create_documentation_pr \
+#            "${{ needs.prepare.outputs.version }}" \
+#            '${{ needs.prepare.outputs.sync_config }}' \
+#            "$SYNC_REPORTS" \
+#            "${{ steps.get_results.outputs.total_changes }}" \
+#            "${{ steps.get_results.outputs.total_added }}" \
+#            "${{ steps.get_results.outputs.total_updated }}" \
+#            "${{ steps.get_results.outputs.total_deleted }}"
 
   summary:
     name: 'Workflow Summary'
