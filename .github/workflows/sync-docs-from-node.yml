@@ -295,10 +295,9 @@ jobs:
           else
             echo "⚠️ Report file not found, creating empty artifact"
             mkdir -p artifacts
-            echo "## ${{ matrix.sync_type^}} Sync
-
-No sync operations performed.
-" > "artifacts/sync_report_${{ matrix.sync_type }}.md"
+            echo "## ${{ matrix.sync_type }} Sync" > "artifacts/sync_report_${{ matrix.sync_type }}.md"
+            echo "" >> "artifacts/sync_report_${{ matrix.sync_type }}.md"
+            echo "No sync operations performed." >> "artifacts/sync_report_${{ matrix.sync_type }}.md"
             echo "changes_${{ matrix.sync_type }}=0" >> "$GITHUB_OUTPUT"
           fi
 
