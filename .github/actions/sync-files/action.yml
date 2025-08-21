@@ -34,30 +34,39 @@ runs:
         CONFIG='${{ inputs.config }}'
         SYNC_TYPE='${{ inputs.sync_type }}'
         
+        echo "🔧 Setting up sync parameters for: $SYNC_TYPE"
+        echo "📋 Config received: $CONFIG"
+        
+        # Check if jq is available
+        if ! command -v jq &> /dev/null; then
+            echo "::error::jq command not found"
+            exit 1
+        fi
+        
         # Extract paths and settings based on sync type
         case "$SYNC_TYPE" in
           "changelog")
-            SOURCE_PATH="source-repo/$(echo "$CONFIG" | jq -r '.paths.changelog.source')"
-            DEST_PATH="$(echo "$CONFIG" | jq -r '.paths.changelog.destination')"
+            SOURCE_PATH="source-repo/$(echo "$CONFIG" | jq -r '.paths.changelog.source' || echo 'docs/changelog')"
+            DEST_PATH="$(echo "$CONFIG" | jq -r '.paths.changelog.destination' || echo 'content/validators/changelog')"
             FILE_FILTER=".*"
             ;;
           "config")
-            SOURCE_FILE="source-repo/$(echo "$CONFIG" | jq -r '.paths.config.source')"
-            DEST_FILE="$(echo "$CONFIG" | jq -r '.paths.config.destination')"
+            SOURCE_FILE="source-repo/$(echo "$CONFIG" | jq -r '.paths.config.source' || echo 'configs/node/config.yaml.example')"
+            DEST_FILE="$(echo "$CONFIG" | jq -r '.paths.config.destination' || echo 'content/validators/config.yaml')"
             echo "source_file=$SOURCE_FILE" >> "$GITHUB_OUTPUT"
             echo "dest_file=$DEST_FILE" >> "$GITHUB_OUTPUT"
             echo "is_single_file=true" >> "$GITHUB_OUTPUT"
             exit 0
             ;;
           "api_gen")
-            SOURCE_PATH="source-repo/$(echo "$CONFIG" | jq -r '.paths.api_gen.source')"
-            DEST_PATH="$(echo "$CONFIG" | jq -r '.paths.api_gen.destination')"
-            FILE_FILTER="$(echo "$CONFIG" | jq -r '.filters.api_gen_regex')"
+            SOURCE_PATH="source-repo/$(echo "$CONFIG" | jq -r '.paths.api_gen.source' || echo 'docs/api/rpc')"
+            DEST_PATH="$(echo "$CONFIG" | jq -r '.paths.api_gen.destination' || echo 'pages/api-references/genlayer-node/gen')"
+            FILE_FILTER="$(echo "$CONFIG" | jq -r '.filters.api_gen_regex' || echo 'gen_(?!dbg_).*')"
             ;;
           "api_debug")
-            SOURCE_PATH="source-repo/$(echo "$CONFIG" | jq -r '.paths.api_debug.source')"
-            DEST_PATH="$(echo "$CONFIG" | jq -r '.paths.api_debug.destination')"
-            FILE_FILTER="$(echo "$CONFIG" | jq -r '.filters.api_debug_regex')"
+            SOURCE_PATH="source-repo/$(echo "$CONFIG" | jq -r '.paths.api_debug.source' || echo 'docs/api/rpc')"
+            DEST_PATH="$(echo "$CONFIG" | jq -r '.paths.api_debug.destination' || echo 'pages/api-references/genlayer-node/debug')"
+            FILE_FILTER="$(echo "$CONFIG" | jq -r '.filters.api_debug_regex' || echo 'gen_dbg_.*')"
             ;;
           *)
             echo "::error::Unknown sync type: $SYNC_TYPE"
@@ -65,10 +74,21 @@ runs:
             ;;
         esac
         
-        echo "source_path=$SOURCE_PATH" >> "$GITHUB_OUTPUT"
-        echo "dest_path=$DEST_PATH" >> "$GITHUB_OUTPUT"
-        echo "file_filter=$FILE_FILTER" >> "$GITHUB_OUTPUT"
-        echo "is_single_file=false" >> "$GITHUB_OUTPUT"
+        if [[ "$SYNC_TYPE" != "config" ]]; then
+          echo "📁 Source: $SOURCE_PATH"
+          echo "📁 Dest: $DEST_PATH"
+          echo "🔍 Filter: $FILE_FILTER"
+        else
+          echo "📁 Source file: $SOURCE_FILE"
+          echo "📁 Dest file: $DEST_FILE"
+        fi
+        
+        if [[ "$SYNC_TYPE" != "config" ]]; then
+          echo "source_path=$SOURCE_PATH" >> "$GITHUB_OUTPUT"
+          echo "dest_path=$DEST_PATH" >> "$GITHUB_OUTPUT"
+          echo "file_filter=$FILE_FILTER" >> "$GITHUB_OUTPUT"
+          echo "is_single_file=false" >> "$GITHUB_OUTPUT"
+        fi
 
     - name: Sync files
       id: sync
