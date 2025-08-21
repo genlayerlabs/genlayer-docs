@@ -226,12 +226,41 @@ jobs:
               if [[ -f "$report_file" ]]; then
                 echo "📄 Processing: $(basename "$report_file")"
                 
+                # Extract metrics from report content
+                REPORT_CONTENT=$(cat "$report_file")
+                
+                # Look for summary line: "Summary: X added, Y updated, Z deleted"
+                if echo "$REPORT_CONTENT" | grep -q "Summary:"; then
+                  SUMMARY_LINE=$(echo "$REPORT_CONTENT" | grep "Summary:" | head -1)
+                  echo "📊 Found summary: $SUMMARY_LINE"
+                  
+                  # Extract numbers using regex
+                  ADDED=$(echo "$SUMMARY_LINE" | grep -o '[0-9]\+ added' | grep -o '[0-9]\+' || echo "0")
+                  UPDATED=$(echo "$SUMMARY_LINE" | grep -o '[0-9]\+ updated' | grep -o '[0-9]\+' || echo "0")
+                  DELETED=$(echo "$SUMMARY_LINE" | grep -o '[0-9]\+ deleted' | grep -o '[0-9]\+' || echo "0")
+                  
+                  # Add to totals
+                  TOTAL_ADDED=$((TOTAL_ADDED + ADDED))
+                  TOTAL_UPDATED=$((TOTAL_UPDATED + UPDATED))
+                  TOTAL_DELETED=$((TOTAL_DELETED + DELETED))
+                  
+                  REPORT_TOTAL=$((ADDED + UPDATED + DELETED))
+                  TOTAL_CHANGES=$((TOTAL_CHANGES + REPORT_TOTAL))
+                  
+                  echo "📈 Report metrics: $ADDED added, $UPDATED updated, $DELETED deleted (total: $REPORT_TOTAL)"
+                elif echo "$REPORT_CONTENT" | grep -q "No.*updates found"; then
+                  echo "📝 No changes in this sync type"
+                  # Don't add anything to totals
+                else
+                  echo "⚠️ Could not parse metrics from report, assuming 1 change"
+                  TOTAL_CHANGES=$((TOTAL_CHANGES + 1))
+                fi
+                
                 # Append report content
                 if [[ -n "$ALL_REPORTS" ]]; then
                   ALL_REPORTS="$ALL_REPORTS"$'\n\n---\n\n'
                 fi
-                ALL_REPORTS="$ALL_REPORTS$(cat "$report_file")"
-                TOTAL_CHANGES=$((TOTAL_CHANGES + 1))  # Count each report as 1 change for now
+                ALL_REPORTS="$ALL_REPORTS$REPORT_CONTENT"
               else
                 echo "⚠️ No report files found matching pattern"
               fi
@@ -253,7 +282,7 @@ jobs:
           echo "$ALL_REPORTS" >> "$GITHUB_OUTPUT"
           echo "EOF" >> "$GITHUB_OUTPUT"
           
-          echo "📊 Aggregated totals: $TOTAL_CHANGES changes"
+          echo "📊 Aggregated totals: $TOTAL_CHANGES changes ($TOTAL_ADDED added, $TOTAL_UPDATED updated, $TOTAL_DELETED deleted)"
 
       - name: Store aggregated results
         id: collect
