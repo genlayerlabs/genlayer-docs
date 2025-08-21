@@ -146,16 +146,17 @@ jobs:
           git config user.email "github-actions[bot]@users.noreply.github.com"
 
       - name: Clone source repository
-        run: |
-          echo "📥 Cloning genlayer-node repository..."
-          git clone --filter=blob:none --sparse-checkout \
-            https://x-access-token:${{ secrets.NODE_REPO_TOKEN || secrets.GITHUB_TOKEN }}@github.com/genlayerlabs/genlayer-node.git \
-            source-repo
-          cd source-repo
-          git sparse-checkout set docs configs/node/config.yaml.example
-          git fetch --tags
-          git checkout ${{ needs.prepare.outputs.version }}
-          echo "✅ Source repository ready at version ${{ needs.prepare.outputs.version }}"
+        uses: actions/checkout@v4
+        with:
+          repository: genlayerlabs/genlayer-node
+          token: ${{ secrets.NODE_REPO_TOKEN || secrets.GITHUB_TOKEN }}
+          fetch-depth: 0
+          sparse-checkout: |
+            docs
+            configs/node/config.yaml.example
+          sparse-checkout-cone-mode: true
+          path: source-repo
+          ref: ${{ needs.prepare.outputs.version }}
 
       - name: Sync files based on matrix type
         id: sync
