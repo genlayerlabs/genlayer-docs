@@ -114,7 +114,7 @@ jobs:
           echo "✅ Preparation complete - ready to sync version: ${{ steps.detect_version.outputs.final_version }}"
 
   sync-files:
-    name: 'Sync Documentation Files'
+    name: 'Sync Files'
     runs-on: ubuntu-latest
     needs: prepare
     if: needs.prepare.outputs.should_continue == 'true'
