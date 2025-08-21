@@ -1,0 +1,104 @@
+# GenLayer Node API
+
+The GenLayer Node provides a [JSON-RPC API](https://www.jsonrpc.org/specification) for interacting with it. This API allows you to execute contract calls, retrieve transaction information, and perform various blockchain operations.
+
+## GenLayer Methods
+
+${genMethods.join('\n\n')}
+
+## Debug Methods
+
+These methods are available for debugging and testing purposes during development.
+
+${debugMethods.join('\n\n')}
+
+## Ethereum Compatibility
+
+The GenLayer Node also supports Ethereum-compatible methods that are proxied to the underlying infrastructure. These methods follow the standard [Ethereum JSON-RPC specification](https://ethereum.org/en/developers/docs/apis/json-rpc/) and are prefixed with `eth_`.
+
+**Examples of supported Ethereum methods:**
+
+- `eth_blockNumber`
+- `eth_getBalance`
+- `eth_sendTransaction`
+- `eth_call`
+- And other standard Ethereum JSON-RPC methods
+
+## zkSync Compatibility
+
+[zkSync-compatible](https://docs.zksync.io/zksync-protocol/api/zks-rpc) methods are also supported and proxied to the underlying infrastructure. These methods are prefixed with `zksync_`.
+
+## Usage Examples
+
+### cURL
+
+```bash
+# Test connectivity
+curl -X POST http://localhost:9151 \
+  -H "Content-Type: application/json" \
+  -d '{
+    "jsonrpc": "2.0",
+    "method": "gen_dbg_ping",
+    "params": [],
+    "id": 1
+  }'
+
+# Execute a contract call
+curl -X POST http://localhost:9151 \
+  -H "Content-Type: application/json" \
+  -d '{
+    "jsonrpc": "2.0",
+    "method": "gen_call",
+    "params": [{
+      "from": "0x742d35Cc6634C0532925a3b8D4C9db96c4b4d8b6",
+      "to": "0x742d35Cc6634C0532925a3b8D4C9db96c4b4d8b6",
+      "data": "0x70a08231000000000000000000000000742d35cc6634c0532925a3b8d4c9db96c4b4d8b6",
+      "type": "read",
+      "transaction_hash_variant": "latest-nonfinal"
+    }],
+    "id": 1
+  }'
+
+# Get contract schema
+curl -X POST http://localhost:9151 \
+  -H "Content-Type: application/json" \
+  -d '{
+    "jsonrpc": "2.0",
+    "method": "gen_getContractSchema",
+    "params": [{
+      "code": "IyB7ICJEZXBlbmRzIjogInB5LWdlbmxheWVyOnRlc3QiIH0KCmZyb20gZ2VubGF5ZXIgaW1wb3J0ICoKCgojIGNvbnRyYWN0IGNsYXNzCmNsYXNzIFN0b3JhZ2UoZ2wuQ29udHJhY3QpOgogICAgc3RvcmFnZTogc3RyCgogICAgIyBjb25zdHJ1Y3RvcgogICAgZGVmIF9faW5pdF9fKHNlbGYsIGluaXRpYWxfc3RvcmFnZTogc3RyKToKICAgICAgICBzZWxmLnN0b3JhZ2UgPSBpbml0aWFsX3N0b3JhZ2UKCiAgICAjIHJlYWQgbWV0aG9kcyBtdXN0IGJlIGFubm90YXRlZCB3aXRoIHZpZXcKICAgIEBnbC5wdWJsaWMudmlldwogICAgZGVmIGdldF9zdG9yYWdlKHNlbGYpIC0+IHN0cjoKICAgICAgICByZXR1cm4gc2VsZi5zdG9yYWdlCgogICAgIyB3cml0ZSBtZXRob2QKICAgIEBnbC5wdWJsaWMud3JpdGUKICAgIGRlZiB1cGRhdGVfc3RvcmFnZShzZWxmLCBuZXdfc3RvcmFnZTogc3RyKSAtPiBOb25lOgogICAgICAgIHNlbGYuc3RvcmFnZSA9IG5ld19zdG9yYWdlCg=="
+    }],
+    "id": 1
+  }'
+
+# Get debug trie information
+curl -X POST http://localhost:9151 \
+  -H "Content-Type: application/json" \
+  -d '{
+    "jsonrpc": "2.0",
+    "method": "gen_dbg_trie",
+    "params": [{
+      "txID": "0x742d35Cc6634C0532925a3b8D4C9db96c4b4d8b6742d35Cc6634C0532925a3b8",
+      "round": 0
+    }],
+    "id": 1
+  }'
+
+# Get transaction receipt
+curl -X POST http://localhost:9151 \
+  -H "Content-Type: application/json" \
+  -d '{
+    "jsonrpc": "2.0",
+    "method": "gen_getTransactionReceipt",
+    "params": [{
+      "txId": "0x635060dd514082096d18c8eb64682cc6a944f9ce1ae6982febf7a71e9f656f49"
+    }],
+    "id": 1
+  }'
+```
+
+## Ops Methods
+
+These methods provide operational endpoints for monitoring the GenLayer node.
+
+${opsMethods.join('\n\n')}

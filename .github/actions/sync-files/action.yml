@@ -1,0 +1,109 @@
+name: 'Sync Files'
+description: 'Generic file synchronization with regex filtering - eliminates code duplication'
+inputs:
+  sync_type:
+    description: 'Type of sync operation (changelog, config, api_gen, api_debug)'
+    required: true
+  version:
+    description: 'Version being synced'
+    required: true
+  config:
+    description: 'Sync configuration JSON'
+    required: true
+outputs:
+  files_added:
+    description: 'Number of files added'
+    value: ${{ steps.sync.outputs.added }}
+  files_updated:
+    description: 'Number of files updated'
+    value: ${{ steps.sync.outputs.updated }}
+  files_deleted:
+    description: 'Number of files deleted'
+    value: ${{ steps.sync.outputs.deleted }}
+  total_changes:
+    description: 'Total number of changes'
+    value: ${{ steps.sync.outputs.total }}
+runs:
+  using: 'composite'
+  steps:
+    - name: Setup sync parameters
+      id: setup
+      shell: bash
+      run: |
+        # Parse configuration for this sync type
+        CONFIG='${{ inputs.config }}'
+        SYNC_TYPE='${{ inputs.sync_type }}'
+        
+        # Extract paths and settings based on sync type
+        case "$SYNC_TYPE" in
+          "changelog")
+            SOURCE_PATH="source-repo/$(echo "$CONFIG" | jq -r '.paths.changelog.source')"
+            DEST_PATH="$(echo "$CONFIG" | jq -r '.paths.changelog.destination')"
+            FILE_FILTER=".*"
+            ;;
+          "config")
+            SOURCE_FILE="source-repo/$(echo "$CONFIG" | jq -r '.paths.config.source')"
+            DEST_FILE="$(echo "$CONFIG" | jq -r '.paths.config.destination')"
+            echo "source_file=$SOURCE_FILE" >> "$GITHUB_OUTPUT"
+            echo "dest_file=$DEST_FILE" >> "$GITHUB_OUTPUT"
+            echo "is_single_file=true" >> "$GITHUB_OUTPUT"
+            exit 0
+            ;;
+          "api_gen")
+            SOURCE_PATH="source-repo/$(echo "$CONFIG" | jq -r '.paths.api_gen.source')"
+            DEST_PATH="$(echo "$CONFIG" | jq -r '.paths.api_gen.destination')"
+            FILE_FILTER="$(echo "$CONFIG" | jq -r '.filters.api_gen_regex')"
+            ;;
+          "api_debug")
+            SOURCE_PATH="source-repo/$(echo "$CONFIG" | jq -r '.paths.api_debug.source')"
+            DEST_PATH="$(echo "$CONFIG" | jq -r '.paths.api_debug.destination')"
+            FILE_FILTER="$(echo "$CONFIG" | jq -r '.filters.api_debug_regex')"
+            ;;
+          *)
+            echo "::error::Unknown sync type: $SYNC_TYPE"
+            exit 1
+            ;;
+        esac
+        
+        echo "source_path=$SOURCE_PATH" >> "$GITHUB_OUTPUT"
+        echo "dest_path=$DEST_PATH" >> "$GITHUB_OUTPUT"
+        echo "file_filter=$FILE_FILTER" >> "$GITHUB_OUTPUT"
+        echo "is_single_file=false" >> "$GITHUB_OUTPUT"
+
+    - name: Sync files
+      id: sync
+      shell: bash
+      run: |
+        set -euo pipefail
+        
+        # Load sync utilities
+        source .github/scripts/sync-files.sh
+        
+        REPORT_FILE="${{ runner.temp }}/sync_report_${{ inputs.sync_type }}.md"
+        
+        # Handle single file vs directory sync
+        if [[ "${{ steps.setup.outputs.is_single_file }}" == "true" ]]; then
+          # Special handling for config file
+          source .github/scripts/config-processor.sh
+          process_config_file \
+            "${{ steps.setup.outputs.source_file }}" \
+            "${{ steps.setup.outputs.dest_file }}" \
+            "$REPORT_FILE"
+        else
+          # Standard file sync
+          sync_files \
+            "${{ steps.setup.outputs.source_path }}" \
+            "${{ steps.setup.outputs.dest_path }}" \
+            "${{ steps.setup.outputs.file_filter }}" \
+            "${{ inputs.sync_type }}" \
+            "$REPORT_FILE"
+        fi
+        
+        echo "Sync completed for ${{ inputs.sync_type }}"
+        
+        # Store report content for later use
+        if [[ -f "$REPORT_FILE" ]]; then
+          echo "report_content<<EOF" >> "$GITHUB_OUTPUT"
+          cat "$REPORT_FILE" >> "$GITHUB_OUTPUT"
+          echo "EOF" >> "$GITHUB_OUTPUT"
+        fi
