@@ -197,6 +197,9 @@ jobs:
       total_deleted: ${{ steps.calculate.outputs.total_deleted }}
       sync_reports: ${{ steps.collect.outputs.all_reports }}
     steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        
       - name: Download all sync reports
         uses: actions/download-artifact@v4
         continue-on-error: true
