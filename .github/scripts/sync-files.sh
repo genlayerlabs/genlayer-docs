@@ -91,9 +91,10 @@ sync_files() {
     echo "🔍 Testing directory with simple test command"
     test -d "$source_path"
     echo "🔍 Test result: $?"
+    echo "🔍 About to run if statement: [ ! -d \"$source_path\" ]"
     
     if [ ! -d "$source_path" ]; then
-        echo "🔍 Source directory does not exist"
+        echo "🔍 BRANCH: Source directory does not exist"
         # Use simpler path substitution to avoid parameter expansion issues
         local short_path=$(echo "$source_path" | sed 's|^source-repo/||')
         echo "- Source directory not found: \`$short_path\`" >> "$report_file"
@@ -101,10 +102,15 @@ sync_files() {
         echo "updated=0" >> "$GITHUB_OUTPUT"
         echo "deleted=0" >> "$GITHUB_OUTPUT"
         echo "total=0" >> "$GITHUB_OUTPUT"
+        echo "🔍 Returning from missing directory branch"
         return 0
+    else
+        echo "🔍 BRANCH: Source directory EXISTS - proceeding with sync"
     fi
     
+    echo "🔍 Creating destination directory: $dest_path"
     mkdir -p "$dest_path"
+    echo "🔍 Destination directory created"
     
     # Track existing files before sync
     declare -A existing_files
