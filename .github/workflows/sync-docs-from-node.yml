@@ -228,34 +228,44 @@ jobs:
                 echo "updated=$UPDATED" >> "$GITHUB_OUTPUT"
                 echo "deleted=$DELETED" >> "$GITHUB_OUTPUT"
                 echo "total=$TOTAL" >> "$GITHUB_OUTPUT"
+                
+                # Store total for aggregation
+                echo "$TOTAL" > "${{ runner.temp }}/changes_${{ matrix.sync_type }}.txt"
               else
                 echo "- Source changelog directory not found" >> "$SYNC_REPORT"
                 echo "added=0" >> "$GITHUB_OUTPUT"
                 echo "updated=0" >> "$GITHUB_OUTPUT"
                 echo "deleted=0" >> "$GITHUB_OUTPUT"
                 echo "total=0" >> "$GITHUB_OUTPUT"
+                echo "0" > "${{ runner.temp }}/changes_${{ matrix.sync_type }}.txt"
               fi
               ;;
             "config")
-              echo "Config sync - simplified for now"
+              echo "## Config File Sync" >> "$SYNC_REPORT"
+              echo "- Config sync - simplified for now" >> "$SYNC_REPORT"
               echo "added=0" >> "$GITHUB_OUTPUT"
               echo "updated=0" >> "$GITHUB_OUTPUT"
               echo "deleted=0" >> "$GITHUB_OUTPUT"
               echo "total=0" >> "$GITHUB_OUTPUT"
+              echo "0" > "${{ runner.temp }}/changes_${{ matrix.sync_type }}.txt"
               ;;
             "api_gen")
-              echo "API gen sync - simplified for now"
+              echo "## API Gen Methods Sync" >> "$SYNC_REPORT"
+              echo "- API gen sync - simplified for now" >> "$SYNC_REPORT"
               echo "added=0" >> "$GITHUB_OUTPUT"
               echo "updated=0" >> "$GITHUB_OUTPUT"
               echo "deleted=0" >> "$GITHUB_OUTPUT"
               echo "total=0" >> "$GITHUB_OUTPUT"
+              echo "0" > "${{ runner.temp }}/changes_${{ matrix.sync_type }}.txt"
               ;;
             "api_debug")
-              echo "API debug sync - simplified for now"
+              echo "## API Debug Methods Sync" >> "$SYNC_REPORT"
+              echo "- API debug sync - simplified for now" >> "$SYNC_REPORT"
               echo "added=0" >> "$GITHUB_OUTPUT"
               echo "updated=0" >> "$GITHUB_OUTPUT"
               echo "deleted=0" >> "$GITHUB_OUTPUT"
               echo "total=0" >> "$GITHUB_OUTPUT"
+              echo "0" > "${{ runner.temp }}/changes_${{ matrix.sync_type }}.txt"
               ;;
           esac
 
