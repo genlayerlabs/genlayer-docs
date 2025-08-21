@@ -131,7 +131,7 @@ jobs:
           echo "✅ Source repository ready at version ${{ needs.prepare.outputs.version }}"
 
       - name: Sync files based on matrix type
-        id: sync_${{ matrix.sync_type }}
+        id: sync
         uses: ./.github/actions/sync-files
         with:
           sync_type: ${{ matrix.sync_type }}
