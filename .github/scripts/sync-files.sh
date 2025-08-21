@@ -118,9 +118,24 @@ sync_files() {
     echo "🔍 About to declare associative array"
     declare -A existing_files
     echo "🔍 Associative array declared successfully"
-    while IFS= read -r file; do
-        [ -n "$file" ] && existing_files["$(basename "$file")"]="$file"
-    done < <(find "$dest_path" -name "*.mdx" -type f 2>/dev/null || true)
+    echo "🔍 Finding existing files in: $dest_path"
+    
+    # Use temporary file to avoid process substitution issues
+    local temp_file="${RUNNER_TEMP}/existing_files_$$"
+    if [ -d "$dest_path" ]; then
+        find "$dest_path" -name "*.mdx" -type f 2>/dev/null > "$temp_file" || true
+        echo "🔍 Found files written to temp file"
+        
+        while IFS= read -r file; do
+            if [ -n "$file" ]; then
+                existing_files["$(basename "$file")"]="$file"
+                echo "🔍 Tracked existing file: $(basename "$file")"
+            fi
+        done < "$temp_file"
+        
+        rm -f "$temp_file"
+    fi
+    echo "🔍 Finished tracking existing files"
     
     # Track what we'll be syncing
     local added=0 updated=0 deleted=0
