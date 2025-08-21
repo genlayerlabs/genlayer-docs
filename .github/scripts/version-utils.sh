@@ -14,11 +14,11 @@ detect_latest_version() {
     latest_tag=$(git tag -l | grep -E '^v[0-9]+\.[0-9]+\.[0-9]+$' | sort -V | tail -n1)
     
     if [[ -z "$latest_tag" ]]; then
-        echo "::error::No tags found in repository"
+        echo "::error::No tags found in repository" >&2
         return 1
     fi
     
-    echo "Detected latest tag: $latest_tag"
+    echo "Detected latest tag: $latest_tag" >&2
     echo "$latest_tag"
 }
 
