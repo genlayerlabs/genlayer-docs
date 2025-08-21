@@ -61,7 +61,33 @@ jobs:
         id: extract_params
         run: |
           source .github/scripts/version-utils.sh
-          extract_sync_parameters
+          
+          # Determine parameters based on trigger type
+          if [[ "${{ github.event_name }}" == "repository_dispatch" ]]; then
+            VERSION="${{ github.event.client_payload.version }}"
+            CHANGELOG_PATH="${{ github.event.client_payload.changelog_path }}"
+            API_GEN_PATH="${{ github.event.client_payload.api_gen_path }}"
+            API_DEBUG_PATH="${{ github.event.client_payload.api_debug_path }}"
+            API_GEN_REGEX="${{ github.event.client_payload.api_gen_regex }}"
+            API_DEBUG_REGEX="${{ github.event.client_payload.api_debug_regex }}"
+          else
+            VERSION="${{ github.event.inputs.version }}"
+            CHANGELOG_PATH="docs/changelog"
+            API_GEN_PATH="${{ github.event.inputs.api_gen_path }}"
+            API_DEBUG_PATH="${{ github.event.inputs.api_debug_path }}"
+            API_GEN_REGEX="${{ github.event.inputs.api_gen_regex }}"
+            API_DEBUG_REGEX="${{ github.event.inputs.api_debug_regex }}"
+          fi
+          
+          # Use defaults if values are empty
+          VERSION="${VERSION:-latest}"
+          CHANGELOG_PATH="${CHANGELOG_PATH:-docs/changelog}"
+          API_GEN_PATH="${API_GEN_PATH:-docs/api/rpc}"
+          API_DEBUG_PATH="${API_DEBUG_PATH:-docs/api/rpc}"
+          API_GEN_REGEX="${API_GEN_REGEX:-gen_(?!dbg_).*}"
+          API_DEBUG_REGEX="${API_DEBUG_REGEX:-gen_dbg_.*}"
+          
+          extract_sync_parameters "${{ github.event_name }}" "$VERSION" "$CHANGELOG_PATH" "$API_GEN_PATH" "$API_DEBUG_PATH" "$API_GEN_REGEX" "$API_DEBUG_REGEX"
 
       - name: Clone source repository for version detection
         uses: actions/checkout@v4

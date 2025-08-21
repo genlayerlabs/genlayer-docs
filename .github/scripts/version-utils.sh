@@ -38,30 +38,22 @@ validate_version() {
 
 # Extract sync parameters from workflow inputs
 extract_sync_parameters() {
-    local version=""
+    local event_name="${1:-}"
+    local version="${2:-latest}"
+    local changelog_path="${3:-docs/changelog}"
+    local api_gen_path="${4:-docs/api/rpc}"
+    local api_debug_path="${5:-docs/api/rpc}"
+    local api_gen_regex="${6:-gen_(?!dbg_).*}"
+    local api_debug_regex="${7:-gen_dbg_.*}"
     
-    if [[ "${{ github.event_name }}" == "repository_dispatch" ]]; then
-        # Extract from repository_dispatch payload
-        version="${{ github.event.client_payload.version }}"
-        if [[ -z "$version" ]]; then
-            version="latest"
-        fi
-        
-        echo "changelog_path=${{ github.event.client_payload.changelog_path || 'docs/changelog' }}" >> "$GITHUB_OUTPUT"
-        echo "api_gen_path=${{ github.event.client_payload.api_gen_path || 'docs/api/rpc' }}" >> "$GITHUB_OUTPUT"
-        echo "api_debug_path=${{ github.event.client_payload.api_debug_path || 'docs/api/rpc' }}" >> "$GITHUB_OUTPUT"
-        echo "api_gen_regex=${{ github.event.client_payload.api_gen_regex || 'gen_(?!dbg_).*' }}" >> "$GITHUB_OUTPUT"
-        echo "api_debug_regex=${{ github.event.client_payload.api_debug_regex || 'gen_dbg_.*' }}" >> "$GITHUB_OUTPUT"
-    else
-        # Extract from workflow_dispatch inputs
-        version="${{ github.event.inputs.version }}"
-        
-        echo "changelog_path=docs/changelog" >> "$GITHUB_OUTPUT"
-        echo "api_gen_path=${{ github.event.inputs.api_gen_path || 'docs/api/rpc' }}" >> "$GITHUB_OUTPUT"
-        echo "api_debug_path=${{ github.event.inputs.api_debug_path || 'docs/api/rpc' }}" >> "$GITHUB_OUTPUT"
-        echo "api_gen_regex=${{ github.event.inputs.api_gen_regex || 'gen_(?!dbg_).*' }}" >> "$GITHUB_OUTPUT"
-        echo "api_debug_regex=${{ github.event.inputs.api_debug_regex || 'gen_dbg_.*' }}" >> "$GITHUB_OUTPUT"
-    fi
+    echo "📋 Extracting sync parameters for event: $event_name"
+    
+    # Output extracted parameters
+    echo "changelog_path=$changelog_path" >> "$GITHUB_OUTPUT"
+    echo "api_gen_path=$api_gen_path" >> "$GITHUB_OUTPUT"
+    echo "api_debug_path=$api_debug_path" >> "$GITHUB_OUTPUT"
+    echo "api_gen_regex=$api_gen_regex" >> "$GITHUB_OUTPUT"
+    echo "api_debug_regex=$api_debug_regex" >> "$GITHUB_OUTPUT"
     
     # Validate and output the requested version
     validate_version "$version"
