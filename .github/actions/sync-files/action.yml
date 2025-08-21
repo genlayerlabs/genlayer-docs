@@ -27,6 +27,10 @@ inputs:
     description: 'Regex pattern to filter API debug files'
     required: false
     default: 'gen_dbg_.*'
+  api_ops_path:
+    description: 'Path to API ops files in source repo'
+    required: false
+    default: 'docs/api/ops'
 outputs:
   files_added:
     description: 'Number of files added'
@@ -241,6 +245,84 @@ runs:
               TOTAL=$((ADDED + UPDATED + DELETED))
               if [ $TOTAL -eq 0 ]; then
                 echo "- No ${{ inputs.sync_type }} updates found" >> "$SYNC_REPORT"
+              else
+                echo "" >> "$SYNC_REPORT"
+                echo "Summary: $ADDED added, $UPDATED updated, $DELETED deleted" >> "$SYNC_REPORT"
+              fi
+              
+              echo "added=$ADDED" >> "$GITHUB_OUTPUT"
+              echo "updated=$UPDATED" >> "$GITHUB_OUTPUT"
+              echo "deleted=$DELETED" >> "$GITHUB_OUTPUT"
+              echo "total=$TOTAL" >> "$GITHUB_OUTPUT"
+              
+              # Store total for aggregation
+              echo "$TOTAL" > "${{ runner.temp }}/changes_${{ inputs.sync_type }}.txt"
+            else
+              echo "- Source directory not found: $SOURCE_PATH" >> "$SYNC_REPORT"
+              echo "added=0" >> "$GITHUB_OUTPUT"
+              echo "updated=0" >> "$GITHUB_OUTPUT"
+              echo "deleted=0" >> "$GITHUB_OUTPUT"
+              echo "total=0" >> "$GITHUB_OUTPUT"
+              echo "0" > "${{ runner.temp }}/changes_${{ inputs.sync_type }}.txt"
+            fi
+            ;;
+            
+          "api_ops")
+            SOURCE_PATH="source-repo/${{ inputs.api_ops_path }}"
+            DEST_PATH="pages/api-references/genlayer-node/ops"
+            TITLE="API Ops Sync"
+            
+            echo "## $TITLE" >> "$SYNC_REPORT"
+            echo "" >> "$SYNC_REPORT"
+            
+            if [ -d "$SOURCE_PATH" ]; then
+              mkdir -p "$DEST_PATH"
+              
+              # Track existing files
+              declare -A EXISTING_FILES
+              while IFS= read -r file; do
+                [ -n "$file" ] && EXISTING_FILES["$(basename "$file")"]="$file"
+              done < <(find "$DEST_PATH" -name "*.mdx" -type f 2>/dev/null || true)
+              
+              ADDED=0
+              UPDATED=0
+              
+              # Process all ops files (no regex filter needed)
+              for file in "$SOURCE_PATH"/*.mdx "$SOURCE_PATH"/*.md; do
+                if [ -f "$file" ]; then
+                  basename_file=$(basename "$file")
+                  basename_no_ext=$(echo "$basename_file" | sed 's/\.[^.]*$//')
+                  dest_filename="${basename_no_ext}.mdx"
+                  dest_path="$DEST_PATH/$dest_filename"
+
+                  if [ -f "$dest_path" ]; then
+                    if ! cmp -s "$file" "$dest_path"; then
+                      cp "$file" "$dest_path"
+                      echo "- Updated: \`$dest_filename\`" >> "$SYNC_REPORT"
+                      UPDATED=$((UPDATED + 1))
+                    fi
+                    unset EXISTING_FILES["$dest_filename"]
+                  else
+                    cp "$file" "$dest_path"
+                    echo "- Added: \`$dest_filename\`" >> "$SYNC_REPORT"
+                    ADDED=$((ADDED + 1))
+                  fi
+                fi
+              done
+              
+              # Remove orphaned files
+              DELETED=0
+              for dest_file in "${EXISTING_FILES[@]}"; do
+                if [ -f "$dest_file" ]; then
+                  rm "$dest_file"
+                  printf -- "- Deleted: \`%s\`\n" "$(basename "$dest_file")" >> "$SYNC_REPORT"
+                  DELETED=$((DELETED + 1))
+                fi
+              done
+              
+              TOTAL=$((ADDED + UPDATED + DELETED))
+              if [ $TOTAL -eq 0 ]; then
+                echo "- No ops API updates found" >> "$SYNC_REPORT"
               else
                 echo "" >> "$SYNC_REPORT"
                 echo "Summary: $ADDED added, $UPDATED updated, $DELETED deleted" >> "$SYNC_REPORT"

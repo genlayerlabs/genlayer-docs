@@ -25,6 +25,10 @@ on:
         description: 'Regex pattern to filter API debug files (e.g., "gen_dbg_.*")'
         required: false
         default: 'gen_dbg_.*'
+      api_ops_path:
+        description: 'Path to API ops files in source repo'
+        required: false
+        default: 'docs/api/ops'
 
 # Prevent concurrent runs of the same workflow
 concurrency:
@@ -122,7 +126,7 @@ jobs:
     if: needs.prepare.outputs.should_continue == 'true'
     strategy:
       matrix:
-        sync_type: [changelog, config, api_gen, api_debug]
+        sync_type: [changelog, config, api_gen, api_debug, api_ops]
       fail-fast: false
     steps:
       - name: Checkout documentation repository
@@ -169,6 +173,7 @@ jobs:
           changelog_path: docs/changelog
           api_gen_path: docs/api/rpc  
           api_debug_path: docs/api/rpc
+          api_ops_path: docs/api/ops
           api_gen_regex: 'gen_(?!dbg_).*'
           api_debug_regex: 'gen_dbg_.*'
 
