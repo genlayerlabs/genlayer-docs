@@ -34,6 +34,10 @@ on:
         required: false
         default: 'docs/api/ops'
 
+# Global environment variables
+env:
+  CLEANUP_ARTIFACTS: true
+
 # Prevent concurrent runs of the same workflow
 concurrency:
   group: sync-docs-${{ github.ref }}-${{ github.event.inputs.version || github.event.client_payload.version || 'latest' }}
@@ -408,12 +412,12 @@ jobs:
           
           # Sync with rsync --delete to handle file deletions properly
           if [[ -d temp-merged/content/validators ]]; then
-            echo "Syncing content/validators/ (with deletions)..."
+            echo "Syncing content/validators/..."
             rsync -av --delete temp-merged/content/validators/ content/validators/
           fi
           
           if [[ -d temp-merged/pages/api-references ]]; then
-            echo "Syncing pages/api-references/ (with deletions)..."
+            echo "Syncing pages/api-references/..."
             rsync -av --delete temp-merged/pages/api-references/ pages/api-references/
           fi
           
@@ -500,17 +504,17 @@ jobs:
           
           # Sync with rsync --delete to handle file deletions properly
           if [[ -d temp-final/content/validators ]]; then
-            echo "Syncing content/validators/ (with deletions)..."
+            echo "Syncing content/validators/..."
             rsync -av --delete temp-final/content/validators/ content/validators/
           fi
           
           if [[ -d temp-final/pages/api-references ]]; then
-            echo "Syncing pages/api-references/ (with deletions)..."
+            echo "Syncing pages/api-references/..."
             rsync -av --delete temp-final/pages/api-references/ pages/api-references/
           fi
           
           if [[ -d temp-final/pages/validators ]]; then
-            echo "Syncing pages/validators/ (with deletions)..."
+            echo "Syncing pages/validators/..."
             rsync -av --delete temp-final/pages/validators/ pages/validators/
           fi
           
@@ -716,3 +720,50 @@ jobs:
               echo "**Result:** $total_changes changes detected but no PR created" >> $GITHUB_STEP_SUMMARY
             fi
           fi
+
+  cleanup:
+    name: 'Cleanup Artifacts'
+    runs-on: ubuntu-latest
+    needs: [prepare, aggregate-results, generate-docs, create-pr, summary]
+    if: always() && (needs.create-pr.result == 'success' || needs.summary.result == 'success')
+    steps:
+      - name: Delete intermediate artifacts
+        if: env.CLEANUP_ARTIFACTS == 'true'
+        run: |
+          echo "🧹 Cleaning up intermediate artifacts..."
+          
+          # List of intermediate artifacts to clean up
+          artifacts_to_cleanup=(
+            "synced-files-changelog"
+            "synced-files-config" 
+            "synced-files-api_gen"
+            "synced-files-api_debug"
+            "synced-files-api_ops"
+            "synced-files-merged"
+            "sync-reports-changelog"
+            "sync-reports-config"
+            "sync-reports-api_gen" 
+            "sync-reports-api_debug"
+            "sync-reports-api_ops"
+          )
+          
+          # Keep synced-files-final as it contains the final result
+          echo "Keeping synced-files-final artifact (contains final result)"
+          
+          for artifact in "${artifacts_to_cleanup[@]}"; do
+            echo "🗑️ Attempting to delete artifact: $artifact"
+            if gh api repos/${{ github.repository }}/actions/runs/${{ github.run_id }}/artifacts --jq ".artifacts[] | select(.name==\"$artifact\") | .id" | while read artifact_id; do
+              if [[ -n "$artifact_id" ]]; then
+                gh api --method DELETE repos/${{ github.repository }}/actions/artifacts/$artifact_id
+                echo "   ✅ Deleted artifact: $artifact (ID: $artifact_id)"
+              fi
+            done; then
+              echo "   ✅ Processed artifact: $artifact"
+            else
+              echo "   ℹ️ Artifact not found or already deleted: $artifact"
+            fi
+          done
+          
+          echo "🎉 Artifact cleanup completed"
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
