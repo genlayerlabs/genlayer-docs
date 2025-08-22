@@ -51,7 +51,8 @@ aggregate_sync_reports() {
                     TOTAL_CHANGES=$((TOTAL_CHANGES + REPORT_TOTAL))
                     
                 elif echo "$REPORT_CONTENT" | grep -q "No.*updates found"; then
-                    # Don't add anything to totals
+                    # Don't add anything to totals  
+                    :  # no-op
                 else
                     echo "⚠️ Could not parse metrics from report, assuming 1 change"
                     TOTAL_CHANGES=$((TOTAL_CHANGES + 1))
