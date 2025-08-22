@@ -1,16 +1,6 @@
 #!/bin/bash
 set -e
 
-echo "🔍 SYNC SCRIPT STARTED"
-echo "🔍 Script: $0"
-echo "🔍 Args: $*"
-echo "🔍 Arg count: $#"
-echo "🔍 PWD: $(pwd)"
-echo "🔍 RUNNER_TEMP: ${RUNNER_TEMP:-not set}"
-echo "🔍 GITHUB_OUTPUT: ${GITHUB_OUTPUT:-not set}"
-echo "🔍 Bash version: $BASH_VERSION"
-echo "🔍 Shell: $0"
-
 # Unified file synchronization script
 # Handles all sync types: changelog, config, api_gen, api_debug, api_ops
 # Can be used as a library (sourced) or executed directly with arguments
@@ -18,7 +8,6 @@ echo "🔍 Shell: $0"
 # Set default temp directory if RUNNER_TEMP is not available (for local testing)
 if [[ -z "${RUNNER_TEMP:-}" ]]; then
     RUNNER_TEMP="${TMPDIR:-/tmp}"
-    echo "🔍 Set RUNNER_TEMP to: $RUNNER_TEMP"
 fi
 
 # Set default output file if GITHUB_OUTPUT is not available (for local testing)
@@ -26,7 +15,6 @@ if [[ -z "${GITHUB_OUTPUT:-}" ]]; then
     GITHUB_OUTPUT="${TMPDIR:-/tmp}/github_output.txt"
     # Create the file if it doesn't exist
     touch "$GITHUB_OUTPUT"
-    echo "🔍 Set GITHUB_OUTPUT to: $GITHUB_OUTPUT"
 fi
 
 # Pattern matching function (supports both perl and grep fallback)
@@ -62,8 +50,6 @@ is_excluded_file() {
 
 # Generic file synchronization function
 sync_files() {
-    echo "🔍 SYNC_FILES FUNCTION STARTED"
-    echo "🔍 sync_files args: $*"
     
     local source_path="$1"
     local dest_path="$2"
@@ -71,14 +57,8 @@ sync_files() {
     local sync_type="$4"
     local report_file="$5"
     
-    echo "🔍 source_path: $source_path"
-    echo "🔍 dest_path: $dest_path"
-    echo "🔍 file_filter: $file_filter"
-    echo "🔍 sync_type: $sync_type"
-    echo "🔍 report_file: $report_file"
     
     # Get proper title for sync type
-    echo "🔍 Getting sync title for: $sync_type"
     local sync_title
     case "$sync_type" in
         "changelog") sync_title="Changelog" ;;
@@ -88,30 +68,16 @@ sync_files() {
         "api_ops") sync_title="API Ops Methods" ;;
         *) sync_title="$(echo "$sync_type" | tr '[:lower:]' '[:upper:]')" ;;
     esac
-    echo "🔍 sync_title resolved to: $sync_title"
-    echo "🔍 Writing to report_file: $report_file"
     echo "## ${sync_title} Sync" >> "$report_file"
-    echo "🔍 Successfully wrote title to report file"
-    echo "🔍 Checking file_filter: $file_filter"
     if [[ "$file_filter" != ".*" ]]; then
-        echo "🔍 Writing filter info to report"
         printf "Using regex filter: \`%s\`\n" "$file_filter" >> "$report_file"
-        echo "🔍 Filter info written"
     else
-        echo "🔍 No filter info needed (filter is .*)"
     fi
-    echo "🔍 Adding empty line to report"
     echo "" >> "$report_file"
-    echo "🔍 Empty line added"
     
-    echo "🔍 Checking if source directory exists: $source_path"
-    echo "🔍 Testing directory with simple test command"
     test -d "$source_path"
-    echo "🔍 Test result: $?"
-    echo "🔍 About to run if statement: [ ! -d \"$source_path\" ]"
     
     if [ ! -d "$source_path" ]; then
-        echo "🔍 BRANCH: Source directory does not exist"
         # Use simpler path substitution to avoid parameter expansion issues
         local short_path=$(echo "$source_path" | sed 's|^source-repo/||')
         echo "- Source directory not found: \`$short_path\`" >> "$report_file"
@@ -119,45 +85,33 @@ sync_files() {
         echo "updated=0" >> "$GITHUB_OUTPUT"
         echo "deleted=0" >> "$GITHUB_OUTPUT"
         echo "total=0" >> "$GITHUB_OUTPUT"
-        echo "🔍 Returning from missing directory branch"
         return 0
     else
-        echo "🔍 BRANCH: Source directory EXISTS - proceeding with sync"
     fi
     
-    echo "🔍 Creating destination directory: $dest_path"
     mkdir -p "$dest_path"
-    echo "🔍 Destination directory created"
     
     # Track existing files before sync
-    echo "🔍 About to declare associative array"
     declare -A existing_files
-    echo "🔍 Associative array declared successfully"
-    echo "🔍 Finding existing files in: $dest_path"
     
     # Use temporary file to avoid process substitution issues
     local temp_file="${RUNNER_TEMP}/existing_files_$$"
     if [ -d "$dest_path" ]; then
         find "$dest_path" -name "*.mdx" -type f 2>/dev/null > "$temp_file" || true
-        echo "🔍 Found files written to temp file"
         
         while IFS= read -r file; do
             if [ -n "$file" ]; then
                 existing_files["$(basename "$file")"]="$file"
-                echo "🔍 Tracked existing file: $(basename "$file")"
             fi
         done < "$temp_file"
         
         rm -f "$temp_file"
     fi
-    echo "🔍 Finished tracking existing files"
     
     # Track what we'll be syncing
-    echo "🔍 Initializing counters"
     local added=0
     local updated=0
     local deleted=0
-    echo "🔍 Counters initialized: added=$added updated=$updated deleted=$deleted"
     
     # Process all source files that match the filter
     for file in "$source_path"/*.mdx "$source_path"/*.md; do
@@ -244,16 +198,11 @@ sync_files() {
 
 # Main orchestrator function to handle different sync types
 main() {
-    echo "🔍 MAIN FUNCTION STARTED"
-    echo "🔍 Received args: $*"
     
     local sync_type="$1"
     local version="$2"
     local sync_report="${RUNNER_TEMP}/sync_report_${sync_type}.md"
     
-    echo "🔍 sync_type: $sync_type"
-    echo "🔍 version: $version"
-    echo "🔍 sync_report: $sync_report"
     
     # Get input parameters (with defaults)
     local changelog_path="${3:-docs/changelog}"
@@ -263,27 +212,21 @@ main() {
     local api_gen_regex="${7:-gen_(?!dbg_).*}"
     local api_debug_regex="${8:-gen_dbg_.*}"
     
-    echo "🔍 Starting case statement for sync_type: $sync_type"
     
     case "$sync_type" in
         "changelog")
-            echo "🔍 Processing changelog sync"
             sync_changelog "$changelog_path" "$sync_report"
             ;;
         "config")
-            echo "🔍 Processing config sync"
             sync_config "$sync_report"
             ;;
         "api_gen")
-            echo "🔍 Processing api_gen sync"
             sync_files "source-repo/$api_gen_path" "pages/api-references/genlayer-node/gen" "$api_gen_regex" "api_gen" "$sync_report"
             ;;
         "api_debug")
-            echo "🔍 Processing api_debug sync"
             sync_files "source-repo/$api_debug_path" "pages/api-references/genlayer-node/debug" "$api_debug_regex" "api_debug" "$sync_report"
             ;;
         "api_ops")
-            echo "🔍 Processing api_ops sync"
             sync_files "source-repo/$api_ops_path" "pages/api-references/genlayer-node/ops" ".*" "api_ops" "$sync_report"
             ;;
         *)
@@ -292,7 +235,6 @@ main() {
             ;;
     esac
     
-    echo "🔍 Case statement completed"
     
     # Create artifacts
     create_sync_artifacts "$sync_type" "$sync_report"
@@ -371,7 +313,7 @@ create_sync_artifacts() {
         # Create artifacts directory
         mkdir -p artifacts
         cp "$report_file" "artifacts/sync_report_${sync_type}.md"
-        echo "📄 Created artifact: artifacts/sync_report_${sync_type}.md"
+        echo "Created artifact: artifacts/sync_report_${sync_type}.md"
     else
         echo "⚠️ Report file not found, creating empty artifact"
         mkdir -p artifacts

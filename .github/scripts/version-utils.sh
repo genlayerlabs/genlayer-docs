@@ -67,7 +67,6 @@ detect_and_validate_version() {
     local final_version=""
     
     if [[ "$requested_version" == "latest" || -z "$requested_version" ]]; then
-        echo "🔍 Detecting latest version from source repository..."
         final_version=$(detect_latest_version "source-repo")
     else
         final_version="$requested_version"
