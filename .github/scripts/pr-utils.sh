@@ -26,7 +26,6 @@ create_documentation_pr() {
         if [[ "$pr_state" == "OPEN" ]]; then
             echo "View existing PR: $pr_url"
             return 0
-        else
         fi
     else
         echo "Creating new PR..."
