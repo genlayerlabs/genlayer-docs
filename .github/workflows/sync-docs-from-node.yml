@@ -729,45 +729,18 @@ jobs:
     steps:
       - name: Delete intermediate artifacts
         if: env.CLEANUP_ARTIFACTS == 'true'
-        run: |
-          echo "🧹 Cleaning up intermediate artifacts..."
-          
-          # List of intermediate artifacts to clean up
-          artifacts_to_cleanup=(
-            "synced-files-changelog"
-            "synced-files-config" 
-            "synced-files-api_gen"
-            "synced-files-api_debug"
-            "synced-files-api_ops"
-            "synced-files-merged"
-            "sync-reports-changelog"
-            "sync-reports-config"
-            "sync-reports-api_gen" 
-            "sync-reports-api_debug"
-            "sync-reports-api_ops"
-          )
-          
-          # Keep synced-files-final as it contains the final result
-          echo "Keeping synced-files-final artifact (contains final result)"
-          
-          for artifact in "${artifacts_to_cleanup[@]}"; do
-            echo "🗑️ Attempting to delete artifact: $artifact"
-            
-            # Get artifact ID
-            artifact_id=$(gh api repos/${{ github.repository }}/actions/runs/${{ github.run_id }}/artifacts --jq ".artifacts[] | select(.name==\"$artifact\") | .id" 2>/dev/null || echo "")
-            
-            if [[ -n "$artifact_id" ]]; then
-              # Try to delete the artifact
-              if gh api --method DELETE repos/${{ github.repository }}/actions/artifacts/$artifact_id 2>/dev/null; then
-                echo "   ✅ Deleted artifact: $artifact (ID: $artifact_id)"
-              else
-                echo "   ⚠️ Failed to delete artifact: $artifact (ID: $artifact_id) - may already be deleted"
-              fi
-            else
-              echo "   ℹ️ Artifact not found: $artifact"
-            fi
-          done
-          
-          echo "🎉 Artifact cleanup completed"
-        env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        uses: geekyeggo/delete-artifact@v4
+        with:
+          name: |
+            synced-files-changelog
+            synced-files-config
+            synced-files-api_gen
+            synced-files-api_debug
+            synced-files-api_ops
+            synced-files-merged
+            sync-reports-changelog
+            sync-reports-config
+            sync-reports-api_gen
+            sync-reports-api_debug
+            sync-reports-api_ops
+          failOnError: false
