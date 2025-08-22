@@ -204,13 +204,19 @@ sync_files() {
             fi
             echo "🔍 DEBUG: Line 206 reached - end of if block"
         fi
+        echo "🔍 DEBUG: End of file processing iteration"
     done
+    echo "🔍 DEBUG: Completed for loop - all files processed"
     
+    echo "🔍 DEBUG: About to skip _meta.json handling"
     # Skip _meta.json handling - it should not be touched
     unset existing_files["_meta.json"]
+    echo "🔍 DEBUG: Skipped _meta.json handling"
     
+    echo "🔍 DEBUG: About to start deletion loop"
     # Remove files that no longer exist in source or don't match the filter
     for dest_file in "${existing_files[@]}"; do
+        echo "🔍 DEBUG: Processing existing file for potential deletion: $dest_file"
         if [ -f "$dest_file" ]; then
             local dest_basename_no_ext
             dest_basename_no_ext=$(basename "$dest_file" | sed 's/\.[^.]*$//')
