@@ -214,9 +214,14 @@ sync_files() {
     echo "🔍 DEBUG: Skipped _meta.json handling"
     
     echo "🔍 DEBUG: About to start deletion loop"
+    echo "🔍 DEBUG: Checking if existing_files array has elements"
+    
     # Remove files that no longer exist in source or don't match the filter
-    for dest_file in "${existing_files[@]}"; do
-        echo "🔍 DEBUG: Processing existing file for potential deletion: $dest_file"
+    # Check if array has elements first to avoid expansion issues
+    if [ ${#existing_files[@]} -gt 0 ]; then
+        echo "🔍 DEBUG: Array has ${#existing_files[@]} elements, starting iteration"
+        for dest_file in "${existing_files[@]}"; do
+            echo "🔍 DEBUG: Processing existing file for potential deletion: $dest_file"
         if [ -f "$dest_file" ]; then
             local dest_basename_no_ext
             dest_basename_no_ext=$(basename "$dest_file" | sed 's/\.[^.]*$//')
@@ -236,7 +241,12 @@ sync_files() {
                 ((deleted++))
             fi
         fi
-    done
+        done
+        echo "🔍 DEBUG: Completed deletion loop iteration"
+    else
+        echo "🔍 DEBUG: No existing files to process for deletion"
+    fi
+    echo "🔍 DEBUG: Completed deletion loop processing"
     
     # Summary
     local total=$((added + updated + deleted))
