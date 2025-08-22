@@ -370,17 +370,8 @@ jobs:
 
       - name: Download processed files
         uses: actions/download-artifact@v4
-        continue-on-error: true
         with:
           name: processed-files
-          path: ./
-
-      - name: Download synced files (fallback)
-        uses: actions/download-artifact@v4
-        continue-on-error: true
-        with:
-          pattern: synced-files-*
-          merge-multiple: true
           path: ./
 
       - name: Get aggregated results
