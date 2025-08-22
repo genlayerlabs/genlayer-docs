@@ -15,13 +15,13 @@ This workflow automatically synchronizes documentation from the `genlayerlabs/ge
 2. Clones the specific version from the genlayer-node repository using sparse checkout
 3. Syncs files in parallel using matrix strategy (5 sync types):
    - **Changelog files** → `content/validators/changelog/`
-   - **Config file** → `content/validators/config.yaml`
+   - **Config file** → `content/validators/config.yaml` (with sanitization)
    - **API gen method docs** → `pages/api-references/genlayer-node/gen/` (filtered by regex)
    - **API debug method docs** → `pages/api-references/genlayer-node/debug/` (filtered by regex)
    - **API ops method docs** → `pages/api-references/genlayer-node/ops/`
 4. Aggregates sync results and generates detailed reports
 5. Runs documentation generation scripts (npm scripts)
-6. Creates branch and commits changes (PR creation currently disabled)
+6. Creates branch, commits changes, and creates/updates pull requests
 7. Generates comprehensive workflow summary with sync details
 
 **Notes**: 
@@ -127,3 +127,56 @@ The source paths and filters can be customized via workflow_dispatch inputs:
   - This default pattern matches only files starting with `gen_dbg_`
 
 **Note**: API ops sync includes all files (no regex filtering applied), except README files which are automatically excluded.
+
+## Pipeline Architecture
+
+### Jobs and Dependencies
+The workflow uses 5 main jobs with the following dependency chain:
+
+```
+prepare
+    ↓
+sync-files (matrix: 5 parallel jobs)
+    ↓
+aggregate-results
+    ↓
+generate-docs
+    ↓
+create-pr
+    ↓ 
+summary (always runs)
+```
+
+### Composite Actions
+The workflow uses composite actions for code reusability:
+- `.github/actions/sync-files/` - Handles all file synchronization types
+
+### Scripts Used
+- `sync-files.sh` - Main file synchronization logic with config sanitization
+- `aggregate-reports.sh` - Aggregates sync results from parallel jobs
+- `git-utils.sh` - Branch creation, commit, and push operations
+- `sanitize-config.py` - Removes dev sections from YAML config files
+- Various utility scripts for version detection and PR management
+
+### Config File Sanitization
+The config sync process includes automatic sanitization:
+1. **URL Replacement**: Real URLs replaced with TODO placeholders
+2. **Dev Section Removal**: `node.dev` sections stripped using Python script
+3. **Comparison**: Only sanitized content is compared to detect actual changes
+
+### Branch Naming Convention
+Sync branches follow the pattern: `docs/node/{version}`
+- Example: `docs/node/v0.3.5`
+- Version slashes are replaced with dashes for safety
+
+### Artifact Management
+The workflow uses artifacts to pass data between jobs:
+- `sync-reports-{type}` - Individual sync reports for each type
+- `synced-files-{type}` - Actual synced files from each job
+- `processed-files` - Final processed files after npm script generation
+
+### Pull Request Behavior
+- Creates new PR for new versions
+- Updates existing open PR for same version
+- Includes detailed sync metrics and file change summary
+- Automatically labels with "documentation" and "node"
