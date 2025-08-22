@@ -9,6 +9,10 @@ on:
         description: 'Version/tag to sync from genlayer-node repo (e.g., v0.3.5, or "latest" to detect)'
         required: false
         default: 'latest'
+      changelog_path:
+        description: 'Path to changelog files in source repo'
+        required: false
+        default: 'docs/changelog'
       api_gen_path:
         description: 'Path to API gen files in source repo'
         required: false
@@ -170,12 +174,12 @@ jobs:
         with:
           sync_type: ${{ matrix.sync_type }}
           version: ${{ needs.prepare.outputs.version }}
-          changelog_path: docs/changelog
-          api_gen_path: docs/api/rpc  
-          api_debug_path: docs/api/rpc
-          api_ops_path: docs/api/ops
-          api_gen_regex: 'gen_(?!dbg_).*'
-          api_debug_regex: 'gen_dbg_.*'
+          changelog_path: ${{ github.event.inputs.changelog_path || github.event.client_payload.changelog_path || 'docs/changelog' }}
+          api_gen_path: ${{ github.event.inputs.api_gen_path || github.event.client_payload.api_gen_path || 'docs/api/rpc' }}
+          api_debug_path: ${{ github.event.inputs.api_debug_path || github.event.client_payload.api_debug_path || 'docs/api/rpc' }}
+          api_ops_path: ${{ github.event.inputs.api_ops_path || github.event.client_payload.api_ops_path || 'docs/api/ops' }}
+          api_gen_regex: ${{ github.event.inputs.api_gen_regex || github.event.client_payload.api_gen_regex || 'gen_(?!dbg_).*' }}
+          api_debug_regex: ${{ github.event.inputs.api_debug_regex || github.event.client_payload.api_debug_regex || 'gen_dbg_.*' }}
 
       - name: Upload sync reports
         uses: actions/upload-artifact@v4
