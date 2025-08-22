@@ -19,10 +19,11 @@ This workflow automatically synchronizes documentation from the `genlayerlabs/ge
    - **API gen method docs** → `pages/api-references/genlayer-node/gen/` (filtered by regex)
    - **API debug method docs** → `pages/api-references/genlayer-node/debug/` (filtered by regex)
    - **API ops method docs** → `pages/api-references/genlayer-node/ops/`
-4. Aggregates sync results and generates detailed reports
-5. Runs documentation generation scripts (npm scripts)
+4. Aggregates sync results and merges all synced files with proper deletion handling
+5. Runs documentation generation scripts (npm scripts) on merged files
 6. Creates branch, commits changes, and creates/updates pull requests
 7. Generates comprehensive workflow summary with sync details
+8. Automatically cleans up intermediate artifacts after successful completion
 
 **Notes**: 
 - Both `.md` and `.mdx` files are supported, automatically renamed to `.mdx` when copied
@@ -131,21 +132,27 @@ The source paths and filters can be customized via workflow_dispatch inputs:
 ## Pipeline Architecture
 
 ### Jobs and Dependencies
-The workflow uses 5 main jobs with the following dependency chain:
+The workflow uses 6 main jobs with the following dependency chain:
 
 ```
 prepare
     ↓
 sync-files (matrix: 5 parallel jobs)
     ↓
-aggregate-results
+aggregate-results (merges files + reports)
     ↓
-generate-docs
+generate-docs (processes merged files)
     ↓
 create-pr
     ↓ 
 summary (always runs)
+    ↓ 
+cleanup (if CLEANUP_ARTIFACTS: true)
 ```
+
+### Global Configuration
+The workflow uses environment variables for global settings:
+- `CLEANUP_ARTIFACTS: true` - Enables automatic cleanup of intermediate artifacts after successful completion
 
 ### Composite Actions
 The workflow uses composite actions for code reusability:
@@ -172,8 +179,16 @@ Sync branches follow the pattern: `docs/node/{version}`
 ### Artifact Management
 The workflow uses artifacts to pass data between jobs:
 - `sync-reports-{type}` - Individual sync reports for each type
-- `synced-files-{type}` - Actual synced files from each job
-- `processed-files` - Final processed files after npm script generation
+- `synced-files-{type}` - Individual synced files with full directory structure
+- `synced-files-merged` - All files merged together by aggregate-results job
+- `synced-files-final` - Final processed files after documentation generation
+
+**Deletion Handling**: The workflow uses `rsync --delete` at multiple stages to ensure proper file deletion:
+- `aggregate-results`: Merges individual artifacts with deletion support
+- `generate-docs`: Syncs merged files with deletion handling
+- `create-pr`: Syncs final files with deletion handling
+
+**Automatic Cleanup**: Intermediate artifacts are automatically deleted after successful completion when `CLEANUP_ARTIFACTS: true` (default). Only `synced-files-final` is preserved.
 
 ### Pull Request Behavior
 - Creates new PR for new versions
