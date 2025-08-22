@@ -745,4 +745,5 @@ jobs:
             sync-reports-api_gen
             sync-reports-api_debug
             sync-reports-api_ops
+            synced-files-final
           failOnError: false
