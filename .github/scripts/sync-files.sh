@@ -71,7 +71,6 @@ sync_files() {
     echo "## ${sync_title} Sync" >> "$report_file"
     if [[ "$file_filter" != ".*" ]]; then
         printf "Using regex filter: \`%s\`\n" "$file_filter" >> "$report_file"
-    else
     fi
     echo "" >> "$report_file"
     
@@ -86,7 +85,6 @@ sync_files() {
         echo "deleted=0" >> "$GITHUB_OUTPUT"
         echo "total=0" >> "$GITHUB_OUTPUT"
         return 0
-    else
     fi
     
     mkdir -p "$dest_path"
