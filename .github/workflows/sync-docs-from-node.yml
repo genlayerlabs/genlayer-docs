@@ -189,44 +189,89 @@ jobs:
           path: artifacts/
           retention-days: 1
 
+      - name: Prepare and upload changelog files
+        if: always() && matrix.sync_type == 'changelog'
+        run: |
+          # Create artifact structure preserving full paths from repo root
+          mkdir -p artifact-staging/content/validators/changelog
+          if [[ -d content/validators/changelog && $(find content/validators/changelog -type f | wc -l) -gt 0 ]]; then
+            cp -r content/validators/changelog/* artifact-staging/content/validators/changelog/
+          fi
+
       - name: Upload changelog files
         uses: actions/upload-artifact@v4
         if: always() && matrix.sync_type == 'changelog'
         with:
           name: synced-files-${{ matrix.sync_type }}
-          path: content/validators/changelog/
+          path: artifact-staging/
           retention-days: 1
+
+      - name: Prepare and upload config file
+        if: always() && matrix.sync_type == 'config'
+        run: |
+          # Create artifact structure preserving full paths from repo root
+          mkdir -p artifact-staging/content/validators
+          if [[ -f content/validators/config.yaml ]]; then
+            cp content/validators/config.yaml artifact-staging/content/validators/
+          fi
 
       - name: Upload config file
         uses: actions/upload-artifact@v4
         if: always() && matrix.sync_type == 'config'
         with:
           name: synced-files-${{ matrix.sync_type }}
-          path: content/validators/config.yaml
+          path: artifact-staging/
           retention-days: 1
+
+      - name: Prepare and upload API gen files
+        if: always() && matrix.sync_type == 'api_gen'
+        run: |
+          # Create artifact structure preserving full paths from repo root
+          mkdir -p artifact-staging/pages/api-references/genlayer-node/gen
+          if [[ -d pages/api-references/genlayer-node/gen && $(find pages/api-references/genlayer-node/gen -type f | wc -l) -gt 0 ]]; then
+            cp -r pages/api-references/genlayer-node/gen/* artifact-staging/pages/api-references/genlayer-node/gen/
+          fi
 
       - name: Upload API gen files
         uses: actions/upload-artifact@v4
         if: always() && matrix.sync_type == 'api_gen'
         with:
           name: synced-files-${{ matrix.sync_type }}
-          path: pages/api-references/genlayer-node/gen/
+          path: artifact-staging/
           retention-days: 1
+
+      - name: Prepare and upload API debug files
+        if: always() && matrix.sync_type == 'api_debug'
+        run: |
+          # Create artifact structure preserving full paths from repo root
+          mkdir -p artifact-staging/pages/api-references/genlayer-node/debug
+          if [[ -d pages/api-references/genlayer-node/debug && $(find pages/api-references/genlayer-node/debug -type f | wc -l) -gt 0 ]]; then
+            cp -r pages/api-references/genlayer-node/debug/* artifact-staging/pages/api-references/genlayer-node/debug/
+          fi
 
       - name: Upload API debug files
         uses: actions/upload-artifact@v4
         if: always() && matrix.sync_type == 'api_debug'
         with:
           name: synced-files-${{ matrix.sync_type }}
-          path: pages/api-references/genlayer-node/debug/
+          path: artifact-staging/
           retention-days: 1
+
+      - name: Prepare and upload API ops files
+        if: always() && matrix.sync_type == 'api_ops'
+        run: |
+          # Create artifact structure preserving full paths from repo root
+          mkdir -p artifact-staging/pages/api-references/genlayer-node/ops
+          if [[ -d pages/api-references/genlayer-node/ops && $(find pages/api-references/genlayer-node/ops -type f | wc -l) -gt 0 ]]; then
+            cp -r pages/api-references/genlayer-node/ops/* artifact-staging/pages/api-references/genlayer-node/ops/
+          fi
 
       - name: Upload API ops files
         uses: actions/upload-artifact@v4
         if: always() && matrix.sync_type == 'api_ops'
         with:
           name: synced-files-${{ matrix.sync_type }}
-          path: pages/api-references/genlayer-node/ops/
+          path: artifact-staging/
           retention-days: 1
 
   aggregate-results:
@@ -365,8 +410,6 @@ jobs:
           echo "::endgroup::"
           
           echo "success=true" >> "$GITHUB_OUTPUT"
-
-
 
       - name: Upload final synced files
         uses: actions/upload-artifact@v4
