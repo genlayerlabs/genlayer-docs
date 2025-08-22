@@ -261,24 +261,11 @@ jobs:
           merge-multiple: true
           path: ./
 
-      - name: Debug downloaded files
-        run: |
-          echo "::group::DEBUG: Files present before generation scripts"
-          echo "DEBUG: Content/validators directory:"
-          ls -la content/validators/ || echo "DEBUG: Directory not found"
-          echo ""
-          echo "DEBUG: Pages/api-references directory:"
-          find pages/api-references/ -name "*.mdx" | head -20 || echo "DEBUG: No mdx files found"
-          echo ""
-          echo "DEBUG: Changelog files:"
-          ls -la content/validators/changelog/ || echo "DEBUG: Changelog directory not found"
-          echo "::endgroup::"
-        
       - name: Run documentation generation scripts
         id: generate
         run: |
           set -euo pipefail
-          echo "🔄 Running documentation generation scripts"
+          echo "Running documentation generation scripts"
           
           echo "::group::Running node-generate-changelog"
           npm run node-generate-changelog || { echo "❌ node-generate-changelog failed"; exit 1; }
@@ -302,38 +289,7 @@ jobs:
           
           echo "success=true" >> "$GITHUB_OUTPUT"
 
-      - name: Debug files after generation
-        run: |
-          echo "::group::DEBUG: Files after generation scripts"
-          echo "DEBUG: Git status after scripts:"
-          git status --porcelain || echo "DEBUG: No git status"
-          echo ""
-          echo "DEBUG: Modified files:"
-          git diff --name-only || echo "DEBUG: No modified files"
-          echo ""
-          echo "DEBUG: Check specific files that should be updated:"
-          echo "DEBUG: changelog.md:"
-          ls -la pages/validators/changelog.md || echo "DEBUG: changelog.md not found"
-          echo "DEBUG: _meta.json files:"
-          find pages/api-references/ -name "_meta.json" | while read file; do
-            echo "DEBUG: File: $file"
-            echo "DEBUG: Last modified: $(stat -c %y "$file" 2>/dev/null || stat -f %m "$file" 2>/dev/null || echo "unknown")"
-          done
-          echo "::endgroup::"
 
-      - name: Final verification
-        id: verify
-        run: |
-          # Final config verification
-          echo "::group::Final config.yaml verification"
-          CONFIG_PATH="content/validators/config.yaml"
-          if [ -f "$CONFIG_PATH" ]; then
-            echo "✅ Config file exists: $CONFIG_PATH"
-            head -10 "$CONFIG_PATH" || true
-          else
-            echo "⚠️ Config file not found: $CONFIG_PATH"
-          fi
-          echo "::endgroup::"
 
       - name: Upload processed files
         uses: actions/upload-artifact@v4
@@ -388,7 +344,7 @@ jobs:
           echo "total_updated=$TOTAL_UPDATED" >> "$GITHUB_OUTPUT"
           echo "total_deleted=$TOTAL_DELETED" >> "$GITHUB_OUTPUT"
           
-          echo "📊 Total changes detected: $TOTAL_CHANGES"
+          echo "Total changes detected: $TOTAL_CHANGES"
       
       - name: Check for changes and create branch
         id: check_changes
@@ -416,16 +372,6 @@ jobs:
 #        run: |
 #          echo "::group::📋 Diff of changes that will be included in the PR"
 #          echo "Showing diff between main and current sync branch:"
-#          echo ""
-#
-#          # Show a concise summary first
-#          echo "📊 Files changed:"
-#          git diff --name-status main HEAD || git diff --name-status origin/main HEAD || echo "Could not determine diff with main branch"
-#          echo ""
-#
-#          # Show the actual diff with some formatting
-#          echo "📝 Detailed changes:"
-#          git diff main HEAD || git diff origin/main HEAD || echo "Could not show detailed diff with main branch"
 #          echo "::endgroup::"
       
       - name: Create Pull Request

@@ -21,14 +21,11 @@ aggregate_sync_reports() {
     # Collect all reports
     local ALL_REPORTS=""
     
-    echo "🔍 Looking for sync reports..."
     if [[ -d "sync-reports" ]]; then
-        echo "📁 sync-reports directory exists"
         ls -la sync-reports/ || echo "Directory is empty"
         
         for report_file in sync-reports/sync_report_*.md; do
             if [[ -f "$report_file" ]]; then
-                echo "📄 Processing: $(basename "$report_file")"
                 
                 # Extract metrics from report content
                 local REPORT_CONTENT
@@ -38,7 +35,6 @@ aggregate_sync_reports() {
                 if echo "$REPORT_CONTENT" | grep -q "Summary:"; then
                     local SUMMARY_LINE
                     SUMMARY_LINE=$(echo "$REPORT_CONTENT" | grep "Summary:" | head -1)
-                    echo "📊 Found summary: $SUMMARY_LINE"
                     
                     # Extract numbers using regex
                     local ADDED UPDATED DELETED
@@ -54,9 +50,7 @@ aggregate_sync_reports() {
                     local REPORT_TOTAL=$((ADDED + UPDATED + DELETED))
                     TOTAL_CHANGES=$((TOTAL_CHANGES + REPORT_TOTAL))
                     
-                    echo "📈 Report metrics: $ADDED added, $UPDATED updated, $DELETED deleted (total: $REPORT_TOTAL)"
                 elif echo "$REPORT_CONTENT" | grep -q "No.*updates found"; then
-                    echo "📝 No changes in this sync type"
                     # Don't add anything to totals
                 else
                     echo "⚠️ Could not parse metrics from report, assuming 1 change"
@@ -89,7 +83,6 @@ aggregate_sync_reports() {
     echo "$ALL_REPORTS" >> "$GITHUB_OUTPUT"
     echo "EOF" >> "$GITHUB_OUTPUT"
     
-    echo "📊 Aggregated totals: $TOTAL_CHANGES changes ($TOTAL_ADDED added, $TOTAL_UPDATED updated, $TOTAL_DELETED deleted)"
 }
 
 # Run the aggregation

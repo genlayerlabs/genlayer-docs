@@ -41,7 +41,7 @@ commit_and_push_changes() {
     local total_deleted="$5"
     local branch_name="$6"
     
-    echo "📝 Committing changes..."
+    echo "Committing changes..."
     
     # Add relevant directories
     git add content/validators pages/api-references pages/validators

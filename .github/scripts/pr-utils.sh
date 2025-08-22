@@ -24,16 +24,12 @@ create_documentation_pr() {
         pr_url=$(echo "$pr_json" | jq -r .url)
         
         if [[ "$pr_state" == "OPEN" ]]; then
-            echo "📄 Open PR already exists for branch $BRANCH_NAME"
-            echo "🔗 View existing PR: $pr_url"
+            echo "View existing PR: $pr_url"
             return 0
         else
-            echo "📄 Closed PR exists for branch $BRANCH_NAME (state: $pr_state)"
-            echo "🔄 Creating new PR..."
         fi
     else
-        echo "📄 No PR exists for branch $BRANCH_NAME"
-        echo "🆕 Creating new PR..."
+        echo "Creating new PR..."
     fi
     
     # Extract PR configuration from config

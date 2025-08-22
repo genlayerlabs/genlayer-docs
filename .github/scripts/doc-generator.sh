@@ -71,7 +71,6 @@ run_doc_generation_scripts() {
 verify_final_config() {
     local config_path="content/validators/config.yaml"
     
-    echo "🔍 Final config.yaml verification"
     
     if [[ ! -f "$config_path" ]]; then
         echo "::error::Config file not found at $config_path"
@@ -79,7 +78,6 @@ verify_final_config() {
     fi
     
     echo "✅ Config file exists at: $config_path"
-    echo "📊 File size: $(wc -c < "$config_path") bytes"
     
     # Check for sensitive sections
     if grep -E "^\s*dev:" "$config_path" >/dev/null 2>&1; then

@@ -106,7 +106,6 @@ process_config_file() {
 verify_config_structure() {
     local config_file="$1"
     
-    echo "🔍 Verifying config structure..."
     
     local missing_sections=()
     
@@ -145,5 +144,4 @@ verify_config_structure() {
         echo "::warning::No TODO placeholders found in config"
     fi
     
-    echo "📊 Config file size: $(wc -c < "$config_file") bytes"
 }
