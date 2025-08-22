@@ -253,6 +253,14 @@ jobs:
           
       - name: Install dependencies
         run: npm install
+
+      - name: Download synced files
+        uses: actions/download-artifact@v4
+        continue-on-error: true
+        with:
+          pattern: synced-files-*
+          merge-multiple: true
+          path: ./
         
       - name: Run documentation generation scripts
         id: generate
