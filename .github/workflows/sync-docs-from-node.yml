@@ -729,7 +729,7 @@ jobs:
     steps:
       - name: Delete intermediate artifacts
         if: env.CLEANUP_ARTIFACTS == 'true'
-        uses: geekyeggo/delete-artifact@v4
+        uses: geekyeggo/delete-artifact@v5
         with:
           name: |
             synced-files-changelog
