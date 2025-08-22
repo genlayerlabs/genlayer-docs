@@ -169,28 +169,40 @@ sync_files() {
         # Check if filename matches the filter
         if matches_pattern "$basename_no_ext" "$file_filter"; then
             echo "🔍 DEBUG: File matches filter, proceeding"
-            echo "🔍 DEBUG: About to create dest_filename"
+            echo "🔍 DEBUG: Line 173 reached"
             local dest_filename="${basename_no_ext}.mdx"
-            echo "🔍 DEBUG: dest_filename=$dest_filename"
-            echo "🔍 DEBUG: About to create dest_file_path"
+            echo "🔍 DEBUG: Line 175 reached - dest_filename=$dest_filename"
             local dest_file_path="$dest_path/$dest_filename"
-            echo "🔍 DEBUG: dest_file_path=$dest_file_path"
+            echo "🔍 DEBUG: Line 177 reached - dest_file_path=$dest_file_path"
             
+            echo "🔍 DEBUG: Line 179 reached - about to check if file exists"
             if [ -f "$dest_file_path" ]; then
+                echo "🔍 DEBUG: Line 181 reached - file exists, checking differences"
                 # File exists - check if it's different
                 if ! cmp -s "$file" "$dest_file_path"; then
+                    echo "🔍 DEBUG: Line 184 reached - files different, copying"
                     cp "$file" "$dest_file_path"
+                    echo "🔍 DEBUG: Line 186 reached - copy complete, updating report"
                     echo "- Updated: \`$dest_filename\`" >> "$report_file"
+                    echo "🔍 DEBUG: Line 188 reached - report updated, incrementing counter"
                     ((updated++))
+                    echo "🔍 DEBUG: Line 190 reached - counter incremented"
                 fi
+                echo "🔍 DEBUG: Line 192 reached - removing from tracking"
                 # Remove from tracking to identify deletions later
                 unset existing_files["$dest_filename"]
+                echo "🔍 DEBUG: Line 195 reached - removed from tracking"
             else
+                echo "🔍 DEBUG: Line 197 reached - new file, copying"
                 # New file
                 cp "$file" "$dest_file_path"
+                echo "🔍 DEBUG: Line 200 reached - copy complete, updating report"
                 echo "- Added: \`$dest_filename\`" >> "$report_file"
+                echo "🔍 DEBUG: Line 202 reached - report updated, incrementing counter"
                 ((added++))
+                echo "🔍 DEBUG: Line 204 reached - counter incremented"
             fi
+            echo "🔍 DEBUG: Line 206 reached - end of if block"
         fi
     done
     
