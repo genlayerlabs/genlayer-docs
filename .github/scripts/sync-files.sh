@@ -169,8 +169,12 @@ sync_files() {
         # Check if filename matches the filter
         if matches_pattern "$basename_no_ext" "$file_filter"; then
             echo "🔍 DEBUG: File matches filter, proceeding"
+            echo "🔍 DEBUG: About to create dest_filename"
             local dest_filename="${basename_no_ext}.mdx"
+            echo "🔍 DEBUG: dest_filename=$dest_filename"
+            echo "🔍 DEBUG: About to create dest_file_path"
             local dest_file_path="$dest_path/$dest_filename"
+            echo "🔍 DEBUG: dest_file_path=$dest_file_path"
             
             if [ -f "$dest_file_path" ]; then
                 # File exists - check if it's different
