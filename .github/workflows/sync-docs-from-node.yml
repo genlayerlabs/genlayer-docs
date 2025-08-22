@@ -286,49 +286,49 @@ jobs:
 
       - name: Download and merge synced files
         run: |
-          echo "🔄 Downloading and merging all synced artifacts..."
+          echo "Downloading and merging all synced artifacts..."
           
           # Create target directories
           mkdir -p content/validators/changelog
           mkdir -p pages/api-references/genlayer-node/{gen,debug,ops}
           
-          echo "📁 Downloading changelog files..."
+          echo "Downloading changelog files..."
           gh run download ${{ github.run_id }} --name synced-files-changelog --dir temp-changelog || echo "No changelog files"
-          if [[ -d temp-changelog ]]; then
-            cp -r temp-changelog/* content/validators/ 2>/dev/null || true
+          if [[ -d temp-changelog/content/validators/changelog ]]; then
+            rsync -av --delete temp-changelog/content/validators/changelog/ content/validators/changelog/
             rm -rf temp-changelog
           fi
           
-          echo "⚙️ Downloading config files..."
+          echo "Downloading config files..."
           gh run download ${{ github.run_id }} --name synced-files-config --dir temp-config || echo "No config files"
-          if [[ -d temp-config ]]; then
-            cp -r temp-config/* content/validators/ 2>/dev/null || true
+          if [[ -f temp-config/content/validators/config.yaml ]]; then
+            cp temp-config/content/validators/config.yaml content/validators/config.yaml
             rm -rf temp-config
           fi
           
-          echo "🔧 Downloading API gen files..."
+          echo "Downloading API gen files..."
           gh run download ${{ github.run_id }} --name synced-files-api_gen --dir temp-api-gen || echo "No API gen files"
-          if [[ -d temp-api-gen ]]; then
-            cp -r temp-api-gen/* pages/api-references/ 2>/dev/null || true
+          if [[ -d temp-api-gen/pages/api-references/genlayer-node/gen ]]; then
+            rsync -av --delete temp-api-gen/pages/api-references/genlayer-node/gen/ pages/api-references/genlayer-node/gen/
             rm -rf temp-api-gen
           fi
           
-          echo "🐛 Downloading API debug files..."
+          echo "Downloading API debug files..."
           gh run download ${{ github.run_id }} --name synced-files-api_debug --dir temp-api-debug || echo "No API debug files"
-          if [[ -d temp-api-debug ]]; then
-            cp -r temp-api-debug/* pages/api-references/ 2>/dev/null || true
+          if [[ -d temp-api-debug/pages/api-references/genlayer-node/debug ]]; then
+            rsync -av --delete temp-api-debug/pages/api-references/genlayer-node/debug/ pages/api-references/genlayer-node/debug/
             rm -rf temp-api-debug
           fi
           
-          echo "🔄 Downloading API ops files..."
+          echo "Downloading API ops files..."
           gh run download ${{ github.run_id }} --name synced-files-api_ops --dir temp-api-ops || echo "No API ops files"
-          if [[ -d temp-api-ops ]]; then
-            cp -r temp-api-ops/* pages/api-references/ 2>/dev/null || true
+          if [[ -d temp-api-ops/pages/api-references/genlayer-node/ops ]]; then
+            rsync -av --delete temp-api-ops/pages/api-references/genlayer-node/ops/ pages/api-references/genlayer-node/ops/
             rm -rf temp-api-ops
           fi
           
-          echo "✅ All artifacts merged successfully"
-          echo "📋 Final directory structure:"
+          echo "All artifacts merged successfully"
+          echo "Final directory structure:"
           find content/ pages/ -type f -name "*.mdx" -o -name "*.yaml" -o -name "_meta.json" | head -20
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
