@@ -301,37 +301,9 @@ jobs:
         id: calculate
         run: .github/scripts/aggregate-reports.sh
 
-      - name: Store aggregated results
-        id: collect
-        run: |
-          echo "✅ Results aggregated successfully"
-
-  generate-docs:
-    name: 'Generate Documentation'
-    runs-on: ubuntu-latest
-    needs: [prepare, aggregate-results]
-    if: always() && needs.prepare.outputs.should_continue == 'true' && needs.aggregate-results.result != 'cancelled'
-    outputs:
-      generation_success: ${{ steps.generate.outputs.success }}
-    steps:
-      - name: Checkout documentation repository
-        uses: actions/checkout@v4
-        with:
-          fetch-depth: 0
-          token: ${{ secrets.GITHUB_TOKEN }}
-      
-      - name: Setup Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: '18'
-          cache: 'npm'
-          
-      - name: Install dependencies
-        run: npm install
-
       - name: Download and merge synced files
         run: |
-          echo "Downloading and merging all synced artifacts against existing branch content..."
+          echo "Downloading and merging all synced artifacts..."
           
           # Ensure target directories exist
           mkdir -p content/validators/changelog
@@ -377,11 +349,54 @@ jobs:
             rm -rf temp-api-ops
           fi
           
-          echo "All artifacts merged successfully against existing branch content"
+          echo "All artifacts merged successfully"
           echo "Final directory structure:"
           find content/ pages/ -type f -name "*.mdx" -o -name "*.yaml" -o -name "_meta.json" | head -20
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Upload merged synced files
+        uses: actions/upload-artifact@v4
+        with:
+          name: synced-files-merged
+          path: |
+            content/validators/
+            pages/api-references/
+          retention-days: 1
+
+      - name: Store aggregated results
+        id: collect
+        run: |
+          echo "✅ Results aggregated and files merged successfully"
+
+  generate-docs:
+    name: 'Generate Documentation'
+    runs-on: ubuntu-latest
+    needs: [prepare, aggregate-results]
+    if: always() && needs.prepare.outputs.should_continue == 'true' && needs.aggregate-results.result != 'cancelled'
+    outputs:
+      generation_success: ${{ steps.generate.outputs.success }}
+    steps:
+      - name: Checkout documentation repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          token: ${{ secrets.GITHUB_TOKEN }}
+      
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '18'
+          cache: 'npm'
+          
+      - name: Install dependencies
+        run: npm install
+
+      - name: Download merged synced files
+        uses: actions/download-artifact@v4
+        with:
+          name: synced-files-merged
+          path: ./
 
       - name: Run documentation generation scripts
         id: generate
@@ -411,7 +426,7 @@ jobs:
           
           echo "success=true" >> "$GITHUB_OUTPUT"
 
-      - name: Upload final synced files
+      - name: Upload final generated files
         uses: actions/upload-artifact@v4
         if: steps.generate.outputs.success == 'true'
         with:
