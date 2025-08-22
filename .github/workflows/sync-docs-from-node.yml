@@ -185,6 +185,16 @@ jobs:
           path: artifacts/
           retention-days: 1
 
+      - name: Upload synced files
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: synced-files-${{ matrix.sync_type }}
+          path: |
+            content/validators/
+            pages/api-references/
+          retention-days: 1
+
   aggregate-results:
     name: 'Aggregate Sync Results'
     runs-on: ubuntu-latest
@@ -290,6 +300,14 @@ jobs:
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
+
+      - name: Download all synced files
+        uses: actions/download-artifact@v4
+        continue-on-error: true
+        with:
+          pattern: synced-files-*
+          merge-multiple: true
+          path: ./
 
       - name: Get aggregated results
         id: get_results
