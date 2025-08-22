@@ -428,7 +428,16 @@ jobs:
               done < <(sed -n '3,$p' "$report_file")
               echo "" >> $GITHUB_STEP_SUMMARY
             else
-              echo "### ${sync_type^} Sync" >> $GITHUB_STEP_SUMMARY
+              # Get proper title for sync type
+              case "$sync_type" in
+                "changelog") sync_title="Changelog" ;;
+                "config") sync_title="Config File" ;;
+                "api_gen") sync_title="API Gen Methods" ;;
+                "api_debug") sync_title="API Debug Methods" ;;
+                "api_ops") sync_title="API Ops Methods" ;;
+                *) sync_title="$(echo "$sync_type" | tr '[:lower:]' '[:upper:]')" ;;
+              esac
+              echo "### ${sync_title} Sync" >> $GITHUB_STEP_SUMMARY
               echo "- No report available" >> $GITHUB_STEP_SUMMARY
               echo "" >> $GITHUB_STEP_SUMMARY
             fi
