@@ -45,6 +45,21 @@ matches_pattern() {
     return $?
 }
 
+# Global list of files to exclude from sync operations
+EXCLUDED_FILES=("README" "CHANGELOG" ".gitignore" ".gitkeep")
+
+# Check if file should be excluded from sync
+is_excluded_file() {
+    local filename="$1"
+    
+    for excluded in "${EXCLUDED_FILES[@]}"; do
+        if [[ "$filename" == "$excluded" ]]; then
+            return 0  # File is excluded
+        fi
+    done
+    return 1  # File is not excluded
+}
+
 # Generic file synchronization function
 sync_files() {
     echo "🔍 SYNC_FILES FUNCTION STARTED"
@@ -153,6 +168,10 @@ sync_files() {
         
         # Check if filename matches the filter
         if matches_pattern "$basename_no_ext" "$file_filter"; then
+            # Skip excluded files
+            if is_excluded_file "$basename_no_ext"; then
+                continue
+            fi
             local dest_filename="${basename_no_ext}.mdx"
             local dest_file_path="$dest_path/$dest_filename"
             
