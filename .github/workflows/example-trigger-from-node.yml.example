@@ -9,8 +9,8 @@ on:
     branches:
       - main
     paths:
-      - 'docs/**'
-      - 'CHANGELOG.md'
+      - 'docs/**'           # Includes changelog/, api/rpc/, api/ops/
+      - 'configs/**'        # Node configuration files
   workflow_dispatch:
 
 jobs:
@@ -47,6 +47,7 @@ jobs:
               "changelog_path": "docs/changelog",
               "api_gen_path": "docs/api/rpc",
               "api_debug_path": "docs/api/rpc",
+              "api_ops_path": "docs/api/ops",
               "api_gen_regex": "gen_(?!dbg_).*",
               "api_debug_regex": "gen_dbg_.*"
             }
