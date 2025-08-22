@@ -43,8 +43,8 @@ commit_and_push_changes() {
     
     echo "Committing changes..."
     
-    # Add relevant directories
-    git add content/validators pages/api-references pages/validators
+    # Add relevant directories (including deletions)
+    git add --all content/validators pages/api-references pages/validators
     
     # Check what's staged
     echo "📋 Files staged for commit:"
