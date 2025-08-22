@@ -136,9 +136,18 @@ sync_files() {
         rm -f "$temp_file"
     fi
     echo "🔍 Finished tracking existing files"
+    echo "🔍 DEBUG: About to initialize counters"
     
     # Track what we'll be syncing
-    local added=0 updated=0 deleted=0
+    echo "🔍 Initializing counters"
+    echo "🔍 DEBUG: Declaring local variables"
+    local added=0
+    echo "🔍 DEBUG: added variable declared"
+    local updated=0
+    echo "🔍 DEBUG: updated variable declared"
+    local deleted=0
+    echo "🔍 DEBUG: deleted variable declared"
+    echo "🔍 Counters initialized: added=$added updated=$updated deleted=$deleted"
     
     # Process all source files that match the filter
     for file in "$source_path"/*.mdx "$source_path"/*.md; do
