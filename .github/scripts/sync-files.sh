@@ -185,7 +185,7 @@ sync_files() {
                     echo "🔍 DEBUG: Line 186 reached - copy complete, updating report"
                     echo "- Updated: \`$dest_filename\`" >> "$report_file"
                     echo "🔍 DEBUG: Line 188 reached - report updated, incrementing counter"
-                    ((updated++))
+                    updated=$((updated + 1))
                     echo "🔍 DEBUG: Line 190 reached - counter incremented"
                 fi
                 echo "🔍 DEBUG: Line 192 reached - removing from tracking"
@@ -199,7 +199,7 @@ sync_files() {
                 echo "🔍 DEBUG: Line 200 reached - copy complete, updating report"
                 echo "- Added: \`$dest_filename\`" >> "$report_file"
                 echo "🔍 DEBUG: Line 202 reached - report updated, incrementing counter"
-                ((added++))
+                added=$((added + 1))
                 echo "🔍 DEBUG: Line 204 reached - counter incremented"
             fi
             echo "🔍 DEBUG: Line 206 reached - end of if block"
@@ -238,7 +238,7 @@ sync_files() {
             if [ "$source_exists" = "false" ]; then
                 rm "$dest_file"
                 printf -- "- Deleted: \`%s\`\n" "$(basename "$dest_file")" >> "$report_file"
-                ((deleted++))
+                deleted=$((deleted + 1))
             fi
         fi
         done
