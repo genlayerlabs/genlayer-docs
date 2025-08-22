@@ -258,9 +258,43 @@ sync_config() {
     if [[ -f "$source_file" ]]; then
         mkdir -p "$(dirname "$dest_file")"
         
+        # Create a temporary file for sanitized config
+        local temp_config
+        temp_config=$(mktemp)
+        
+        # Copy and sanitize the config
+        cp "$source_file" "$temp_config"
+        
+        # Replace actual URLs with TODO placeholders
+        sed -i.bak 's|zksyncurl: *"[^"]*"|zksyncurl: "TODO: Set your GenLayer Chain ZKSync HTTP RPC URL here"|' "$temp_config"
+        sed -i.bak 's|zksyncwebsocketurl: *"[^"]*"|zksyncwebsocketurl: "TODO: Set your GenLayer Chain ZKSync WebSocket RPC URL here"|' "$temp_config"
+        
+        # Remove backup files
+        rm -f "${temp_config}.bak"
+        
+        # Remove node.dev sections using Python for reliable YAML parsing
+        if [[ -f ".github/scripts/sanitize-config.py" ]]; then
+            python3 .github/scripts/sanitize-config.py "$temp_config"
+            local sanitize_exit_code=$?
+            
+            if [[ $sanitize_exit_code -ne 0 ]]; then
+                echo "- Config sanitization failed" >> "$sync_report"
+                echo "" >> "$sync_report"
+                echo "Summary: 0 added, 0 updated, 0 deleted" >> "$sync_report"
+                echo "added=0" >> "$GITHUB_OUTPUT"
+                echo "updated=0" >> "$GITHUB_OUTPUT"
+                echo "deleted=0" >> "$GITHUB_OUTPUT"
+                echo "total=0" >> "$GITHUB_OUTPUT"
+                echo "0" > "${RUNNER_TEMP}/changes_config.txt"
+                rm -f "$temp_config"
+                return 1
+            fi
+        fi
+        
+        # Check if the sanitized config is different from destination
         if [ -f "$dest_file" ]; then
-            if ! cmp -s "$source_file" "$dest_file"; then
-                cp "$source_file" "$dest_file"
+            if ! cmp -s "$temp_config" "$dest_file"; then
+                cp "$temp_config" "$dest_file"
                 echo "- Updated: \`config.yaml\`" >> "$sync_report"
                 echo "" >> "$sync_report"
                 echo "Summary: 0 added, 1 updated, 0 deleted" >> "$sync_report"
@@ -280,7 +314,7 @@ sync_config() {
                 echo "0" > "${RUNNER_TEMP}/changes_config.txt"
             fi
         else
-            cp "$source_file" "$dest_file"
+            cp "$temp_config" "$dest_file"
             echo "- Added: \`config.yaml\`" >> "$sync_report"
             echo "" >> "$sync_report"
             echo "Summary: 1 added, 0 updated, 0 deleted" >> "$sync_report"
@@ -290,6 +324,9 @@ sync_config() {
             echo "total=1" >> "$GITHUB_OUTPUT"
             echo "1" > "${RUNNER_TEMP}/changes_config.txt"
         fi
+        
+        # Clean up temp file
+        rm -f "$temp_config"
     else
         echo "- Source config file not found: $source_file" >> "$sync_report"
         echo "" >> "$sync_report"
