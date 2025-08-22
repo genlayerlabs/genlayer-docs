@@ -415,14 +415,17 @@ jobs:
               echo "### $(cat "$report_file" | head -1 | sed 's/^## //')" >> $GITHUB_STEP_SUMMARY
               echo "" >> $GITHUB_STEP_SUMMARY
               
-              # Extract the main content (skip header and empty lines)
-              sed -n '3,$p' "$report_file" | while read line; do
+              # Extract the main content (skip header and empty lines) - avoid subshell
+              while IFS= read -r line; do
                 if [[ "$line" =~ ^-\ (Added|Updated|Deleted|No.*found): ]]; then
-                  echo "- $line" >> $GITHUB_STEP_SUMMARY
+                  echo "$line" >> $GITHUB_STEP_SUMMARY
                 elif [[ "$line" =~ ^Summary: ]]; then
-                  echo "- **$line**" >> $GITHUB_STEP_SUMMARY
+                  echo "**$line**" >> $GITHUB_STEP_SUMMARY
+                elif [[ -n "$line" && ! "$line" =~ ^$ ]]; then
+                  # Handle other non-empty lines that might be relevant
+                  echo "$line" >> $GITHUB_STEP_SUMMARY
                 fi
-              done
+              done < <(sed -n '3,$p' "$report_file")
               echo "" >> $GITHUB_STEP_SUMMARY
             else
               echo "### ${sync_type^} Sync" >> $GITHUB_STEP_SUMMARY
