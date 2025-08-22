@@ -347,6 +347,8 @@ sync_config() {
             if ! cmp -s "$source_file" "$dest_file"; then
                 cp "$source_file" "$dest_file"
                 echo "- Updated: \`config.yaml\`" >> "$sync_report"
+                echo "" >> "$sync_report"
+                echo "Summary: 0 added, 1 updated, 0 deleted" >> "$sync_report"
                 echo "added=0" >> "$GITHUB_OUTPUT"
                 echo "updated=1" >> "$GITHUB_OUTPUT"
                 echo "deleted=0" >> "$GITHUB_OUTPUT"
@@ -354,6 +356,8 @@ sync_config() {
                 echo "1" > "${RUNNER_TEMP}/changes_config.txt"
             else
                 echo "- No config updates needed" >> "$sync_report"
+                echo "" >> "$sync_report"
+                echo "Summary: 0 added, 0 updated, 0 deleted" >> "$sync_report"
                 echo "added=0" >> "$GITHUB_OUTPUT"
                 echo "updated=0" >> "$GITHUB_OUTPUT"
                 echo "deleted=0" >> "$GITHUB_OUTPUT"
@@ -363,6 +367,8 @@ sync_config() {
         else
             cp "$source_file" "$dest_file"
             echo "- Added: \`config.yaml\`" >> "$sync_report"
+            echo "" >> "$sync_report"
+            echo "Summary: 1 added, 0 updated, 0 deleted" >> "$sync_report"
             echo "added=1" >> "$GITHUB_OUTPUT"
             echo "updated=0" >> "$GITHUB_OUTPUT"
             echo "deleted=0" >> "$GITHUB_OUTPUT"
@@ -371,6 +377,8 @@ sync_config() {
         fi
     else
         echo "- Source config file not found: $source_file" >> "$sync_report"
+        echo "" >> "$sync_report"
+        echo "Summary: 0 added, 0 updated, 0 deleted" >> "$sync_report"
         echo "added=0" >> "$GITHUB_OUTPUT"
         echo "updated=0" >> "$GITHUB_OUTPUT"
         echo "deleted=0" >> "$GITHUB_OUTPUT"
