@@ -148,10 +148,16 @@ sync_files() {
     local deleted=0
     echo "🔍 DEBUG: deleted variable declared"
     echo "🔍 Counters initialized: added=$added updated=$updated deleted=$deleted"
+    echo "🔍 DEBUG: About to start file processing loop"
+    echo "🔍 DEBUG: Will look for files in: $source_path"
+    echo "🔍 DEBUG: Expanding glob patterns: $source_path/*.mdx $source_path/*.md"
     
     # Process all source files that match the filter
+    echo "🔍 DEBUG: Starting for loop"
     for file in "$source_path"/*.mdx "$source_path"/*.md; do
-        [ ! -f "$file" ] && continue
+        echo "🔍 DEBUG: Processing file: $file"
+        [ ! -f "$file" ] && echo "🔍 DEBUG: File does not exist, continuing" && continue
+        echo "🔍 DEBUG: File exists, proceeding with processing"
         
         local basename_no_ext
         basename_no_ext=$(basename "$file" | sed 's/\.[^.]*$//')
