@@ -388,6 +388,14 @@ jobs:
     needs: [prepare, aggregate-results, generate-docs, create-pr]
     if: always()
     steps:
+      - name: Download sync reports
+        uses: actions/download-artifact@v4
+        continue-on-error: true
+        with:
+          pattern: sync-reports-*
+          merge-multiple: true
+          path: sync-reports/
+
       - name: Generate workflow summary
         run: |
           echo "# Documentation Sync Summary" >> $GITHUB_STEP_SUMMARY
@@ -396,8 +404,43 @@ jobs:
           echo "**Status:** ${{ job.status }}" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
           
+          # Add detailed sync information
+          echo "## Sync Results" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          
+          # Process each sync report
+          for sync_type in changelog config api_gen api_debug api_ops; do
+            report_file="sync-reports/sync_report_${sync_type}.md"
+            if [[ -f "$report_file" ]]; then
+              echo "### $(cat "$report_file" | head -1 | sed 's/^## //')" >> $GITHUB_STEP_SUMMARY
+              echo "" >> $GITHUB_STEP_SUMMARY
+              
+              # Extract the main content (skip header and empty lines)
+              sed -n '3,$p' "$report_file" | while read line; do
+                if [[ "$line" =~ ^-\ (Added|Updated|Deleted|No.*found): ]]; then
+                  echo "- $line" >> $GITHUB_STEP_SUMMARY
+                elif [[ "$line" =~ ^Summary: ]]; then
+                  echo "- **$line**" >> $GITHUB_STEP_SUMMARY
+                fi
+              done
+              echo "" >> $GITHUB_STEP_SUMMARY
+            else
+              echo "### ${sync_type^} Sync" >> $GITHUB_STEP_SUMMARY
+              echo "- No report available" >> $GITHUB_STEP_SUMMARY
+              echo "" >> $GITHUB_STEP_SUMMARY
+            fi
+          done
+          
+          # Add overall result
+          echo "## Overall Result" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
           if [[ "${{ needs.create-pr.outputs.pr_url }}" != "" ]]; then
             echo "**PR Created:** ${{ needs.create-pr.outputs.pr_url }}" >> $GITHUB_STEP_SUMMARY
           else
-            echo "**Result:** No changes detected - no PR created" >> $GITHUB_STEP_SUMMARY
+            total_changes="${{ needs.aggregate-results.outputs.total_changes }}"
+            if [[ "$total_changes" == "0" ]]; then
+              echo "**Result:** No changes detected - no PR created" >> $GITHUB_STEP_SUMMARY
+            else
+              echo "**Result:** $total_changes changes detected but no PR created" >> $GITHUB_STEP_SUMMARY
+            fi
           fi
