@@ -752,15 +752,19 @@ jobs:
           
           for artifact in "${artifacts_to_cleanup[@]}"; do
             echo "🗑️ Attempting to delete artifact: $artifact"
-            if gh api repos/${{ github.repository }}/actions/runs/${{ github.run_id }}/artifacts --jq ".artifacts[] | select(.name==\"$artifact\") | .id" | while read artifact_id; do
-              if [[ -n "$artifact_id" ]]; then
-                gh api --method DELETE repos/${{ github.repository }}/actions/artifacts/$artifact_id
+            
+            # Get artifact ID
+            artifact_id=$(gh api repos/${{ github.repository }}/actions/runs/${{ github.run_id }}/artifacts --jq ".artifacts[] | select(.name==\"$artifact\") | .id" 2>/dev/null || echo "")
+            
+            if [[ -n "$artifact_id" ]]; then
+              # Try to delete the artifact
+              if gh api --method DELETE repos/${{ github.repository }}/actions/artifacts/$artifact_id 2>/dev/null; then
                 echo "   ✅ Deleted artifact: $artifact (ID: $artifact_id)"
+              else
+                echo "   ⚠️ Failed to delete artifact: $artifact (ID: $artifact_id) - may already be deleted"
               fi
-            done; then
-              echo "   ✅ Processed artifact: $artifact"
             else
-              echo "   ℹ️ Artifact not found or already deleted: $artifact"
+              echo "   ℹ️ Artifact not found: $artifact"
             fi
           done
           
