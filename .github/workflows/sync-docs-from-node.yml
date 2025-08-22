@@ -396,7 +396,31 @@ jobs:
         uses: actions/download-artifact@v4
         with:
           name: synced-files-merged
-          path: ./
+          path: temp-merged
+
+      - name: Sync merged files with deletion handling
+        run: |
+          echo "Syncing merged files with current branch (handling deletions)..."
+          
+          # Ensure target directories exist
+          mkdir -p content/validators/changelog
+          mkdir -p pages/api-references/genlayer-node/{gen,debug,ops}
+          
+          # Sync with rsync --delete to handle file deletions properly
+          if [[ -d temp-merged/content/validators ]]; then
+            echo "Syncing content/validators/ (with deletions)..."
+            rsync -av --delete temp-merged/content/validators/ content/validators/
+          fi
+          
+          if [[ -d temp-merged/pages/api-references ]]; then
+            echo "Syncing pages/api-references/ (with deletions)..."
+            rsync -av --delete temp-merged/pages/api-references/ pages/api-references/
+          fi
+          
+          # Clean up
+          rm -rf temp-merged
+          
+          echo "✅ Merged files synced with proper deletion handling"
 
       - name: Run documentation generation scripts
         id: generate
@@ -463,7 +487,37 @@ jobs:
         uses: actions/download-artifact@v4
         with:
           name: synced-files-final
-          path: ./
+          path: temp-final
+
+      - name: Sync final files with deletion handling
+        run: |
+          echo "Syncing final files with current branch (handling deletions)..."
+          
+          # Ensure target directories exist
+          mkdir -p content/validators
+          mkdir -p pages/api-references
+          mkdir -p pages/validators
+          
+          # Sync with rsync --delete to handle file deletions properly
+          if [[ -d temp-final/content/validators ]]; then
+            echo "Syncing content/validators/ (with deletions)..."
+            rsync -av --delete temp-final/content/validators/ content/validators/
+          fi
+          
+          if [[ -d temp-final/pages/api-references ]]; then
+            echo "Syncing pages/api-references/ (with deletions)..."
+            rsync -av --delete temp-final/pages/api-references/ pages/api-references/
+          fi
+          
+          if [[ -d temp-final/pages/validators ]]; then
+            echo "Syncing pages/validators/ (with deletions)..."
+            rsync -av --delete temp-final/pages/validators/ pages/validators/
+          fi
+          
+          # Clean up
+          rm -rf temp-final
+          
+          echo "✅ Final files synced with proper deletion handling"
 
       - name: Get aggregated results
         id: get_results
@@ -501,14 +555,7 @@ jobs:
             echo "No changes to commit"
             exit 0
           fi
-      
-#      - name: Print diff of changes for PR
-#        if: steps.check_changes.outputs.has_changes == 'true'
-#        run: |
-#          echo "::group::📋 Diff of changes that will be included in the PR"
-#          echo "Showing diff between main and current sync branch:"
-#          echo "::endgroup::"
-      
+
       - name: Create Pull Request
         id: create_pr
         if: steps.check_changes.outputs.has_changes == 'true'
