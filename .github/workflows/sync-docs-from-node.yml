@@ -189,7 +189,7 @@ jobs:
           path: artifacts/
           retention-days: 1
 
-      - name: Upload synced files (changelog)
+      - name: Upload changelog files
         uses: actions/upload-artifact@v4
         if: always() && matrix.sync_type == 'changelog'
         with:
@@ -197,7 +197,7 @@ jobs:
           path: content/validators/changelog/
           retention-days: 1
 
-      - name: Upload synced files (config)
+      - name: Upload config file
         uses: actions/upload-artifact@v4
         if: always() && matrix.sync_type == 'config'
         with:
@@ -205,7 +205,7 @@ jobs:
           path: content/validators/config.yaml
           retention-days: 1
 
-      - name: Upload synced files (api_gen)
+      - name: Upload API gen files
         uses: actions/upload-artifact@v4
         if: always() && matrix.sync_type == 'api_gen'
         with:
@@ -213,7 +213,7 @@ jobs:
           path: pages/api-references/genlayer-node/gen/
           retention-days: 1
 
-      - name: Upload synced files (api_debug)
+      - name: Upload API debug files
         uses: actions/upload-artifact@v4
         if: always() && matrix.sync_type == 'api_debug'
         with:
@@ -221,7 +221,7 @@ jobs:
           path: pages/api-references/genlayer-node/debug/
           retention-days: 1
 
-      - name: Upload synced files (api_ops)
+      - name: Upload API ops files
         uses: actions/upload-artifact@v4
         if: always() && matrix.sync_type == 'api_ops'
         with:
@@ -286,48 +286,53 @@ jobs:
 
       - name: Download and merge synced files
         run: |
-          echo "Downloading and merging all synced artifacts..."
+          echo "Downloading and merging all synced artifacts against existing branch content..."
           
-          # Create target directories
+          # Ensure target directories exist
           mkdir -p content/validators/changelog
           mkdir -p pages/api-references/genlayer-node/{gen,debug,ops}
           
-          echo "Downloading changelog files..."
+          echo "Syncing changelog files..."
           gh run download ${{ github.run_id }} --name synced-files-changelog --dir temp-changelog || echo "No changelog files"
-          if [[ -d temp-changelog/content/validators/changelog ]]; then
+          if [[ -d temp-changelog ]]; then
+            # Sync the changelog directory (artifact contains: content/validators/changelog/)
             rsync -av --delete temp-changelog/content/validators/changelog/ content/validators/changelog/
             rm -rf temp-changelog
           fi
           
-          echo "Downloading config files..."
+          echo "Syncing config file..."
           gh run download ${{ github.run_id }} --name synced-files-config --dir temp-config || echo "No config files"
           if [[ -f temp-config/content/validators/config.yaml ]]; then
+            # Copy the config file (artifact contains: content/validators/config.yaml)
             cp temp-config/content/validators/config.yaml content/validators/config.yaml
             rm -rf temp-config
           fi
           
-          echo "Downloading API gen files..."
+          echo "Syncing API gen files..."
           gh run download ${{ github.run_id }} --name synced-files-api_gen --dir temp-api-gen || echo "No API gen files"
-          if [[ -d temp-api-gen/pages/api-references/genlayer-node/gen ]]; then
+          if [[ -d temp-api-gen ]]; then
+            # Sync the gen directory (artifact contains: pages/api-references/genlayer-node/gen/)
             rsync -av --delete temp-api-gen/pages/api-references/genlayer-node/gen/ pages/api-references/genlayer-node/gen/
             rm -rf temp-api-gen
           fi
           
-          echo "Downloading API debug files..."
+          echo "Syncing API debug files..."
           gh run download ${{ github.run_id }} --name synced-files-api_debug --dir temp-api-debug || echo "No API debug files"
-          if [[ -d temp-api-debug/pages/api-references/genlayer-node/debug ]]; then
+          if [[ -d temp-api-debug ]]; then
+            # Sync the debug directory (artifact contains: pages/api-references/genlayer-node/debug/)
             rsync -av --delete temp-api-debug/pages/api-references/genlayer-node/debug/ pages/api-references/genlayer-node/debug/
             rm -rf temp-api-debug
           fi
           
-          echo "Downloading API ops files..."
+          echo "Syncing API ops files..."
           gh run download ${{ github.run_id }} --name synced-files-api_ops --dir temp-api-ops || echo "No API ops files"
-          if [[ -d temp-api-ops/pages/api-references/genlayer-node/ops ]]; then
+          if [[ -d temp-api-ops ]]; then
+            # Sync the ops directory (artifact contains: pages/api-references/genlayer-node/ops/)
             rsync -av --delete temp-api-ops/pages/api-references/genlayer-node/ops/ pages/api-references/genlayer-node/ops/
             rm -rf temp-api-ops
           fi
           
-          echo "All artifacts merged successfully"
+          echo "All artifacts merged successfully against existing branch content"
           echo "Final directory structure:"
           find content/ pages/ -type f -name "*.mdx" -o -name "*.yaml" -o -name "_meta.json" | head -20
         env:
