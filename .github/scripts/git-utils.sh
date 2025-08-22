@@ -13,11 +13,11 @@ create_sync_branch() {
     safe_version=$(echo "$version" | sed 's/\//-/g')
     local branch_name="docs/node/${safe_version}"
     
-    echo "🌿 Creating sync branch: $branch_name"
+    echo "🌿 Creating sync branch: $branch_name" >&2
     
     # Check if branch exists on remote
     if git ls-remote --exit-code --heads origin "$branch_name" >/dev/null 2>&1; then
-        echo "⚠️ Branch $branch_name already exists on remote, will force update"
+        echo "⚠️ Branch $branch_name already exists on remote, will force update" >&2
         git fetch origin "$branch_name"
     fi
     
@@ -26,8 +26,10 @@ create_sync_branch() {
     
     # Export for use in subsequent steps and return for local use
     echo "BRANCH_NAME=$branch_name" >> "$GITHUB_ENV"
+    echo "✅ Created branch: $branch_name" >&2
+    
+    # Return only the branch name for capture
     echo "$branch_name"
-    echo "✅ Created branch: $branch_name"
 }
 
 # Commit and push changes
