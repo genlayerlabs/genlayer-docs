@@ -189,14 +189,44 @@ jobs:
           path: artifacts/
           retention-days: 1
 
-      - name: Upload synced files
+      - name: Upload synced files (changelog)
         uses: actions/upload-artifact@v4
-        if: always()
+        if: always() && matrix.sync_type == 'changelog'
         with:
           name: synced-files-${{ matrix.sync_type }}
-          path: |
-            content/validators/
-            pages/api-references/
+          path: content/validators/changelog/
+          retention-days: 1
+
+      - name: Upload synced files (config)
+        uses: actions/upload-artifact@v4
+        if: always() && matrix.sync_type == 'config'
+        with:
+          name: synced-files-${{ matrix.sync_type }}
+          path: content/validators/config.yaml
+          retention-days: 1
+
+      - name: Upload synced files (api_gen)
+        uses: actions/upload-artifact@v4
+        if: always() && matrix.sync_type == 'api_gen'
+        with:
+          name: synced-files-${{ matrix.sync_type }}
+          path: pages/api-references/genlayer-node/gen/
+          retention-days: 1
+
+      - name: Upload synced files (api_debug)
+        uses: actions/upload-artifact@v4
+        if: always() && matrix.sync_type == 'api_debug'
+        with:
+          name: synced-files-${{ matrix.sync_type }}
+          path: pages/api-references/genlayer-node/debug/
+          retention-days: 1
+
+      - name: Upload synced files (api_ops)
+        uses: actions/upload-artifact@v4
+        if: always() && matrix.sync_type == 'api_ops'
+        with:
+          name: synced-files-${{ matrix.sync_type }}
+          path: pages/api-references/genlayer-node/ops/
           retention-days: 1
 
   aggregate-results:
@@ -254,40 +284,54 @@ jobs:
       - name: Install dependencies
         run: npm install
 
-      - name: Download changelog files
-        uses: actions/download-artifact@v4
-        continue-on-error: true
-        with:
-          name: synced-files-changelog
-          path: ./
-
-      - name: Download config files  
-        uses: actions/download-artifact@v4
-        continue-on-error: true
-        with:
-          name: synced-files-config
-          path: ./
-
-      - name: Download API gen files
-        uses: actions/download-artifact@v4
-        continue-on-error: true
-        with:
-          name: synced-files-api_gen
-          path: ./
-
-      - name: Download API debug files
-        uses: actions/download-artifact@v4
-        continue-on-error: true
-        with:
-          name: synced-files-api_debug
-          path: ./
-
-      - name: Download API ops files
-        uses: actions/download-artifact@v4
-        continue-on-error: true
-        with:
-          name: synced-files-api_ops
-          path: ./
+      - name: Download and merge synced files
+        run: |
+          echo "🔄 Downloading and merging all synced artifacts..."
+          
+          # Create target directories
+          mkdir -p content/validators/changelog
+          mkdir -p pages/api-references/genlayer-node/{gen,debug,ops}
+          
+          echo "📁 Downloading changelog files..."
+          gh run download ${{ github.run_id }} --name synced-files-changelog --dir temp-changelog || echo "No changelog files"
+          if [[ -d temp-changelog ]]; then
+            cp -r temp-changelog/* content/validators/ 2>/dev/null || true
+            rm -rf temp-changelog
+          fi
+          
+          echo "⚙️ Downloading config files..."
+          gh run download ${{ github.run_id }} --name synced-files-config --dir temp-config || echo "No config files"
+          if [[ -d temp-config ]]; then
+            cp -r temp-config/* content/validators/ 2>/dev/null || true
+            rm -rf temp-config
+          fi
+          
+          echo "🔧 Downloading API gen files..."
+          gh run download ${{ github.run_id }} --name synced-files-api_gen --dir temp-api-gen || echo "No API gen files"
+          if [[ -d temp-api-gen ]]; then
+            cp -r temp-api-gen/* pages/api-references/ 2>/dev/null || true
+            rm -rf temp-api-gen
+          fi
+          
+          echo "🐛 Downloading API debug files..."
+          gh run download ${{ github.run_id }} --name synced-files-api_debug --dir temp-api-debug || echo "No API debug files"
+          if [[ -d temp-api-debug ]]; then
+            cp -r temp-api-debug/* pages/api-references/ 2>/dev/null || true
+            rm -rf temp-api-debug
+          fi
+          
+          echo "🔄 Downloading API ops files..."
+          gh run download ${{ github.run_id }} --name synced-files-api_ops --dir temp-api-ops || echo "No API ops files"
+          if [[ -d temp-api-ops ]]; then
+            cp -r temp-api-ops/* pages/api-references/ 2>/dev/null || true
+            rm -rf temp-api-ops
+          fi
+          
+          echo "✅ All artifacts merged successfully"
+          echo "📋 Final directory structure:"
+          find content/ pages/ -type f -name "*.mdx" -o -name "*.yaml" -o -name "_meta.json" | head -20
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Run documentation generation scripts
         id: generate
@@ -319,11 +363,11 @@ jobs:
 
 
 
-      - name: Upload processed files
+      - name: Upload final synced files
         uses: actions/upload-artifact@v4
         if: steps.generate.outputs.success == 'true'
         with:
-          name: processed-files
+          name: synced-files-final
           path: |
             content/validators/
             pages/api-references/
@@ -352,10 +396,10 @@ jobs:
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
 
-      - name: Download processed files
+      - name: Download final synced files
         uses: actions/download-artifact@v4
         with:
-          name: processed-files
+          name: synced-files-final
           path: ./
 
       - name: Get aggregated results
