@@ -331,7 +331,7 @@ jobs:
           source .github/scripts/git-utils.sh
           
           if check_for_changes; then
-            create_sync_branch "${{ needs.prepare.outputs.version }}"
+            BRANCH_NAME=$(create_sync_branch "${{ needs.prepare.outputs.version }}")
             
             # Use aggregated metrics from previous step
             commit_and_push_changes \
@@ -339,7 +339,8 @@ jobs:
               "${{ steps.get_results.outputs.total_changes }}" \
               "${{ steps.get_results.outputs.total_added }}" \
               "${{ steps.get_results.outputs.total_updated }}" \
-              "${{ steps.get_results.outputs.total_deleted }}"
+              "${{ steps.get_results.outputs.total_deleted }}" \
+              "$BRANCH_NAME"
           else
             echo "No changes to commit"
             exit 0
