@@ -189,50 +189,14 @@ jobs:
           path: artifacts/
           retention-days: 1
 
-      - name: Upload synced files  
-        uses: actions/upload-artifact@v4
-        if: always() && matrix.sync_type == 'changelog'
-        with:
-          name: synced-files-${{ matrix.sync_type }}
-          path: content/validators/changelog/
-          retention-days: 1
-
       - name: Upload synced files
         uses: actions/upload-artifact@v4
-        if: always() && matrix.sync_type == 'config'
-        with:
-          name: synced-files-${{ matrix.sync_type }}
-          path: content/validators/config.yaml
-          retention-days: 1
-
-      - name: Upload synced files
-        uses: actions/upload-artifact@v4
-        if: always() && matrix.sync_type == 'api_gen'
+        if: always()
         with:
           name: synced-files-${{ matrix.sync_type }}
           path: |
-            pages/api-references/genlayer-node/gen/
-            pages/api-references/genlayer-node/_meta.json
-          retention-days: 1
-
-      - name: Upload synced files
-        uses: actions/upload-artifact@v4
-        if: always() && matrix.sync_type == 'api_debug'
-        with:
-          name: synced-files-${{ matrix.sync_type }}
-          path: |
-            pages/api-references/genlayer-node/debug/
-            pages/api-references/genlayer-node/_meta.json
-          retention-days: 1
-
-      - name: Upload synced files
-        uses: actions/upload-artifact@v4
-        if: always() && matrix.sync_type == 'api_ops'
-        with:
-          name: synced-files-${{ matrix.sync_type }}
-          path: |
-            pages/api-references/genlayer-node/ops/
-            pages/api-references/genlayer-node/_meta.json
+            content/validators/
+            pages/api-references/
           retention-days: 1
 
   aggregate-results:
@@ -290,11 +254,39 @@ jobs:
       - name: Install dependencies
         run: npm install
 
-      - name: Download synced files
+      - name: Download changelog files
         uses: actions/download-artifact@v4
+        continue-on-error: true
         with:
-          pattern: synced-files-*
-          merge-multiple: true
+          name: synced-files-changelog
+          path: ./
+
+      - name: Download config files  
+        uses: actions/download-artifact@v4
+        continue-on-error: true
+        with:
+          name: synced-files-config
+          path: ./
+
+      - name: Download API gen files
+        uses: actions/download-artifact@v4
+        continue-on-error: true
+        with:
+          name: synced-files-api_gen
+          path: ./
+
+      - name: Download API debug files
+        uses: actions/download-artifact@v4
+        continue-on-error: true
+        with:
+          name: synced-files-api_debug
+          path: ./
+
+      - name: Download API ops files
+        uses: actions/download-artifact@v4
+        continue-on-error: true
+        with:
+          name: synced-files-api_ops
           path: ./
 
       - name: Run documentation generation scripts
