@@ -1,0 +1,83 @@
+### health
+
+Returns the health status of the GenLayer node along with version information and the status of individual health checks.
+
+**Method:** `GET /health`
+
+**Parameters:** None
+
+**Returns:** JSON object containing the overall health status, version information, and individual check results
+
+**Example Request:**
+
+```bash
+curl -X GET http://localhost:9153/health
+```
+
+**Example Response:**
+
+```json
+{
+  "status": "up",
+  "node_version": "v1.2.3",
+  "protocol_version": "consensus-v2.1",
+  "checks": {
+    "test-check": {
+      "status": "up",
+      "timestamp": "2024-01-15T10:30:45Z"
+    }
+  }
+}
+```
+
+**Response Fields:**
+
+- `status` (string): Overall health status - "up" if all checks pass, "down" if any check fails
+- `node_version` (string): The version of the GenLayer node software
+- `protocol_version` (string): The consensus protocol version
+- `checks` (object, optional): Map of individual health check results
+  - `[check-name]` (object): Results for a specific health check
+    - `status` (string): Check status - "up" or "down"
+    - `timestamp` (string): ISO 8601 timestamp of when the check was performed
+    - `error` (string, optional): Error message if check failed
+
+**HTTP Status Codes:**
+
+- `200 OK`: Node is healthy (all checks passing)
+- `503 Service Unavailable`: Node is unhealthy (one or more checks failing)
+
+**Notes:**
+
+- The endpoint has a 5-second timeout for all health checks
+- The `checks` field is only included when health checks are configured
+- Version fields will show "unset" if version information is not available
+- Individual health checks are executed concurrently with results aggregated in the response
+
+**Example Response (Unhealthy):**
+
+```json
+{
+  "status": "down",
+  "node_version": "v1.2.3",
+  "protocol_version": "consensus-v2.1",
+  "checks": {
+    "database": {
+      "status": "down",
+      "error": "connection timeout",
+      "timestamp": "2024-01-15T10:30:45Z"
+    },
+    "consensus": {
+      "status": "up",
+      "timestamp": "2024-01-15T10:30:45Z"
+    }
+  }
+}
+```
+
+**cURL Example with Headers:**
+
+```bash
+curl -X GET http://localhost:9153/health \
+  -H "Accept: application/json" \
+  -v
+```

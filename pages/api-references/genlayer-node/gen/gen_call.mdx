@@ -12,12 +12,12 @@ Executes a new message call immediately without creating a transaction on the bl
   - `Data` (string, required): The encoded function call data
   - `Type` (string, required): The type of call (`"read"`, `"write"`, or `"deploy"`)
   - `blockNumber` (string, optional): The block number to query at (hex-encoded). If not provided, uses latest block
-  - `status` (string, optional): The transaction status filter (`"finalized"` or `"accepted"`). If not provided, uses accepted state
+  - `status` (string, optional): The transaction status filter (`"finalized"` or `"accepted"`). If not provided, uses finalized state
   - `value` (string, optional): The value to send with the call (hex-encoded)
 
 **Returns:** Hex-encoded result data
 
-**Example - Read Call (Latest Accepted State):**
+**Example - Read Call (Latest Finalized State):**
 
 ```json
 {
@@ -80,7 +80,7 @@ Executes a new message call immediately without creating a transaction on the bl
 **Notes:**
 
 - The `blockNumber` parameter can be either hex-encoded with a `0x` prefix (e.g., `"0x151ec5"`) or decimal (e.g., `"1384133"`)
-- Valid `status` values are `"accepted"` (default) and `"finalized"`
-- When both parameters are omitted, the call executes against the latest accepted state
+- Valid `status` values are `"finalized"` (default) and `"accepted"`
+- When both parameters are omitted, the call executes against the latest finalized state
 - For `read` and `write` type calls, if the contract doesn't exist at the specified block/status combination, an error will be returned
 - For `deploy` type calls, the `status` and `blockNumber` parameters are not used for contract state validation since no contract exists yet
