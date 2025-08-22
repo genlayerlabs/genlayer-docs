@@ -1,0 +1,205 @@
+# Metrics API Reference
+
+The GenLayer Node exposes Prometheus-compatible metrics for monitoring node health and performance.
+
+## Endpoint
+
+```
+GET http://localhost:9153/metrics
+```
+
+## Available Metrics
+
+The node collects metrics for three main components:
+- **Node** - The main node process
+- **GenVM** - The GenVM modules (LLM and Web)
+- **WebDriver** - The WebDriver container
+
+### CPU Metrics
+
+#### genlayer_node_cpu_usage_percent
+
+Current CPU usage percentage (0-100).
+
+**Type:** Gauge
+
+**Labels:**
+- `component`: One of `node`, `genvm-llm`, `genvm-web`, `webdriver`
+
+**Example:**
+```
+genlayer_node_cpu_usage_percent{component="node"} 15.5
+genlayer_node_cpu_usage_percent{component="genvm-llm"} 45.2
+genlayer_node_cpu_usage_percent{component="genvm-web"} 12.8
+genlayer_node_cpu_usage_percent{component="webdriver"} 5.3
+```
+
+### Memory Metrics
+
+#### genlayer_node_memory_rss_bytes
+
+Resident Set Size (RSS) memory usage in bytes.
+
+**Type:** Gauge
+
+**Labels:**
+- `component`: One of `node`, `genvm-llm`, `genvm-web`, `webdriver`
+
+**Example:**
+```
+genlayer_node_memory_rss_bytes{component="node"} 524288000
+genlayer_node_memory_rss_bytes{component="genvm-llm"} 2147483648
+```
+
+#### genlayer_node_memory_vms_bytes
+
+Virtual Memory Size (VMS) in bytes.
+
+**Type:** Gauge
+
+**Labels:**
+- `component`: One of `node`, `genvm-llm`, `genvm-web`, `webdriver`
+
+**Note:** Only available for node and GenVM components.
+
+#### genlayer_node_memory_usage_bytes
+
+Current memory usage in bytes (WebDriver only).
+
+**Type:** Gauge
+
+**Labels:**
+- `component`: `webdriver`
+
+#### genlayer_node_memory_limit_bytes
+
+Memory limit in bytes (WebDriver only).
+
+**Type:** Gauge
+
+**Labels:**
+- `component`: `webdriver`
+
+#### genlayer_node_memory_percent
+
+Memory usage percentage (WebDriver only).
+
+**Type:** Gauge
+
+**Labels:**
+- `component`: `webdriver`
+
+### Network Metrics
+
+#### genlayer_node_network_rx_bytes_total
+
+Total bytes received across all network interfaces.
+
+**Type:** Counter
+
+**Labels:**
+- `component`: One of `node`, `genvm-llm`, `genvm-web`, `webdriver`
+
+**Example:**
+```
+genlayer_node_network_rx_bytes_total{component="node"} 1073741824
+```
+
+#### genlayer_node_network_tx_bytes_total
+
+Total bytes transmitted across all network interfaces.
+
+**Type:** Counter
+
+**Labels:**
+- `component`: One of `node`, `genvm-llm`, `genvm-web`, `webdriver`
+
+## Configuration
+
+Metrics collection can be configured in the node configuration file:
+
+```yaml
+metrics:
+  interval: "15s"        # Default interval for all collectors
+  collectors:
+    node:
+      enabled: true      # Enable/disable node metrics
+      interval: "30s"    # Optional: Override default interval
+    genvm:
+      enabled: true      # Enable/disable GenVM metrics
+      # Uses default interval (15s)
+    webdriver:
+      enabled: true      # Enable/disable WebDriver metrics
+      interval: "60s"    # Optional: Override default interval
+```
+
+### Default Values
+- `metrics.interval`: 15s (applies to all collectors by default)
+- `enabled`: true (for each collector)
+- `interval`: Uses metrics.interval if not specified per collector
+
+### Configuration Priority
+1. Collector-specific `interval` (if specified)
+2. Global `metrics.interval` (if specified)
+3. System default (15s)
+
+## Monitoring Integration
+
+### Prometheus Configuration
+
+Add the following to your `prometheus.yml`:
+
+```yaml
+scrape_configs:
+  - job_name: 'genlayer-node'
+    static_configs:
+      - targets: ['localhost:9153']
+    scrape_interval: 15s
+```
+
+### Grafana Dashboard
+
+Example queries for Grafana:
+
+**CPU Usage by Component:**
+```promql
+genlayer_node_cpu_usage_percent
+```
+
+**Memory Usage (MB):**
+```promql
+genlayer_node_memory_rss_bytes / 1024 / 1024
+```
+
+**Network Traffic Rate (bytes/sec):**
+```promql
+rate(genlayer_node_network_rx_bytes_total[1m])
+```
+
+## Troubleshooting
+
+### No Metrics for GenVM
+
+GenVM processes are ephemeral and only run when executing smart contracts. If you don't see GenVM metrics, it's likely that no contracts are currently being executed.
+
+### WebDriver Metrics Missing
+
+Ensure the WebDriver container is running:
+```bash
+docker ps | grep genlayer-node-webdriver
+```
+
+If not running, start it:
+```bash
+task docker:webdriver:docker-compose:up:detach
+```
+
+### Metrics Not Updating
+
+Check if metrics collection is enabled in your configuration and that the node has been restarted after configuration changes.
+
+## Performance Considerations
+
+- Metrics collection has minimal overhead (~1-2% CPU)
+- Collection intervals can be increased to reduce overhead further
+- Each collector runs independently and won't block others if one fails
