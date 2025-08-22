@@ -24,8 +24,9 @@ create_sync_branch() {
     # Create/recreate branch from current HEAD (main)
     git switch --force-create "$branch_name"
     
-    # Export for use in subsequent steps
+    # Export for use in subsequent steps and return for local use
     echo "BRANCH_NAME=$branch_name" >> "$GITHUB_ENV"
+    echo "$branch_name"
     echo "✅ Created branch: $branch_name"
 }
 
@@ -36,6 +37,7 @@ commit_and_push_changes() {
     local total_added="$3"
     local total_updated="$4"
     local total_deleted="$5"
+    local branch_name="$6"
     
     echo "📝 Committing changes..."
     
@@ -60,9 +62,9 @@ EOF
 )"
     
     echo "🚀 Pushing changes..."
-    git push --force-with-lease origin "$BRANCH_NAME"
+    git push --force-with-lease origin "$branch_name"
     
-    echo "✅ Changes committed and pushed to $BRANCH_NAME"
+    echo "✅ Changes committed and pushed to $branch_name"
 }
 
 # Check for any changes
