@@ -392,15 +392,17 @@ jobs:
             PR_URL=$(echo "$PR_JSON" | jq -r .url)
             
             if [ "$PR_STATE" = "OPEN" ]; then
-              echo "Open PR already exists for branch $BRANCH_NAME – skipping creation"
-              echo "View existing PR: $PR_URL"
-              exit 0
+              echo "Open PR already exists for branch $BRANCH_NAME – updating PR description"
+              echo "Existing PR: $PR_URL"
+              UPDATE_EXISTING_PR=true
             else
               echo "Closed PR exists for branch $BRANCH_NAME (state: $PR_STATE)"
               echo "Creating new PR..."
+              UPDATE_EXISTING_PR=false
             fi
           else
             echo "No PR exists for branch $BRANCH_NAME"
+            UPDATE_EXISTING_PR=false
           fi
           
           # Create PR body file
@@ -438,17 +440,28 @@ jobs:
           - [x] API documentation is properly formatted
           EOF
           
-          # Create PR using GitHub CLI and capture URL
-          PR_URL=$(gh pr create \
-            --title "docs: sync documentation from genlayer-node ${{ needs.prepare.outputs.version }}" \
-            --body-file "$PR_BODY_FILE" \
-            --label "documentation" \
-            --label "node" \
-            --base "main" \
-            --head "$BRANCH_NAME")
-          
-          echo "pr_url=$PR_URL" >> $GITHUB_OUTPUT
-          echo "✅ PR created: $PR_URL"
+          # Create or update PR using GitHub CLI
+          if [ "$UPDATE_EXISTING_PR" = "true" ]; then
+            # Update existing PR
+            gh pr edit "$BRANCH_NAME" \
+              --title "docs: sync documentation from genlayer-node ${{ needs.prepare.outputs.version }}" \
+              --body-file "$PR_BODY_FILE"
+            
+            echo "pr_url=$PR_URL" >> $GITHUB_OUTPUT
+            echo "✅ PR updated: $PR_URL"
+          else
+            # Create new PR and capture URL
+            PR_URL=$(gh pr create \
+              --title "docs: sync documentation from genlayer-node ${{ needs.prepare.outputs.version }}" \
+              --body-file "$PR_BODY_FILE" \
+              --label "documentation" \
+              --label "node" \
+              --base "main" \
+              --head "$BRANCH_NAME")
+            
+            echo "pr_url=$PR_URL" >> $GITHUB_OUTPUT
+            echo "✅ PR created: $PR_URL"
+          fi
 
   summary:
     name: 'Workflow Summary'
