@@ -159,11 +159,16 @@ sync_files() {
         [ ! -f "$file" ] && echo "🔍 DEBUG: File does not exist, continuing" && continue
         echo "🔍 DEBUG: File exists, proceeding with processing"
         
+        echo "🔍 DEBUG: About to extract basename without extension"
         local basename_no_ext
         basename_no_ext=$(basename "$file" | sed 's/\.[^.]*$//')
+        echo "🔍 DEBUG: basename_no_ext=$basename_no_ext"
         
+        echo "🔍 DEBUG: About to check if filename matches filter"
+        echo "🔍 DEBUG: Calling matches_pattern with args: '$basename_no_ext' '$file_filter'"
         # Check if filename matches the filter
         if matches_pattern "$basename_no_ext" "$file_filter"; then
+            echo "🔍 DEBUG: File matches filter, proceeding"
             local dest_filename="${basename_no_ext}.mdx"
             local dest_file_path="$dest_path/$dest_filename"
             
