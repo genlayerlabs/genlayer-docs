@@ -726,6 +726,8 @@ jobs:
     runs-on: ubuntu-latest
     needs: [prepare, aggregate-results, generate-docs, create-pr, summary]
     if: always() && (needs.create-pr.result == 'success' || needs.summary.result == 'success')
+    permissions:
+      actions: write
     steps:
       - name: Delete intermediate artifacts
         if: env.CLEANUP_ARTIFACTS == 'true'
