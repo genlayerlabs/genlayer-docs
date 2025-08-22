@@ -136,92 +136,92 @@ sync_files() {
         rm -f "$temp_file"
     fi
     echo "🔍 Finished tracking existing files"
-    echo "🔍 DEBUG: About to initialize counters"
+    echo "DEBUG: 🔍 About to initialize counters"
     
     # Track what we'll be syncing
     echo "🔍 Initializing counters"
-    echo "🔍 DEBUG: Declaring local variables"
+    echo "DEBUG: 🔍 Declaring local variables"
     local added=0
-    echo "🔍 DEBUG: added variable declared"
+    echo "DEBUG: 🔍 added variable declared"
     local updated=0
-    echo "🔍 DEBUG: updated variable declared"
+    echo "DEBUG: 🔍 updated variable declared"
     local deleted=0
-    echo "🔍 DEBUG: deleted variable declared"
+    echo "DEBUG: 🔍 deleted variable declared"
     echo "🔍 Counters initialized: added=$added updated=$updated deleted=$deleted"
-    echo "🔍 DEBUG: About to start file processing loop"
-    echo "🔍 DEBUG: Will look for files in: $source_path"
-    echo "🔍 DEBUG: Expanding glob patterns: $source_path/*.mdx $source_path/*.md"
+    echo "DEBUG: 🔍 About to start file processing loop"
+    echo "DEBUG: 🔍 Will look for files in: $source_path"
+    echo "DEBUG: 🔍 Expanding glob patterns: $source_path/*.mdx $source_path/*.md"
     
     # Process all source files that match the filter
-    echo "🔍 DEBUG: Starting for loop"
+    echo "DEBUG: 🔍 Starting for loop"
     for file in "$source_path"/*.mdx "$source_path"/*.md; do
-        echo "🔍 DEBUG: Processing file: $file"
-        [ ! -f "$file" ] && echo "🔍 DEBUG: File does not exist, continuing" && continue
-        echo "🔍 DEBUG: File exists, proceeding with processing"
+        echo "DEBUG: 🔍 Processing file: $file"
+        [ ! -f "$file" ] && echo "DEBUG: 🔍 File does not exist, continuing" && continue
+        echo "DEBUG: 🔍 File exists, proceeding with processing"
         
-        echo "🔍 DEBUG: About to extract basename without extension"
+        echo "DEBUG: 🔍 About to extract basename without extension"
         local basename_no_ext
         basename_no_ext=$(basename "$file" | sed 's/\.[^.]*$//')
-        echo "🔍 DEBUG: basename_no_ext=$basename_no_ext"
+        echo "DEBUG: 🔍 basename_no_ext=$basename_no_ext"
         
-        echo "🔍 DEBUG: About to check if filename matches filter"
-        echo "🔍 DEBUG: Calling matches_pattern with args: '$basename_no_ext' '$file_filter'"
+        echo "DEBUG: 🔍 About to check if filename matches filter"
+        echo "DEBUG: 🔍 Calling matches_pattern with args: '$basename_no_ext' '$file_filter'"
         # Check if filename matches the filter
         if matches_pattern "$basename_no_ext" "$file_filter"; then
-            echo "🔍 DEBUG: File matches filter, proceeding"
-            echo "🔍 DEBUG: Line 173 reached"
+            echo "DEBUG: 🔍 File matches filter, proceeding"
+            echo "DEBUG: 🔍 Line 173 reached"
             local dest_filename="${basename_no_ext}.mdx"
-            echo "🔍 DEBUG: Line 175 reached - dest_filename=$dest_filename"
+            echo "DEBUG: 🔍 Line 175 reached - dest_filename=$dest_filename"
             local dest_file_path="$dest_path/$dest_filename"
-            echo "🔍 DEBUG: Line 177 reached - dest_file_path=$dest_file_path"
+            echo "DEBUG: 🔍 Line 177 reached - dest_file_path=$dest_file_path"
             
-            echo "🔍 DEBUG: Line 179 reached - about to check if file exists"
+            echo "DEBUG: 🔍 Line 179 reached - about to check if file exists"
             if [ -f "$dest_file_path" ]; then
-                echo "🔍 DEBUG: Line 181 reached - file exists, checking differences"
+                echo "DEBUG: 🔍 Line 181 reached - file exists, checking differences"
                 # File exists - check if it's different
                 if ! cmp -s "$file" "$dest_file_path"; then
-                    echo "🔍 DEBUG: Line 184 reached - files different, copying"
+                    echo "DEBUG: 🔍 Line 184 reached - files different, copying"
                     cp "$file" "$dest_file_path"
-                    echo "🔍 DEBUG: Line 186 reached - copy complete, updating report"
+                    echo "DEBUG: 🔍 Line 186 reached - copy complete, updating report"
                     echo "- Updated: \`$dest_filename\`" >> "$report_file"
-                    echo "🔍 DEBUG: Line 188 reached - report updated, incrementing counter"
+                    echo "DEBUG: 🔍 Line 188 reached - report updated, incrementing counter"
                     updated=$((updated + 1))
-                    echo "🔍 DEBUG: Line 190 reached - counter incremented"
+                    echo "DEBUG: 🔍 Line 190 reached - counter incremented"
                 fi
-                echo "🔍 DEBUG: Line 192 reached - removing from tracking"
+                echo "DEBUG: 🔍 Line 192 reached - removing from tracking"
                 # Remove from tracking to identify deletions later
                 unset existing_files["$dest_filename"]
-                echo "🔍 DEBUG: Line 195 reached - removed from tracking"
+                echo "DEBUG: 🔍 Line 195 reached - removed from tracking"
             else
-                echo "🔍 DEBUG: Line 197 reached - new file, copying"
+                echo "DEBUG: 🔍 Line 197 reached - new file, copying"
                 # New file
                 cp "$file" "$dest_file_path"
-                echo "🔍 DEBUG: Line 200 reached - copy complete, updating report"
+                echo "DEBUG: 🔍 Line 200 reached - copy complete, updating report"
                 echo "- Added: \`$dest_filename\`" >> "$report_file"
-                echo "🔍 DEBUG: Line 202 reached - report updated, incrementing counter"
+                echo "DEBUG: 🔍 Line 202 reached - report updated, incrementing counter"
                 added=$((added + 1))
-                echo "🔍 DEBUG: Line 204 reached - counter incremented"
+                echo "DEBUG: 🔍 Line 204 reached - counter incremented"
             fi
-            echo "🔍 DEBUG: Line 206 reached - end of if block"
+            echo "DEBUG: 🔍 Line 206 reached - end of if block"
         fi
-        echo "🔍 DEBUG: End of file processing iteration"
+        echo "DEBUG: 🔍 End of file processing iteration"
     done
-    echo "🔍 DEBUG: Completed for loop - all files processed"
+    echo "DEBUG: 🔍 Completed for loop - all files processed"
     
-    echo "🔍 DEBUG: About to skip _meta.json handling"
+    echo "DEBUG: 🔍 About to skip _meta.json handling"
     # Skip _meta.json handling - it should not be touched
     unset existing_files["_meta.json"]
-    echo "🔍 DEBUG: Skipped _meta.json handling"
+    echo "DEBUG: 🔍 Skipped _meta.json handling"
     
-    echo "🔍 DEBUG: About to start deletion loop"
-    echo "🔍 DEBUG: Checking if existing_files array has elements"
+    echo "DEBUG: 🔍 About to start deletion loop"
+    echo "DEBUG: 🔍 Checking if existing_files array has elements"
     
     # Remove files that no longer exist in source or don't match the filter
     # Check if array has elements first to avoid expansion issues
     if [ ${#existing_files[@]} -gt 0 ]; then
-        echo "🔍 DEBUG: Array has ${#existing_files[@]} elements, starting iteration"
+        echo "DEBUG: 🔍 Array has ${#existing_files[@]} elements, starting iteration"
         for dest_file in "${existing_files[@]}"; do
-            echo "🔍 DEBUG: Processing existing file for potential deletion: $dest_file"
+            echo "DEBUG: 🔍 Processing existing file for potential deletion: $dest_file"
         if [ -f "$dest_file" ]; then
             local dest_basename_no_ext
             dest_basename_no_ext=$(basename "$dest_file" | sed 's/\.[^.]*$//')
@@ -242,11 +242,11 @@ sync_files() {
             fi
         fi
         done
-        echo "🔍 DEBUG: Completed deletion loop iteration"
+        echo "DEBUG: 🔍 Completed deletion loop iteration"
     else
-        echo "🔍 DEBUG: No existing files to process for deletion"
+        echo "DEBUG: 🔍 No existing files to process for deletion"
     fi
-    echo "🔍 DEBUG: Completed deletion loop processing"
+    echo "DEBUG: 🔍 Completed deletion loop processing"
     
     # Summary
     local total=$((added + updated + deleted))
