@@ -36,7 +36,7 @@ on:
 
 # Global environment variables
 env:
-  CLEANUP_ARTIFACTS: true
+  CLEANUP_ARTIFACTS: false
 
 # Prevent concurrent runs of the same workflow
 concurrency:
@@ -45,93 +45,51 @@ concurrency:
 
 jobs:
   prepare:
-    name: 'Prepare Sync Parameters'
+    name: 'Determine Version'
     runs-on: ubuntu-latest
     outputs:
-      version: ${{ steps.set_version.outputs.version }}
-      should_continue: ${{ steps.validate.outputs.should_continue }}
+      version: ${{ steps.final_version.outputs.version }}
     steps:
-      - name: Checkout documentation repository
+      - name: Checkout repository
         uses: actions/checkout@v4
-        with:
-          fetch-depth: 0
-          token: ${{ secrets.GITHUB_TOKEN }}
-
-      - name: Setup Python dependencies
+        
+      - name: Extract version parameter
+        id: extract
         run: |
-          python3 -m pip install --upgrade pip
-          python3 -m pip install pyyaml
-
-      - name: Extract sync parameters
-        id: params
-        run: |
-          set -euo pipefail
           if [ "${{ github.event_name }}" = "repository_dispatch" ]; then
-            # Default to "latest" if version not provided
-            VERSION="${{ github.event.client_payload.version }}"
-            if [ -z "$VERSION" ]; then
-              VERSION="latest"
-            fi
-            echo "version=$VERSION" >> $GITHUB_OUTPUT
+            VERSION="${{ github.event.client_payload.version || 'latest' }}"
           else
-            echo "version=${{ github.event.inputs.version }}" >> $GITHUB_OUTPUT
+            VERSION="${{ github.event.inputs.version || 'latest' }}"
           fi
+          echo "version=$VERSION" >> $GITHUB_OUTPUT
+          echo "Requested version: $VERSION"
 
-      - name: Clone source repository for version detection
-        uses: actions/checkout@v4
-        with:
-          repository: genlayerlabs/genlayer-node
-          token: ${{ secrets.NODE_REPO_TOKEN || secrets.GITHUB_TOKEN }}
-          fetch-depth: 0
-          sparse-checkout: |
-            docs
-            configs/node/config.yaml.example
-          sparse-checkout-cone-mode: true
-          path: source-repo
-
-      - name: Detect latest version (if needed)
-        id: detect_version
-        if: steps.params.outputs.version == 'latest' || steps.params.outputs.version == ''
+      - name: Detect latest version
+        id: detect
+        if: steps.extract.outputs.version == 'latest'
+        env:
+          GITHUB_TOKEN: ${{ secrets.NODE_REPO_TOKEN || secrets.GITHUB_TOKEN }}
         run: |
-          cd source-repo
-          # Get the latest tag that's not a pre-release
-          LATEST_TAG=$(git tag -l | grep -E '^v[0-9]+\.[0-9]+\.[0-9]+$' | sort -V | tail -n1)
-          
-          if [[ -z "$LATEST_TAG" ]]; then
-            echo "No tags found in repository"
-            exit 1
-          fi
-          
-          echo "Detected latest tag: $LATEST_TAG"
+          source .github/scripts/version-utils.sh
+          LATEST_TAG=$(detect_latest_version "$GITHUB_TOKEN")
+          echo "Latest version detected: $LATEST_TAG"
           echo "version=$LATEST_TAG" >> $GITHUB_OUTPUT
 
       - name: Set final version
-        id: set_version
+        id: final_version
         run: |
-          if [[ "${{ steps.params.outputs.version }}" == "latest" || -z "${{ steps.params.outputs.version }}" ]]; then
-            VERSION="${{ steps.detect_version.outputs.version }}"
+          if [[ "${{ steps.extract.outputs.version }}" == "latest" ]]; then
+            VERSION="${{ steps.detect.outputs.version }}"
           else
-            VERSION="${{ steps.params.outputs.version }}"
+            VERSION="${{ steps.extract.outputs.version }}"
           fi
           echo "version=$VERSION" >> $GITHUB_OUTPUT
-          echo "Using version: $VERSION"
-
-      - name: Checkout version in source repo
-        run: |
-          cd source-repo
-          git checkout ${{ steps.set_version.outputs.version }}
-
-      - name: Validate inputs and setup
-        id: validate
-        run: |
-          echo "should_continue=true" >> "$GITHUB_OUTPUT"
-          echo "✅ Preparation complete - ready to sync version: ${{ steps.detect_version.outputs.final_version }}"
+          echo "✅ Will sync version: $VERSION"
 
   sync-files:
     name: 'Sync Files'
     runs-on: ubuntu-latest
     needs: prepare
-    if: needs.prepare.outputs.should_continue == 'true'
     strategy:
       matrix:
         sync_type: [changelog, config, api_gen, api_debug, api_ops]
@@ -140,31 +98,19 @@ jobs:
       - name: Checkout documentation repository
         uses: actions/checkout@v4
         with:
-          fetch-depth: 0
           token: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Setup Node.js and dependencies
-        uses: actions/setup-node@v4
-        with:
-          node-version: '18'
-          cache: 'npm'
-      
-      - name: Install dependencies
+      - name: Install Python dependencies
+        if: matrix.sync_type == 'config'
         run: |
-          npm install
           python3 -m pip install --upgrade pip pyyaml
-
-      - name: Setup Git
-        run: |
-          git config user.name "github-actions[bot]"
-          git config user.email "github-actions[bot]@users.noreply.github.com"
 
       - name: Clone source repository
         uses: actions/checkout@v4
         with:
           repository: genlayerlabs/genlayer-node
           token: ${{ secrets.NODE_REPO_TOKEN || secrets.GITHUB_TOKEN }}
-          fetch-depth: 0
+          fetch-depth: 1
           sparse-checkout: |
             docs
             configs/node/config.yaml.example
@@ -172,219 +118,124 @@ jobs:
           path: source-repo
           ref: ${{ needs.prepare.outputs.version }}
 
+      - name: Set sync parameters
+        id: set_params
+        run: |
+          case "${{ matrix.sync_type }}" in
+            "changelog")
+              echo "title=Changelog" >> $GITHUB_OUTPUT
+              echo "source_path=source-repo/${{ github.event.inputs.changelog_path || github.event.client_payload.changelog_path || 'docs/changelog' }}" >> $GITHUB_OUTPUT
+              echo "target_path=content/validators/changelog" >> $GITHUB_OUTPUT
+              echo "filter_pattern=.*" >> $GITHUB_OUTPUT
+              ;;
+            "config")
+              echo "title=Config File" >> $GITHUB_OUTPUT
+              echo "source_path=source-repo/configs/node/config.yaml.example" >> $GITHUB_OUTPUT
+              echo "target_path=content/validators/config.yaml" >> $GITHUB_OUTPUT
+              echo "filter_pattern=.*" >> $GITHUB_OUTPUT
+              echo "sanitize_script=.github/scripts/sanitize-config.sh" >> $GITHUB_OUTPUT
+              ;;
+            "api_gen")
+              echo "title=API Gen Methods" >> $GITHUB_OUTPUT
+              echo "source_path=source-repo/${{ github.event.inputs.api_gen_path || github.event.client_payload.api_gen_path || 'docs/api/rpc' }}" >> $GITHUB_OUTPUT
+              echo "target_path=pages/api-references/genlayer-node/gen" >> $GITHUB_OUTPUT
+              echo "filter_pattern=${{ github.event.inputs.api_gen_regex || github.event.client_payload.api_gen_regex || 'gen_(?!dbg_).*' }}" >> $GITHUB_OUTPUT
+              ;;
+            "api_debug")
+              echo "title=API Debug Methods" >> $GITHUB_OUTPUT
+              echo "source_path=source-repo/${{ github.event.inputs.api_debug_path || github.event.client_payload.api_debug_path || 'docs/api/rpc' }}" >> $GITHUB_OUTPUT
+              echo "target_path=pages/api-references/genlayer-node/debug" >> $GITHUB_OUTPUT
+              echo "filter_pattern=${{ github.event.inputs.api_debug_regex || github.event.client_payload.api_debug_regex || 'gen_dbg_.*' }}" >> $GITHUB_OUTPUT
+              ;;
+            "api_ops")
+              echo "title=API Ops Methods" >> $GITHUB_OUTPUT
+              echo "source_path=source-repo/${{ github.event.inputs.api_ops_path || github.event.client_payload.api_ops_path || 'docs/api/ops' }}" >> $GITHUB_OUTPUT
+              echo "target_path=pages/api-references/genlayer-node/ops" >> $GITHUB_OUTPUT
+              echo "filter_pattern=.*" >> $GITHUB_OUTPUT
+              ;;
+          esac
+
       - name: Sync files using composite action
         id: sync
         uses: ./.github/actions/sync-files
         with:
-          sync_type: ${{ matrix.sync_type }}
-          version: ${{ needs.prepare.outputs.version }}
-          changelog_path: ${{ github.event.inputs.changelog_path || github.event.client_payload.changelog_path || 'docs/changelog' }}
-          api_gen_path: ${{ github.event.inputs.api_gen_path || github.event.client_payload.api_gen_path || 'docs/api/rpc' }}
-          api_debug_path: ${{ github.event.inputs.api_debug_path || github.event.client_payload.api_debug_path || 'docs/api/rpc' }}
-          api_ops_path: ${{ github.event.inputs.api_ops_path || github.event.client_payload.api_ops_path || 'docs/api/ops' }}
-          api_gen_regex: ${{ github.event.inputs.api_gen_regex || github.event.client_payload.api_gen_regex || 'gen_(?!dbg_).*' }}
-          api_debug_regex: ${{ github.event.inputs.api_debug_regex || github.event.client_payload.api_debug_regex || 'gen_dbg_.*' }}
-
-      - name: Upload sync reports
-        uses: actions/upload-artifact@v4
-        if: always()
-        with:
-          name: sync-reports-${{ matrix.sync_type }}
-          path: artifacts/
-          retention-days: 1
-
-      - name: Prepare and upload changelog files
-        if: always() && matrix.sync_type == 'changelog'
-        run: |
-          # Create artifact structure preserving full paths from repo root
-          mkdir -p artifact-staging/content/validators/changelog
-          if [[ -d content/validators/changelog && $(find content/validators/changelog -type f | wc -l) -gt 0 ]]; then
-            cp -r content/validators/changelog/* artifact-staging/content/validators/changelog/
-          fi
-
-      - name: Upload changelog files
-        uses: actions/upload-artifact@v4
-        if: always() && matrix.sync_type == 'changelog'
-        with:
-          name: synced-files-${{ matrix.sync_type }}
-          path: artifact-staging/
-          retention-days: 1
-
-      - name: Prepare and upload config file
-        if: always() && matrix.sync_type == 'config'
-        run: |
-          # Create artifact structure preserving full paths from repo root
-          mkdir -p artifact-staging/content/validators
-          if [[ -f content/validators/config.yaml ]]; then
-            cp content/validators/config.yaml artifact-staging/content/validators/
-          fi
-
-      - name: Upload config file
-        uses: actions/upload-artifact@v4
-        if: always() && matrix.sync_type == 'config'
-        with:
-          name: synced-files-${{ matrix.sync_type }}
-          path: artifact-staging/
-          retention-days: 1
-
-      - name: Prepare and upload API gen files
-        if: always() && matrix.sync_type == 'api_gen'
-        run: |
-          # Create artifact structure preserving full paths from repo root
-          mkdir -p artifact-staging/pages/api-references/genlayer-node/gen
-          if [[ -d pages/api-references/genlayer-node/gen && $(find pages/api-references/genlayer-node/gen -type f | wc -l) -gt 0 ]]; then
-            cp -r pages/api-references/genlayer-node/gen/* artifact-staging/pages/api-references/genlayer-node/gen/
-          fi
-
-      - name: Upload API gen files
-        uses: actions/upload-artifact@v4
-        if: always() && matrix.sync_type == 'api_gen'
-        with:
-          name: synced-files-${{ matrix.sync_type }}
-          path: artifact-staging/
-          retention-days: 1
-
-      - name: Prepare and upload API debug files
-        if: always() && matrix.sync_type == 'api_debug'
-        run: |
-          # Create artifact structure preserving full paths from repo root
-          mkdir -p artifact-staging/pages/api-references/genlayer-node/debug
-          if [[ -d pages/api-references/genlayer-node/debug && $(find pages/api-references/genlayer-node/debug -type f | wc -l) -gt 0 ]]; then
-            cp -r pages/api-references/genlayer-node/debug/* artifact-staging/pages/api-references/genlayer-node/debug/
-          fi
-
-      - name: Upload API debug files
-        uses: actions/upload-artifact@v4
-        if: always() && matrix.sync_type == 'api_debug'
-        with:
-          name: synced-files-${{ matrix.sync_type }}
-          path: artifact-staging/
-          retention-days: 1
-
-      - name: Prepare and upload API ops files
-        if: always() && matrix.sync_type == 'api_ops'
-        run: |
-          # Create artifact structure preserving full paths from repo root
-          mkdir -p artifact-staging/pages/api-references/genlayer-node/ops
-          if [[ -d pages/api-references/genlayer-node/ops && $(find pages/api-references/genlayer-node/ops -type f | wc -l) -gt 0 ]]; then
-            cp -r pages/api-references/genlayer-node/ops/* artifact-staging/pages/api-references/genlayer-node/ops/
-          fi
-
-      - name: Upload API ops files
-        uses: actions/upload-artifact@v4
-        if: always() && matrix.sync_type == 'api_ops'
-        with:
-          name: synced-files-${{ matrix.sync_type }}
-          path: artifact-staging/
-          retention-days: 1
+          type: ${{ matrix.sync_type }}
+          title: ${{ steps.set_params.outputs.title }}
+          source_path: ${{ steps.set_params.outputs.source_path }}
+          target_path: ${{ steps.set_params.outputs.target_path }}
+          filter_pattern: ${{ steps.set_params.outputs.filter_pattern }}
+          sanitize_script: ${{ steps.set_params.outputs.sanitize_script }}
 
   aggregate-results:
     name: 'Aggregate Sync Results'
     runs-on: ubuntu-latest
     needs: [prepare, sync-files]
-    if: always() && needs.prepare.outputs.should_continue == 'true'
+    if: always()
     outputs:
       total_changes: ${{ steps.calculate.outputs.total_changes }}
       total_added: ${{ steps.calculate.outputs.total_added }}
       total_updated: ${{ steps.calculate.outputs.total_updated }}
       total_deleted: ${{ steps.calculate.outputs.total_deleted }}
-      sync_reports: ${{ steps.collect.outputs.all_reports }}
+      sync_reports: ${{ steps.calculate.outputs.all_reports }}
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
         
-      - name: Download all sync reports
+      - name: Download all sync artifacts
         uses: actions/download-artifact@v4
         continue-on-error: true
         with:
-          pattern: sync-reports-*
+          pattern: synced-*
           merge-multiple: true
-          path: sync-reports/
+          path: artifacts/
 
       - name: Calculate totals and collect reports
         id: calculate
-        run: .github/scripts/aggregate-reports.sh
-
-      - name: Download and merge synced files
         run: |
-          echo "Downloading and merging all synced artifacts..."
+          # Move reports to sync-reports directory for the script
+          mkdir -p sync-reports
+          find artifacts -name "sync_report_*.md" -exec mv {} sync-reports/ \;
           
-          # Ensure target directories exist
-          mkdir -p content/validators/changelog
-          mkdir -p pages/api-references/genlayer-node/{gen,debug,ops}
+          # Run aggregation script
+          .github/scripts/aggregate-reports.sh
+
+      - name: Create merged artifact
+        run: |
+          # Create merged artifact structure
+          mkdir -p synced-merged
           
-          echo "Syncing changelog files..."
-          gh run download ${{ github.run_id }} --name synced-files-changelog --dir temp-changelog || echo "No changelog files"
-          if [[ -d temp-changelog ]]; then
-            # Sync the changelog directory (artifact contains: content/validators/changelog/)
-            rsync -av --delete temp-changelog/content/validators/changelog/ content/validators/changelog/
-            rm -rf temp-changelog
-          fi
+          # Copy all synced files (excluding reports)
+          find artifacts -type f ! -name "sync_report_*.md" | while read -r file; do
+            # Get relative path from artifacts/
+            rel_path="${file#artifacts/}"
+            # Create directory structure and copy file
+            mkdir -p "synced-merged/$(dirname "$rel_path")"
+            cp "$file" "synced-merged/$rel_path"
+          done
           
-          echo "Syncing config file..."
-          gh run download ${{ github.run_id }} --name synced-files-config --dir temp-config || echo "No config files"
-          if [[ -f temp-config/content/validators/config.yaml ]]; then
-            # Copy the config file (artifact contains: content/validators/config.yaml)
-            cp temp-config/content/validators/config.yaml content/validators/config.yaml
-            rm -rf temp-config
-          fi
+          # Copy aggregated reports
+          cp -r sync-reports synced-merged/
           
-          echo "Syncing API gen files..."
-          gh run download ${{ github.run_id }} --name synced-files-api_gen --dir temp-api-gen || echo "No API gen files"
-          if [[ -d temp-api-gen ]]; then
-            # Sync the gen directory (artifact contains: pages/api-references/genlayer-node/gen/)
-            rsync -av --delete temp-api-gen/pages/api-references/genlayer-node/gen/ pages/api-references/genlayer-node/gen/
-            rm -rf temp-api-gen
-          fi
-          
-          echo "Syncing API debug files..."
-          gh run download ${{ github.run_id }} --name synced-files-api_debug --dir temp-api-debug || echo "No API debug files"
-          if [[ -d temp-api-debug ]]; then
-            # Sync the debug directory (artifact contains: pages/api-references/genlayer-node/debug/)
-            rsync -av --delete temp-api-debug/pages/api-references/genlayer-node/debug/ pages/api-references/genlayer-node/debug/
-            rm -rf temp-api-debug
-          fi
-          
-          echo "Syncing API ops files..."
-          gh run download ${{ github.run_id }} --name synced-files-api_ops --dir temp-api-ops || echo "No API ops files"
-          if [[ -d temp-api-ops ]]; then
-            # Sync the ops directory (artifact contains: pages/api-references/genlayer-node/ops/)
-            rsync -av --delete temp-api-ops/pages/api-references/genlayer-node/ops/ pages/api-references/genlayer-node/ops/
-            rm -rf temp-api-ops
-          fi
-          
-          echo "All artifacts merged successfully"
-          echo "Final directory structure:"
-          find content/ pages/ -type f -name "*.mdx" -o -name "*.yaml" -o -name "_meta.json" | head -20
-        env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          echo "✅ Merged artifact created"
 
       - name: Upload merged synced files
         uses: actions/upload-artifact@v4
         with:
-          name: synced-files-merged
-          path: |
-            content/validators/
-            pages/api-references/
+          name: synced-merged
+          path: synced-merged/
           retention-days: 1
-
-      - name: Store aggregated results
-        id: collect
-        run: |
-          echo "✅ Results aggregated and files merged successfully"
 
   generate-docs:
     name: 'Generate Documentation'
     runs-on: ubuntu-latest
     needs: [prepare, aggregate-results]
-    if: always() && needs.prepare.outputs.should_continue == 'true' && needs.aggregate-results.result != 'cancelled'
+    if: always() && needs.aggregate-results.result != 'cancelled'
     outputs:
       generation_success: ${{ steps.generate.outputs.success }}
     steps:
       - name: Checkout documentation repository
         uses: actions/checkout@v4
         with:
-          fetch-depth: 0
           token: ${{ secrets.GITHUB_TOKEN }}
       
       - name: Setup Node.js
@@ -399,77 +250,47 @@ jobs:
       - name: Download merged synced files
         uses: actions/download-artifact@v4
         with:
-          name: synced-files-merged
+          name: synced-merged
           path: temp-merged
 
-      - name: Sync merged files with deletion handling
+      - name: Apply synced files
         run: |
-          echo "Syncing merged files with current branch (handling deletions)..."
-          
-          # Ensure target directories exist
-          mkdir -p content/validators/changelog
-          mkdir -p pages/api-references/genlayer-node/{gen,debug,ops}
-          
-          # Sync with rsync --delete to handle file deletions properly
-          if [[ -d temp-merged/content/validators ]]; then
-            echo "Syncing content/validators/..."
-            rsync -av --delete temp-merged/content/validators/ content/validators/
-          fi
-          
-          if [[ -d temp-merged/pages/api-references ]]; then
-            echo "Syncing pages/api-references/..."
-            rsync -av --delete temp-merged/pages/api-references/ pages/api-references/
-          fi
-          
-          # Clean up
-          rm -rf temp-merged
-          
-          echo "✅ Merged files synced with proper deletion handling"
+          # Sync all required paths in a single call
+          .github/scripts/sync-artifact-files.sh temp-merged . \
+            "content/validators" \
+            "pages/api-references/genlayer-node"
 
       - name: Run documentation generation scripts
         id: generate
         run: |
-          set -euo pipefail
-          echo "Running documentation generation scripts"
-          
-          echo "::group::Running node-generate-changelog"
-          npm run node-generate-changelog || { echo "❌ node-generate-changelog failed"; exit 1; }
-          echo "✅ Generated changelog"
-          echo "::endgroup::"
-          
-          echo "::group::Running node-update-setup-guide"
-          npm run node-update-setup-guide || { echo "❌ node-update-setup-guide failed"; exit 1; }
-          echo "✅ Updated setup guide versions"
-          echo "::endgroup::"
-          
-          echo "::group::Running node-update-config"
-          npm run node-update-config || { echo "❌ node-update-config failed"; exit 1; }
-          echo "✅ Updated config in setup guide"
-          echo "::endgroup::"
-          
-          echo "::group::Running node-generate-api-docs"
-          npm run node-generate-api-docs || { echo "❌ node-generate-api-docs failed"; exit 1; }
-          echo "✅ Generated API documentation"
-          echo "::endgroup::"
-          
-          echo "success=true" >> "$GITHUB_OUTPUT"
+          .github/scripts/doc-generator.sh && echo "success=true" >> "$GITHUB_OUTPUT"
 
-      - name: Upload final generated files
+      - name: Copy sync reports for final artifact
+        run: |
+          # Copy the sync-reports directory from temp-merged
+          if [[ -d "temp-merged/sync-reports" ]]; then
+            cp -r temp-merged/sync-reports .
+          else
+            echo "Warning: No sync-reports found in temp-merged"
+          fi
+
+      - name: Upload final documentation
         uses: actions/upload-artifact@v4
         if: steps.generate.outputs.success == 'true'
         with:
-          name: synced-files-final
+          name: synced-final
           path: |
             content/validators/
             pages/api-references/
             pages/validators/
+            sync-reports/
           retention-days: 1
 
   create-pr:
     name: 'Create Pull Request'
     runs-on: ubuntu-latest
     needs: [prepare, aggregate-results, generate-docs]
-    if: always() && needs.prepare.outputs.should_continue == 'true' && (needs.aggregate-results.result == 'success' || needs.generate-docs.result == 'success')
+    if: always() && (needs.aggregate-results.result == 'success' || needs.generate-docs.result == 'success')
     outputs:
       pr_url: ${{ steps.create_pr.outputs.pr_url }}
     permissions:
@@ -487,57 +308,19 @@ jobs:
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
 
-      - name: Download final synced files
+      - name: Download final documentation
         uses: actions/download-artifact@v4
         with:
-          name: synced-files-final
+          name: synced-final
           path: temp-final
 
-      - name: Sync final files with deletion handling
+      - name: Apply final documentation
         run: |
-          echo "Syncing final files with current branch (handling deletions)..."
-          
-          # Ensure target directories exist
-          mkdir -p content/validators
-          mkdir -p pages/api-references
-          mkdir -p pages/validators
-          
-          # Sync with rsync --delete to handle file deletions properly
-          if [[ -d temp-final/content/validators ]]; then
-            echo "Syncing content/validators/..."
-            rsync -av --delete temp-final/content/validators/ content/validators/
-          fi
-          
-          if [[ -d temp-final/pages/api-references ]]; then
-            echo "Syncing pages/api-references/..."
-            rsync -av --delete temp-final/pages/api-references/ pages/api-references/
-          fi
-          
-          if [[ -d temp-final/pages/validators ]]; then
-            echo "Syncing pages/validators/..."
-            rsync -av --delete temp-final/pages/validators/ pages/validators/
-          fi
-          
-          # Clean up
-          rm -rf temp-final
-          
-          echo "✅ Final files synced with proper deletion handling"
-
-      - name: Get aggregated results
-        id: get_results
-        run: |
-          # Use pre-calculated totals from aggregate-results job
-          TOTAL_CHANGES="${{ needs.aggregate-results.outputs.total_changes }}"
-          TOTAL_ADDED="${{ needs.aggregate-results.outputs.total_added }}"
-          TOTAL_UPDATED="${{ needs.aggregate-results.outputs.total_updated }}"
-          TOTAL_DELETED="${{ needs.aggregate-results.outputs.total_deleted }}"
-          
-          echo "total_changes=$TOTAL_CHANGES" >> "$GITHUB_OUTPUT"
-          echo "total_added=$TOTAL_ADDED" >> "$GITHUB_OUTPUT"
-          echo "total_updated=$TOTAL_UPDATED" >> "$GITHUB_OUTPUT"
-          echo "total_deleted=$TOTAL_DELETED" >> "$GITHUB_OUTPUT"
-          
-          echo "Total changes detected: $TOTAL_CHANGES"
+          # Sync all required paths in a single call
+          .github/scripts/sync-artifact-files.sh temp-final . \
+            "content/validators" \
+            "pages/validators" \
+            "pages/api-references"
       
       - name: Check for changes and create branch
         id: check_changes
@@ -547,13 +330,13 @@ jobs:
           if check_for_changes; then
             BRANCH_NAME=$(create_sync_branch "${{ needs.prepare.outputs.version }}")
             
-            # Use aggregated metrics from previous step
+            # Use aggregated metrics from aggregate-results job
             commit_and_push_changes \
               "${{ needs.prepare.outputs.version }}" \
-              "${{ steps.get_results.outputs.total_changes }}" \
-              "${{ steps.get_results.outputs.total_added }}" \
-              "${{ steps.get_results.outputs.total_updated }}" \
-              "${{ steps.get_results.outputs.total_deleted }}" \
+              "${{ needs.aggregate-results.outputs.total_changes }}" \
+              "${{ needs.aggregate-results.outputs.total_added }}" \
+              "${{ needs.aggregate-results.outputs.total_updated }}" \
+              "${{ needs.aggregate-results.outputs.total_deleted }}" \
               "$BRANCH_NAME"
           else
             echo "No changes to commit"
@@ -598,13 +381,12 @@ jobs:
           ### 📋 Summary
           - **Source Repository**: \`genlayerlabs/genlayer-node\`
           - **Version**: \`${{ needs.prepare.outputs.version }}\`
-          - **API Gen Filter**: \`${{ github.event.inputs.api_gen_regex || github.event.client_payload.api_gen_regex || 'gen_(?!dbg_).*' }}\`
-          - **API Debug Filter**: \`${{ github.event.inputs.api_debug_regex || github.event.client_payload.api_debug_regex || 'gen_dbg_.*' }}\`
-          - **Total Files Changed**: ${{ steps.get_results.outputs.total_changes }}
-            - Added: ${{ steps.get_results.outputs.total_added }} files
-            - Updated: ${{ steps.get_results.outputs.total_updated }} files
-            - Deleted: ${{ steps.get_results.outputs.total_deleted }} files
-          - **Timestamp**: $(date -u +"%Y-%m-%dT%H:%M:%SZ")
+          - **API Gen Filter**: \`gen_(?!dbg_).*\`
+          - **API Debug Filter**: \`gen_dbg_.*\`
+          - **Total Files Changed**: ${{ needs.aggregate-results.outputs.total_changes }}
+            - Added: ${{ needs.aggregate-results.outputs.total_added }} files
+            - Updated: ${{ needs.aggregate-results.outputs.total_updated }} files
+            - Deleted: ${{ needs.aggregate-results.outputs.total_deleted }} files
 
           ### 🤖 Automated Process
 
@@ -652,72 +434,96 @@ jobs:
     needs: [prepare, aggregate-results, generate-docs, create-pr]
     if: always()
     steps:
-      - name: Download sync reports
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        
+      - name: Download final artifact with sync reports
         uses: actions/download-artifact@v4
         continue-on-error: true
         with:
-          pattern: sync-reports-*
-          merge-multiple: true
-          path: sync-reports/
-
+          name: synced-final
+          path: artifacts/
+      
       - name: Generate workflow summary
         run: |
-          echo "# Documentation Sync Summary" >> $GITHUB_STEP_SUMMARY
-          echo "" >> $GITHUB_STEP_SUMMARY
-          echo "**Version:** ${{ needs.prepare.outputs.version }}" >> $GITHUB_STEP_SUMMARY
-          echo "**Status:** ${{ job.status }}" >> $GITHUB_STEP_SUMMARY
+          echo "# 📚 Documentation Sync Summary" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
           
-          # Add detailed sync information
-          echo "## Sync Results" >> $GITHUB_STEP_SUMMARY
+          echo "## 📊 Overall Results" >> $GITHUB_STEP_SUMMARY
+          echo "- **Source Version:** \`${{ needs.prepare.outputs.version }}\`" >> $GITHUB_STEP_SUMMARY
+          echo "- **Total Changes:** ${{ needs.aggregate-results.outputs.total_changes }}" >> $GITHUB_STEP_SUMMARY
+          echo "  - ➕ Added: ${{ needs.aggregate-results.outputs.total_added }} files" >> $GITHUB_STEP_SUMMARY
+          echo "  - ✏️ Updated: ${{ needs.aggregate-results.outputs.total_updated }} files" >> $GITHUB_STEP_SUMMARY
+          echo "  - ➖ Deleted: ${{ needs.aggregate-results.outputs.total_deleted }} files" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
           
-          # Process each sync report
+          echo "## 📁 Sync Results by Type" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          
+          # Process each sync type report
           for sync_type in changelog config api_gen api_debug api_ops; do
-            report_file="sync-reports/sync_report_${sync_type}.md"
-            if [[ -f "$report_file" ]]; then
-              echo "### $(cat "$report_file" | head -1 | sed 's/^## //')" >> $GITHUB_STEP_SUMMARY
-              echo "" >> $GITHUB_STEP_SUMMARY
+            # Get proper title
+            case "$sync_type" in
+              "changelog") title="📝 Changelog Sync" ;;
+              "config") title="⚙️ Config File Sync" ;;
+              "api_gen") title="🔧 API Gen Methods Sync" ;;
+              "api_debug") title="🐛 API Debug Methods Sync" ;;
+              "api_ops") title="📊 API Ops Methods Sync" ;;
+            esac
+            
+            echo "### $title" >> $GITHUB_STEP_SUMMARY
+            
+            # Check if report exists (look in sync-reports directory)
+            if [[ -f "artifacts/sync-reports/sync_report_${sync_type}.md" ]]; then
+              # Extract summary line and file list from report
+              report_content=$(cat "artifacts/sync-reports/sync_report_${sync_type}.md")
               
-              # Extract the main content (skip header and empty lines) - avoid subshell
-              while IFS= read -r line; do
-                if [[ "$line" =~ ^-\ (Added|Updated|Deleted|No.*found): ]]; then
-                  echo "$line" >> $GITHUB_STEP_SUMMARY
-                elif [[ "$line" =~ ^Summary: ]]; then
-                  echo "**$line**" >> $GITHUB_STEP_SUMMARY
-                elif [[ -n "$line" && ! "$line" =~ ^$ ]]; then
-                  # Handle other non-empty lines that might be relevant
-                  echo "$line" >> $GITHUB_STEP_SUMMARY
+              # Extract counts
+              added=$(echo "$report_content" | grep -o '\*\*Added\*\*: [0-9]\+' | grep -o '[0-9]\+' || echo "0")
+              updated=$(echo "$report_content" | grep -o '\*\*Updated\*\*: [0-9]\+' | grep -o '[0-9]\+' || echo "0")
+              deleted=$(echo "$report_content" | grep -o '\*\*Deleted\*\*: [0-9]\+' | grep -o '[0-9]\+' || echo "0")
+              total=$(echo "$report_content" | grep -o '\*\*Total changes\*\*: [0-9]\+' | grep -o '[0-9]\+' || echo "0")
+              
+              if [[ "$total" == "0" ]]; then
+                echo "No updates found" >> $GITHUB_STEP_SUMMARY
+              else
+                # Show counts
+                [[ "$added" != "0" ]] && echo "- **Added**: $added files" >> $GITHUB_STEP_SUMMARY
+                [[ "$updated" != "0" ]] && echo "- **Updated**: $updated files" >> $GITHUB_STEP_SUMMARY
+                [[ "$deleted" != "0" ]] && echo "- **Deleted**: $deleted files" >> $GITHUB_STEP_SUMMARY
+                
+                # Show file lists directly
+                if grep -q "### Added Files" "artifacts/sync-reports/sync_report_${sync_type}.md"; then
+                  echo "" >> $GITHUB_STEP_SUMMARY
+                  sed -n '/### Added Files/,/^###\|^$/p' "artifacts/sync-reports/sync_report_${sync_type}.md" | grep "^- " | sed 's/^- /- **Added:** /' >> $GITHUB_STEP_SUMMARY
                 fi
-              done < <(sed -n '3,$p' "$report_file")
-              echo "" >> $GITHUB_STEP_SUMMARY
+                
+                if grep -q "### Updated Files" "artifacts/sync-reports/sync_report_${sync_type}.md"; then
+                  echo "" >> $GITHUB_STEP_SUMMARY
+                  sed -n '/### Updated Files/,/^###\|^$/p' "artifacts/sync-reports/sync_report_${sync_type}.md" | grep "^- " | sed 's/^- /- **Updated:** /' >> $GITHUB_STEP_SUMMARY
+                fi
+                
+                if grep -q "### Deleted Files" "artifacts/sync-reports/sync_report_${sync_type}.md"; then
+                  echo "" >> $GITHUB_STEP_SUMMARY
+                  sed -n '/### Deleted Files/,/^###\|^$/p' "artifacts/sync-reports/sync_report_${sync_type}.md" | grep "^- " | sed 's/^- /- **Deleted:** /' >> $GITHUB_STEP_SUMMARY
+                fi
+              fi
             else
-              # Get proper title for sync type
-              case "$sync_type" in
-                "changelog") sync_title="Changelog" ;;
-                "config") sync_title="Config File" ;;
-                "api_gen") sync_title="API Gen Methods" ;;
-                "api_debug") sync_title="API Debug Methods" ;;
-                "api_ops") sync_title="API Ops Methods" ;;
-                *) sync_title="$(echo "$sync_type" | tr '[:lower:]' '[:upper:]')" ;;
-              esac
-              echo "### ${sync_title} Sync" >> $GITHUB_STEP_SUMMARY
-              echo "- No report available" >> $GITHUB_STEP_SUMMARY
-              echo "" >> $GITHUB_STEP_SUMMARY
+              echo "No report available" >> $GITHUB_STEP_SUMMARY
             fi
+            echo "" >> $GITHUB_STEP_SUMMARY
           done
           
-          # Add overall result
-          echo "## Overall Result" >> $GITHUB_STEP_SUMMARY
-          echo "" >> $GITHUB_STEP_SUMMARY
+          # Add PR link if created
           if [[ "${{ needs.create-pr.outputs.pr_url }}" != "" ]]; then
+            echo "## ✅ Pull Request" >> $GITHUB_STEP_SUMMARY
             echo "**PR Created:** ${{ needs.create-pr.outputs.pr_url }}" >> $GITHUB_STEP_SUMMARY
           else
-            total_changes="${{ needs.aggregate-results.outputs.total_changes }}"
-            if [[ "$total_changes" == "0" ]]; then
-              echo "**Result:** No changes detected - no PR created" >> $GITHUB_STEP_SUMMARY
+            echo "## ℹ️ Result" >> $GITHUB_STEP_SUMMARY
+            if [[ "${{ needs.aggregate-results.outputs.total_changes }}" == "0" ]]; then
+              echo "No changes detected - no PR created" >> $GITHUB_STEP_SUMMARY
             else
-              echo "**Result:** $total_changes changes detected but no PR created" >> $GITHUB_STEP_SUMMARY
+              echo "Changes detected but PR creation failed or was skipped" >> $GITHUB_STEP_SUMMARY
             fi
           fi
 
@@ -729,21 +535,39 @@ jobs:
     permissions:
       actions: write
     steps:
+      - name: Check cleanup configuration
+        id: check
+        run: |
+          if [[ "${{ env.CLEANUP_ARTIFACTS }}" == "true" ]]; then
+            echo "should_cleanup=true" >> $GITHUB_OUTPUT
+            echo "✅ Artifact cleanup is enabled"
+          else
+            echo "should_cleanup=false" >> $GITHUB_OUTPUT
+            echo "⏭️ Artifact cleanup is disabled (CLEANUP_ARTIFACTS=${{ env.CLEANUP_ARTIFACTS }})"
+          fi
+      
+      - name: Build artifact list to delete
+        if: steps.check.outputs.should_cleanup == 'true'
+        id: artifacts
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          # Get ALL artifacts from this workflow run
+          ARTIFACTS_TO_DELETE=$(gh api \
+            -H "Accept: application/vnd.github+json" \
+            /repos/${{ github.repository }}/actions/runs/${{ github.run_id }}/artifacts \
+            --jq '.artifacts[].name' | \
+            paste -sd '|' -)
+          
+          echo "artifacts_list<<EOF" >> $GITHUB_OUTPUT
+          echo "$ARTIFACTS_TO_DELETE" | tr '|' '\n' >> $GITHUB_OUTPUT
+          echo "EOF" >> $GITHUB_OUTPUT
+          
+          echo "Artifacts to delete: $ARTIFACTS_TO_DELETE"
+      
       - name: Delete intermediate artifacts
-        if: env.CLEANUP_ARTIFACTS == 'true'
+        if: steps.check.outputs.should_cleanup == 'true' && steps.artifacts.outputs.artifacts_list != ''
         uses: geekyeggo/delete-artifact@v5
         with:
-          name: |
-            synced-files-changelog
-            synced-files-config
-            synced-files-api_gen
-            synced-files-api_debug
-            synced-files-api_ops
-            synced-files-merged
-            sync-reports-changelog
-            sync-reports-config
-            sync-reports-api_gen
-            sync-reports-api_debug
-            sync-reports-api_ops
-            synced-files-final
+          name: ${{ steps.artifacts.outputs.artifacts_list }}
           failOnError: false

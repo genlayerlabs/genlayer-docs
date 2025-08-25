@@ -1,62 +1,107 @@
 name: 'Sync Files'
-description: 'Generic file synchronization with regex filtering - eliminates code duplication'
+description: 'Generic file/directory synchronization with filtering and exclusions'
 inputs:
-  sync_type:
-    description: 'Type of sync operation (changelog, config, api_gen, api_debug)'
+  type:
+    description: 'Type identifier for the sync operation (for artifact naming)'
     required: true
-  version:
-    description: 'Version being synced'
+  title:
+    description: 'Human-readable title for reports'
     required: true
-  changelog_path:
-    description: 'Path to changelog files in source repo'
+  source_path:
+    description: 'Source file or directory path'
+    required: true
+  target_path:
+    description: 'Target file or directory path'
+    required: true
+  filter_pattern:
+    description: 'Regex pattern to filter files (only for directories)'
     required: false
-    default: 'docs/changelog'
-  api_gen_path:
-    description: 'Path to API gen files in source repo'  
+    default: '.*'
+  exclude_files:
+    description: 'Comma-separated list of filenames to exclude'
     required: false
-    default: 'docs/api/rpc'
-  api_debug_path:
-    description: 'Path to API debug files in source repo'
+    default: 'README,CHANGELOG,.gitignore,.gitkeep'
+  sanitize_script:
+    description: 'Optional script path to run after sync (for sanitization/post-processing)'
     required: false
-    default: 'docs/api/rpc'
-  api_gen_regex:
-    description: 'Regex pattern to filter API gen files'
-    required: false
-    default: 'gen_(?!dbg_).*'
-  api_debug_regex:
-    description: 'Regex pattern to filter API debug files'
-    required: false
-    default: 'gen_dbg_.*'
-  api_ops_path:
-    description: 'Path to API ops files in source repo'
-    required: false
-    default: 'docs/api/ops'
+    default: ''
 outputs:
-  files_added:
+  added:
     description: 'Number of files added'
     value: ${{ steps.sync.outputs.added }}
-  files_updated:
+  updated:
     description: 'Number of files updated'
     value: ${{ steps.sync.outputs.updated }}
-  files_deleted:
+  deleted:
     description: 'Number of files deleted'
     value: ${{ steps.sync.outputs.deleted }}
-  total_changes:
+  total:
     description: 'Total number of changes'
     value: ${{ steps.sync.outputs.total }}
 runs:
   using: 'composite'
   steps:
-    - name: Sync files using script
+    - name: Prepare config file
+      if: inputs.type == 'config'
+      shell: bash
+      run: |
+        # For config type, handle special case:
+        # 1. Copy config.yaml.example to temp location as config.yaml
+        # 2. Run sanitization on the renamed file
+        # 3. Use the sanitized file as source for sync
+        
+        if [[ -f "${{ inputs.source_path }}" ]]; then
+          # Create temp directory
+          TEMP_DIR=$(mktemp -d)
+          echo "TEMP_CONFIG_DIR=$TEMP_DIR" >> $GITHUB_ENV
+          
+          # Copy and rename config.yaml.example to config.yaml
+          cp "${{ inputs.source_path }}" "$TEMP_DIR/config.yaml"
+          
+          # Run sanitization if script is provided
+          if [[ -n "${{ inputs.sanitize_script }}" ]] && [[ -f "${{ inputs.sanitize_script }}" ]]; then
+            echo "Sanitizing config file..."
+            bash "${{ inputs.sanitize_script }}" "$TEMP_DIR/config.yaml"
+          fi
+          
+          # Update source path for sync
+          echo "CONFIG_SOURCE=$TEMP_DIR/config.yaml" >> $GITHUB_ENV
+        else
+          echo "Config source file not found: ${{ inputs.source_path }}"
+          exit 1
+        fi
+    
+    - name: Sync files
       id: sync
       shell: bash
       run: |
-        .github/scripts/sync-files.sh \
-          "${{ inputs.sync_type }}" \
-          "${{ inputs.version }}" \
-          "${{ inputs.changelog_path }}" \
-          "${{ inputs.api_gen_path }}" \
-          "${{ inputs.api_debug_path }}" \
-          "${{ inputs.api_ops_path }}" \
-          "${{ inputs.api_gen_regex }}" \
-          "${{ inputs.api_debug_regex }}"
+        # Use prepared config source if it's a config type, otherwise use original source
+        if [[ "${{ inputs.type }}" == "config" ]] && [[ -n "$CONFIG_SOURCE" ]]; then
+          SOURCE_PATH="$CONFIG_SOURCE"
+        else
+          SOURCE_PATH="${{ inputs.source_path }}"
+        fi
+        
+        ${{ github.action_path }}/sync.sh \
+          "${{ inputs.type }}" \
+          "${{ inputs.title }}" \
+          "$SOURCE_PATH" \
+          "${{ inputs.target_path }}" \
+          "${{ inputs.filter_pattern }}" \
+          "${{ inputs.exclude_files }}"
+    
+    - name: Cleanup config temp directory
+      if: inputs.type == 'config' && always()
+      shell: bash
+      run: |
+        if [[ -n "$TEMP_CONFIG_DIR" ]] && [[ -d "$TEMP_CONFIG_DIR" ]]; then
+          rm -rf "$TEMP_CONFIG_DIR"
+        fi
+    
+    - name: Upload artifacts
+      uses: actions/upload-artifact@v4
+      if: always()
+      with:
+        name: synced-${{ inputs.type }}
+        path: artifacts/
+        retention-days: 1

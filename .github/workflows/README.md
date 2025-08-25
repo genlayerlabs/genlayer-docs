@@ -11,24 +11,28 @@ This workflow automatically synchronizes documentation from the `genlayerlabs/ge
 
 ### What it does
 
-1. Detects version from input or automatically finds latest tag
-2. Clones the specific version from the genlayer-node repository using sparse checkout
-3. Syncs files in parallel using matrix strategy (5 sync types):
+1. **Prepare**: Detects version from input or automatically finds latest tag
+2. **Sync Files** (parallel matrix strategy, 5 sync types):
    - **Changelog files** → `content/validators/changelog/`
    - **Config file** → `content/validators/config.yaml` (with sanitization)
    - **API gen method docs** → `pages/api-references/genlayer-node/gen/` (filtered by regex)
    - **API debug method docs** → `pages/api-references/genlayer-node/debug/` (filtered by regex)
    - **API ops method docs** → `pages/api-references/genlayer-node/ops/`
-4. Aggregates sync results and merges all synced files with proper deletion handling
-5. Runs documentation generation scripts (npm scripts) on merged files
-6. Creates branch, commits changes, and creates/updates pull requests
-7. Generates comprehensive workflow summary with sync details
-8. Automatically cleans up intermediate artifacts after successful completion
+3. **Aggregate Results**: Merges all synced files from parallel jobs into single artifact
+4. **Generate Docs**: 
+   - Applies synced files to specific directories (avoids deleting unrelated content)
+   - Runs documentation generation scripts to create `pages/validators/` files
+5. **Create PR**: 
+   - Creates branch, commits changes, and creates/updates pull requests
+   - Includes detailed summary with file counts
+6. **Summary**: Generates comprehensive workflow summary with detailed file lists
+7. **Cleanup**: Automatically removes all intermediate artifacts when enabled
 
-**Notes**: 
-- Both `.md` and `.mdx` files are supported, automatically renamed to `.mdx` when copied
-- README files are excluded from sync operations
-- Regex filtering applies to API gen/debug files to separate them
+**Important Notes**: 
+- Both `.md` and `.mdx` files are supported, automatically renamed to `.mdx` when synced
+- README and CHANGELOG files are excluded from sync operations
+- Regex filtering uses Perl-compatible patterns (supports negative lookahead)
+- File deletions are properly handled with `rsync --delete` for each directory
 
 ### Triggering from genlayer-node
 
@@ -132,22 +136,22 @@ The source paths and filters can be customized via workflow_dispatch inputs:
 ## Pipeline Architecture
 
 ### Jobs and Dependencies
-The workflow uses 6 main jobs with the following dependency chain:
+The workflow uses 7 main jobs with the following dependency chain:
 
 ```
-prepare
+prepare (version detection)
     ↓
 sync-files (matrix: 5 parallel jobs)
     ↓
-aggregate-results (merges files + reports)
+aggregate-results (merges artifacts)
     ↓
-generate-docs (processes merged files)
+generate-docs (runs npm scripts)
     ↓
-create-pr
+create-pr (commits & creates PR)
     ↓ 
-summary (always runs)
+summary (always runs, shows results)
     ↓ 
-cleanup (if CLEANUP_ARTIFACTS: true)
+cleanup (removes all artifacts if enabled)
 ```
 
 ### Global Configuration
@@ -159,11 +163,14 @@ The workflow uses composite actions for code reusability:
 - `.github/actions/sync-files/` - Handles all file synchronization types
 
 ### Scripts Used
-- `sync-files.sh` - Main file synchronization logic with config sanitization
-- `aggregate-reports.sh` - Aggregates sync results from parallel jobs
-- `git-utils.sh` - Branch creation, commit, and push operations
-- `sanitize-config.py` - Removes dev sections from YAML config files
-- Various utility scripts for version detection and PR management
+- `.github/actions/sync-files/sync.sh` - Core sync logic with file tracking and deletion support
+- `.github/scripts/sync-artifact-files.sh` - Applies synced files to repository with rsync --delete
+- `.github/scripts/aggregate-reports.sh` - Aggregates sync metrics from parallel jobs
+- `.github/scripts/git-utils.sh` - Branch creation, commit, and push operations
+- `.github/scripts/sanitize-config.sh` - Sanitizes config files (URLs and dev sections)
+- `.github/scripts/sanitize-config.py` - Python script to remove node.dev sections
+- `.github/scripts/version-utils.sh` - Version detection and validation
+- `.github/scripts/doc-generator.sh` - Wrapper for npm documentation generation
 
 ### Config File Sanitization
 The config sync process includes automatic sanitization:
@@ -178,20 +185,48 @@ Sync branches follow the pattern: `docs/node/{version}`
 
 ### Artifact Management
 The workflow uses artifacts to pass data between jobs:
-- `sync-reports-{type}` - Individual sync reports for each type
-- `synced-files-{type}` - Individual synced files with full directory structure
-- `synced-files-merged` - All files merged together by aggregate-results job
-- `synced-files-final` - Final processed files after documentation generation
+- `synced-{type}` - Individual sync results for each type (includes files and reports)
+- `synced-merged` - All synced files and reports merged together
+- `synced-final` - Final artifact with generated documentation and sync reports
 
-**Deletion Handling**: The workflow uses `rsync --delete` at multiple stages to ensure proper file deletion:
-- `aggregate-results`: Merges individual artifacts with deletion support
-- `generate-docs`: Syncs merged files with deletion handling
-- `create-pr`: Syncs final files with deletion handling
+**Artifact Structure**:
+- Each artifact contains:
+  - `sync_report_{type}.md` - Detailed report with file lists
+  - Synced files in their target directory structure
+  - `sync-reports/` directory in final artifact for reference
 
-**Automatic Cleanup**: Intermediate artifacts are automatically deleted after successful completion when `CLEANUP_ARTIFACTS: true` (default). Only `synced-files-final` is preserved.
+**Deletion Handling**: 
+- Uses `rsync --delete` for each specific subdirectory to ensure proper file deletion
+- Only affects synced directories (`content/validators/`, `pages/api-references/genlayer-node/`)
+- Never deletes unrelated documentation content
+
+**Automatic Cleanup**: 
+- All artifacts are automatically deleted when `CLEANUP_ARTIFACTS: true` (default)
+- Cleanup only runs after successful PR creation or summary generation
 
 ### Pull Request Behavior
 - Creates new PR for new versions
-- Updates existing open PR for same version
-- Includes detailed sync metrics and file change summary
+- Updates existing open PR for same version  
 - Automatically labels with "documentation" and "node"
+
+**PR Description includes**:
+- Source repository and version
+- API filter patterns used
+- Total files changed with breakdown (added/updated/deleted)
+- List of npm scripts that were run
+- Automated checklist confirming successful sync
+
+### Workflow Summary
+The summary job generates a comprehensive report in the GitHub Actions UI:
+- **Overall Results**: Version and total change counts
+- **Sync Results by Type**: For each sync type shows:
+  - Count of added/updated/deleted files
+  - Detailed file lists (e.g., "Added: gen_call.mdx")
+- **Pull Request Link**: Direct link to created/updated PR
+
+### Documentation Generation Scripts
+After syncing files, the workflow runs these npm scripts:
+- `npm run node-generate-changelog` - Generates changelog page from synced files
+- `npm run node-update-setup-guide` - Updates setup guide with version info
+- `npm run node-update-config` - Processes configuration documentation
+- `npm run node-generate-api-docs` - Generates API reference pages

@@ -31,16 +31,16 @@ aggregate_sync_reports() {
                 local REPORT_CONTENT
                 REPORT_CONTENT=$(cat "$report_file")
                 
-                # Look for summary line: "Summary: X added, Y updated, Z deleted"
-                if echo "$REPORT_CONTENT" | grep -q "Summary:"; then
-                    local SUMMARY_LINE
-                    SUMMARY_LINE=$(echo "$REPORT_CONTENT" | grep "Summary:" | head -1)
-                    
-                    # Extract numbers using regex
+                # Look for summary section with bullet points
+                if echo "$REPORT_CONTENT" | grep -q "### Summary"; then
+                    # Extract numbers from bullet points like:
+                    # - **Added**: X files
+                    # - **Updated**: Y files
+                    # - **Deleted**: Z files
                     local ADDED UPDATED DELETED
-                    ADDED=$(echo "$SUMMARY_LINE" | grep -o '[0-9]\+ added' | grep -o '[0-9]\+' || echo "0")
-                    UPDATED=$(echo "$SUMMARY_LINE" | grep -o '[0-9]\+ updated' | grep -o '[0-9]\+' || echo "0")
-                    DELETED=$(echo "$SUMMARY_LINE" | grep -o '[0-9]\+ deleted' | grep -o '[0-9]\+' || echo "0")
+                    ADDED=$(echo "$REPORT_CONTENT" | grep -o '\*\*Added\*\*: [0-9]\+ files' | grep -o '[0-9]\+' || echo "0")
+                    UPDATED=$(echo "$REPORT_CONTENT" | grep -o '\*\*Updated\*\*: [0-9]\+ files' | grep -o '[0-9]\+' || echo "0")
+                    DELETED=$(echo "$REPORT_CONTENT" | grep -o '\*\*Deleted\*\*: [0-9]\+ files' | grep -o '[0-9]\+' || echo "0")
                     
                     # Add to totals
                     TOTAL_ADDED=$((TOTAL_ADDED + ADDED))
