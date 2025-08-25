@@ -7,8 +7,10 @@ const path = require('path');
 const CONFIG = {
   API_DIR: process.env.API_DOCS_DIR || 'pages/api-references/genlayer-node',
   TARGET_FILE: process.env.API_DOCS_TARGET || 'pages/api-references/genlayer-node.mdx',
+  TEMPLATE_FILE: process.env.API_TEMPLATE_FILE || 'content/api-references/genlayer-node/content.mdx',
   GEN_SUBDIR: process.env.API_GEN_SUBDIR || 'gen',
-  DEBUG_SUBDIR: process.env.API_DEBUG_SUBDIR || 'debug'
+  DEBUG_SUBDIR: process.env.API_DEBUG_SUBDIR || 'debug',
+  OPS_SUBDIR: process.env.API_OPS_SUBDIR || 'ops'
 };
 
 /**
@@ -123,109 +125,49 @@ function generateApiDocs() {
     console.warn(`Debug methods directory ${debugDir} does not exist - skipping`);
   }
   
-  // Generate the final API docs content
-  const apiContent = `# GenLayer Node API
-
-The GenLayer Node provides a [JSON-RPC API](https://www.jsonrpc.org/specification) for interacting with it. This API allows you to execute contract calls, retrieve transaction information, and perform various blockchain operations.
-
-## GenLayer Methods
-
-${genMethods.join('\n\n')}
-
-## Debug Methods
-
-These methods are available for debugging and testing purposes during development.
-
-${debugMethods.join('\n\n')}
-
-## Ethereum Compatibility
-
-The GenLayer Node also supports Ethereum-compatible methods that are proxied to the underlying infrastructure. These methods follow the standard [Ethereum JSON-RPC specification](https://ethereum.org/en/developers/docs/apis/json-rpc/) and are prefixed with \`eth_\`.
-
-**Examples of supported Ethereum methods:**
-
-- \`eth_blockNumber\`
-- \`eth_getBalance\`
-- \`eth_sendTransaction\`
-- \`eth_call\`
-- And other standard Ethereum JSON-RPC methods
-
-## zkSync Compatibility
-
-[zkSync-compatible](https://docs.zksync.io/zksync-protocol/api/zks-rpc) methods are also supported and proxied to the underlying infrastructure. These methods are prefixed with \`zksync_\`.
-
-## Usage Examples
-
-### cURL
-
-\`\`\`bash
-# Test connectivity
-curl -X POST http://localhost:9151 \\
-  -H "Content-Type: application/json" \\
-  -d '{
-    "jsonrpc": "2.0",
-    "method": "gen_dbg_ping",
-    "params": [],
-    "id": 1
-  }'
-
-# Execute a contract call
-curl -X POST http://localhost:9151 \\
-  -H "Content-Type: application/json" \\
-  -d '{
-    "jsonrpc": "2.0",
-    "method": "gen_call",
-    "params": [{
-      "from": "0x742d35Cc6634C0532925a3b8D4C9db96c4b4d8b6",
-      "to": "0x742d35Cc6634C0532925a3b8D4C9db96c4b4d8b6",
-      "data": "0x70a08231000000000000000000000000742d35cc6634c0532925a3b8d4c9db96c4b4d8b6",
-      "type": "read",
-      "transaction_hash_variant": "latest-nonfinal"
-    }],
-    "id": 1
-  }'
-
-# Get contract schema
-curl -X POST http://localhost:9151 \\
-  -H "Content-Type: application/json" \\
-  -d '{
-    "jsonrpc": "2.0",
-    "method": "gen_getContractSchema",
-    "params": [{
-      "code": "IyB7ICJEZXBlbmRzIjogInB5LWdlbmxheWVyOnRlc3QiIH0KCmZyb20gZ2VubGF5ZXIgaW1wb3J0ICoKCgojIGNvbnRyYWN0IGNsYXNzCmNsYXNzIFN0b3JhZ2UoZ2wuQ29udHJhY3QpOgogICAgc3RvcmFnZTogc3RyCgogICAgIyBjb25zdHJ1Y3RvcgogICAgZGVmIF9faW5pdF9fKHNlbGYsIGluaXRpYWxfc3RvcmFnZTogc3RyKToKICAgICAgICBzZWxmLnN0b3JhZ2UgPSBpbml0aWFsX3N0b3JhZ2UKCiAgICAjIHJlYWQgbWV0aG9kcyBtdXN0IGJlIGFubm90YXRlZCB3aXRoIHZpZXcKICAgIEBnbC5wdWJsaWMudmlldwogICAgZGVmIGdldF9zdG9yYWdlKHNlbGYpIC0+IHN0cjoKICAgICAgICByZXR1cm4gc2VsZi5zdG9yYWdlCgogICAgIyB3cml0ZSBtZXRob2QKICAgIEBnbC5wdWJsaWMud3JpdGUKICAgIGRlZiB1cGRhdGVfc3RvcmFnZShzZWxmLCBuZXdfc3RvcmFnZTogc3RyKSAtPiBOb25lOgogICAgICAgIHNlbGYuc3RvcmFnZSA9IG5ld19zdG9yYWdlCg=="
-    }],
-    "id": 1
-  }'
-
-# Get debug trie information
-curl -X POST http://localhost:9151 \\
-  -H "Content-Type: application/json" \\
-  -d '{
-    "jsonrpc": "2.0",
-    "method": "gen_dbg_trie",
-    "params": [{
-      "txID": "0x742d35Cc6634C0532925a3b8D4C9db96c4b4d8b6742d35Cc6634C0532925a3b8",
-      "round": 0
-    }],
-    "id": 1
-  }'
-
-# Get transaction receipt
-curl -X POST http://localhost:9151 \\
-  -H "Content-Type: application/json" \\
-  -d '{
-    "jsonrpc": "2.0",
-    "method": "gen_getTransactionReceipt",
-    "params": [{
-      "txId": "0x635060dd514082096d18c8eb64682cc6a944f9ce1ae6982febf7a71e9f656f49"
-    }],
-    "id": 1
-  }'
-\`\`\``;
+  // Read ops methods
+  const opsDir = path.join(apiDir, CONFIG.OPS_SUBDIR);
+  const opsMethods = [];
+  
+  if (fs.existsSync(opsDir)) {
+    console.log(`Processing ops methods from ${opsDir}`);
+    // Update _meta.json and get file order
+    const fileOrder = updateMetaJson(opsDir);
+    
+    // Read content for each file in order
+    for (const file of fileOrder) {
+      const filePath = path.join(opsDir, file);
+      if (fs.existsSync(filePath)) {
+        const content = fs.readFileSync(filePath, 'utf8').trim();
+        opsMethods.push(content);
+      }
+    }
+    console.log(`Found ${opsMethods.length} ops methods`);
+  } else {
+    console.warn(`Ops methods directory ${opsDir} does not exist - skipping`);
+  }
+  
+  // Read the template file
+  const templateFile = path.join(process.cwd(), CONFIG.TEMPLATE_FILE);
+  
+  if (!fs.existsSync(templateFile)) {
+    console.error(`Template file ${templateFile} does not exist`);
+    return;
+  }
+  
+  let templateContent = fs.readFileSync(templateFile, 'utf8');
+  console.log(`Using template from ${templateFile}`);
+  
+  // Process the template with method content using string replacement
+  // Replace template variables with actual content
+  let apiContent = templateContent
+    .replace('${genMethods.join(\'\\n\\n\')}', genMethods.join('\n\n'))
+    .replace('${debugMethods.join(\'\\n\\n\')}', debugMethods.join('\n\n'))
+    .replace('${opsMethods.join(\'\\n\\n\')}', opsMethods.join('\n\n'));
   
   // Write to the target file
   fs.writeFileSync(targetFile, apiContent);
-  console.log(`Generated API docs with ${genMethods.length} gen methods and ${debugMethods.length} debug methods at ${new Date().toISOString()}`);
+  console.log(`Generated API docs with ${genMethods.length} gen methods, ${debugMethods.length} debug methods, and ${opsMethods.length} ops methods at ${new Date().toISOString()}`);
 }
 
 // Run the script

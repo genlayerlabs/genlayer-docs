@@ -1,0 +1,87 @@
+#!/bin/bash
+set -euo pipefail
+
+# Aggregate sync reports and calculate totals
+# Used by the GitHub Actions workflow to process sync results
+
+# Set default output file if GITHUB_OUTPUT is not available (for local testing)
+if [[ -z "${GITHUB_OUTPUT:-}" ]]; then
+    GITHUB_OUTPUT="${TMPDIR:-/tmp}/github_output.txt"
+    # Create the file if it doesn't exist
+    touch "$GITHUB_OUTPUT"
+fi
+
+aggregate_sync_reports() {
+    # Initialize counters
+    local TOTAL_CHANGES=0
+    local TOTAL_ADDED=0
+    local TOTAL_UPDATED=0
+    local TOTAL_DELETED=0
+    
+    # Collect all reports
+    local ALL_REPORTS=""
+    
+    if [[ -d "sync-reports" ]]; then
+        ls -la sync-reports/ || echo "Directory is empty"
+        
+        for report_file in sync-reports/sync_report_*.md; do
+            if [[ -f "$report_file" ]]; then
+                
+                # Extract metrics from report content
+                local REPORT_CONTENT
+                REPORT_CONTENT=$(cat "$report_file")
+                
+                # Look for summary section with bullet points
+                if echo "$REPORT_CONTENT" | grep -q "### Summary"; then
+                    # Extract numbers from bullet points like:
+                    # - **Added**: X files
+                    # - **Updated**: Y files
+                    # - **Deleted**: Z files
+                    local ADDED UPDATED DELETED
+                    ADDED=$(echo "$REPORT_CONTENT" | grep -o '\*\*Added\*\*: [0-9]\+ files' | grep -o '[0-9]\+' || echo "0")
+                    UPDATED=$(echo "$REPORT_CONTENT" | grep -o '\*\*Updated\*\*: [0-9]\+ files' | grep -o '[0-9]\+' || echo "0")
+                    DELETED=$(echo "$REPORT_CONTENT" | grep -o '\*\*Deleted\*\*: [0-9]\+ files' | grep -o '[0-9]\+' || echo "0")
+                    
+                    # Add to totals
+                    TOTAL_ADDED=$((TOTAL_ADDED + ADDED))
+                    TOTAL_UPDATED=$((TOTAL_UPDATED + UPDATED))
+                    TOTAL_DELETED=$((TOTAL_DELETED + DELETED))
+                    
+                    local REPORT_TOTAL=$((ADDED + UPDATED + DELETED))
+                    TOTAL_CHANGES=$((TOTAL_CHANGES + REPORT_TOTAL))
+                    
+                elif ! echo "$REPORT_CONTENT" | grep -q "No.*updates found"; then
+                    echo "⚠️ Could not parse metrics from report, assuming 1 change"
+                    TOTAL_CHANGES=$((TOTAL_CHANGES + 1))
+                fi
+                
+                # Append report content
+                if [[ -n "$ALL_REPORTS" ]]; then
+                    ALL_REPORTS="$ALL_REPORTS"$'\n\n---\n\n'
+                fi
+                ALL_REPORTS="$ALL_REPORTS$REPORT_CONTENT"
+            else
+                echo "⚠️ No report files found matching pattern"
+            fi
+        done
+    else
+        echo "⚠️ sync-reports directory not found, using simple aggregation"
+        # Simple fallback - assume basic operation succeeded
+        ALL_REPORTS="## Sync Results"$'\n\nDocumentation sync completed successfully.\n\n'
+    fi
+    
+    # Output results to GitHub Actions
+    echo "total_changes=$TOTAL_CHANGES" >> "$GITHUB_OUTPUT"
+    echo "total_added=$TOTAL_ADDED" >> "$GITHUB_OUTPUT" 
+    echo "total_updated=$TOTAL_UPDATED" >> "$GITHUB_OUTPUT"
+    echo "total_deleted=$TOTAL_DELETED" >> "$GITHUB_OUTPUT"
+    
+    # Handle multiline output for reports
+    echo "all_reports<<EOF" >> "$GITHUB_OUTPUT"
+    echo "$ALL_REPORTS" >> "$GITHUB_OUTPUT"
+    echo "EOF" >> "$GITHUB_OUTPUT"
+    
+}
+
+# Run the aggregation
+aggregate_sync_reports
