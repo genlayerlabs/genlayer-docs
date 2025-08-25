@@ -291,19 +291,19 @@ jobs:
             
             # Debug: Show config before sed replacements
             echo "::group::Config before sed replacements"
-            grep -E "zksync.*url:" "$TEMP_CONFIG" || echo "No zksync URLs found"
+            grep -E "genlayerchain.*url:" "$TEMP_CONFIG" || echo "No genlayerchain URLs found"
             echo "::endgroup::"
             
             # Replace actual URLs with TODO placeholders
             # Use sed with backup for compatibility (works on both Linux and macOS)
-            sed -i.bak 's|zksyncurl: *"[^"]*"|zksyncurl: "TODO: Set your GenLayer Chain ZKSync HTTP RPC URL here"|' "$TEMP_CONFIG"
-            sed -i.bak 's|zksyncwebsocketurl: *"[^"]*"|zksyncwebsocketurl: "TODO: Set your GenLayer Chain ZKSync WebSocket RPC URL here"|' "$TEMP_CONFIG"
+            sed -i.bak 's|genlayerchainrpcurl: *"[^"]*"|genlayerchainrpcurl: "TODO: Set your GenLayer Chain RPC URL here"|' "$TEMP_CONFIG"
+            sed -i.bak 's|genlayerchainwebsocketurl: *"[^"]*"|genlayerchainwebsocketurl: "TODO: Set your GenLayer Chain WebSocket RPC URL here"|' "$TEMP_CONFIG"
             # Remove backup files
             rm -f "${TEMP_CONFIG}.bak"
             
             # Debug: Show config after sed replacements
             echo "::group::Config after sed replacements"
-            grep -E "zksync.*url:" "$TEMP_CONFIG" || echo "No zksync URLs found after sed"
+            grep -E "genlayerchain.*url:" "$TEMP_CONFIG" || echo "No genlayerchain URLs found after sed"
             echo "::endgroup::"
             
             # Remove node.dev sections using Python for reliable YAML parsing
