@@ -44,9 +44,11 @@ detect_latest_version() {
 validate_version() {
     local version="$1"
     
-    if [[ ! "$version" =~ ^(latest|v[0-9]+\.[0-9]+\.[0-9]+(-[a-zA-Z0-9]+)?)$ ]]; then
+    # Support full SemVer: vX.Y.Z[-prerelease][+buildmetadata]
+    # Examples: v1.2.3, v1.2.3-rc.1, v1.2.3-alpha.2, v1.2.3+build.7, v1.2.3-beta.1+exp.sha.5114f85
+    if [[ ! "$version" =~ ^(latest|v[0-9]+\.[0-9]+\.[0-9]+(-[0-9A-Za-z.-]+)?(\+[0-9A-Za-z.-]+)?)$ ]]; then
         echo "::error::Invalid version format: $version"
-        echo "Expected: 'latest' or 'vX.Y.Z' (e.g., 'v1.2.3')"
+        echo "Expected: 'latest' or SemVer format (e.g., 'v1.2.3', 'v1.2.3-rc.1', 'v1.2.3+build.7')"
         return 1
     fi
     
