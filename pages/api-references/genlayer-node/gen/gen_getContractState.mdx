@@ -9,11 +9,11 @@ Retrieves the current state of a GenLayer intelligent contract at a specific blo
 - `request` (object, required): The contract state request parameters
   - `address` (string, required): The contract address to query
   - `blockNumber` (string, optional): The block number to query at (hex-encoded). If not provided, uses latest block
-  - `status` (string, optional): The transaction status filter (`"finalized"` or `"accepted"`). If not provided, uses accepted state
+  - `status` (string, optional): The transaction status filter (`"finalized"` or `"accepted"`). If not provided, uses finalized state
 
 **Returns:** Hex-encoded contract state data
 
-**Example Request - Latest Accepted State:**
+**Example Request - Latest Finalized State:**
 
 ```json
 {
@@ -58,7 +58,7 @@ Retrieves the current state of a GenLayer intelligent contract at a specific blo
 **Notes:**
 
 - The `blockNumber` parameter should be hex-encoded with a `0x` prefix
-- Valid `status` values are `"accepted"` (default) and `"finalized"`
+- Valid `status` values are `"finalized"` (default) and `"accepted"`
 - The returned state is hex-encoded binary data with a `0x` prefix
 - Empty contract state returns `"0x"`
 - If the contract doesn't exist at the specified block/status, an error will be returned
@@ -66,7 +66,7 @@ Retrieves the current state of a GenLayer intelligent contract at a specific blo
 **cURL Example:**
 
 ```bash
-# Get latest accepted state
+# Get latest finalized state
 curl -X POST http://localhost:9151 \
   -H "Content-Type: application/json" \
   -d '{

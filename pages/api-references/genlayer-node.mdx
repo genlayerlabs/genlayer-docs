@@ -18,12 +18,12 @@ Executes a new message call immediately without creating a transaction on the bl
   - `Data` (string, required): The encoded function call data
   - `Type` (string, required): The type of call (`"read"`, `"write"`, or `"deploy"`)
   - `blockNumber` (string, optional): The block number to query at (hex-encoded). If not provided, uses latest block
-  - `status` (string, optional): The transaction status filter (`"finalized"` or `"accepted"`). If not provided, uses accepted state
+  - `status` (string, optional): The transaction status filter (`"finalized"` or `"accepted"`). If not provided, uses finalized state
   - `value` (string, optional): The value to send with the call (hex-encoded)
 
 **Returns:** Hex-encoded result data
 
-**Example - Read Call (Latest Accepted State):**
+**Example - Read Call (Latest Finalized State):**
 
 ```json
 {
@@ -86,8 +86,8 @@ Executes a new message call immediately without creating a transaction on the bl
 **Notes:**
 
 - The `blockNumber` parameter can be either hex-encoded with a `0x` prefix (e.g., `"0x151ec5"`) or decimal (e.g., `"1384133"`)
-- Valid `status` values are `"accepted"` (default) and `"finalized"`
-- When both parameters are omitted, the call executes against the latest accepted state
+- Valid `status` values are `"finalized"` (default) and `"accepted"`
+- When both parameters are omitted, the call executes against the latest finalized state
 - For `read` and `write` type calls, if the contract doesn't exist at the specified block/status combination, an error will be returned
 - For `deploy` type calls, the `status` and `blockNumber` parameters are not used for contract state validation since no contract exists yet
 
@@ -333,11 +333,11 @@ Retrieves the current state of a GenLayer intelligent contract at a specific blo
 - `request` (object, required): The contract state request parameters
   - `address` (string, required): The contract address to query
   - `blockNumber` (string, optional): The block number to query at (hex-encoded). If not provided, uses latest block
-  - `status` (string, optional): The transaction status filter (`"finalized"` or `"accepted"`). If not provided, uses accepted state
+  - `status` (string, optional): The transaction status filter (`"finalized"` or `"accepted"`). If not provided, uses finalized state
 
 **Returns:** Hex-encoded contract state data
 
-**Example Request - Latest Accepted State:**
+**Example Request - Latest Finalized State:**
 
 ```json
 {
@@ -382,7 +382,7 @@ Retrieves the current state of a GenLayer intelligent contract at a specific blo
 **Notes:**
 
 - The `blockNumber` parameter should be hex-encoded with a `0x` prefix
-- Valid `status` values are `"accepted"` (default) and `"finalized"`
+- Valid `status` values are `"finalized"` (default) and `"accepted"`
 - The returned state is hex-encoded binary data with a `0x` prefix
 - Empty contract state returns `"0x"`
 - If the contract doesn't exist at the specified block/status, an error will be returned
@@ -390,7 +390,7 @@ Retrieves the current state of a GenLayer intelligent contract at a specific blo
 **cURL Example:**
 
 ```bash
-# Get latest accepted state
+# Get latest finalized state
 curl -X POST http://localhost:9151 \
   -H "Content-Type: application/json" \
   -d '{
@@ -574,4 +574,170 @@ curl -X POST http://localhost:9151 \
     }],
     "id": 1
   }'
+```
+
+## Ops Methods
+
+These methods provide operational endpoints for monitoring the GenLayer node.
+
+### balance
+
+Returns the configured validator's account balance in multiple formats including hexadecimal, wei, and GEN units.
+
+**Method:** `GET /balance`
+
+**Parameters:** None
+
+**Returns:** JSON object containing the validator's balance in three formats
+
+**Example Request:**
+
+```bash
+curl -X GET http://localhost:9153/balance
+```
+
+**Example Response:**
+
+```json
+{
+  "balance_hex": "0x0de0b6b3a7640000",
+  "balance_wei": "1000000000000000000",
+  "balance_gen": "1.000"
+}
+```
+
+**Response Fields:**
+
+- `balance_hex` (string): The balance encoded as hexadecimal with "0x" prefix
+- `balance_wei` (string): The balance in wei as a decimal string
+- `balance_gen` (string): The balance in GEN units formatted with 3 decimal places
+
+**Notes:**
+
+- This endpoint is only available when the node is running in validator mode
+- The balance is always retrieved from the latest block
+- The validator address is configured at node startup
+- If the validator address is not configured, the zero address (0x0000...0000) is used
+- Balance conversions: 1 GEN = 1,000,000,000,000,000,000 wei (10^18 wei)
+- Returns HTTP 503 if the node is not in validator mode
+- Returns HTTP 500 if there's an error retrieving the balance
+
+**Example Response (Zero Balance):**
+
+```json
+{
+  "balance_hex": "0x",
+  "balance_wei": "0",
+  "balance_gen": "0.000"
+}
+```
+
+**Example Response (Large Balance):**
+
+```json
+{
+  "balance_hex": "0x3635c9adc5dea00000",
+  "balance_wei": "1000000000000000000000",
+  "balance_gen": "1000.000"
+}
+```
+
+**Error Response (Not in Validator Mode):**
+
+```json
+{
+  "message": "Balance endpoint not available in rollup mode"
+}
+```
+
+**cURL Example with Headers:**
+
+```bash
+curl -X GET http://localhost:9153/balance \
+  -H "Accept: application/json" \
+  -v
+```
+
+### health
+
+Returns the health status of the GenLayer node along with version information and the status of individual health checks.
+
+**Method:** `GET /health`
+
+**Parameters:** None
+
+**Returns:** JSON object containing the overall health status, version information, and individual check results
+
+**Example Request:**
+
+```bash
+curl -X GET http://localhost:9153/health
+```
+
+**Example Response:**
+
+```json
+{
+  "status": "up",
+  "node_version": "v1.2.3",
+  "protocol_version": "consensus-v2.1",
+  "checks": {
+    "test-check": {
+      "status": "up",
+      "timestamp": "2024-01-15T10:30:45Z"
+    }
+  }
+}
+```
+
+**Response Fields:**
+
+- `status` (string): Overall health status - "up" if all checks pass, "down" if any check fails
+- `node_version` (string): The version of the GenLayer node software
+- `protocol_version` (string): The consensus protocol version
+- `checks` (object, optional): Map of individual health check results
+  - `[check-name]` (object): Results for a specific health check
+    - `status` (string): Check status - "up" or "down"
+    - `timestamp` (string): ISO 8601 timestamp of when the check was performed
+    - `error` (string, optional): Error message if check failed
+
+**HTTP Status Codes:**
+
+- `200 OK`: Node is healthy (all checks passing)
+- `503 Service Unavailable`: Node is unhealthy (one or more checks failing)
+
+**Notes:**
+
+- The endpoint has a 5-second timeout for all health checks
+- The `checks` field is only included when health checks are configured
+- Version fields will show "unset" if version information is not available
+- Individual health checks are executed concurrently with results aggregated in the response
+
+**Example Response (Unhealthy):**
+
+```json
+{
+  "status": "down",
+  "node_version": "v1.2.3",
+  "protocol_version": "consensus-v2.1",
+  "checks": {
+    "database": {
+      "status": "down",
+      "error": "connection timeout",
+      "timestamp": "2024-01-15T10:30:45Z"
+    },
+    "consensus": {
+      "status": "up",
+      "timestamp": "2024-01-15T10:30:45Z"
+    }
+  }
+}
+```
+
+**cURL Example with Headers:**
+
+```bash
+curl -X GET http://localhost:9153/health \
+  -H "Accept: application/json" \
+  -v
 ```
