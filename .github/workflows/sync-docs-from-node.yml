@@ -241,19 +241,21 @@ jobs:
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: '18'
+          node-version: '20'
           cache: 'npm'
           
       - name: Install dependencies
         run: npm install
 
       - name: Download merged synced files
+        if: needs.aggregate-results.result == 'success'
         uses: actions/download-artifact@v4
         with:
           name: synced-merged
           path: temp-merged
 
       - name: Apply synced files
+        if: needs.aggregate-results.result == 'success'
         run: |
           # Sync all required paths in a single call
           .github/scripts/sync-artifact-files.sh temp-merged . \
@@ -309,12 +311,14 @@ jobs:
           git config user.email "github-actions[bot]@users.noreply.github.com"
 
       - name: Download final documentation
+        if: needs.generate-docs.result == 'success'
         uses: actions/download-artifact@v4
         with:
           name: synced-final
           path: temp-final
 
       - name: Apply final documentation
+        if: needs.generate-docs.result == 'success'
         run: |
           # Sync all required paths in a single call
           .github/scripts/sync-artifact-files.sh temp-final . \
@@ -381,8 +385,8 @@ jobs:
           ### 📋 Summary
           - **Source Repository**: \`genlayerlabs/genlayer-node\`
           - **Version**: \`${{ needs.prepare.outputs.version }}\`
-          - **API Gen Filter**: \`gen_(?!dbg_).*\`
-          - **API Debug Filter**: \`gen_dbg_.*\`
+          - **API Gen Filter**: \`${{ github.event.inputs.api_gen_regex != '' && github.event.inputs.api_gen_regex || (github.event.client_payload.api_gen_regex != '' && github.event.client_payload.api_gen_regex || 'gen_(?!dbg_).*') }}\`
+          - **API Debug Filter**: \`${{ github.event.inputs.api_debug_regex != '' && github.event.inputs.api_debug_regex || (github.event.client_payload.api_debug_regex != '' && github.event.client_payload.api_debug_regex || 'gen_dbg_.*') }}\`
           - **Total Files Changed**: ${{ needs.aggregate-results.outputs.total_changes }}
             - Added: ${{ needs.aggregate-results.outputs.total_added }} files
             - Updated: ${{ needs.aggregate-results.outputs.total_updated }} files

@@ -18,9 +18,9 @@ fi
 
 echo "Sanitizing config file: $CONFIG_FILE"
 
-# Replace URLs with TODO placeholders
-sed -i.bak 's|zksyncurl: *"[^"]*"|zksyncurl: "TODO: Set your GenLayer Chain ZKSync HTTP RPC URL here"|' "$CONFIG_FILE"
-sed -i.bak 's|zksyncwebsocketurl: *"[^"]*"|zksyncwebsocketurl: "TODO: Set your GenLayer Chain ZKSync WebSocket RPC URL here"|' "$CONFIG_FILE"
+# Replace URLs with TODO placeholders (only on non-commented lines; preserve indent)
+sed -i.bak -E '/^[[:space:]]*#/! s|^([[:space:]]*)zksyncurl:[[:space:]]*".*"|\1zksyncurl: "TODO: Set your GenLayer Chain ZKSync HTTP RPC URL here"|' "$CONFIG_FILE"
+sed -i.bak -E '/^[[:space:]]*#/! s|^([[:space:]]*)zksyncwebsocketurl:[[:space:]]*".*"|\1zksyncwebsocketurl: "TODO: Set your GenLayer Chain ZKSync WebSocket RPC URL here"|' "$CONFIG_FILE"
 rm -f "${CONFIG_FILE}.bak"
 
 # Remove node.dev sections using Python script

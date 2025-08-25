@@ -152,15 +152,21 @@ elif [[ -d "$SOURCE_PATH" ]]; then
         fi
     done
     
-    # Delete orphaned files (preserve _meta.json)
-    for target_file in "${existing_files[@]}"; do
-        if [[ -f "$target_file" && "$(basename "$target_file")" != "_meta.json" ]]; then
-            rm "$target_file"
-            deleted=$((deleted + 1))
-            deleted_files+=("$(basename "$target_file")")
-            echo "Deleted: $(basename "$target_file")"
-        fi
-    done
+    # Delete orphaned files only if we had source files to sync
+    if [[ "$source_count" -gt 0 ]]; then
+        # Safe to delete orphaned files (preserve _meta.json)
+        for target_file in "${existing_files[@]}"; do
+            if [[ -f "$target_file" && "$(basename "$target_file")" != "_meta.json" ]]; then
+                rm "$target_file"
+                deleted=$((deleted + 1))
+                deleted_files+=("$(basename "$target_file")")
+                echo "Deleted: $(basename "$target_file")"
+            fi
+        done
+    else
+        echo "Warning: No source files matched filter; skipping deletion phase for safety"
+        echo "         This prevents accidental mass deletion of target files"
+    fi
     fi  # End of non-empty directory check
 else
     echo "Source not found: $SOURCE_PATH"

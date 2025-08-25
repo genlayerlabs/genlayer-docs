@@ -42,13 +42,14 @@ for path in "${SYNC_PATHS[@]}"; do
         file_count=$(find "$source_path" -type f | wc -l)
         echo "  Found $file_count files in $path"
         
+        # Always run rsync with delete to ensure stale files are removed even when source is empty
+        rsync -av --delete "$source_path/" "$target_path/"
+        total_synced=$((total_synced + file_count))
+        
         if [[ $file_count -gt 0 ]]; then
-            # Use rsync with delete flag to sync this specific path
-            rsync -av --delete "$source_path/" "$target_path/"
-            total_synced=$((total_synced + file_count))
-            echo "  ✅ Synced $path"
+            echo "  ✅ Synced $path ($file_count files)"
         else
-            echo "  ⚠️ No files to sync in $path"
+            echo "  ✅ Synced $path (cleaned - no files in source)"
         fi
     else
         echo "  ⏭️ Skipping $path (not found in source)"
