@@ -2,23 +2,41 @@
 set -euo pipefail
 
 # Version detection and handling utilities
-# Extracted from the complex version logic in the workflow
 
-# Detect latest version from repository tags
+# Detect latest version from repository
 detect_latest_version() {
-    local repo_path="$1"
-    cd "$repo_path"
+    local token="${1:-$GITHUB_TOKEN}"
+    local temp_dir="/tmp/source-repo-temp-$$"
     
-    # Get the latest tag that's not a pre-release
+    # Clone source repo (minimal, just for tags) with token if available
+    if [[ -n "${token:-}" ]]; then
+        git clone --depth 1 --no-checkout \
+          "https://${token}@github.com/genlayerlabs/genlayer-node.git" "$temp_dir" 2>/dev/null || \
+        git clone --depth 1 --no-checkout \
+          "https://github.com/genlayerlabs/genlayer-node.git" "$temp_dir"
+    else
+        git clone --depth 1 --no-checkout \
+          "https://github.com/genlayerlabs/genlayer-node.git" "$temp_dir"
+    fi
+    
+    cd "$temp_dir"
+    
+    # Fetch all tags
+    git fetch --tags
+    
+    # Get latest stable version tag
     local latest_tag
     latest_tag=$(git tag -l | grep -E '^v[0-9]+\.[0-9]+\.[0-9]+$' | sort -V | tail -n1)
     
+    # Cleanup
+    cd /
+    rm -rf "$temp_dir"
+    
     if [[ -z "$latest_tag" ]]; then
-        echo "::error::No tags found in repository" >&2
-        return 1
+        echo "::error::No version tags found in source repository" >&2
+        exit 1
     fi
     
-    echo "Detected latest tag: $latest_tag" >&2
     echo "$latest_tag"
 }
 
