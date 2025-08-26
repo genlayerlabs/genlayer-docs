@@ -48,11 +48,6 @@ class AddressConverter(gl.Contract):
         return self.stored_address.as_b64
     
     @gl.public.view
-    def get_address_int(self) -> int:
-        # Get integer representation (little endian); handy for numeric comparisons or ranges
-        return self.stored_address.as_int
-    
-    @gl.public.view
     def get_address_string(self) -> str:
         # Default string representation (same as as_hex)
         return str(self.stored_address)
