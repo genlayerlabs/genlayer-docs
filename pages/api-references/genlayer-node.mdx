@@ -575,3 +575,568 @@ curl -X POST http://localhost:9151 \
     "id": 1
   }'
 ```
+
+## Ops Methods
+
+These methods provide operational endpoints for monitoring the GenLayer node.
+
+### balance
+
+Returns the configured validator's account balance in multiple formats including hexadecimal, wei, and GEN units.
+
+**Method:** `GET /balance`
+
+**Parameters:** None
+
+**Returns:** JSON object containing the validator's balance in three formats
+
+**Example Request:**
+
+```bash
+curl -X GET http://localhost:9153/balance
+```
+
+**Example Response:**
+
+```json
+{
+  "balance_hex": "0x0de0b6b3a7640000",
+  "balance_wei": "1000000000000000000",
+  "balance_gen": "1.000"
+}
+```
+
+**Response Fields:**
+
+- `balance_hex` (string): The balance encoded as hexadecimal with "0x" prefix
+- `balance_wei` (string): The balance in wei as a decimal string
+- `balance_gen` (string): The balance in GEN units formatted with 3 decimal places
+
+**Notes:**
+
+- This endpoint is only available when the node is running in validator mode
+- The balance is always retrieved from the latest block
+- The validator address is configured at node startup
+- If the validator address is not configured, the zero address (0x0000...0000) is used
+- Balance conversions: 1 GEN = 1,000,000,000,000,000,000 wei (10^18 wei)
+- Returns HTTP 503 if the node is not in validator mode
+- Returns HTTP 500 if there's an error retrieving the balance
+
+**Example Response (Zero Balance):**
+
+```json
+{
+  "balance_hex": "0x",
+  "balance_wei": "0",
+  "balance_gen": "0.000"
+}
+```
+
+**Example Response (Large Balance):**
+
+```json
+{
+  "balance_hex": "0x3635c9adc5dea00000",
+  "balance_wei": "1000000000000000000000",
+  "balance_gen": "1000.000"
+}
+```
+
+**Error Response (Not in Validator Mode):**
+
+```json
+{
+  "message": "Balance endpoint not available in rollup mode"
+}
+```
+
+**cURL Example with Headers:**
+
+```bash
+curl -X GET http://localhost:9153/balance \
+  -H "Accept: application/json" \
+  -v
+```
+
+### health
+
+Returns the health status of the GenLayer node along with version information and the status of individual health checks.
+
+**Method:** `GET /health`
+
+**Parameters:** None
+
+**Returns:** JSON object containing the overall health status, version information, and individual check results
+
+**Example Request:**
+
+```bash
+curl -X GET http://localhost:9153/health
+```
+
+**Example Response:**
+
+```json
+{
+  "status": "up",
+  "node_version": "v1.2.3",
+  "protocol_version": "consensus-v2.1",
+  "checks": {
+    "test-check": {
+      "status": "up",
+      "timestamp": "2024-01-15T10:30:45Z"
+    }
+  }
+}
+```
+
+**Response Fields:**
+
+- `status` (string): Overall health status - "up" if all checks pass, "down" if any check fails
+- `node_version` (string): The version of the GenLayer node software
+- `protocol_version` (string): The consensus protocol version
+- `checks` (object, optional): Map of individual health check results
+  - `[check-name]` (object): Results for a specific health check
+    - `status` (string): Check status - "up" or "down"
+    - `timestamp` (string): ISO 8601 timestamp of when the check was performed
+    - `error` (string, optional): Error message if check failed
+
+**HTTP Status Codes:**
+
+- `200 OK`: Node is healthy (all checks passing)
+- `503 Service Unavailable`: Node is unhealthy (one or more checks failing)
+
+**Notes:**
+
+- The endpoint has a 5-second timeout for all health checks
+- The `checks` field is only included when health checks are configured
+- Version fields will show "unset" if version information is not available
+- Individual health checks are executed concurrently with results aggregated in the response
+
+**Example Response (Unhealthy):**
+
+```json
+{
+  "status": "down",
+  "node_version": "v1.2.3",
+  "protocol_version": "consensus-v2.1",
+  "checks": {
+    "database": {
+      "status": "down",
+      "error": "connection timeout",
+      "timestamp": "2024-01-15T10:30:45Z"
+    },
+    "consensus": {
+      "status": "up",
+      "timestamp": "2024-01-15T10:30:45Z"
+    }
+  }
+}
+```
+
+**cURL Example with Headers:**
+
+```bash
+curl -X GET http://localhost:9153/health \
+  -H "Accept: application/json" \
+  -v
+```
+
+### metrics
+
+Exposes Prometheus-compatible metrics for monitoring node performance and health.
+
+**Method:** `GET /metrics`
+
+**Parameters:** None
+
+**Returns:** Prometheus-format text response with all collected metrics
+
+**Example Request:**
+
+```bash
+curl -X GET http://localhost:9153/metrics
+```
+
+**Example Response:**
+
+```
+# HELP genlayer_node_cpu_usage_percent Current CPU usage percentage (0-100)
+# TYPE genlayer_node_cpu_usage_percent gauge
+genlayer_node_cpu_usage_percent{component="node"} 15.5
+genlayer_node_cpu_usage_percent{component="genvm-llm"} 45.2
+genlayer_node_cpu_usage_percent{component="genvm-web"} 12.8
+genlayer_node_cpu_usage_percent{component="webdriver"} 5.3
+
+# HELP genlayer_node_memory_rss_bytes Resident Set Size (RSS) memory usage in bytes
+# TYPE genlayer_node_memory_rss_bytes gauge
+genlayer_node_memory_rss_bytes{component="node"} 524288000
+genlayer_node_memory_rss_bytes{component="genvm-llm"} 2147483648
+
+# HELP genlayer_node_network_rx_bytes_total Total bytes received across all network interfaces
+# TYPE genlayer_node_network_rx_bytes_total counter
+genlayer_node_network_rx_bytes_total{component="node"} 1073741824
+```
+
+#### Available Metrics
+
+The node collects metrics for three main components:
+- **Node** - The main node process
+- **GenVM** - The GenVM modules (LLM and Web)
+- **WebDriver** - The WebDriver container
+
+**CPU Metrics**
+
+**genlayer_node_cpu_usage_percent**
+
+Current CPU usage percentage (0-100).
+
+**Type:** Gauge
+
+**Labels:**
+- `component`: One of `node`, `genvm-llm`, `genvm-web`, `webdriver`
+
+**Example:**
+```
+genlayer_node_cpu_usage_percent{component="node"} 15.5
+genlayer_node_cpu_usage_percent{component="genvm-llm"} 45.2
+genlayer_node_cpu_usage_percent{component="genvm-web"} 12.8
+genlayer_node_cpu_usage_percent{component="webdriver"} 5.3
+```
+
+**Memory Metrics**
+
+**genlayer_node_memory_rss_bytes**
+
+Resident Set Size (RSS) memory usage in bytes.
+
+**Type:** Gauge
+
+**Labels:**
+- `component`: One of `node`, `genvm-llm`, `genvm-web`, `webdriver`
+
+**Example:**
+```
+genlayer_node_memory_rss_bytes{component="node"} 524288000
+genlayer_node_memory_rss_bytes{component="genvm-llm"} 2147483648
+```
+
+**genlayer_node_memory_vms_bytes**
+
+Virtual Memory Size (VMS) in bytes.
+
+**Type:** Gauge
+
+**Labels:**
+- `component`: One of `node`, `genvm-llm`, `genvm-web`, `webdriver`
+
+**Note:** Only available for node and GenVM components.
+
+**genlayer_node_memory_usage_bytes**
+
+Current memory usage in bytes (WebDriver only).
+
+**Type:** Gauge
+
+**Labels:**
+- `component`: `webdriver`
+
+**genlayer_node_memory_limit_bytes**
+
+Memory limit in bytes (WebDriver only).
+
+**Type:** Gauge
+
+**Labels:**
+- `component`: `webdriver`
+
+**genlayer_node_memory_percent**
+
+Memory usage percentage.
+
+**Type:** Gauge
+
+**Labels:**
+- `component`: One of `genvm-llm`, `genvm-web`, `node`, `webdriver`
+- `node`: Node address (hex format)
+
+**genlayer_node_memory_peak_bytes**
+
+Peak memory usage in bytes (GenVM components only).
+
+**Type:** Gauge
+
+**Labels:**
+- `component`: One of `genvm-llm`, `genvm-web`
+- `node`: Node address (hex format)
+
+**Network Metrics**
+
+**genlayer_node_network_rx_bytes_total**
+
+Total bytes received across all network interfaces.
+
+**Type:** Counter
+
+**Labels:**
+- `component`: One of `node`, `genvm-llm`, `genvm-web`, `webdriver`
+- `node`: Node address (hex format)
+
+**Example:**
+```
+genlayer_node_network_rx_bytes_total{component="node",node="0x84b6cbd007511352d3fea26834c5c39a440903c4"} 96879942
+genlayer_node_network_rx_bytes_total{component="webdriver",node="0x84b6cbd007511352d3fea26834c5c39a440903c4"} 84
+```
+
+**genlayer_node_network_tx_bytes_total**
+
+Total bytes transmitted across all network interfaces.
+
+**Type:** Counter
+
+**Labels:**
+- `component`: One of `node`, `genvm-llm`, `genvm-web`, `webdriver`
+- `node`: Node address (hex format)
+
+**Disk Metrics**
+
+**genlayer_node_disk_free_bytes**
+
+Available free disk space in bytes.
+
+**Type:** Gauge
+
+**Labels:**
+- `component`: `node`
+- `directory`: One of `genlayer.db`, `keystore`, `logs`
+- `node`: Node address (hex format)
+
+**genlayer_node_disk_total_bytes**
+
+Total disk space in bytes.
+
+**Type:** Gauge
+
+**Labels:**
+- `component`: `node`
+- `directory`: One of `genlayer.db`, `keystore`, `logs`
+- `node`: Node address (hex format)
+
+**genlayer_node_disk_usage_bytes**
+
+Used disk space in bytes.
+
+**Type:** Gauge
+
+**Labels:**
+- `component`: `node`
+- `directory`: One of `genlayer.db`, `keystore`, `logs`
+- `node`: Node address (hex format)
+
+**genlayer_node_disk_usage_percent**
+
+Used disk space as percentage.
+
+**Type:** Gauge
+
+**Labels:**
+- `component`: `node`
+- `directory`: One of `genlayer.db`, `keystore`, `logs`
+- `node`: Node address (hex format)
+
+**Node Status Metrics**
+
+**genlayer_node_blocks_behind**
+
+Number of blocks behind the latest block.
+
+**Type:** Gauge
+
+**Labels:**
+- `node`: Node address (hex format)
+
+**genlayer_node_latest_block**
+
+Latest block number in the network.
+
+**Type:** Gauge
+
+**Labels:**
+- `node`: Node address (hex format)
+
+**genlayer_node_processing_block**
+
+Currently processing block number.
+
+**Type:** Gauge
+
+**Labels:**
+- `node`: Node address (hex format)
+
+**genlayer_node_synced_block**
+
+Last synced block number.
+
+**Type:** Gauge
+
+**Labels:**
+- `node`: Node address (hex format)
+
+**genlayer_node_synced**
+
+Node synchronization status (1 = synced, 0 = not synced).
+
+**Type:** Gauge
+
+**Labels:**
+- `node`: Node address (hex format)
+
+**genlayer_node_uptime_seconds**
+
+Node uptime in seconds.
+
+**Type:** Gauge
+
+**Labels:**
+- `component`: `node`
+- `node`: Node address (hex format)
+
+**Transaction Metrics**
+
+**genlayer_node_transactions_accepted_synced_total**
+
+Total number of accepted and synced transactions.
+
+**Type:** Gauge
+
+**Labels:**
+- `node`: Node address (hex format)
+
+**genlayer_node_transactions_activated_total**
+
+Total number of activated transactions.
+
+**Type:** Gauge
+
+**Labels:**
+- `node`: Node address (hex format)
+
+**genlayer_node_transactions_leader_proposed_total**
+
+Total number of transactions proposed as leader.
+
+**Type:** Gauge
+
+**Labels:**
+- `node`: Node address (hex format)
+
+**genlayer_node_transactions_leader_revealed_total**
+
+Total number of transactions revealed as leader.
+
+**Type:** Gauge
+
+**Labels:**
+- `node`: Node address (hex format)
+
+**genlayer_node_transactions_validator_commit_total**
+
+Total number of validator commit votes.
+
+**Type:** Gauge
+
+**Labels:**
+- `node`: Node address (hex format)
+
+**genlayer_node_transactions_validator_reveal_total**
+
+Total number of validator reveal votes.
+
+**Type:** Gauge
+
+**Labels:**
+- `node`: Node address (hex format)
+
+**Go Runtime Metrics**
+
+The endpoint also exposes standard Go runtime metrics including:
+
+- `go_gc_duration_seconds` - Garbage collection duration summary
+- `go_goroutines` - Number of active goroutines
+- `go_memstats_*` - Go memory statistics (heap, stack, GC)
+- `go_threads` - Number of OS threads
+
+**Process Metrics**
+
+Standard process metrics are also available:
+
+- `process_cpu_seconds_total` - Total CPU time
+- `process_resident_memory_bytes` - Resident memory size
+- `process_virtual_memory_bytes` - Virtual memory size
+- `process_open_fds` - Number of open file descriptors
+- `process_network_receive_bytes_total` - Network bytes received
+- `process_network_transmit_bytes_total` - Network bytes transmitted
+
+**Prometheus Handler Metrics**
+
+Metrics about the metrics endpoint itself:
+
+- `promhttp_metric_handler_requests_total` - Total scrape requests by status code
+- `promhttp_metric_handler_requests_in_flight` - Current scrapes being served
+
+#### Configuration
+
+Metrics collection can be configured in the node configuration file:
+
+```yaml
+metrics:
+  interval: "15s"        # Default interval for all collectors
+  collectors:
+    node:
+      enabled: true      # Enable/disable node metrics
+      interval: "30s"    # Optional: Override default interval
+    genvm:
+      enabled: true      # Enable/disable GenVM metrics
+      # Uses default interval (15s)
+    webdriver:
+      enabled: true      # Enable/disable WebDriver metrics
+      interval: "60s"    # Optional: Override default interval
+```
+
+**Default Values**
+- `metrics.interval`: 15s (applies to all collectors by default)
+- `enabled`: true (for each collector)
+- `interval`: Uses metrics.interval if not specified per collector
+
+**Configuration Priority**
+1. Collector-specific `interval` (if specified)
+2. Global `metrics.interval` (if specified)
+3. System default (15s)
+
+
+#### Troubleshooting
+
+**No Metrics for GenVM**
+
+GenVM processes are ephemeral and only run when executing smart contracts. If you don't see GenVM metrics, it's likely that no contracts are currently being executed.
+
+**WebDriver Metrics Missing**
+
+Ensure the WebDriver container is running:
+```bash
+docker ps | grep genlayer-node-webdriver
+```
+
+If not running, start it:
+```bash
+task docker:webdriver:docker-compose:up:detach
+```
+
+**Metrics Not Updating**
+
+Check if metrics collection is enabled in your configuration and that the node has been restarted after configuration changes.
+
+#### Performance Considerations
+
+- Collection intervals can be increased to reduce overhead further
+- Each collector runs independently and won't block others if one fails
