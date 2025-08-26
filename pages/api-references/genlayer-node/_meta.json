@@ -1,0 +1,14 @@
+{
+  "gen": {
+    "title": "GenLayer Methods",
+    "type": "separator"
+  },
+  "debug": {
+    "title": "Debug Methods",
+    "type": "separator"
+  },
+  "ops": {
+    "title": "Ops Methods",
+    "type": "separator"
+  }
+}
