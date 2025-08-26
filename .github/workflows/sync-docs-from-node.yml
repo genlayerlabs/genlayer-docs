@@ -36,7 +36,7 @@ on:
 
 # Global environment variables
 env:
-  CLEANUP_ARTIFACTS: false
+  CLEANUP_ARTIFACTS: true
 
 # Prevent concurrent runs of the same workflow
 concurrency:
