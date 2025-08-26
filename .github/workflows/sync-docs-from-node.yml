@@ -260,7 +260,9 @@ jobs:
           # Sync all required paths in a single call
           .github/scripts/sync-artifact-files.sh temp-merged . \
             "content/validators" \
-            "pages/api-references/genlayer-node"
+            "pages/api-references/genlayer-node/gen" \
+            "pages/api-references/genlayer-node/debug" \
+            "pages/api-references/genlayer-node/ops" 
 
       - name: Run documentation generation scripts
         id: generate
