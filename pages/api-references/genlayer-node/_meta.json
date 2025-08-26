@@ -6,5 +6,9 @@
   "debug": {
     "title": "Debug Methods",
     "type": "separator"
+  },
+  "ops": {
+    "title": "Ops Methods",
+    "type": "separator"
   }
 }
