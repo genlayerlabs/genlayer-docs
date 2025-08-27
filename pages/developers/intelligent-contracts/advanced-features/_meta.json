@@ -1,6 +1,7 @@
 {
   "contract-to-contract-interaction": "Contract-to-Contract Interaction",
-  "working-with-balances": "Working with balances",
+  "error-handling": "Error Handling",
   "vector-store": "Vector Store",
-  "error-handling": "Error Handling"
+  "visual-inputs": "Visual Inputs",
+  "working-with-balances": "Working with balances"
 }
