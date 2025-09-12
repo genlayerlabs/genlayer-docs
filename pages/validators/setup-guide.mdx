@@ -85,6 +85,7 @@ Below are the **initial** recommended system requirements. These guidelines may 
    You should see a list like this
 
    ```sh
+      v0.3.11
       v0.3.10
       v0.3.9
       v0.3.8
@@ -108,7 +109,7 @@ Below are the **initial** recommended system requirements. These guidelines may 
 
 1. Download the packaged application
    ```sh
-   export version=v0.3.10 # set your desired version here
+   export version=v0.3.11 # set your desired version here
    wget https://storage.googleapis.com/gh-af/genlayer-node/bin/amd64/${version}/genlayer-node-linux-amd64-${version}.tar.gz
    ```
 1. Extract the node software
@@ -233,16 +234,6 @@ merkleforest:
 merkletree:
   maxdepth: 16
   dbpath: "./data/node/merkle/tree/"
-
-# Telemetry configuration
-# telemetry:
-# Uncomment to enable telemetry logs
-#   logs:
-#     endpoint: "https://logs-receiver-xxxxx.run.app"
-#     timeout: "300s"
-#     max_retries: 5
-#     retry_delay: "1s"
-#     max_file_size: "100MB"
 
 # metrics configuration
 metrics:
