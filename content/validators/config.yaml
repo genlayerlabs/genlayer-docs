@@ -98,16 +98,6 @@ merkletree:
   maxdepth: 16
   dbpath: "./data/node/merkle/tree/"
 
-# Telemetry configuration
-# telemetry:
-# Uncomment to enable telemetry logs
-#   logs:
-#     endpoint: "https://logs-receiver-xxxxx.run.app"
-#     timeout: "300s"
-#     max_retries: 5
-#     retry_delay: "1s"
-#     max_file_size: "100MB"
-
 # metrics configuration
 metrics:
    interval: "15s"  # Default interval for all collectors (can be overridden per collector)
