@@ -7,3 +7,6 @@ public/full-documentation.txt
 # SpecStory explanation file
 .specstory/.what-is-this.md
 .claude/settings.local.json
+playwright-report/
+test-results/
+blob-report/
