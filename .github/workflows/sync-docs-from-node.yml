@@ -182,7 +182,7 @@ jobs:
         uses: actions/checkout@v4
         
       - name: Download all sync artifacts
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@v6
         continue-on-error: true
         with:
           pattern: synced-*
@@ -219,7 +219,7 @@ jobs:
           echo "✅ Merged artifact created"
 
       - name: Upload merged synced files
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v5
         with:
           name: synced-merged
           path: synced-merged/
@@ -249,7 +249,7 @@ jobs:
 
       - name: Download merged synced files
         if: needs.aggregate-results.result == 'success'
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@v6
         with:
           name: synced-merged
           path: temp-merged
@@ -279,7 +279,7 @@ jobs:
           fi
 
       - name: Upload final documentation
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v5
         if: steps.generate.outputs.success == 'true'
         with:
           name: synced-final
@@ -314,7 +314,7 @@ jobs:
 
       - name: Download final documentation
         if: needs.generate-docs.result == 'success'
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@v6
         with:
           name: synced-final
           path: temp-final
@@ -444,7 +444,7 @@ jobs:
         uses: actions/checkout@v4
         
       - name: Download final artifact with sync reports
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@v6
         continue-on-error: true
         with:
           name: synced-final
