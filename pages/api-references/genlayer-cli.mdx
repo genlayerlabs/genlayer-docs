@@ -201,21 +201,30 @@ EXAMPLES:
    genlayer network testnet-asimov     # Set network to testnet-asimov
 ```
 
-### Keypair Management
+### Account Management
 
-Generate and manage keypairs.
+View and manage your account.
 
 ```bash
 USAGE:
-   genlayer keygen create [options]
+   genlayer account                    Show account info (address, balance, network, status)
+   genlayer account create [options]   Create a new account
+   genlayer account send <to> <amount> Send GEN to an address
+   genlayer account unlock             Unlock account (cache key in OS keychain)
+   genlayer account lock               Lock account (remove key from OS keychain)
 
-OPTIONS:
-   --output <path>    Path to save the keypair (default: "./keypair.json")
-   --overwrite        Overwrite the existing file if it already exists (default: false)
+OPTIONS (create):
+   --output <path>    Path to save the keystore (default: "./keypair.json")
+   --overwrite        Overwrite existing file (default: false)
 
 EXAMPLES:
-   genlayer keygen create
-   genlayer keygen create --output ./my_key.json --overwrite
+   genlayer account
+   genlayer account create
+   genlayer account create --output ./my_key.json --overwrite
+   genlayer account send 0x123...abc 10gen
+   genlayer account send 0x123...abc 0.5gen
+   genlayer account unlock
+   genlayer account lock
 ```
 
 ### Update Resources
@@ -281,4 +290,90 @@ EXAMPLES:
    genlayer localnet validators create --stake 50 --provider openai --model gpt-4
    genlayer localnet validators create-random --count 3 --providers openai --models gpt-4 gpt-4o
 
+```
+
+### Staking Operations (Testnet)
+
+Manage staking for validators and delegators on testnet-asimov.
+
+```bash
+USAGE:
+   genlayer staking <command> [options]
+
+VALIDATOR COMMANDS:
+   validator-join      Join as a validator by staking tokens
+   validator-deposit   Make an additional deposit as a validator
+   validator-exit      Exit as a validator by withdrawing shares
+   validator-claim     Claim validator withdrawals after unbonding period
+   validator-prime     Prime a validator to prepare for next epoch
+   validator-info      Get information about a validator
+   set-operator        Change the operator address for a validator
+   set-identity        Set validator identity metadata
+
+DELEGATOR COMMANDS:
+   delegator-join      Join as a delegator by staking with a validator
+   delegator-exit      Exit as a delegator by withdrawing shares
+   delegator-claim     Claim delegator withdrawals after unbonding period
+   stake-info          Get stake info for a delegator with a validator
+
+INFO COMMANDS:
+   epoch-info              Get current epoch and staking parameters
+   active-validators       List all active validators
+   quarantined-validators  List all quarantined validators
+   banned-validators       List all banned validators
+
+OPTIONS (validator-join):
+   --amount <amount>          Stake amount (e.g., "42000gen")
+   --operator <address>       Optional operator address for the validator
+   --staking-address <addr>   Override staking contract address
+
+OPTIONS (delegator-join):
+   --validator <address>      Validator address to delegate to (required)
+   --amount <amount>          Amount to stake (e.g., "100gen")
+   --staking-address <addr>   Override staking contract address
+
+OPTIONS (exit commands):
+   --shares <shares>          Number of shares to withdraw
+   --validator <address>      Validator address (for delegator commands)
+   --staking-address <addr>   Override staking contract address
+
+OPTIONS (set-identity):
+   --validator <address>      Validator address (required)
+   --moniker <name>           Display name (required)
+   --website <url>            Website URL
+   --description <text>       Description
+   --twitter <handle>         Twitter handle
+   --telegram <handle>        Telegram handle
+   --github <handle>          GitHub handle
+   --email <email>            Contact email
+   --logo-uri <uri>           Logo image URL
+
+EXAMPLES:
+   # Join as validator with 42000 GEN stake
+   genlayer staking validator-join --amount 42000gen
+
+   # Join with separate operator address (recommended for security)
+   genlayer staking validator-join --amount 42000gen --operator 0xOperator...
+
+   # Set validator identity
+   genlayer staking set-identity --validator 0x... --moniker "My Validator" --website "https://example.com"
+
+   # Check epoch info (includes inflation data)
+   genlayer staking epoch-info
+
+   # Get validator info
+   genlayer staking validator-info --validator 0x...
+
+   # Delegate to a validator
+   genlayer staking delegator-join --validator 0x... --amount 100gen
+
+   # Check stake info (includes projected rewards)
+   genlayer staking stake-info --validator 0x...
+
+   # Exit and claim (7 epoch unbonding period)
+   genlayer staking delegator-exit --validator 0x... --shares 50
+   genlayer staking delegator-claim --validator 0x...
+
+   # List active validators
+   genlayer staking active-validators
 ```
