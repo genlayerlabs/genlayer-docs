@@ -209,6 +209,7 @@ View and manage your account.
 USAGE:
    genlayer account                    Show account info (address, balance, network, status)
    genlayer account create [options]   Create a new account
+   genlayer account import [options]   Import an account from a private key
    genlayer account send <to> <amount> Send GEN to an address
    genlayer account unlock             Unlock account (cache key in OS keychain)
    genlayer account lock               Lock account (remove key from OS keychain)
@@ -217,10 +218,18 @@ OPTIONS (create):
    --output <path>    Path to save the keystore (default: "./keypair.json")
    --overwrite        Overwrite existing file (default: false)
 
+OPTIONS (import):
+   --private-key <key>  Private key to import (will prompt if not provided)
+   --output <path>      Path to save the keystore (default: "./keypair.json")
+   --overwrite          Overwrite existing file (default: false)
+
 EXAMPLES:
    genlayer account
    genlayer account create
    genlayer account create --output ./my_key.json --overwrite
+   genlayer account import
+   genlayer account import --private-key 0x1234...abcd
+   genlayer account import --private-key 0x1234...abcd --output ./imported.json
    genlayer account send 0x123...abc 10gen
    genlayer account send 0x123...abc 0.5gen
    genlayer account unlock
