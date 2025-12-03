@@ -541,3 +541,180 @@ const client = createClient({
   chain: localnet, // or studionet, testnetAsimov
 });
 ```
+
+## Staking (Testnet)
+
+The SDK provides staking functionality for validators and delegators on testnet-asimov.
+
+### Setup
+
+```typescript
+import { testnetAsimov } from 'genlayer-js/chains';
+import { createClient, createAccount } from "genlayer-js";
+
+const account = createAccount();
+const client = createClient({
+  chain: testnetAsimov,
+  account,
+});
+```
+
+### getEpochInfo
+
+Get current epoch information including inflation and timing data.
+
+```typescript
+const epochInfo = await client.getEpochInfo();
+// {
+//   currentEpoch: 2n,
+//   epochMinDuration: 86400n,        // 1 day in seconds
+//   currentEpochStart: Date,
+//   currentEpochEnd: Date | null,
+//   nextEpochEstimate: Date | null,
+//   validatorMinStake: "42000 GEN",
+//   delegatorMinStake: "42 GEN",
+//   activeValidatorsCount: 6n,
+//   inflation: "1000 GEN",           // Total inflation for current epoch
+//   inflationRaw: 1000000000000000000000n,
+//   totalWeight: 500000000000000000000000n,
+//   totalClaimed: "500 GEN",
+// }
+```
+
+### getActiveValidators
+
+Get list of active validators.
+
+```typescript
+const validators = await client.getActiveValidators();
+// ['0xa8f1...', '0xe924...', ...]
+```
+
+### isValidator
+
+Check if an address is a validator.
+
+```typescript
+const isValidator = await client.isValidator("0x...");
+// true or false
+```
+
+### getValidatorInfo
+
+Get detailed information about a validator.
+
+```typescript
+const info = await client.getValidatorInfo("0x...");
+// {
+//   address: '0x...',
+//   owner: '0x...',
+//   operator: '0x...',
+//   vStake: '42000 GEN',
+//   vShares: 42000n,
+//   dStake: '1000 GEN',
+//   dShares: 1000n,
+//   live: true,
+//   banned: false,
+//   identity: { moniker: 'My Validator', ... },
+//   pendingDeposits: [...],
+//   pendingWithdrawals: [...],
+// }
+```
+
+### getStakeInfo
+
+Get stake information for a delegator with a specific validator.
+
+```typescript
+const stakeInfo = await client.getStakeInfo("0xDelegator...", "0xValidator...");
+// {
+//   delegator: '0x...',
+//   validator: '0x...',
+//   shares: 100n,
+//   stake: '100 GEN',
+//   stakeRaw: 100000000000000000000n,
+//   pendingDeposits: [...],
+//   pendingWithdrawals: [...],
+// }
+```
+
+### validatorJoin
+
+Join as a validator by staking tokens.
+
+```typescript
+const result = await client.validatorJoin({
+  amount: "42000gen",
+  operator: "0xOperator...", // optional
+});
+// {
+//   transactionHash: '0x...',
+//   blockNumber: 123n,
+//   gasUsed: 21000n,
+//   validatorWallet: '0x...',
+//   operator: '0x...',
+//   amount: '42000 GEN',
+// }
+```
+
+### delegatorJoin
+
+Join as a delegator by staking with a validator.
+
+```typescript
+const result = await client.delegatorJoin({
+  validator: "0xValidator...",
+  amount: "100gen",
+});
+// {
+//   transactionHash: '0x...',
+//   blockNumber: 123n,
+//   gasUsed: 21000n,
+//   validator: '0x...',
+//   delegator: '0x...',
+//   amount: '100 GEN',
+// }
+```
+
+### validatorExit / delegatorExit
+
+Exit by withdrawing shares. Tokens enter a 7-epoch unbonding period.
+
+```typescript
+// Validator exit
+const result = await client.validatorExit({ shares: 100n });
+
+// Delegator exit
+const result = await client.delegatorExit({
+  validator: "0xValidator...",
+  shares: 50n,
+});
+```
+
+### validatorClaim / delegatorClaim
+
+Claim withdrawals after the 7-epoch unbonding period.
+
+```typescript
+// Validator claim
+const result = await client.validatorClaim({ validator: "0x..." });
+
+// Delegator claim
+const result = await client.delegatorClaim({
+  validator: "0xValidator...",
+  delegator: "0xDelegator...",
+});
+```
+
+### Utility Functions
+
+```typescript
+import { parseStakingAmount, formatStakingAmount } from "genlayer-js";
+
+// Parse human-readable amounts to BigInt
+const amount = parseStakingAmount("100gen");  // 100000000000000000000n
+const amount2 = parseStakingAmount("100");    // 100000000000000000000n
+
+// Format BigInt to human-readable
+const formatted = formatStakingAmount(100000000000000000000n);  // "100 GEN"
+```
