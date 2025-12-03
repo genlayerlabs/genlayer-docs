@@ -1,5 +1,78 @@
 # Changelog
 
+## v0.4.0
+
+### New features
+
+- Migrate to new consensus staking
+- Handle validator priming
+- Finalize epochs
+- Advance epochs when epochs finalize
+- Handle automatic gas increase
+- Implement ProcessIdleness and enhance event subscription
+- Handle validator commit idleness for leader
+- Implement leader idleness detection and rotation
+- Add detailed ban information with epoch and permanent flag
+- Handle unfinished transactions with batch finalization
+- Add nonceSafe for granular transaction locking
+- Add sanity check for operator address in validator wallet configuration
+- Add missing fields from consensus transaction data to API response
+- Add validator telemetry push monitoring
+- Add actionable fix suggestions to WebDriver error messages in doctor command
+- Add zkSync connectivity checks
+- Add Staking Contract address comparison to doctor checks
+- Add libertai as a new LLM provider
+- Add transaction count metrics for consensus roles
+- Implement consensus sync status metrics
+- Add TimeoutsSet event router for dynamic timeout configuration
+- Add enhanced transaction failure debugging with trace support
+- Sync data with finalized and appeal started events
+- Add timeout delay mechanism for RPC resilience
+- Add status and blockNumber parameters to gen_call
+- Enhance health endpoint with version info and validator with ban and permanent ban detection
+- Update genvm version to v0.2.7
+- Store and expose genvm execution information
+- Add sign admin endpoint for genvm
+
+### Bug fixes
+
+- GenVM architecture on arm64
+- Fix sync issue when there are no consensus events
+- Use latest block instead of timestamp for transaction queries
+- Update WebDriver check for Puppeteer implementation
+- Resolve multi-transaction nonce issue
+- Remove duplicated check logic and fix status check on specific block
+- Leader rotation timeout and receipt cleanup
+- Change transaction finalization to allow all nodes to finalize
+- GenVM non determinism
+- Add retry logic to prevent validator banning on transient errors
+- GenVM sanity checks
+- Cancel context and wait for group when genvm tester fails
+- Decoding calldata into complex types
+- Don't try activating already activated transactions
+- Starting node
+- Still process sync failed TX for DB consistency
+- Add correct encoding for getState
+- Only sync transactions with ResultCodeReturn and add sanity check
+- Use block number for transaction data retrieval
+- Validator votes idleness
+- Leader idleness
+- Accidental deadlock in genvm
+- Lazy validators commit order
+
+### Misc
+
+- Simplify environment variable configuration using .env file
+- Add environment variable override support for config values
+- Update webdriver image to v0.0.9
+- Update RPC and WebSocket endpoints in config.yaml.example
+- Correct status for validatorTimeout after appeal time window
+- Validate presence of abigen in dependency check
+- Rename environment validation functions for clarity
+- Use cockroachdb errors package for error handling
+- Remove wallet.yaml file handling
+- Rename archive to full
+
 ## v0.3.11
 
 ### New features

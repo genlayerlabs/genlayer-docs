@@ -11,6 +11,20 @@ import { Callout } from "nextra-theme-docs";
   A fully Zero-downtime upgrade procedure is coming in a future update. 
 </Callout>
 
+## v0.3.x → v0.4 (Breaking Change)
+
+`v0.4` switches to a new consensus deployment with staking. For this reason, the validator must be set up from scratch without reusing the old database stored at `data/node/genlayer.db`.
+You do not need to keep your existing validator node running while you download and configure the new version.
+
+- Stop the node if it is running.
+- Back up the `configs/node/config.yaml` file so that you can refer to any values you have set in the previous version.
+- Back up the `data/node/keystore` folder so that you use your previous operator.
+- Download the packaged binary.
+- Install the new version.
+- Remove the storage folder `data/node/genlayer.db`.
+- Check that configuration is correct by running `genlayernode doctor` command.
+- Start the node.
+
 ## Configuration Change
 
 `v0.3.8` introduces updated consensus contract deployment with new contract addresses. **Critical**: Some consensus contract addresses have changed, and validators must update their consensus configuration to continue participating in the network.
