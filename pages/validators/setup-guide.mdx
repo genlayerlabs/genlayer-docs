@@ -803,7 +803,28 @@ services:
 
 ```
 
-2. Set the required environment variables in a `.env` file:
+2. Create `genvm-module-web-docker.yaml` for Docker networking:
+
+The extracted tarball includes `third_party/genvm/config/genvm-module-web.yaml` configured for `localhost`, which works when running
+the binary directly. For docker-compose, you need a version that points to the webdriver service name.
+
+Create `genvm-module-web-docker.yaml` in the same directory as your `docker-compose.yaml`:
+
+- Copy the contents of `third_party/genvm/config/genvm-module-web.yaml` into `genvm-module-web-docker.yaml`.
+- Modify the `webdriver_host` configuration to use the service name `webdriver-container` instead of `localhost`:
+
+```yaml
+webdriver_host: http://webdriver-container:4444
+```
+
+This allows the node container to reach the webdriver container using Docker's internal networking.
+
+The key difference:
+- **Binary execution**: uses `localhost:4444` (webdriver runs on same machine)
+- **Docker-compose**: uses `webdriver-container:4444` (container service name)
+
+
+3. Set the required environment variables in a `.env` file:
 
 ```env
 # GenLayer Node Release Configuration
@@ -840,9 +861,9 @@ GEMINIKEY=
 ATOMAKEY=
 ```
 
-or simply use the provided `docker-compose.yaml` and the `.env.example` from the downloaded application packaged.
+or simply use the provided `docker-compose.yaml`, `.env.example` and the `genvm-module-web-docker.yaml` from the extracted tarball.
 
-3. Checking Your Configuration
+4. Checking Your Configuration
 
 To ensure your node is correctly configured, you can run the following command:
 
@@ -853,7 +874,7 @@ source .env && docker run --rm --env-file ./.env \
   ./bin/genlayernode doctor
 ```
 
-4. Start the services using Docker Compose:
+5. Start the services using Docker Compose:
 
 ```sh
 source .env && docker compose --profile node up -d
@@ -936,4 +957,4 @@ curl -s http://localhost:9153/metrics | grep genlayer_node_
 
 ### Logs and metrics forwarding
 
-You can forward your logs and metrics to external systems for centralized monitoring and alerting by using the service `alloy` provided in the `docker-compose.yaml` from the downloaded application packaged.
+You can forward your logs and metrics to external systems for centralized monitoring and alerting by using the service `alloy` provided in the `docker-compose.yaml` from the extracted tarball.
