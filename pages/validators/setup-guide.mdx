@@ -772,7 +772,7 @@ services:
     restart: unless-stopped
 
   genlayer-node:
-    image: yeagerai/genlayer-node:${NODE_VERSION:-latest}
+    image: yeagerai/genlayer-node:${NODE_VERSION:-v0.4.0}
     entrypoint: [
       "sh", "-c", "/app/bin/genlayernode run --password ${NODE_PASSWORD:-12345678}",
     ]
@@ -870,7 +870,7 @@ To ensure your node is correctly configured, you can run the following command:
 ```sh
 source .env && docker run --rm --env-file ./.env \
   -v ${NODE_CONFIG_PATH:-./configs/node/config.yaml}:/app/configs/node/config.yaml \
-  yeagerai/genlayer-node:${NODE_VERSION:-latest} \
+  yeagerai/genlayer-node:${NODE_VERSION:-v0.4.0} \
   ./bin/genlayernode doctor
 ```
 
