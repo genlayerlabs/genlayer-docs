@@ -184,21 +184,191 @@ EXAMPLES:
 
 ### Network Management
 
-Configure network settings.
+Configure and view network settings.
 
 ```bash
 USAGE:
-   genlayer network [network]
+   genlayer network set [network]
+   genlayer network info
+   genlayer network list
 
-ARGUMENTS:
-   [network]  Optional network name or alias to set. If omitted, displays an interactive selection menu.
-              Valid options: localnet, studionet, testnet-asimov
+COMMANDS:
+   set [network]   Set the network (interactive menu if network not specified)
+   info            Show current network configuration and contract addresses
+   list            List all available networks
 
 EXAMPLES:
-   genlayer network                    # Interactive selection menu
-   genlayer network localnet           # Set network to localnet
-   genlayer network studionet          # Set network to studionet  
-   genlayer network testnet-asimov     # Set network to testnet-asimov
+   genlayer network set                 # Interactive selection menu
+   genlayer network set localnet        # Set network to localnet
+   genlayer network set testnet-asimov  # Set network to testnet-asimov
+   genlayer network info                # Show current network details
+   genlayer network list                # List available networks
+```
+
+### Account Management
+
+Create and manage accounts with encrypted keystores.
+
+```bash
+USAGE:
+   genlayer account create [options]
+   genlayer account show [options]
+   genlayer account list
+   genlayer account use <name>
+   genlayer account remove <name>
+   genlayer account lock [options]
+   genlayer account unlock [options]
+   genlayer account export [options]
+   genlayer account import [options]
+   genlayer account send [options]
+
+COMMANDS:
+   create          Create a new account with encrypted keystore
+   show            Show account details and balance
+   list            List all accounts
+   use             Set an account as active
+   remove          Remove an account
+   lock            Lock an account (remove cached private key)
+   unlock          Unlock an account (cache private key in OS keychain)
+   export          Export account to standard web3 keystore format
+   import          Import account from keystore file or private key
+   send            Send GEN tokens to another address
+
+OPTIONS (create):
+   --name <name>   Account name (default: "default")
+   --overwrite     Overwrite existing account
+
+OPTIONS (show):
+   --account <name>   Account to show (default: active account)
+   --rpc <rpcUrl>     RPC URL for balance lookup
+
+OPTIONS (lock/unlock):
+   --account <name>   Account to lock/unlock
+
+OPTIONS (export):
+   --account <name>      Account to export
+   --output <path>       Output file path
+   --password <password> Password for exported keystore
+
+OPTIONS (import):
+   --name <name>         Name for imported account
+   --keystore <path>     Path to keystore file
+   --private-key <key>   Private key to import (alternative to keystore)
+
+OPTIONS (send):
+   --to <address>        Recipient address
+   --amount <amount>     Amount to send (e.g., "1.5" or "1.5gen")
+   --account <name>      Account to send from
+
+EXAMPLES:
+   genlayer account create --name owner
+   genlayer account show
+   genlayer account show --account operator
+   genlayer account list
+   genlayer account use owner
+   genlayer account unlock --account owner
+   genlayer account export --account operator --output ./operator-keystore.json
+   genlayer account import --name backup --keystore ./backup.json
+   genlayer account send --to 0x123... --amount 100gen
+```
+
+### Staking Operations
+
+Staking operations for validators and delegators on testnet.
+
+```bash
+USAGE:
+   genlayer staking wizard [options]
+   genlayer staking validator-join [options]
+   genlayer staking validator-deposit [options]
+   genlayer staking validator-exit [options]
+   genlayer staking validator-claim [options]
+   genlayer staking validator-info [options]
+   genlayer staking set-operator [options]
+   genlayer staking set-identity [options]
+   genlayer staking delegator-join [options]
+   genlayer staking delegator-exit [options]
+   genlayer staking delegator-claim [options]
+   genlayer staking epoch-info [options]
+   genlayer staking active-validators [options]
+
+COMMANDS:
+   wizard              Interactive wizard to become a validator
+   validator-join      Join as a validator by staking tokens
+   validator-deposit   Make an additional deposit as a validator
+   validator-exit      Exit as a validator by withdrawing shares
+   validator-claim     Claim validator withdrawals after unbonding period
+   validator-info      Get information about a validator
+   set-operator        Change the operator address for a validator
+   set-identity        Set validator identity metadata (moniker, website, socials)
+   delegator-join      Join as a delegator by staking with a validator
+   delegator-exit      Exit as a delegator by withdrawing shares
+   delegator-claim     Claim delegator withdrawals after unbonding period
+   epoch-info          Get current epoch and staking parameters
+   active-validators   List all active validators
+
+OPTIONS (wizard):
+   --account <name>          Account to use (skip selection)
+   --network <network>       Network to use (skip selection)
+   --skip-identity           Skip identity setup step
+
+OPTIONS (validator-join):
+   --amount <amount>         Amount to stake (e.g., "42000gen")
+   --operator <address>      Operator address (defaults to signer)
+   --account <name>          Account to use
+
+OPTIONS (validator-deposit):
+   --amount <amount>         Amount to deposit
+
+OPTIONS (validator-exit):
+   --shares <shares>         Number of shares to withdraw
+
+OPTIONS (set-operator):
+   --validator <address>     Validator wallet address
+   --operator <address>      New operator address
+
+OPTIONS (set-identity):
+   --validator <address>     Validator wallet address
+   --moniker <name>          Validator display name (required)
+   --website <url>           Website URL
+   --description <text>      Description
+   --twitter <handle>        Twitter handle
+   --github <handle>         GitHub handle
+
+OPTIONS (delegator-join):
+   --validator <address>     Validator to delegate to
+   --amount <amount>         Amount to stake
+
+OPTIONS (delegator-exit):
+   --validator <address>     Validator to exit from
+   --shares <shares>         Number of shares to withdraw
+
+COMMON OPTIONS:
+   --network <network>       Network to use (localnet, testnet-asimov)
+   --rpc <rpcUrl>            RPC URL for the network
+   --staking-address <addr>  Override staking contract address
+
+EXAMPLES:
+   # Become a validator using the interactive wizard
+   genlayer staking wizard
+
+   # Join as validator manually
+   genlayer staking validator-join --amount 42000gen --operator 0x123...
+
+   # Check validator status
+   genlayer staking validator-info
+
+   # Set validator identity
+   genlayer staking set-identity --validator 0x123... --moniker "My Validator" --website "https://example.com"
+
+   # Delegate to a validator
+   genlayer staking delegator-join --validator 0x123... --amount 1000gen
+
+   # Check epoch info
+   genlayer staking epoch-info
+
+   # List active validators
+   genlayer staking active-validators
 ```
 
 ### Keypair Management
