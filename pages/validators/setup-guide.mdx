@@ -483,6 +483,23 @@ You can also generate a new operator key directly on the server:
 
 Then use this address when running the wizard on your local machine.
 
+#### Restoring Your Operator Key
+
+To restore from a backup (e.g., after migrating to a new server):
+
+```sh
+./bin/genlayernode account import \
+  --password "your node password" \
+  --passphrase "your backup encryption passphrase" \
+  --path "/path/to/your/secure/backup.key" \
+  -c $(pwd)/configs/node/config.yaml \
+  --setup
+```
+
+<Callout type="warning" emoji="🚨">
+  Always verify that your imported key works by checking the operator address matches what's configured for your validator.
+</Callout>
+
 #### Backing Up Your Operator Key
 
 After setting up your operator key, back it up securely:
@@ -502,22 +519,7 @@ After setting up your operator key, back it up securely:
 
 To print the private key from your backup file, use the `--print` flag. **Keep this private key secure and never share it.**
 
-#### Restoring Your Operator Key
 
-To restore from a backup (e.g., after migrating to a new server):
-
-```sh
-./bin/genlayernode account import \
-  --password "your node password" \
-  --passphrase "your backup encryption passphrase" \
-  --path "/path/to/your/secure/backup.key" \
-  -c $(pwd)/configs/node/config.yaml \
-  --setup
-```
-
-<Callout type="warning" emoji="🚨">
-  Always verify that your imported key works by checking the operator address matches what's configured for your validator.
-</Callout>
 
 ### Running the node
 
