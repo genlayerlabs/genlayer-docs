@@ -283,14 +283,18 @@ USAGE:
    genlayer staking validator-deposit [options]
    genlayer staking validator-exit [options]
    genlayer staking validator-claim [options]
+   genlayer staking validator-prime [options]
    genlayer staking validator-info [options]
    genlayer staking set-operator [options]
    genlayer staking set-identity [options]
    genlayer staking delegator-join [options]
    genlayer staking delegator-exit [options]
    genlayer staking delegator-claim [options]
+   genlayer staking delegation-info [options]
    genlayer staking epoch-info [options]
    genlayer staking active-validators [options]
+   genlayer staking quarantined-validators [options]
+   genlayer staking banned-validators [options]
 
 COMMANDS:
    wizard              Interactive wizard to become a validator
@@ -298,14 +302,18 @@ COMMANDS:
    validator-deposit   Make an additional deposit as a validator
    validator-exit      Exit as a validator by withdrawing shares
    validator-claim     Claim validator withdrawals after unbonding period
+   validator-prime     Prime a validator to prepare stake for next epoch
    validator-info      Get information about a validator
    set-operator        Change the operator address for a validator
    set-identity        Set validator identity metadata (moniker, website, socials)
    delegator-join      Join as a delegator by staking with a validator
    delegator-exit      Exit as a delegator by withdrawing shares
    delegator-claim     Claim delegator withdrawals after unbonding period
+   delegation-info     Get delegation info for a delegator with a validator
    epoch-info          Get current epoch and staking parameters
    active-validators   List all active validators
+   quarantined-validators  List all quarantined validators
+   banned-validators   List all banned validators
 
 OPTIONS (wizard):
    --account <name>          Account to use (skip selection)
@@ -322,6 +330,9 @@ OPTIONS (validator-deposit):
 
 OPTIONS (validator-exit):
    --shares <shares>         Number of shares to withdraw
+
+OPTIONS (validator-prime):
+   --validator <address>     Validator address to prime
 
 OPTIONS (set-operator):
    --validator <address>     Validator wallet address
@@ -343,6 +354,10 @@ OPTIONS (delegator-exit):
    --validator <address>     Validator to exit from
    --shares <shares>         Number of shares to withdraw
 
+OPTIONS (delegation-info):
+   --validator <address>     Validator address
+   --delegator <address>     Delegator address (defaults to signer)
+
 COMMON OPTIONS:
    --network <network>       Network to use (localnet, testnet-asimov)
    --rpc <rpcUrl>            RPC URL for the network
@@ -363,6 +378,9 @@ EXAMPLES:
 
    # Delegate to a validator
    genlayer staking delegator-join --validator 0x123... --amount 1000gen
+
+   # Check your delegation info
+   genlayer staking delegation-info --validator 0x123...
 
    # Check epoch info
    genlayer staking epoch-info
