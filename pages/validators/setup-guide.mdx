@@ -15,7 +15,7 @@ GenLayer validators use three distinct addresses:
 
 | Address | Description | Where Used |
 |---------|-------------|------------|
-| **Owner** | Your main account that holds staked funds. Keep this secure (cold wallet). | CLI wizard - signs staking transaction |
+| **Owner** | The only address that can withdraw staked funds. Keep this secure (cold wallet). | CLI wizard - signs staking transaction |
 | **Operator** | Hot wallet on your server that signs blocks. Can be same as owner, but separate is recommended. | Node config: `operatorAddress` |
 | **Validator Wallet** | Smart contract created when you join. This is your validator's on-chain identity. | Node config: `validatorWalletAddress` |
 
