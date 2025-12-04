@@ -257,6 +257,46 @@ metrics:
 
 ```
 
+### Overriding Configuration with Environment Variables
+
+Any configuration value in `config.yaml` can be overridden using environment variables with the prefix `GENLAYERNODE_`.
+
+**Pattern:**
+
+- Replace dots (`.`) with underscores (`_`)
+- Convert to uppercase
+- Add the `GENLAYERNODE_` prefix
+
+**Examples:**
+
+| Config Key | Environment Variable |
+|------------|---------------------|
+| `rollup.genlayerchainrpcurl` | `GENLAYERNODE_ROLLUP_GENLAYERCHAINRPCURL` |
+| `rollup.genlayerchainwebsocketurl` | `GENLAYERNODE_ROLLUP_GENLAYERCHAINWEBSOCKETURL` |
+| `consensus.contractmainaddress` | `GENLAYERNODE_CONSENSUS_CONTRACTMAINADDRESS` |
+| `consensus.contractdataaddress` | `GENLAYERNODE_CONSENSUS_CONTRACTDATAADDRESS` |
+| `consensus.genesis` | `GENLAYERNODE_CONSENSUS_GENESIS` |
+| `node.mode` | `GENLAYERNODE_NODE_MODE` |
+| `node.validatorWalletAddress` | `GENLAYERNODE_NODE_VALIDATORWALLETADDRESS` |
+| `node.operatorAddress` | `GENLAYERNODE_NODE_OPERATORADDRESS` |
+| `node.rpc.port` | `GENLAYERNODE_NODE_RPC_PORT` |
+| `logging.level` | `GENLAYERNODE_LOGGING_LEVEL` |
+
+**Usage example:**
+
+```sh
+# Override the RPC port
+export GENLAYERNODE_CONSENSUS_CONTRACTMAINADDRESS="0x..."
+
+# Set validator wallet address
+export GENLAYERNODE_NODE_VALIDATORWALLETADDRESS="0x..."
+
+# Set logging level
+export GENLAYERNODE_LOGGING_LEVEL="DEBUG"
+```
+
+Environment variables take precedence over values in `config.yaml`, making them ideal for Docker deployments or sensitive values you don't want in configuration files.
+
 ### GenVM Configuration
 
 You need to set up an LLM for your node to use to provide answers to natural language prompts. You can use any LLM you wish, however the quality of its answers will affect the performance of your node.
@@ -503,30 +543,18 @@ Options:
 - `--amount <amount>` - Stake amount (e.g., `42000gen` or `42000`)
 - `--operator <address>` - Operator address (recommended, see below)
 
-##### Why Use an Operator Address?
+##### Why Use a dedicated Operator Address?
 
 <Callout type="info">
-**Recommended:** Use a separate operator address for security.
+    **Recommended:** Use a separate operator address for security.
 </Callout>
 
-- **Validator wallet** - Holds your staked funds (keep offline/cold)
-- **Operator wallet** - Signs blocks and performs validator duties (hot wallet on server)
+- **Owner address** - Holds your staked funds (keep offline/cold)
+- **Operator address** - Signs blocks and performs validator duties (hot wallet on server)
 
-This way, if your operator server is compromised, your staked funds remain safe.
+This way, if your operator server is compromised, your staked funds remain safe. This also enables delegating the validator operation to an external staking provider.
 
-```bash
-# Create operator account on your validator server
-genlayer account create --output ./operator.json
-
-# Get operator address
-cat ./operator.json | jq -r .address
-# 0xOperator123...
-
-# Join with separate operator (run from your main wallet)
-genlayer staking validator-join --amount 42000gen --operator 0xOperator123...
-```
-
-You can change the operator later:
+You can change the operator at any time:
 
 ```bash
 genlayer staking set-operator --validator 0xYourValidator... --operator 0xNewOperator...
@@ -825,6 +853,10 @@ The key difference:
 
 
 3. Set the required environment variables in a `.env` file:
+
+<Callout type="info">
+  This `.env` file serves two purposes: it configures Docker Compose variables (like `NODE_VERSION`, `NODE_PASSWORD`, ports) and can also include `GENLAYERNODE_*` variables to override node configuration values as described in [Overriding Configuration with Environment Variables](#overriding-configuration-with-environment-variables).
+</Callout>
 
 ```env
 # GenLayer Node Release Configuration
