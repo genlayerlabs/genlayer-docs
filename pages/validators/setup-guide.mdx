@@ -4,6 +4,88 @@ import { Callout } from "nextra-theme-docs";
 
 Running a GenLayer Validator node ensures the security and reliability of the GenLayer network. Below are the requirements for running a GenLayer validator.
 
+## Create the Validator Wallet
+
+Before setting up your validator node, you need to create your validator wallet and stake GEN tokens.
+
+### Understanding Validator Addresses
+
+<Callout type="info">
+GenLayer validators use three distinct addresses:
+
+| Address | Description | Where Used |
+|---------|-------------|------------|
+| **Owner** | Your main account that holds staked funds. Keep this secure (cold wallet). | CLI wizard - signs staking transaction |
+| **Operator** | Hot wallet on your server that signs blocks. Can be same as owner, but separate is recommended. | Node config: `operatorAddress` |
+| **Validator Wallet** | Smart contract created when you join. This is your validator's on-chain identity. | Node config: `validatorWalletAddress` |
+
+The wizard outputs all three addresses at the end. Save them - you'll need the Validator Wallet and Operator addresses for your node configuration.
+</Callout>
+
+### Prerequisites
+
+- **Node.js** (v18 or higher)
+- **GenLayer CLI** - Install the latest version:
+  ```bash
+  npm install -g genlayer
+  ```
+- **GEN tokens** - You need at least **42,000 GEN** for the minimum self-stake requirement
+
+### Using the Validator Wizard
+
+The easiest way to create your validator wallet is using the interactive wizard:
+
+```bash
+genlayer staking wizard
+```
+
+The wizard guides you through:
+
+1. **Account setup** - Create or select your owner account
+2. **Network selection** - Choose testnet-asimov
+3. **Balance verification** - Confirms you have at least 42,000 GEN
+4. **Operator setup** - Create and export an operator keystore for your validator server
+5. **Stake amount** - Enter how much GEN to stake (minimum 42,000)
+6. **Validator creation** - Submits the staking transaction
+7. **Identity setup** - Set your validator's public profile (moniker, website, etc.)
+
+<Callout type="info">
+  **Save Your Validator Wallet Address!** After the wizard completes, note down your **Validator Wallet** address. You'll need this for your node configuration.
+</Callout>
+
+#### Operator Keystore Export
+
+The wizard creates and exports an operator keystore file for you to transfer to your validator server. If your server is compromised, your staked funds (controlled by owner) remain safe.
+
+### Verify Your Validator
+
+After completing the wizard, verify your status:
+
+```bash
+genlayer staking validator-info --validator 0xYourValidatorWallet...
+```
+
+### Managing Your Validator
+
+```bash
+# Add more stake
+genlayer staking validator-deposit --amount 1000gen
+
+# Check active validators
+genlayer staking active-validators
+
+# Exit (initiates 7-epoch unbonding)
+genlayer staking validator-exit --shares 100
+
+# Claim after unbonding period
+genlayer staking validator-claim
+
+# Update identity
+genlayer staking set-identity --validator 0x... --moniker "New Name"
+```
+
+---
+
 ## Dependencies
 
 ### LLM Access
@@ -332,11 +414,15 @@ This is the configuration of webdriver module that enables the GenVM to access t
 
 This is the configuration of the GenVM itself, such as how many threads it can use and what are the addresses of various modules. You should not need to edit this file either.
 
-2. Run precompilation of pre-delivered wasm modules (this step is optional but is **highly** recommended for improved performance)
-   ```bash
-   ./third_party/genvm/bin/genvm precompile
-   ```
-   Precompilation should be re-run after switching to a different node release
+#### Precompilation (Recommended)
+
+Run precompilation of pre-delivered wasm modules (this step is optional but **highly** recommended for improved performance):
+
+```bash
+./third_party/genvm/bin/genvm precompile
+```
+
+Precompilation should be re-run after switching to a different node release.
 
 #### Greyboxing LLMs
 
@@ -358,17 +444,13 @@ Related scripts are located at:
   More features and built-in filters will be added soon
 </Callout>
 
-### Set Up The Operator Key
+### Import the Operator Key
 
-The operator key is used by your node to sign blocks and perform validator duties. This is separate from your owner account which holds your staked funds.
-
-<Callout type="info">
-  **Owner vs Operator:** The owner account holds your stake and should be kept secure (cold wallet). The operator account runs on your validator server and signs blocks (hot wallet). If your server is compromised, your staked funds remain safe.
-</Callout>
+The operator key is used by your node to sign blocks and perform validator duties.
 
 #### Option 1: Import from CLI Wizard (Recommended)
 
-If you used the `genlayer staking wizard` to become a validator, it exported an operator keystore file (e.g., `operator-keystore.json`). Transfer this file to your validator server and import it:
+If you used `genlayer staking wizard`, it exported an operator keystore file. Transfer this file to your validator server and import it:
 
 ```sh
 ./bin/genlayernode account import \
@@ -389,31 +471,13 @@ Account imported:
 
 #### Option 2: Generate New Operator Key
 
-If you haven't set up your validator yet, you can generate a new operator key directly on the server:
+You can also generate a new operator key directly on the server:
 
 ```sh
 ./bin/genlayernode account new -c $(pwd)/configs/node/config.yaml --setup --password "your secret password"
 ```
 
-You should see:
-
-```sh
-Account created:
-  New address: 0xA0b12Fd2f3F7e86fEC458D114A5E7a6f571160a8
-  Account setup as a validator
-```
-
-Use this address as the `--operator` when joining as a validator via the CLI:
-
-```bash
-genlayer staking validator-join --amount 42000gen --operator 0xA0b12Fd2f3F7e86fEC458D114A5E7a6f571160a8
-```
-
-<Callout type="info">
-  Currently the GenLayer Testnet is permissioned. You can apply to be selected
-  [by filling out the following
-  form](https://docs.google.com/forms/d/e/1FAIpQLSc7YujY6S6knB9XC8kL-2wsgNHrweqULstgc-OOMERlRsfg0A/viewform)
-</Callout>
+Then use this address when running the wizard on your local machine.
 
 ### Backing Up Your Operator Key
 
@@ -451,86 +515,13 @@ To restore from a backup (e.g., after migrating to a new server):
   Always verify that your imported key works by checking the operator address matches what's configured for your validator.
 </Callout>
 
-### Validator Joining the Network
-
-This section walks you through becoming a validator on the GenLayer testnet using the CLI.
-
-#### Prerequisites
-
-- Node.js installed
-- GenLayer CLI installed (`npm install -g genlayer`)
-- GEN tokens for staking (minimum stake required)
-
-#### Using the Validator Wizard
-
-The easiest way to become a validator is using the interactive wizard:
-
-```bash
-genlayer staking wizard
-```
-
-The wizard guides you through all required steps:
-
-1. **Account setup** - Create a new account or select existing
-2. **Network selection** - Choose testnet-asimov
-3. **Balance verification** - Confirms you have enough GEN
-4. **Operator setup** - Configure a separate operator address (recommended for security)
-5. **Stake amount** - Enter how much GEN to stake
-6. **Validator creation** - Submits the staking transaction
-7. **Identity setup** - Set your validator's public profile (moniker, website, etc.)
-
-##### Why Use a Separate Operator Address?
-
-<Callout type="info">
-    **Recommended:** Use a separate operator address for security.
-</Callout>
-
-- **Owner account** - Holds your staked funds (keep offline/cold)
-- **Operator account** - Signs blocks and performs validator duties (hot wallet on server)
-
-This way, if your operator server is compromised, your staked funds remain safe. The wizard can create and export an operator keystore file for you to transfer to your validator server.
-
-#### Verify Your Validator
-
-After completing the wizard, verify your status:
-
-```bash
-genlayer staking validator-info
-```
-
-#### Managing Your Validator
-
-```bash
-# Add more stake
-genlayer staking validator-deposit --amount 1000gen
-
-# Check active validators
-genlayer staking active-validators
-
-# Exit (initiates 7-epoch unbonding)
-genlayer staking validator-exit --shares 100
-
-# Claim after unbonding period
-genlayer staking validator-claim
-
-# Change operator address
-genlayer staking set-operator --validator 0x... --operator 0xNew...
-
-# Update identity
-genlayer staking set-identity --validator 0x... --moniker "New Name"
-```
-
-#### Manual Setup
-
-For step-by-step manual setup instructions, see the [full validator guide](https://github.com/yeagerai/genlayer-cli/blob/main/docs/validator-guide.md) in the CLI repository
-
 ## Running the node
 
 Once you have configured everything, you are ready to start the node.
 
 <Callout type="warning" emoji="🚨">
     **Important:** Before starting the node, ensure you have:
-    1. **Operator key** imported into the node (see "Set Up The Operator Key" above)
+    1. **Operator key** imported into the node (see "Import the Operator Key" above)
     2. **Validator wallet address** - obtained after joining as validator via `genlayer staking wizard` or `validator-join`
 
     Without both configured, your node will run as a full node instead of a validator.
