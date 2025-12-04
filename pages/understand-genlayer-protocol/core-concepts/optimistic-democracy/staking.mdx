@@ -37,12 +37,12 @@ When a validator joins, the system creates three distinct entities:
 
 ## Epoch System
 
-The network operates in epochs (minimum 1 day):
+The network operates in epochs (1 day):
 
 - **Epoch +2 Activation Rule**: All deposits become active 2 epochs after they are made
 - Epoch finalization requires all transactions to be finalized
 - Cannot advance to epoch N+1 until epoch N-1 is finalized
-- Validators are automatically "primed" via `validatorPrime()` each epoch
+- Validators are "primed" via `validatorPrime()` each epoch (permissionless - anyone can call it)
 
 **Critical**: If `validatorPrime()` isn't called, the validator is excluded from the next epoch's selection.
 
@@ -88,7 +88,7 @@ Weight = (ALPHA × Self_Stake + (1-ALPHA) × Delegated_Stake)^BETA
 - **10%** → Validator owners (operational fee)
 - **75%** → Total validator stake (validators + delegators)
 - **10%** → Developers
-- **5%** → DAO
+- **5%** → Locked future allocation for the DeepThought AI-DAO
 
 Within the 75% stake allocation:
 - Self-stake receives a portion based on the validator's own staked amount
@@ -116,7 +116,6 @@ Both validators and delegators face a **7-epoch unbonding period** when withdraw
 - Sorts the validator into the selection tree
 
 **Key Properties:**
-- **Automatic**: Called each epoch by the validator node
 - **Monitoring Required**: Ensure correct execution
 - **Permissionless**: Anyone can call it
 - **Incentivized**: Caller receives 1% of any slashed amount
@@ -125,12 +124,39 @@ Both validators and delegators face a **7-epoch unbonding period** when withdraw
 
 ## Unstaking and Withdrawing
 
-To stop validating or to retrieve staked tokens, validators must initiate an [unstaking](/understand-genlayer-protocol/core-concepts/optimistic-democracy/unstaking) process, which includes a cooldown period to finalize all pending transactions. This ensures the network remains secure and all obligations are fulfilled before the withdrawal.
+Both validators and delegators can withdraw their staked tokens, but must follow the unbonding process.
+
+### For Validators
+
+To stop validating or retrieve staked tokens, validators must:
+
+1. **Calculate shares to exit**: Determine how many shares to withdraw (partial or full)
+2. **Call `validatorExit(shares)`**: Initiate the unbonding process
+3. **Wait 7 epochs**: Tokens are locked during the unbonding period
+4. **Call `validatorClaim()`**: Retrieve tokens after unbonding completes
+
+Validators can perform partial exits while remaining active, as long as their stake stays above the 42,000 GEN minimum.
+
+### For Delegators
+
+Delegators follow a similar process:
+
+1. **Calculate shares to exit**: Use `sharesOf(delegator, validator)` to check current shares
+2. **Call `delegatorExit(validator, shares)`**: Initiate unbonding for a specific validator
+3. **Wait 7 epochs**: Tokens are locked during the unbonding period
+4. **Call `delegatorClaim(delegator, validator)`**: Retrieve tokens after unbonding
+
+**Important for delegators:**
+- Exit each validator separately if delegating to multiple validators
+- Claims are permissionless—anyone can trigger them on your behalf
+- Tokens stop earning rewards immediately upon calling exit
+- Multiple exits create separate withdrawals that can be claimed together
+
+For detailed step-by-step instructions and code examples, see the [Staking Guide](/validators/staking-guide).
 
 ## Governance and Safeguards
 
 - **24-Hour Delay**: All slashing actions have a governance delay period
-- Governance can intervene before slashing is executed
 - Parameters like ALPHA, BETA, minimum stakes, and unbonding periods are adjustable through governance
 - Maximum 1,000 active validators per epoch (adjustable)
 
