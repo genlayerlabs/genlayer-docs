@@ -86,9 +86,13 @@ genlayer staking set-identity --validator 0x... --moniker "New Name"
 
 ---
 
-## Dependencies
+## Set Up the Validator Node
 
-### LLM Access
+Once your validator wallet is created and staked, set up your node software.
+
+### Dependencies
+
+#### LLM Access
 
 Each validator needs access to a Large Language Model (LLM) for executing and evaluating Intelligent Contracts.
 
@@ -100,24 +104,24 @@ Possible options:
 - Run an open-source model on a different machine
 - Connect to a hosted inference provider (OpenAI, Anthropic, Heurist, Atoma network etc.)
 
-### ZKSync Full Node for the GenLayer Chain
+#### ZKSync Full Node for the GenLayer Chain
 
 Each validator needs access to a [ZKSync Full Node](https://docs.zksync.io/zksync-era/tooling/external-node) connected to the GenLayer chain. Validators use this node to read the chain state and submit transactions.
 
 One full node can be shared between multiple validators. The optimal validator-to-node ratio is currently under evaluation.
 
-## System Requirements
+### System Requirements
 
 Below are the **initial** recommended system requirements. These guidelines may change as the network grows and evolves.
 
-### RAM
+#### RAM
 
 - **Recommended:** 16 GB
 - **Why:**
   - GenLayer's _genvm_ can spawn multiple Sub-VMs for contract calls and non-deterministic blocks.
   - Each Sub-VM can consume up to ~4 GB of RAM for storage.
 
-### CPU
+#### CPU
 
 - **Recommended:** Modern multi-core processor with at least 8 cores/16 threads
 
@@ -126,17 +130,17 @@ Below are the **initial** recommended system requirements. These guidelines may 
 - **Recommended:** `AMD64`
 - `ARM64` is not supported at this time
 
-### Storage
+#### Storage
 
 - **Recommended Disk Space:** 128 GB+
 - **Preferred Type:** SSD or NVMe (M.2)
 
-### Network
+#### Network
 
 - 100 Mbps connection
 - **Recommended:**: 1 Gbps+
 
-### GPU (Optional)
+#### GPU (Optional)
 
 - GPU is **Not Required**
 - If you want to run LLMs locally, you will need to select appropriate hardware (typically a CUDA-compatible GPU with sufficient VRAM for the model you intend to use)
@@ -147,14 +151,14 @@ Below are the **initial** recommended system requirements. These guidelines may 
   recommended hardware may change.
 </Callout>
 
-### Software
+#### Software
 
 - Operating System - 64-bit Linux (Ubuntu, Debian, CentOS, etc.)
 - `docker` - for running the WebDriver container
 
-## Setup
+### Setup
 
-### Download the node software
+#### Download the node software
 
 1. Select the version of the node you want to run by checking the available builds
 
@@ -211,11 +215,11 @@ Below are the **initial** recommended system requirements. These guidelines may 
    ./third_party/genvm/bin/genvm setup
    ```
 
-## Configuration
+### Configuration
 
 Before you can start up the node, you need to configure it.
 
-### `config.yaml`
+#### `config.yaml`
 
 This is the main configuration file of your node. Without it, your node won't start
 
@@ -340,7 +344,7 @@ metrics:
 
 ```
 
-### Overriding Configuration with Environment Variables
+#### Overriding Configuration with Environment Variables
 
 Any configuration value in `config.yaml` can be overridden using environment variables with the prefix `GENLAYERNODE_`.
 
@@ -380,7 +384,7 @@ export GENLAYERNODE_LOGGING_LEVEL="DEBUG"
 
 Environment variables take precedence over values in `config.yaml`, making them ideal for Docker deployments or sensitive values you don't want in configuration files.
 
-### GenVM Configuration
+#### GenVM Configuration
 
 You need to set up an LLM for your node to use to provide answers to natural language prompts. You can use any LLM you wish, however the quality of its answers will affect the performance of your node.
 
@@ -444,7 +448,7 @@ Related scripts are located at:
   More features and built-in filters will be added soon
 </Callout>
 
-### Import the Operator Key
+#### Import the Operator Key
 
 The operator key is used by your node to sign blocks and perform validator duties.
 
@@ -479,7 +483,7 @@ You can also generate a new operator key directly on the server:
 
 Then use this address when running the wizard on your local machine.
 
-### Backing Up Your Operator Key
+#### Backing Up Your Operator Key
 
 After setting up your operator key, back it up securely:
 
@@ -498,7 +502,7 @@ After setting up your operator key, back it up securely:
 
 To print the private key from your backup file, use the `--print` flag. **Keep this private key secure and never share it.**
 
-### Restoring Your Operator Key
+#### Restoring Your Operator Key
 
 To restore from a backup (e.g., after migrating to a new server):
 
@@ -515,7 +519,7 @@ To restore from a backup (e.g., after migrating to a new server):
   Always verify that your imported key works by checking the operator address matches what's configured for your validator.
 </Callout>
 
-## Running the node
+### Running the node
 
 Once you have configured everything, you are ready to start the node.
 
@@ -527,7 +531,7 @@ Once you have configured everything, you are ready to start the node.
     Without both configured, your node will run as a full node instead of a validator.
 </Callout>
 
-### Running the Node using the binary
+#### Running the Node using the binary
 
 1.  Set the LLM Provider API Key
 
@@ -593,7 +597,7 @@ Once you have configured everything, you are ready to start the node.
   [here](https://www.networkworld.com/article/967925/how-the-linux-screen-tool-can-save-your-tasks-and-your-sanity-if-ssh-is-interrupted.html).
 </Callout>
 
-### Running the Node using docker-compose
+#### Running the Node using docker-compose
 
 You can also run the GenLayer node using Docker and Docker Compose.
 
@@ -726,11 +730,11 @@ source .env && docker run --rm --env-file ./.env \
 source .env && docker compose --profile node up -d
 ```
 
-## Monitoring with Metrics
+### Monitoring with Metrics
 
 GenLayer validators expose comprehensive metrics that are ready for consumption by Prometheus and other monitoring tools. This allows you to monitor your validator's performance, health, and resource usage.
 
-### Accessing Metrics
+#### Accessing Metrics
 
 The metrics endpoint is exposed on the operations port (default: 9153) configured in your `config.yaml`:
 
@@ -747,7 +751,7 @@ Once your node is running, you can access the metrics at:
 http://localhost:9153/metrics
 ```
 
-### Available Metrics
+#### Available Metrics
 
 The validator exposes various metric collectors that can be individually configured:
 
@@ -755,7 +759,7 @@ The validator exposes various metric collectors that can be individually configu
 - **GenVM Metrics**: Virtual machine performance metrics, including execution times and resource usage
 - **WebDriver Metrics**: Metrics related to web access and external data fetching
 
-### Configuring Metrics Collection
+#### Configuring Metrics Collection
 
 You can customize metrics collection in your `config.yaml`:
 
@@ -774,7 +778,7 @@ metrics:
       interval: "60s"
 ```
 
-### Example Metrics Query
+#### Example Metrics Query
 
 To check if metrics are working correctly:
 
@@ -790,7 +794,7 @@ curl -s http://localhost:9153/metrics | grep genlayer_node_
   The metrics endpoint also provides `/health` and `/balance` endpoints on the same port for additional monitoring capabilities.
 </Callout>
 
-### Monitoring Best Practices
+#### Monitoring Best Practices
 
 1. **Set up alerts** for critical metrics like node synchronization status and missed blocks
 2. **Monitor resource usage** to ensure your validator has sufficient CPU, memory, and disk space
@@ -801,6 +805,6 @@ curl -s http://localhost:9153/metrics | grep genlayer_node_
   For production validators, we recommend setting up a complete monitoring stack with Prometheus and Grafana. This enables real-time visibility into your validator's performance and helps identify issues before they impact your validator's operation.
 </Callout>
 
-### Logs and metrics forwarding
+#### Logs and metrics forwarding
 
 You can forward your logs and metrics to external systems for centralized monitoring and alerting by using the service `alloy` provided in the `docker-compose.yaml` from the extracted tarball.
