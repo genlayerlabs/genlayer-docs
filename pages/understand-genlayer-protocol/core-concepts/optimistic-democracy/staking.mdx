@@ -2,18 +2,140 @@
 
 Participants, known as validators, commit a specified amount of tokens to the network by locking them up on the rollup layer. This commitment supports the network's consensus mechanism and enables validators to actively participate in processing transactions and managing the network.
 
+## Validators vs Delegators
+
+| Role | Minimum Stake | Infrastructure | Rewards |
+|------|--------------|----------------|---------|
+| **Validator** | 42,000 GEN | Must run a node | 10% operational fee + stake rewards |
+| **Delegator** | 42 GEN | None required | Passive stake rewards |
+
+**Validators** run the consensus infrastructure and are responsible for executing intelligent contracts and validating transactions. They receive a 10% operational fee from rewards before distribution.
+
+**Delegators** stake their tokens with validators without running infrastructure. They earn passive rewards proportional to their stake, minus the validator's operational fee.
+
 ## How Staking Works
 
 - **Stake Deposit**: To become a validator on GenLayer, participants must deposit GEN tokens on the rollup layer. This deposit acts as a security bond and qualifies them to join the pool of active validators.
 
-- **Validator Participation**: Only a certain number of validators, typically between 100 and 1000, with the highest stakes can be part of the active validator set. Once staked, validators take on the responsibility of validating transactions and executing Intelligent Contracts. Their role is crucial for ensuring the network’s reliability and achieving consensus on transaction outcomes.
+- **Validator Participation**: Only a certain number of validators, typically between 100 and 1000, with the highest stakes can be part of the active validator set. Once staked, validators take on the responsibility of validating transactions and executing Intelligent Contracts. Their role is crucial for ensuring the network's reliability and achieving consensus on transaction outcomes.
 
 - **Delegated Proof of Stake (DPoS)**: GenLayer enhances accessibility and network security through a Delegated Proof of Stake system. This allows token holders who are not active validators themselves to delegate their tokens to trusted validators. By delegating their tokens, users increase the total stake of the validator and share in the rewards. Typically, the validator takes a configurable fee (around 10%), with the remaining rewards (90%) going to the delegating user.
 
 - **Earning Rewards**: Validators, and those who delegate their tokens to them, earn rewards for their contributions to validating transactions, paid in GEN tokens. These rewards are proportional to the amount of tokens staked and the transaction volume processed.
 
-- **Risk of Slashing**: Validators, and by extension their delegators, face the risk of having a portion of their staked tokens [slashed](/core-concepts/optimistic-democracy/slashing) if they fail to comply with network rules or if the validator supports fraudulent transactions.
+- **Risk of Slashing**: Validators, and by extension their delegators, face the risk of having a portion of their staked tokens [slashed](/understand-genlayer-protocol/core-concepts/optimistic-democracy/slashing) if they fail to comply with network rules or if the validator supports fraudulent transactions.
+
+## Owner, Operator, and ValidatorWallet
+
+When a validator joins, the system creates three distinct entities:
+
+**ValidatorWallet**: A separate smart contract wallet created automatically on `validatorJoin()`. This is the primary validator identifier and holds staked GEN tokens.
+
+**Owner Address**: The address that creates the validator (msg.sender). It controls staking operations and can change the operator address. Should use a cold wallet for security.
+
+**Operator Address**: Used for consensus operations. Can differ from the owner (hot wallet recommended). Can be changed by the owner but cannot be the zero address or reused across validators.
+
+## Epoch System
+
+The network operates in epochs (minimum 1 day):
+
+- **Epoch +2 Activation Rule**: All deposits become active 2 epochs after they are made
+- Epoch finalization requires all transactions to be finalized
+- Cannot advance to epoch N+1 until epoch N-1 is finalized
+- Validators are automatically "primed" via `validatorPrime()` each epoch
+
+**Critical**: If `validatorPrime()` isn't called, the validator is excluded from the next epoch's selection.
+
+## Shares vs Stake
+
+The staking system uses shares to track ownership:
+
+**Shares** are fixed quantities that never change. You receive shares when depositing and exit by burning shares. They represent immutable claims on the stake pool.
+
+**Stake** is the dynamic GEN token amount. It increases with rewards/fees and decreases with slashing. The exchange rate is calculated as:
+
+```
+stake_per_share = total_stake / total_shares
+```
+
+**Example**: 100 shares representing 1,000 GEN (10 GEN per share). After rewards are distributed, the same 100 shares might represent 1,050 GEN (10.5 GEN per share). Rewards automatically compound without user action.
+
+## Validator Selection and Weight
+
+Validators are selected for consensus based on their weight, calculated using:
+
+```
+Weight = (ALPHA × Self_Stake + (1-ALPHA) × Delegated_Stake)^BETA
+```
+
+**Parameters:**
+- **ALPHA = 0.6**: Self-stake counts 50% more than delegated stake
+- **BETA = 0.5**: Square-root damping prevents whale dominance
+
+**Effects:**
+- Higher stake leads to higher weight and higher selection probability
+- Doubling stake only increases weight by approximately 41%
+- Encourages distribution across validators
+- Smaller validators often provide higher returns per GEN staked
+
+## Reward Distribution
+
+**Sources:**
+1. Transaction Fees
+2. Inflation (starting at 15% APR, decreasing to 4% APR over time)
+
+**Distribution Pattern:**
+- **10%** → Validator owners (operational fee)
+- **75%** → Total validator stake (validators + delegators)
+- **10%** → Developers
+- **5%** → DAO
+
+Within the 75% stake allocation:
+- Self-stake receives a portion based on the validator's own staked amount
+- Delegated stake is split among delegators proportionally to their shares
+
+Rewards automatically increase the stake-per-share ratio without requiring user action.
+
+## Unbonding Period
+
+Both validators and delegators face a **7-epoch unbonding period** when withdrawing:
+
+- Prevents rapid stake movements that could destabilize the network
+- Tokens stop earning rewards immediately upon exit
+- Countdown starts from the exit epoch
+- Funds become claimable when: `current_epoch >= exit_epoch + 7`
+
+## Validator Priming
+
+`validatorPrime(address validator)` is a critical function that:
+
+- Activates pending deposits
+- Processes pending withdrawals
+- Distributes previous epoch rewards
+- Applies pending slashing penalties
+- Sorts the validator into the selection tree
+
+**Key Properties:**
+- **Automatic**: Called each epoch by the validator node
+- **Monitoring Required**: Ensure correct execution
+- **Permissionless**: Anyone can call it
+- **Incentivized**: Caller receives 1% of any slashed amount
+- **Critical**: If the node fails to prime, the validator is excluded from the next epoch
+- **No Loss**: Missing priming doesn't lose rewards, but the validator can't be selected
 
 ## Unstaking and Withdrawing
 
-To stop validating or to retrieve staked tokens, validators must initiate an [unstaking](/core-concepts/optimistic-democracy/unstaking) process, which includes a cooldown period to finalize all pending transactions. This ensures the network remains secure and all obligations are fulfilled before the withdrawal.
+To stop validating or to retrieve staked tokens, validators must initiate an [unstaking](/understand-genlayer-protocol/core-concepts/optimistic-democracy/unstaking) process, which includes a cooldown period to finalize all pending transactions. This ensures the network remains secure and all obligations are fulfilled before the withdrawal.
+
+## Governance and Safeguards
+
+- **24-Hour Delay**: All slashing actions have a governance delay period
+- Governance can intervene before slashing is executed
+- Parameters like ALPHA, BETA, minimum stakes, and unbonding periods are adjustable through governance
+- Maximum 1,000 active validators per epoch (adjustable)
+
+## Next Steps
+
+- [Staking Guide](/validators/staking-guide) - Practical guide for staking operations
+- [Unstaking](/understand-genlayer-protocol/core-concepts/optimistic-democracy/unstaking) - Detailed unstaking process
+- [Slashing](/understand-genlayer-protocol/core-concepts/optimistic-democracy/slashing) - Slashing conditions and penalties

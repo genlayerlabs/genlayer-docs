@@ -1,0 +1,324 @@
+import { Callout } from "nextra-theme-docs";
+
+# Staking Guide
+
+This guide covers staking operations for both validators and delegators on the GenLayer network.
+
+<Callout type="info">
+  For CLI-based staking operations, see the [GenLayer CLI Staking Commands](/api-references/genlayer-cli#staking-operations-testnet).
+</Callout>
+
+## Validator Operations
+
+### Joining as a Validator
+
+**Requirements:**
+- Minimum stake: **42,000 GEN** tokens
+- Must run a validator node for consensus participation
+- A single address can create multiple validators
+
+**Method 1: Owner as Operator**
+
+```solidity
+address validatorWallet = genStaking.validatorJoin{value: 42000 ether}();
+```
+
+**Method 2: Separate Operator Address (Recommended)**
+
+```solidity
+address operatorAddress = 0x...;
+address validatorWallet = genStaking.validatorJoin{value: 42000 ether}(operatorAddress);
+```
+
+<Callout type="warning">
+  Save the returned **ValidatorWallet address** - you'll need it for all future operations.
+</Callout>
+
+**Important Notes:**
+- Deposits activate **2 epochs after joining**
+- `validatorPrime()` is automatically called by your validator node each epoch
+- Monitor priming for proper activation within 2 epochs
+- Operator address cannot be reused or be the zero address
+- If the operator is already assigned to another validator, the transaction reverts
+
+**Post-Join Steps:**
+1. Save the `validatorWallet` address
+2. Start your validator node using the operator address
+3. Monitor that `validatorPrime(validatorWallet)` executes each epoch
+4. Wait 2 epochs and verify activation
+
+### Depositing as a Validator
+
+```solidity
+validatorWallet.validatorDeposit{value: 10000 ether}();
+```
+
+**Key Points:**
+- Call through the ValidatorWallet contract only
+- Deposits follow the **epoch +2 activation rule**
+- Your validator node automatically calls `validatorPrime()` to commit the deposit
+- No minimum for additional deposits
+- Cannot deposit zero value
+
+**Activation Timeline:**
+```
+Epoch N:   validatorDeposit() called
+Epoch N+1: validatorPrime() → deposit staged
+Epoch N+2: validatorPrime() → deposit activated
+```
+
+### Withdrawing as a Validator
+
+**Step 1: Calculate Shares**
+
+```solidity
+uint256[8] memory validatorState = genStaking.validatorView(validatorWallet);
+uint256 currentShares = validatorState[1];
+uint256 currentStake = validatorState[0];
+uint256 sharesToExit = (currentShares * 30) / 100; // Exit 30%
+```
+
+**Step 2: Initiate Exit**
+
+```solidity
+validatorWallet.validatorExit(sharesToExit);
+```
+
+<Callout type="warning">
+  You must specify **shares**, not token amounts. Cannot exit more shares than owned.
+</Callout>
+
+**Important Notes:**
+- Exited tokens stop earning rewards immediately
+- Tokens are locked for **7 epochs** before claiming
+- Each exit creates a separate withdrawal
+
+**Unbonding Timeline:**
+```
+Epoch 10:    validatorExit() called → unbonding starts
+Epochs 11-16: Locked period
+Epoch 17:    validatorClaim() available
+```
+
+### Claiming Withdrawn Funds as a Validator
+
+```solidity
+uint256 tokensReceived = genStaking.validatorClaim(validatorWallet);
+```
+
+**Important Notes:**
+- Must wait **7 full epochs** after calling `validatorExit()`
+- Claims are permissionless - anyone can trigger them
+- Tokens are sent to the validator wallet's owner address
+- Multiple exits can be claimed in a single call
+- Returns the total GEN received
+
+**Checking Claim Availability:**
+
+```solidity
+uint256 exitEpoch = 10;
+uint256 claimableAtEpoch = exitEpoch + 7;
+uint256 currentEpoch = genStaking.epoch();
+if (currentEpoch >= claimableAtEpoch) {
+    genStaking.validatorClaim(validatorWallet);
+}
+```
+
+---
+
+## Delegator Operations
+
+### Joining as a Delegator
+
+**Requirements:**
+- Minimum delegation: **42 GEN** per validator
+- Target validator must exist and be active
+- Can delegate to multiple validators
+
+**Basic Delegation:**
+
+```solidity
+address validatorWallet = 0x...;
+genStaking.delegatorJoin{value: 1000 ether}(validatorWallet);
+```
+
+**Multi-Validator Delegation:**
+
+```solidity
+genStaking.delegatorJoin{value: 500 ether}(validator1);
+genStaking.delegatorJoin{value: 500 ether}(validator2);
+genStaking.delegatorJoin{value: 500 ether}(validator3);
+```
+
+**Important Notes:**
+- Follows the **epoch +2 activation rule**
+- The validator's node automatically calls `validatorPrime()` to commit your delegation
+- Choose validators with good uptime
+- Smaller validators often provide higher returns
+- Cannot delegate zero value
+
+**Delegation Strategy Tips:**
+- Diversify across multiple validators
+- Check validator performance and uptime
+- Monitor validator quarantine/ban status
+
+### Depositing as a Delegator
+
+```solidity
+genStaking.delegatorDeposit{value: 500 ether}(validatorWallet);
+```
+
+**Important Notes:**
+- Use `delegatorDeposit()` to add to existing delegations
+- Follows the **epoch +2 activation rule**
+- The validator's node automatically calls `validatorPrime()`
+- No minimum for additional deposits
+- Rewards automatically compound
+
+### Withdrawing as a Delegator
+
+**Step 1: Calculate Shares**
+
+```solidity
+uint256 currentShares = genStaking.sharesOf(msg.sender, validatorWallet);
+uint256 sharesToExit = (currentShares * 50) / 100; // Exit 50%
+```
+
+**Step 2: Initiate Exit**
+
+```solidity
+genStaking.delegatorExit(validatorWallet, sharesToExit);
+```
+
+<Callout type="warning">
+  You must specify **shares**, not token amounts.
+</Callout>
+
+**Important Notes:**
+- Can exit partial amounts
+- Stop earning rewards immediately after exit
+- Tokens are locked for **7 epochs**
+- Exit each validator separately if delegating to multiple
+
+**Unbonding Timeline:**
+```
+Epoch 5:     delegatorExit() called
+Epochs 6-11: Locked period
+Epoch 12:    delegatorClaim() available
+```
+
+### Claiming Withdrawn Funds as a Delegator
+
+```solidity
+uint256 tokensReceived = genStaking.delegatorClaim(
+    delegatorAddress,
+    validatorWallet
+);
+```
+
+**Important Notes:**
+- Must wait **7 full epochs** after calling `delegatorExit()`
+- Claims are permissionless - anyone can trigger them
+- Tokens are sent to the delegator's address
+- Claim from each validator separately if delegated to multiple
+
+**Multi-Validator Claim Example:**
+
+```solidity
+genStaking.delegatorClaim(msg.sender, validator1);
+genStaking.delegatorClaim(msg.sender, validator2);
+genStaking.delegatorClaim(msg.sender, validator3);
+```
+
+---
+
+## Common Scenarios
+
+### Scenario 1: Becoming a Validator
+
+```solidity
+address validatorWallet = genStaking.validatorJoin{value: 42000 ether}(operatorAddress);
+// Start validator node with operator address
+// Monitor: Epoch N joined, N+1 staged, N+2 active
+```
+
+### Scenario 2: Delegating to Multiple Validators
+
+```solidity
+genStaking.delegatorJoin{value: 1000 ether}(validator1);
+genStaking.delegatorJoin{value: 2000 ether}(validator2);
+genStaking.delegatorJoin{value: 1500 ether}(validator3);
+
+// Later, exit from one validator
+uint256 shares = genStaking.sharesOf(msg.sender, validator1);
+genStaking.delegatorExit(validator1, shares);
+
+// After 7 epochs:
+genStaking.delegatorClaim(msg.sender, validator1);
+```
+
+### Scenario 3: Partial Validator Exit
+
+```solidity
+uint256[8] memory state = genStaking.validatorView(validatorWallet);
+uint256 currentShares = state[1];
+uint256 sharesToExit = (currentShares * 25) / 100; // Exit 25%
+validatorWallet.validatorExit(sharesToExit);
+
+// After 7 epochs:
+genStaking.validatorClaim(validatorWallet);
+```
+
+---
+
+## Best Practices
+
+### For Validators
+
+1. **Ensure node health**: Your validator node automatically calls `validatorPrime()`
+2. **Use separate keys**: Cold wallet for owner, hot wallet for operator
+3. **Monitor priming**: Verify deposit activation occurs as expected
+4. **Monitor quarantine status**: Check if your validator is quarantined
+5. **Maintain high uptime**: Downtime leads to idleness strikes
+6. **Set up backup monitoring**: Alert if priming fails
+
+### For Delegators
+
+1. **Diversify**: Spread stake across multiple validators
+2. **Select carefully**: Choose validators with good uptime records
+3. **Verify priming**: Ensure validators are consistently primed
+4. **Consider smaller validators**: They often provide higher returns
+5. **Monitor health**: Regularly check validator status
+6. **Use shares for exits**: Calculate percentages, not absolute amounts
+
+### For Both
+
+1. **Account for unbonding**: Plan for the 7-epoch wait when exiting
+2. **Monitor epochs**: Track current epoch for claim eligibility
+3. **Calculate exits carefully**: Always use share percentages
+4. **Understand compounding**: Rewards automatically increase stake-per-share
+5. **Watch governance**: Parameter changes can affect staking dynamics
+
+---
+
+## Troubleshooting
+
+| Error | Cause | Solution |
+|-------|-------|----------|
+| `ValidatorBelowMinimumStake` | Stake below 42,000 GEN | Deposit at least 42,000 GEN when joining |
+| `OperatorAlreadyAssigned` | Operator address in use | Choose a different operator address |
+| `ValidatorMayNotDepositZeroValue` | Zero deposit amount | Deposit a non-zero amount |
+| `ValidatorExitExceedsShares` | Exiting more shares than owned | Check shares with `validatorView()` |
+| Validator not selected | Node not priming | Ensure node runs and calls `validatorPrime()` |
+| Stake not activating | Priming not occurring | Monitor node for automatic `validatorPrime()` calls |
+| Cannot claim withdrawn funds | Unbonding not complete | Verify 7 epochs have passed with `genStaking.epoch()` |
+| Delegation not earning | Validator issues | Check if validator is quarantined/banned; consider switching |
+
+---
+
+## Related Resources
+
+- [Staking Concepts](/understand-genlayer-protocol/core-concepts/optimistic-democracy/staking) - How staking works in GenLayer
+- [Unstaking](/understand-genlayer-protocol/core-concepts/optimistic-democracy/unstaking) - Unstaking process details
+- [Slashing](/understand-genlayer-protocol/core-concepts/optimistic-democracy/slashing) - Slashing penalties and conditions
+- [GenLayer CLI Staking Commands](/api-references/genlayer-cli#staking-operations-testnet) - CLI reference for staking
