@@ -11,6 +11,29 @@ import { Callout } from "nextra-theme-docs";
   A fully Zero-downtime upgrade procedure is coming in a future update. 
 </Callout>
 
+## v0.3.x → v0.4 (Breaking Change)
+
+`v0.4` switches to a new consensus deployment with staking. For this reason, the validator must be set up from scratch without reusing the old database stored at `data/node/genlayer.db`.
+You do not need to keep your existing validator node running while you download and configure the new version.
+
+This release involves a change from a single validator address to owner/operator separation. You will need to follow the [setup guide](/validators/setup-guide) to create your new Validator Wallet.
+
+<Callout type="warning" emoji="⚠️">
+  **Recommended: Keep your current validator key as the operator key**
+
+  To maintain continuity, retain your current keystore and use your existing validator address as the operator address when following the setup guide. You can find your current validator address in `configs/node/wallet.yaml`.
+</Callout>
+
+- Stop the node if it is running.
+- Note your current validator address from `configs/node/wallet.yaml` - you'll use this as your operator address.
+- Back up the `configs/node/config.yaml` file so that you can refer to any values you have set in the previous version.
+- Back up the `data/node/keystore` folder so that you can maintain your previous operator key.
+- Download the packaged binary.
+- Install the new version.
+- Remove the storage folder `data/node/genlayer.db`.
+- Check that configuration is correct by running `genlayernode doctor` command.
+- Start the node.
+
 ## Configuration Change
 
 `v0.3.8` introduces updated consensus contract deployment with new contract addresses. **Critical**: Some consensus contract addresses have changed, and validators must update their consensus configuration to continue participating in the network.
