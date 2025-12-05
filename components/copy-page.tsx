@@ -11,7 +11,9 @@ import AnthropicIcon from './icons/anthropic';
 const CopyPage: React.FC = () => {
   const [isOpen, setIsOpen] = useState(false);
   const [isCopied, setIsCopied] = useState(false);
+  const [prefetchedContent, setPrefetchedContent] = useState<string | null>(null);
   const dropdownRef = useRef<HTMLDivElement>(null);
+  const router = useRouter();
 
   // Close dropdown when clicking outside
   useEffect(() => {
@@ -25,16 +27,31 @@ const CopyPage: React.FC = () => {
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
 
+  // Prefetch markdown content when component mounts
+  // this is needed to avoid a security issue on safari where you can't fetch and paste in the clipboard
+  useEffect(() => {
+    const prefetchContent = async () => {
+      try {
+        const currentPath = router.asPath;
+        const cleanPath = currentPath.split('?')[0].split('#')[0];
+        const mdUrl = cleanPath === '/' ? '/pages/index.md' : `/pages${cleanPath}.md`;
+        
+        const response = await fetch(mdUrl);
+        if (response.ok) {
+          const content = await response.text();
+          setPrefetchedContent(content);
+        }
+      } catch (error) {
+        console.log('Prefetch failed, will use fallback:', error);
+      }
+    };
+
+    prefetchContent();
+  }, [router.asPath]);
+
   const copyPageAsMarkdown = async () => {
     try {
-      // Get the current page content
-      const pageContent = document.querySelector('main')?.innerText || '';
-      const pageTitle = document.title;
-      
-      // Create markdown content
-      const markdownContent = `# ${pageTitle}\n\n${pageContent}`;
-      
-      await navigator.clipboard.writeText(markdownContent);
+      await navigator.clipboard.writeText(prefetchedContent || '');
       
       // Show success feedback
       setIsCopied(true);
@@ -48,21 +65,23 @@ const CopyPage: React.FC = () => {
   };
 
   const viewAsMarkdown = () => {
-    const pageContent = document.querySelector('main')?.innerText || '';
-    const pageTitle = document.title;
-    const markdownContent = `# ${pageTitle}\n\n${pageContent}`;
+    const currentPath = router.asPath;
     
-    // Open in new window/tab
-    const blob = new Blob([markdownContent], { type: 'text/markdown' });
-    const url = URL.createObjectURL(blob);
-    window.open(url, '_blank');
-    URL.revokeObjectURL(url);
+    const cleanPath = currentPath.split('?')[0].split('#')[0];
+    
+    const mdUrl = cleanPath === '/' ? '/pages/index.md' : `/pages${cleanPath}.md`;
+    window.open(mdUrl, '_blank');
     setIsOpen(false);
   };
 
   const openInAI = (platform: 'chatgpt' | 'claude') => {
-    const currentUrl = window.location.href;
-    const prompt = `I'm building with GenLayer - can you read this docs page ${currentUrl} so I can ask you questions about it?`;
+    const currentPath = router.asPath;
+    const cleanPath = currentPath.split('?')[0].split('#')[0];
+    
+    const mdUrl = cleanPath === '/' ? '/pages/index.md' : `/pages${cleanPath}.md`;
+    const fullMdUrl = `${window.location.origin}${mdUrl}`;
+    
+    const prompt = `I'm building with GenLayer - can you read this markdown file ${fullMdUrl} so I can ask you questions about it?`;
     const encodedPrompt = encodeURIComponent(prompt);
     
     const urls = {
