@@ -326,10 +326,15 @@ OPTIONS (validator-join):
    --account <name>          Account to use
 
 OPTIONS (validator-deposit):
+   --validator <address>     Validator wallet address (required)
    --amount <amount>         Amount to deposit
 
 OPTIONS (validator-exit):
+   --validator <address>     Validator wallet address (required)
    --shares <shares>         Number of shares to withdraw
+
+OPTIONS (validator-claim):
+   --validator <address>     Validator wallet address (required)
 
 OPTIONS (validator-prime):
    --validator <address>     Validator address to prime
@@ -529,9 +534,13 @@ OPTIONS (delegator-join):
    --amount <amount>          Amount to stake (e.g., "100gen")
    --staking-address <addr>   Override staking contract address
 
-OPTIONS (exit commands):
-   --shares <shares>          Number of shares to withdraw
-   --validator <address>      Validator address (for delegator commands)
+OPTIONS (validator-exit/validator-claim):
+   --validator <address>      Validator wallet address (required)
+   --shares <shares>          Number of shares to withdraw (exit only)
+
+OPTIONS (delegator-exit/delegator-claim):
+   --validator <address>      Validator address (required)
+   --shares <shares>          Number of shares to withdraw (exit only)
    --staking-address <addr>   Override staking contract address
 
 OPTIONS (set-identity):
@@ -555,6 +564,9 @@ EXAMPLES:
    # Set validator identity
    genlayer staking set-identity --validator 0x... --moniker "My Validator" --website "https://example.com"
 
+   # Add more stake to validator
+   genlayer staking validator-deposit --validator 0xValidatorWallet... --amount 1000gen
+
    # Check epoch info (includes inflation data)
    genlayer staking epoch-info
 
@@ -567,7 +579,11 @@ EXAMPLES:
    # Check stake info (includes projected rewards)
    genlayer staking stake-info --validator 0x...
 
-   # Exit and claim (7 epoch unbonding period)
+   # Validator exit and claim (requires validator wallet address)
+   genlayer staking validator-exit --validator 0xValidatorWallet... --shares 100
+   genlayer staking validator-claim --validator 0xValidatorWallet...
+
+   # Delegator exit and claim (7 epoch unbonding period)
    genlayer staking delegator-exit --validator 0x... --shares 50
    genlayer staking delegator-claim --validator 0x...
 
