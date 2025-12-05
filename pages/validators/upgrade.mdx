@@ -34,6 +34,13 @@ This release involves a change from a single validator address to owner/operator
 - Check that configuration is correct by running `genlayernode doctor` command.
 - Start the node.
 
+Assuming already have the new tarball downloaded and extracted, copy your old keystore files to the new installation:
+
+```shell
+mkdir -p <path-to-new-installation>/data/node/keystore/
+cp <path-to-old-installation>/data/node/keystore/* <path-to-new-installation>/data/node/keystore/
+```
+
 ## Configuration Change
 
 `v0.3.8` introduces updated consensus contract deployment with new contract addresses. **Critical**: Some consensus contract addresses have changed, and validators must update their consensus configuration to continue participating in the network.
