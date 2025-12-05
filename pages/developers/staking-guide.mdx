@@ -1,0 +1,469 @@
+import { Callout } from "nextra-theme-docs";
+
+# Staking Contract Guide
+
+This guide covers consensus-level staking operations for developers who want to interact directly with the GenLayer staking smart contracts. It includes Solidity code examples for both validator and delegator operations.
+
+To understand the concepts behind staking—including the epoch system, shares vs stake, validator selection weights, and reward distribution—see [Staking in GenLayer](/understand-genlayer-protocol/core-concepts/optimistic-democracy/staking).
+
+<Callout type="info">
+  For CLI-based staking operations (recommended for most users), see the [GenLayer CLI Staking Commands](/api-references/genlayer-cli#staking-operations-testnet).
+</Callout>
+
+## Validator Operations
+
+### Joining as a Validator
+
+**Requirements:**
+- Minimum stake: **42,000 GEN** tokens
+- Must run a validator node for consensus participation
+- A single address can create multiple validators
+
+**Method 1: Owner as Operator**
+
+```solidity
+address validatorWallet = genStaking.validatorJoin{value: 42000 ether}();
+```
+
+**Method 2: Separate Operator Address (Recommended)**
+
+```solidity
+address operatorAddress = 0x...;
+address validatorWallet = genStaking.validatorJoin{value: 42000 ether}(operatorAddress);
+```
+
+<Callout type="warning">
+  Save the returned **ValidatorWallet address** - you'll need it for all future operations.
+</Callout>
+
+**Important Notes:**
+- Deposits activate **2 epochs after joining**
+- `validatorPrime()` is automatically called by your validator node each epoch
+- Monitor priming for proper activation within 2 epochs
+- Operator address cannot be reused or be the zero address
+- If the operator is already assigned to another validator, the transaction reverts
+
+**Post-Join Steps:**
+1. Save the `validatorWallet` address
+2. Start your validator node using the operator address
+3. Monitor that `validatorPrime(validatorWallet)` executes each epoch
+4. Wait 2 epochs and verify activation
+
+### Depositing as a Validator
+
+```solidity
+validatorWallet.validatorDeposit{value: 10000 ether}();
+```
+
+**Key Points:**
+- Call through the ValidatorWallet contract only
+- Deposits follow the **epoch +2 activation rule**
+- Your validator node automatically calls `validatorPrime()` to commit the deposit
+- No minimum for additional deposits
+- Cannot deposit zero value
+
+**Activation Timeline:**
+```
+Epoch N:   validatorDeposit() called
+Epoch N+1: validatorPrime() → deposit staged
+Epoch N+2: validatorPrime() → deposit activated
+```
+
+### Withdrawing as a Validator
+
+**Step 1: Calculate Shares**
+
+```solidity
+uint256[8] memory validatorState = genStaking.validatorView(validatorWallet);
+uint256 currentShares = validatorState[1];
+uint256 currentStake = validatorState[0];
+uint256 sharesToExit = (currentShares * 30) / 100; // Exit 30%
+```
+
+**Step 2: Initiate Exit**
+
+```solidity
+validatorWallet.validatorExit(sharesToExit);
+```
+
+<Callout type="warning">
+  You must specify **shares**, not token amounts. Cannot exit more shares than owned.
+</Callout>
+
+**Important Notes:**
+- Exited tokens stop earning rewards immediately
+- Tokens are locked for **7 epochs** before claiming
+- Each exit creates a separate withdrawal
+
+**Unbonding Timeline:**
+```
+Epoch 10:    validatorExit() called → unbonding starts
+Epochs 11-16: Locked period
+Epoch 17:    validatorClaim() available
+```
+
+### Claiming Withdrawn Funds as a Validator
+
+```solidity
+uint256 tokensReceived = genStaking.validatorClaim(validatorWallet);
+```
+
+**Important Notes:**
+- Must wait **7 full epochs** after calling `validatorExit()`
+- Claims are permissionless - anyone can trigger them
+- Tokens are sent to the validator wallet's owner address
+- Multiple exits can be claimed in a single call
+- Returns the total GEN received
+
+**Checking Claim Availability:**
+
+```solidity
+uint256 exitEpoch = 10;
+uint256 claimableAtEpoch = exitEpoch + 7;
+uint256 currentEpoch = genStaking.epoch();
+if (currentEpoch >= claimableAtEpoch) {
+    genStaking.validatorClaim(validatorWallet);
+}
+```
+
+---
+
+## Delegator Operations
+
+### Joining as a Delegator
+
+**Requirements:**
+- Minimum delegation: **42 GEN** per validator
+- Target validator must exist and be active
+- Can delegate to multiple validators
+
+**Basic Delegation:**
+
+```solidity
+address validatorWallet = 0x...;
+genStaking.delegatorJoin{value: 1000 ether}(validatorWallet);
+```
+
+**Multi-Validator Delegation:**
+
+```solidity
+genStaking.delegatorJoin{value: 500 ether}(validator1);
+genStaking.delegatorJoin{value: 500 ether}(validator2);
+genStaking.delegatorJoin{value: 500 ether}(validator3);
+```
+
+**Important Notes:**
+- Follows the **epoch +2 activation rule**
+- The validator's node automatically calls `validatorPrime()` to commit your delegation
+- Choose validators with good uptime
+- Smaller validators often provide higher returns
+- Cannot delegate zero value
+
+**Delegation Strategy Tips:**
+- Diversify across multiple validators
+- Check validator performance and uptime
+- Monitor validator quarantine/ban status
+
+### Depositing as a Delegator
+
+```solidity
+genStaking.delegatorDeposit{value: 500 ether}(validatorWallet);
+```
+
+**Important Notes:**
+- Use `delegatorDeposit()` to add to existing delegations
+- Follows the **epoch +2 activation rule**
+- The validator's node automatically calls `validatorPrime()`
+- No minimum for additional deposits
+- Rewards automatically compound
+
+### Withdrawing as a Delegator
+
+**Step 1: Calculate Shares**
+
+```solidity
+uint256 currentShares = genStaking.sharesOf(msg.sender, validatorWallet);
+uint256 sharesToExit = (currentShares * 50) / 100; // Exit 50%
+```
+
+**Step 2: Initiate Exit**
+
+```solidity
+genStaking.delegatorExit(validatorWallet, sharesToExit);
+```
+
+<Callout type="warning">
+  You must specify **shares**, not token amounts.
+</Callout>
+
+**Important Notes:**
+- Can exit partial amounts
+- Stop earning rewards immediately after exit
+- Tokens are locked for **7 epochs**
+- Exit each validator separately if delegating to multiple
+
+**Unbonding Timeline:**
+```
+Epoch 5:     delegatorExit() called
+Epochs 6-11: Locked period
+Epoch 12:    delegatorClaim() available
+```
+
+### Claiming Withdrawn Funds as a Delegator
+
+```solidity
+uint256 tokensReceived = genStaking.delegatorClaim(
+    delegatorAddress,
+    validatorWallet
+);
+```
+
+**Important Notes:**
+- Must wait **7 full epochs** after calling `delegatorExit()`
+- Claims are permissionless - anyone can trigger them
+- Tokens are sent to the delegator's address
+- Claim from each validator separately if delegated to multiple
+
+**Multi-Validator Claim Example:**
+
+```solidity
+genStaking.delegatorClaim(msg.sender, validator1);
+genStaking.delegatorClaim(msg.sender, validator2);
+genStaking.delegatorClaim(msg.sender, validator3);
+```
+
+---
+
+## Genesis Epoch 0
+
+Epoch 0 is the **genesis bootstrapping period** with special rules designed to facilitate network launch. The normal staking rules are relaxed to allow rapid network bootstrapping.
+
+### What is Epoch 0?
+
+Epoch 0 is the **bootstrapping period** before the network becomes operational. During epoch 0:
+
+- **No transactions are processed** - the network is not yet active
+- **No consensus occurs** - validators are not yet participating
+- Stakes are registered and prepared for activation in epoch 2
+
+**Important**: The network transitions directly from epoch 0 to epoch 2 (epoch 1 is skipped). Validators and delegators who stake in epoch 0 become active in epoch 2.
+
+### Special Rules for Epoch 0
+
+| Rule | Normal Epochs (2+) | Epoch 0 |
+|------|-------------------|---------|
+| Validator minimum stake | 42,000 GEN | No minimum to join |
+| Delegator minimum stake | 42 GEN | No minimum to join |
+| Activation delay | +2 epochs | Active in epoch 2 |
+| validatorPrime required | Yes, each epoch | Not required |
+| Share calculation | Based on existing ratio | 1:1 (shares = input) |
+| Transaction processing | Yes | No (bootstrapping only) |
+
+<Callout type="warning">
+  **Activation requires meeting minimums**: While you can join with any amount during epoch 0, your stake will only be **activated in epoch 2** if it meets the minimum requirements (42,000 GEN for validators, 42 GEN for delegators). Stakes below the minimum remain registered but inactive.
+</Callout>
+
+### Validators in Epoch 0
+
+**Joining:**
+
+```solidity
+// In epoch 0, any amount is accepted (no 42,000 GEN minimum)
+address validatorWallet = genStaking.validatorJoin{value: 1000 ether}(operatorAddress);
+
+// Stake is registered for activation in epoch 2
+// No need to call validatorPrime() in epoch 0
+```
+
+**Key behaviors:**
+
+1. **No minimum stake**: Validators can join with any non-zero amount
+2. **Registered for epoch 2**: Stakes are recorded and will become active when epoch 2 begins
+3. **No priming required**: `validatorPrime()` is not needed during epoch 0
+4. **No consensus participation**: Validators do not process transactions in epoch 0
+
+**Do validators need to take any action in epoch 0 to be active in epoch 2?**
+
+No. Validators who join in epoch 0:
+
+- Have their stake registered during epoch 0
+- Become active automatically in epoch 2 (epoch 1 is skipped) **only if they have at least 42,000 GEN staked**
+- Must start calling `validatorPrime()` in epoch 2 for continued participation in epoch 4+
+
+<Callout type="error">
+  **Critical**: Validators who joined in epoch 0 with less than 42,000 GEN will **not be active** in epoch 2. They must deposit additional funds to meet the minimum requirement before epoch 2 begins.
+</Callout>
+
+### Delegators in Epoch 0
+
+**Joining:**
+
+```solidity
+// In epoch 0, any amount is accepted (no 42 GEN minimum)
+genStaking.delegatorJoin{value: 10 ether}(validatorWallet);
+
+// Delegation is registered for activation in epoch 2
+```
+
+**Key behaviors:**
+
+1. **No minimum delegation**: Any non-zero amount accepted
+2. **Registered for epoch 2**: Delegation is recorded and will become active when epoch 2 begins
+3. **No rewards in epoch 0**: Since no transactions are processed, no rewards are earned during epoch 0
+
+**Is a delegation made in epoch 0 active in epoch 2?**
+
+Yes. Delegations made in epoch 0 become active in epoch 2 (epoch 1 is skipped). Unlike normal epochs where you wait +2 epochs, epoch 0 delegations activate as soon as the network becomes operational.
+
+### Activation Timeline Comparison
+
+**Normal Epochs (2+):**
+
+```
+Epoch N:   validatorJoin() or delegatorJoin() called
+Epoch N+1: validatorPrime() stages the deposit
+Epoch N+2: validatorPrime() activates the deposit → NOW ACTIVE
+```
+
+**Epoch 0 (Bootstrapping):**
+
+```
+Epoch 0: validatorJoin() or delegatorJoin() called → stake registered (not yet active)
+         No transactions processed, no consensus
+Epoch 2: Stakes become active (if minimum met), network operational, validatorPrime() required
+```
+
+### Share Calculation in Epoch 0
+
+In epoch 0, shares are calculated at a 1:1 ratio with the input amount:
+
+```solidity
+// Epoch 0: 1,000 GEN deposit = 1,000 shares (1:1 ratio)
+genStaking.delegatorJoin{value: 1000 ether}(validatorWallet);
+// Result: delegator receives exactly 1,000 shares
+
+// Normal epochs: shares depend on pool ratio
+// new_shares = deposit_amount × (total_shares / total_stake)
+```
+
+This is because there's no existing stake pool to calculate a ratio against. Starting from epoch 2, shares are calculated based on the current stake-to-share ratio.
+
+### Transitioning from Epoch 0 to Epoch 2
+
+When the network advances from epoch 0 to epoch 2 (epoch 1 is skipped):
+
+1. **Epoch 0 stakes that meet minimums become active** - validators need 42,000 GEN, delegators need 42 GEN
+2. **Normal minimum requirements apply** for new joins/deposits
+3. **+2 epoch activation delay** applies to all new deposits
+4. **validatorPrime() becomes mandatory** for validators to remain in the selection pool
+5. **Existing validators** must ensure their nodes begin calling `validatorPrime()` in epoch 2
+
+### FAQ: Epoch 0 Special Cases
+
+**Q: Can I join as a validator with less than 42,000 GEN in epoch 0?**
+A: Yes, any non-zero amount is accepted during epoch 0. However, you will **not be active** in epoch 2 unless you have at least 42,000 GEN staked by then.
+
+**Q: If I delegate in epoch 0, when does it become active?**
+A: In epoch 2. Unlike normal epochs with a +2 delay, epoch 0 delegations activate when the network becomes operational.
+
+**Q: Do I need to call validatorPrime() in epoch 0?**
+A: No. Priming is not required during epoch 0. Your node should start calling it automatically when epoch 2 begins (epoch 1 is skipped).
+
+**Q: Will my epoch 0 stake still be active after epoch 0 ends?**
+A: Yes, if you meet the minimum requirements. Stakes from epoch 0 carry forward and remain active in all subsequent epochs.
+
+**Q: What happens to my stake if I joined in epoch 0 but my node doesn't call validatorPrime() in epoch 2?**
+A: You'll be excluded from validator selection in epoch 4, but your stake remains. Once priming resumes, you'll be eligible for selection again.
+
+---
+
+## Common Scenarios
+
+### Scenario 1: Becoming a Validator
+
+```solidity
+address validatorWallet = genStaking.validatorJoin{value: 42000 ether}(operatorAddress);
+// Start validator node with operator address
+// Monitor: Epoch N joined, N+1 staged, N+2 active
+```
+
+### Scenario 2: Delegating to Multiple Validators
+
+```solidity
+genStaking.delegatorJoin{value: 1000 ether}(validator1);
+genStaking.delegatorJoin{value: 2000 ether}(validator2);
+genStaking.delegatorJoin{value: 1500 ether}(validator3);
+
+// Later, exit from one validator
+uint256 shares = genStaking.sharesOf(msg.sender, validator1);
+genStaking.delegatorExit(validator1, shares);
+
+// After 7 epochs:
+genStaking.delegatorClaim(msg.sender, validator1);
+```
+
+### Scenario 3: Partial Validator Exit
+
+```solidity
+uint256[8] memory state = genStaking.validatorView(validatorWallet);
+uint256 currentShares = state[1];
+uint256 sharesToExit = (currentShares * 25) / 100; // Exit 25%
+validatorWallet.validatorExit(sharesToExit);
+
+// After 7 epochs:
+genStaking.validatorClaim(validatorWallet);
+```
+
+---
+
+## Best Practices
+
+### For Validators
+
+1. **Ensure node health**: Your validator node automatically calls `validatorPrime()`
+2. **Use separate keys**: Cold wallet for owner, hot wallet for operator
+3. **Monitor priming**: Verify deposit activation occurs as expected
+4. **Monitor quarantine status**: Check if your validator is quarantined
+5. **Maintain high uptime**: Downtime leads to idleness strikes
+6. **Set up backup monitoring**: Alert if priming fails
+
+### For Delegators
+
+1. **Diversify**: Spread stake across multiple validators
+2. **Select carefully**: Choose validators with good uptime records
+3. **Verify priming**: Ensure validators are consistently primed
+4. **Consider smaller validators**: They often provide higher returns
+5. **Monitor health**: Regularly check validator status
+6. **Use shares for exits**: Calculate percentages, not absolute amounts
+
+### For Both
+
+1. **Account for unbonding**: Plan for the 7-epoch wait when exiting
+2. **Monitor epochs**: Track current epoch for claim eligibility
+3. **Calculate exits carefully**: Always use share percentages
+4. **Understand compounding**: Rewards automatically increase stake-per-share
+5. **Watch governance**: Parameter changes can affect staking dynamics
+
+---
+
+## Troubleshooting
+
+| Error | Cause | Solution |
+|-------|-------|----------|
+| `ValidatorBelowMinimumStake` | Stake below 42,000 GEN | Deposit at least 42,000 GEN when joining |
+| `OperatorAlreadyAssigned` | Operator address in use | Choose a different operator address |
+| `ValidatorMayNotDepositZeroValue` | Zero deposit amount | Deposit a non-zero amount |
+| `ValidatorExitExceedsShares` | Exiting more shares than owned | Check shares with `validatorView()` |
+| Validator not selected | Node not priming | Ensure node runs and calls `validatorPrime()` |
+| Stake not activating | Priming not occurring | Monitor node for automatic `validatorPrime()` calls |
+| Cannot claim withdrawn funds | Unbonding not complete | Verify 7 epochs have passed with `genStaking.epoch()` |
+| Delegation not earning | Validator issues | Check if validator is quarantined/banned; consider switching |
+
+---
+
+## Related Resources
+
+- [Staking Concepts](/understand-genlayer-protocol/core-concepts/optimistic-democracy/staking) - How staking works in GenLayer
+- [Unstaking](/understand-genlayer-protocol/core-concepts/optimistic-democracy/unstaking) - Unstaking process details
+- [Slashing](/understand-genlayer-protocol/core-concepts/optimistic-democracy/slashing) - Slashing penalties and conditions
+- [GenLayer CLI Staking Commands](/api-references/genlayer-cli#staking-operations-testnet) - CLI reference for staking
