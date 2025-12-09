@@ -234,8 +234,8 @@ You can use the following example configuration. **Note:** For most users, you w
 ```yaml
 # rollup configuration
 rollup:
-  genlayerchainrpcurl: "TODO: Set your GenLayer Chain ZKSync HTTP RPC URL here" # ZKSync RPC URL
-  genlayerchainwebsocketurl: "TODO: Set your GenLayer Chain ZKSync WebSocket RPC URL here" # ZKSync WebSocket URL
+  genlayerchainrpcurl: "https://asimov-chain-1.genlayerlabs.com/rpc" # GenLayer Chain RPC URL
+  genlayerchainwebsocketurl: "wss://asimov-chain-1.genlayerlabs.com/ws" # GenLayer Chain WebSocket URL
 # consensus contracts configuration
 consensus:
   # Asimov - Phase 4
@@ -277,10 +277,9 @@ node:
   # Mode can be "validator" or "full".
   # Default value is "validator".
   mode: "validator"
-  # Address of your ValidatorWallet contract (from wizard output or validator-info)
-  # Run: genlayer staking validator-info to find this
+  # Address of the ValidatorWallet contract (required for validator mode)
   validatorWalletAddress: ""
-  # Address of your operator key (the key imported into this node)
+  # Address of the operator that owns the ValidatorWallet
   operatorAddress: ""
   admin:
     port: 9155
@@ -312,6 +311,8 @@ node:
       metrics: true # Enable metrics endpoint
       health: true # Enable health endpoint
       balance: true # Enable balance endpoint
+  dev:
+    disableSubscription: false # Useful for testing with zksync-anvil
 
 # genvm configuration
 genvm:
@@ -623,7 +624,7 @@ services:
     restart: unless-stopped
 
   genlayer-node:
-    image: yeagerai/genlayer-node:${NODE_VERSION:-v0.4.0}
+    image: yeagerai/genlayer-node:${NODE_VERSION:-latest}
     entrypoint: [
       "sh", "-c", "/app/bin/genlayernode run --password ${NODE_PASSWORD:-12345678}",
     ]
@@ -651,6 +652,7 @@ services:
       - webdriver-container
     profiles:
       - node
+
 
 ```
 

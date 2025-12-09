@@ -12,7 +12,7 @@ services:
     restart: unless-stopped
 
   genlayer-node:
-    image: yeagerai/genlayer-node:${NODE_VERSION:-v0.4.0}
+    image: yeagerai/genlayer-node:${NODE_VERSION:-latest}
     entrypoint: [
       "sh", "-c", "/app/bin/genlayernode run --password ${NODE_PASSWORD:-12345678}",
     ]
@@ -40,3 +40,4 @@ services:
       - webdriver-container
     profiles:
       - node
+

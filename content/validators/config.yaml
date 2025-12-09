@@ -1,7 +1,7 @@
 # rollup configuration
 rollup:
-  genlayerchainrpcurl: "TODO: Set your GenLayer Chain ZKSync HTTP RPC URL here" # ZKSync RPC URL
-  genlayerchainwebsocketurl: "TODO: Set your GenLayer Chain ZKSync WebSocket RPC URL here" # ZKSync WebSocket URL
+  genlayerchainrpcurl: "https://asimov-chain-1.genlayerlabs.com/rpc" # GenLayer Chain RPC URL
+  genlayerchainwebsocketurl: "wss://asimov-chain-1.genlayerlabs.com/ws" # GenLayer Chain WebSocket URL
 # consensus contracts configuration
 consensus:
   # Asimov - Phase 4
@@ -77,6 +77,8 @@ node:
       metrics: true # Enable metrics endpoint
       health: true # Enable health endpoint
       balance: true # Enable balance endpoint
+  dev:
+    disableSubscription: false # Useful for testing with zksync-anvil
 
 # genvm configuration
 genvm:
@@ -96,7 +98,7 @@ merkletree:
 
 # metrics configuration
 metrics:
-  interval: "15s"  # Default interval for all collectors (can be overridden per collector)
+   interval: "15s"  # Default interval for all collectors (can be overridden per collector)
 #   collectors:
 #     node:
 #       enabled: true
