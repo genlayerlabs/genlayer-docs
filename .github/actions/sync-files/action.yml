@@ -42,7 +42,7 @@ runs:
       shell: bash
       run: |
         # For config type, handle special case:
-        # Copy config.yaml.example to temp location as config.yaml
+        # Copy config.yaml.example to temp location as config.yaml and sanitize
 
         if [[ -f "${{ inputs.source_path }}" ]]; then
           # Create temp directory
@@ -51,6 +51,9 @@ runs:
 
           # Copy and rename config.yaml.example to config.yaml
           cp "${{ inputs.source_path }}" "$TEMP_DIR/config.yaml"
+
+          # Sanitize: replace RPC URLs with placeholders and remove dev section
+          bash .github/scripts/sanitize-config.sh "$TEMP_DIR/config.yaml"
 
           # Update source path for sync
           echo "CONFIG_SOURCE=$TEMP_DIR/config.yaml" >> $GITHUB_ENV
