@@ -2,7 +2,7 @@
 set -e
 
 # Sanitize docker-compose.yaml for documentation
-# Removes the alloy service, its comments, and volumes section
+# Removes the alloy service and volumes section
 # Usage: sanitize-docker-compose.sh <docker_compose_file>
 
 DOCKER_COMPOSE_FILE="$1"
@@ -19,8 +19,11 @@ fi
 
 echo "Sanitizing docker-compose file: $DOCKER_COMPOSE_FILE"
 
-# Remove everything from "# Grafana Alloy" comment to end of file
-# This includes the alloy service comments, the service itself, and the volumes section
-sed -i '/# Grafana Alloy/,$d' "$DOCKER_COMPOSE_FILE"
+# Use yq to remove alloy service and volumes section
+yq -i 'del(.services.alloy) | del(.volumes)' "$DOCKER_COMPOSE_FILE"
+
+# Remove leftover comments about alloy (yq preserves them)
+sed -i '/# Grafana Alloy/,/^[^ #]/{ /^[^ #]/!d }' "$DOCKER_COMPOSE_FILE"
+sed -i '/^$/N;/^\n$/d' "$DOCKER_COMPOSE_FILE"
 
 echo "Docker-compose sanitization completed"
