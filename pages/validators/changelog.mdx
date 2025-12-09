@@ -1,14 +1,30 @@
 # Changelog
 
+## v0.4.1
+
+### New features
+
+- Add IsPrimed health check for unprimed validators
+
+### Misc
+
+- Refactor gas estimator
+
+### Bug fixes
+
+- Fix sync filtering process
+- Improve messages around genlayerRPC chain connectivity
+- Stop retrying activation after transaction is activated
+
 ## v0.4.0
 
 ### New features
 
 - Integrate the latest GenLayer Consensus version v0.4 with Staking
-  - Introduce validator wallet
-  - Handle validator priming
-  - Finalize epochs
-  - Advance epochs when epochs finalize
+    - Introduce validator wallet
+    - Handle validator priming
+    - Finalize epochs
+    - Advance epochs when epochs finalize
 - Handle automatic gas increase
 - Implement ProcessIdleness and enhance event subscription
 - Handle validator commit idleness for leader
