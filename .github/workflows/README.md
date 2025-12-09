@@ -172,6 +172,12 @@ The workflow uses composite actions for code reusability:
 - `.github/scripts/git-utils.sh` - Branch creation, commit, and push operations
 - `.github/scripts/version-utils.sh` - Version detection and validation
 - `.github/scripts/doc-generator.sh` - Wrapper for npm documentation generation
+- `.github/scripts/sanitize-docker-compose.sh` - Removes alloy service and volumes from docker-compose
+
+### Docker Compose Sanitization
+The docker-compose sync process includes automatic sanitization using `sed`:
+- Removes everything from the `# Grafana Alloy` comment to end of file
+- This includes the alloy service comments, the service itself, and the volumes section
 
 ### Branch Naming Convention
 Sync branches follow the pattern: `docs/node/{version}`

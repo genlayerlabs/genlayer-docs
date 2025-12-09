@@ -58,18 +58,45 @@ runs:
           echo "Config source file not found: ${{ inputs.source_path }}"
           exit 1
         fi
-    
+
+    - name: Prepare docker-compose file
+      if: inputs.type == 'docker_compose'
+      shell: bash
+      run: |
+        # For docker_compose type, handle special case:
+        # Copy and sanitize (remove alloy service and volumes)
+
+        if [[ -f "${{ inputs.source_path }}" ]]; then
+          # Create temp directory
+          TEMP_DIR=$(mktemp -d)
+          echo "TEMP_DOCKER_COMPOSE_DIR=$TEMP_DIR" >> $GITHUB_ENV
+
+          # Copy docker-compose.yaml
+          cp "${{ inputs.source_path }}" "$TEMP_DIR/docker-compose.yaml"
+
+          # Sanitize: remove alloy service and volumes section using yq
+          bash .github/scripts/sanitize-docker-compose.sh "$TEMP_DIR/docker-compose.yaml"
+
+          # Update source path for sync
+          echo "DOCKER_COMPOSE_SOURCE=$TEMP_DIR/docker-compose.yaml" >> $GITHUB_ENV
+        else
+          echo "Docker compose source file not found: ${{ inputs.source_path }}"
+          exit 1
+        fi
+
     - name: Sync files
       id: sync
       shell: bash
       run: |
-        # Use prepared config source if it's a config type, otherwise use original source
+        # Use prepared source for config/docker_compose types, otherwise use original source
         if [[ "${{ inputs.type }}" == "config" ]] && [[ -n "$CONFIG_SOURCE" ]]; then
           SOURCE_PATH="$CONFIG_SOURCE"
+        elif [[ "${{ inputs.type }}" == "docker_compose" ]] && [[ -n "$DOCKER_COMPOSE_SOURCE" ]]; then
+          SOURCE_PATH="$DOCKER_COMPOSE_SOURCE"
         else
           SOURCE_PATH="${{ inputs.source_path }}"
         fi
-        
+
         ${{ github.action_path }}/sync.sh \
           "${{ inputs.type }}" \
           "${{ inputs.title }}" \
@@ -85,7 +112,15 @@ runs:
         if [[ -n "$TEMP_CONFIG_DIR" ]] && [[ -d "$TEMP_CONFIG_DIR" ]]; then
           rm -rf "$TEMP_CONFIG_DIR"
         fi
-    
+
+    - name: Cleanup docker-compose temp directory
+      if: inputs.type == 'docker_compose' && always()
+      shell: bash
+      run: |
+        if [[ -n "$TEMP_DOCKER_COMPOSE_DIR" ]] && [[ -d "$TEMP_DOCKER_COMPOSE_DIR" ]]; then
+          rm -rf "$TEMP_DOCKER_COMPOSE_DIR"
+        fi
+
     - name: Upload artifacts
       uses: actions/upload-artifact@v4
       if: always()

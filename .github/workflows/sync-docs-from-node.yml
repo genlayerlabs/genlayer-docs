@@ -100,11 +100,6 @@ jobs:
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Install Python dependencies
-        if: matrix.sync_type == 'config'
-        run: |
-          python3 -m pip install --upgrade pip pyyaml
-
       - name: Clone source repository
         uses: actions/checkout@v4
         with:
