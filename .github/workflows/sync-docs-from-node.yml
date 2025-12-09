@@ -133,7 +133,6 @@ jobs:
               echo "source_path=source-repo/configs/node/config.yaml.example" >> $GITHUB_OUTPUT
               echo "target_path=content/validators/config.yaml" >> $GITHUB_OUTPUT
               echo "filter_pattern=.*" >> $GITHUB_OUTPUT
-              echo "sanitize_script=.github/scripts/sanitize-config.sh" >> $GITHUB_OUTPUT
               ;;
             "api_gen")
               echo "title=API Gen Methods" >> $GITHUB_OUTPUT
@@ -164,7 +163,6 @@ jobs:
           source_path: ${{ steps.set_params.outputs.source_path }}
           target_path: ${{ steps.set_params.outputs.target_path }}
           filter_pattern: ${{ steps.set_params.outputs.filter_pattern }}
-          sanitize_script: ${{ steps.set_params.outputs.sanitize_script }}
 
   aggregate-results:
     name: 'Aggregate Sync Results'
