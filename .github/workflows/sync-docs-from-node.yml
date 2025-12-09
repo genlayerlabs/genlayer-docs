@@ -92,7 +92,7 @@ jobs:
     needs: prepare
     strategy:
       matrix:
-        sync_type: [changelog, config, api_gen, api_debug, api_ops]
+        sync_type: [changelog, config, docker_compose, api_gen, api_debug, api_ops]
       fail-fast: false
     steps:
       - name: Checkout documentation repository
@@ -114,6 +114,7 @@ jobs:
           sparse-checkout: |
             docs
             configs/node/config.yaml.example
+            release/docker-compose.yaml
           sparse-checkout-cone-mode: true
           path: source-repo
           ref: ${{ needs.prepare.outputs.version }}
@@ -132,6 +133,12 @@ jobs:
               echo "title=Config File" >> $GITHUB_OUTPUT
               echo "source_path=source-repo/configs/node/config.yaml.example" >> $GITHUB_OUTPUT
               echo "target_path=content/validators/config.yaml" >> $GITHUB_OUTPUT
+              echo "filter_pattern=.*" >> $GITHUB_OUTPUT
+              ;;
+            "docker_compose")
+              echo "title=Docker Compose File" >> $GITHUB_OUTPUT
+              echo "source_path=source-repo/release/docker-compose.yaml" >> $GITHUB_OUTPUT
+              echo "target_path=content/validators/docker-compose.yaml" >> $GITHUB_OUTPUT
               echo "filter_pattern=.*" >> $GITHUB_OUTPUT
               ;;
             "api_gen")
@@ -398,6 +405,7 @@ jobs:
           - \`npm run node-generate-changelog\`
           - \`npm run node-update-setup-guide\`
           - \`npm run node-update-config\`
+          - \`npm run node-update-docker-compose\`
           - \`npm run node-generate-api-docs\`
 
           Please review the changes and merge if everything looks correct.
@@ -465,11 +473,12 @@ jobs:
           echo "" >> $GITHUB_STEP_SUMMARY
           
           # Process each sync type report
-          for sync_type in changelog config api_gen api_debug api_ops; do
+          for sync_type in changelog config docker_compose api_gen api_debug api_ops; do
             # Get proper title
             case "$sync_type" in
               "changelog") title="📝 Changelog Sync" ;;
               "config") title="⚙️ Config File Sync" ;;
+              "docker_compose") title="🐳 Docker Compose Sync" ;;
               "api_gen") title="🔧 API Gen Methods Sync" ;;
               "api_debug") title="🐛 API Debug Methods Sync" ;;
               "api_ops") title="📊 API Ops Methods Sync" ;;

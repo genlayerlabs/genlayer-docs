@@ -12,9 +12,10 @@ This workflow automatically synchronizes documentation from the `genlayerlabs/ge
 ### What it does
 
 1. **Prepare**: Detects version from input or automatically finds latest tag
-2. **Sync Files** (parallel matrix strategy, 5 sync types):
+2. **Sync Files** (parallel matrix strategy, 6 sync types):
    - **Changelog files** → `content/validators/changelog/`
-   - **Config file** → `content/validators/config.yaml` (with sanitization)
+   - **Config file** → `content/validators/config.yaml`
+   - **Docker Compose file** → `content/validators/docker-compose.yaml`
    - **API gen method docs** → `pages/api-references/genlayer-node/gen/` (filtered by regex)
    - **API debug method docs** → `pages/api-references/genlayer-node/debug/` (filtered by regex)
    - **API ops method docs** → `pages/api-references/genlayer-node/ops/`
@@ -113,6 +114,8 @@ docs/
 configs/
 └── node/
     └── config.yaml.example     # Will be copied to content/validators/config.yaml
+release/
+└── docker-compose.yaml         # Will be copied to content/validators/docker-compose.yaml
 ```
 
 ### Customizing Paths and Filtering
@@ -141,7 +144,7 @@ The workflow uses 7 main jobs with the following dependency chain:
 ```
 prepare (version detection)
     ↓
-sync-files (matrix: 5 parallel jobs)
+sync-files (matrix: 6 parallel jobs)
     ↓
 aggregate-results (merges artifacts)
     ↓
@@ -167,16 +170,8 @@ The workflow uses composite actions for code reusability:
 - `.github/scripts/sync-artifact-files.sh` - Applies synced files to repository with rsync --delete
 - `.github/scripts/aggregate-reports.sh` - Aggregates sync metrics from parallel jobs
 - `.github/scripts/git-utils.sh` - Branch creation, commit, and push operations
-- `.github/scripts/sanitize-config.sh` - Sanitizes config files (URLs and dev sections)
-- `.github/scripts/sanitize-config.py` - Python script to remove node.dev sections
 - `.github/scripts/version-utils.sh` - Version detection and validation
 - `.github/scripts/doc-generator.sh` - Wrapper for npm documentation generation
-
-### Config File Sanitization
-The config sync process includes automatic sanitization:
-1. **URL Replacement**: Real URLs replaced with TODO placeholders
-2. **Dev Section Removal**: `node.dev` sections stripped using Python script
-3. **Comparison**: Only sanitized content is compared to detect actual changes
 
 ### Branch Naming Convention
 Sync branches follow the pattern: `docs/node/{version}`
@@ -228,5 +223,6 @@ The summary job generates a comprehensive report in the GitHub Actions UI:
 After syncing files, the workflow runs these npm scripts:
 - `npm run node-generate-changelog` - Generates changelog page from synced files
 - `npm run node-update-setup-guide` - Updates setup guide with version info
-- `npm run node-update-config` - Processes configuration documentation
+- `npm run node-update-config` - Updates config.yaml example in setup guide
+- `npm run node-update-docker-compose` - Updates docker-compose.yaml example in setup guide
 - `npm run node-generate-api-docs` - Generates API reference pages
