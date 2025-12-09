@@ -7,8 +7,9 @@ const path = require('path');
  * Update the setup guide with the latest docker-compose from content/validators/docker-compose.yaml
  */
 function updateDockerComposeInSetupGuide() {
-  const dockerComposePath = path.join(process.cwd(), 'content/validators/docker-compose.yaml');
-  const setupGuidePath = path.join(process.cwd(), 'pages/validators/setup-guide.mdx');
+  const projectRoot = path.join(__dirname, '..');
+  const dockerComposePath = path.join(projectRoot, 'content/validators/docker-compose.yaml');
+  const setupGuidePath = path.join(projectRoot, 'pages/validators/setup-guide.mdx');
 
   if (!fs.existsSync(dockerComposePath)) {
     console.error(`Docker compose file ${dockerComposePath} does not exist`);
