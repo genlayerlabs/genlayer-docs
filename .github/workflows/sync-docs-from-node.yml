@@ -92,7 +92,7 @@ jobs:
     needs: prepare
     strategy:
       matrix:
-        sync_type: [changelog, config, api_gen, api_debug, api_ops]
+        sync_type: [changelog, config, docker_compose, api_gen, api_debug, api_ops]
       fail-fast: false
     steps:
       - name: Checkout documentation repository
@@ -100,10 +100,11 @@ jobs:
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Install Python dependencies
-        if: matrix.sync_type == 'config'
+      - name: Install yq for YAML sanitization
+        if: matrix.sync_type == 'config' || matrix.sync_type == 'docker_compose'
         run: |
-          python3 -m pip install --upgrade pip pyyaml
+          sudo wget -qO /usr/local/bin/yq https://github.com/mikefarah/yq/releases/latest/download/yq_linux_amd64
+          sudo chmod +x /usr/local/bin/yq
 
       - name: Clone source repository
         uses: actions/checkout@v4
@@ -114,6 +115,7 @@ jobs:
           sparse-checkout: |
             docs
             configs/node/config.yaml.example
+            release/docker-compose.yaml
           sparse-checkout-cone-mode: true
           path: source-repo
           ref: ${{ needs.prepare.outputs.version }}
@@ -133,7 +135,12 @@ jobs:
               echo "source_path=source-repo/configs/node/config.yaml.example" >> $GITHUB_OUTPUT
               echo "target_path=content/validators/config.yaml" >> $GITHUB_OUTPUT
               echo "filter_pattern=.*" >> $GITHUB_OUTPUT
-              echo "sanitize_script=.github/scripts/sanitize-config.sh" >> $GITHUB_OUTPUT
+              ;;
+            "docker_compose")
+              echo "title=Docker Compose File" >> $GITHUB_OUTPUT
+              echo "source_path=source-repo/release/docker-compose.yaml" >> $GITHUB_OUTPUT
+              echo "target_path=content/validators/docker-compose.yaml" >> $GITHUB_OUTPUT
+              echo "filter_pattern=.*" >> $GITHUB_OUTPUT
               ;;
             "api_gen")
               echo "title=API Gen Methods" >> $GITHUB_OUTPUT
@@ -164,7 +171,6 @@ jobs:
           source_path: ${{ steps.set_params.outputs.source_path }}
           target_path: ${{ steps.set_params.outputs.target_path }}
           filter_pattern: ${{ steps.set_params.outputs.filter_pattern }}
-          sanitize_script: ${{ steps.set_params.outputs.sanitize_script }}
 
   aggregate-results:
     name: 'Aggregate Sync Results'
@@ -400,6 +406,7 @@ jobs:
           - \`npm run node-generate-changelog\`
           - \`npm run node-update-setup-guide\`
           - \`npm run node-update-config\`
+          - \`npm run node-update-docker-compose\`
           - \`npm run node-generate-api-docs\`
 
           Please review the changes and merge if everything looks correct.
@@ -467,11 +474,12 @@ jobs:
           echo "" >> $GITHUB_STEP_SUMMARY
           
           # Process each sync type report
-          for sync_type in changelog config api_gen api_debug api_ops; do
+          for sync_type in changelog config docker_compose api_gen api_debug api_ops; do
             # Get proper title
             case "$sync_type" in
               "changelog") title="📝 Changelog Sync" ;;
               "config") title="⚙️ Config File Sync" ;;
+              "docker_compose") title="🐳 Docker Compose Sync" ;;
               "api_gen") title="🔧 API Gen Methods Sync" ;;
               "api_debug") title="🐛 API Debug Methods Sync" ;;
               "api_ops") title="📊 API Ops Methods Sync" ;;

@@ -71,6 +71,23 @@ To add a new changelog entry:
 
 The entries are sorted in descending order (newest first) automatically.
 
+### Updating the Validator Setup Guide
+
+The setup guide contains configuration examples that are maintained in separate source files. To update these sections, use the scripts in the [`scripts/`](./scripts/README.md) directory:
+
+```sh
+# Update version list and download command from changelog versions
+node scripts/update-setup-guide-versions.js
+
+# Update config.yaml example from content/validators/config.yaml
+node scripts/update-config-in-setup-guide.js
+
+# Update docker-compose.yaml example from content/validators/docker-compose.yaml
+node scripts/update-docker-compose-in-setup-guide.js
+```
+
+See [scripts/README.md](./scripts/README.md) for detailed documentation.
+
 ### Adding New API Documentation
 
 The API documentation for GenLayer Node is automatically generated from individual method files.

@@ -1,0 +1,42 @@
+services:
+  webdriver-container:
+    container_name: genlayer-node-webdriver
+    image: yeagerai/genlayer-genvm-webdriver:0.0.9
+    shm_size: 2gb
+    security_opt:
+      - no-new-privileges:true
+    environment:
+      PORT: 4444
+    ports:
+      - "${WEBDRIVER_PORT:-4444}:4444"
+    restart: unless-stopped
+
+  genlayer-node:
+    image: yeagerai/genlayer-node:${NODE_VERSION:-v0.4.0}
+    entrypoint: [
+      "sh", "-c", "/app/bin/genlayernode run --password ${NODE_PASSWORD:-12345678}",
+    ]
+    container_name: genlayer-node
+    restart: unless-stopped
+    env_file:
+      - path: ./.env
+        required: false
+    ports:
+      - "${NODE_RPC_PORT:-9151}:9151"
+      - "${NODE_OPS_PORT:-9153}:9153"
+    volumes:
+      - ${NODE_CONFIG_PATH:-./configs/node/config.yaml}:/app/configs/node/config.yaml:ro
+      - ${NODE_DATA_PATH:-./data}:/app/data
+      - ./genvm-module-web-docker.yaml:/app/third_party/genvm/config/genvm-module-web.yaml
+    security_opt:
+      - no-new-privileges:true
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "100m"
+        max-file: "3"
+        compress: "true"
+    depends_on:
+      - webdriver-container
+    profiles:
+      - node

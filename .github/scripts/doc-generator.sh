@@ -37,7 +37,16 @@ run_doc_generation() {
         failed=true
     fi
     echo "::endgroup::"
-    
+
+    echo "::group::Running node-update-docker-compose"
+    if npm run node-update-docker-compose; then
+        echo "✅ Updated docker-compose in setup guide"
+    else
+        echo "❌ node-update-docker-compose failed"
+        failed=true
+    fi
+    echo "::endgroup::"
+
     echo "::group::Running node-generate-api-docs"
     if npm run node-generate-api-docs; then
         echo "✅ Generated API documentation"
