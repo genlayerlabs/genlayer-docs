@@ -218,6 +218,12 @@ Below are the **initial** recommended system requirements. These guidelines may 
    ```sh
    python3 ./third_party/genvm/bin/setup.py
    ```
+It does following:
+
+- Downloads missing runners if any
+- Verifies runners hashes
+- Sets `elf`/`mach-o` interpreter for all binaries (modules, genvm)
+- Rust precompilation for built-in runners
 
 ### Configuration
 
@@ -415,21 +421,6 @@ This is the configuration of webdriver module that enables the GenVM to access t
 
 This is the configuration of the GenVM manager. You should not need to modify this. However, if you are running the node on
 macos (natively), you may want to set `permits` to some large value, as auto-detection is not supported there yet, such as `32`.
-
-#### Precompilation (Recommended)
-
-Run following script to finish GenVM setup.
-
-```bash
-./third_party/genvm/bin/post-install.py
-```
-
-It does following:
-
-- Downloads missing runners if any
-- Verifies runners hashes
-- Sets `elf`/`mach-o` interpreter for all binaries (modules, genvm)
-- Rust precompilation for built-in runners
 
 #### Greyboxing LLMs
 
