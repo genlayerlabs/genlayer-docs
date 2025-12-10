@@ -411,19 +411,25 @@ Note environment variable names for LLM API keys (e.g., `HEURISTKEY`, `COMPUT3KE
 
 This is the configuration of webdriver module that enables the GenVM to access the internet. You should not need to modify this.
 
-#### `genvm.yaml`
+#### `genvm-manager.yaml`
 
-This is the configuration of the GenVM itself, such as how many threads it can use and what are the addresses of various modules. You should not need to edit this file either.
+This is the configuration of the GenVM manager. You should not need to modify this. However, if you are running the node on
+macos (natively), you may want to set `permits` to some large value, as auto-detection is not supported there yet, such as `32`.
 
 #### Precompilation (Recommended)
 
-Run precompilation of pre-delivered wasm modules (this step is optional but **highly** recommended for improved performance):
+Run following script to finish GenVM setup.
 
 ```bash
-./third_party/genvm/bin/genvm precompile
+./third_party/genvm/bin/post-install.py
 ```
 
-Precompilation should be re-run after switching to a different node release.
+It does following:
+
+- Downloads missing runners if any
+- Verifies runners hashes
+- Sets `elf`/`mach-o` interpreter for all binaries (modules, genvm)
+- Rust precompilation for built-in runners
 
 #### Greyboxing LLMs
 
@@ -538,13 +544,13 @@ Once you have configured everything, you are ready to start the node.
     ```sh
     # For Heurist
     export HEURISTKEY='your_heurist_api_key'
-    
+
     # For Comput3
     export COMPUT3KEY='your_comput3_api_key'
-    
+
     # For io.net
     export IOINTELLIGENCE_API_KEY='your_ionet_api_key'
-    
+
     # For other providers, use the appropriate environment variable name
     ```
 
