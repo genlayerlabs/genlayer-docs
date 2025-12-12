@@ -9,6 +9,7 @@
     "interacting-with-evm-contracts": "Interacting with EVM Contracts",
     "vector-storage": "Vector Storage",
     "debugging": "Debugging",
+    "special-methods": "Special Methods",
     "non-determinism": "Non-determinism",
     "calling-llms": "Calling LLMs",
     "web-access": "Web Access"
