@@ -1,45 +1,81 @@
 # Error Handling
 
-## VMErrors
+## Unrecoverable Errors
+
+Exit codes terminate execution immediately:
 
 ```python
 if invalid_condition:
-    exit(1)  # Terminates with VMError
+    exit(1)
 ```
 
-## User Errors
-
-Raise immediate user errors to interrupt execution of current sub-vm:
+Unhandled exceptions also become unrecoverable:
 
 ```python
-gl.advanced.user_error_immediate("Transaction not allowed")
+raise Exception("Critical error")  # Becomes exit(1)
 ```
 
-## Try-Catch with UserError
+## UserError
 
-Handle user errors within contract execution:
+User-generated errors with UTF-8 encoded messages:
 
 ```python
-class Contract(gl.Contract):
-    @gl.public.write
-    def safe_operation(self):
-        try:
-            gl.advanced.user_error_immediate("Something went wrong")
-        except gl.vm.UserError as e:
-            print('Handled error:', e.message)
+# Can be caught in current sub-vm
+raise gl.UserError("Invalid input")
+
+# Immediate user error, more efficient but can't be caught
+gl.user_error_immediate("Insufficient funds")
 ```
 
-## Python Exceptions
+## VMError
 
-Standard Python exceptions in non-deterministic contexts:
+VM-generated errors with predefined string codes:
 
 ```python
-class Contract(gl.Contract):
-    @gl.public.write
-    def risky_operation(self):
-        def do_something():
-            raise Exception("Operation failed")
+# Non-zero exit codes become VMError
+exit(1)  # Results in VMError with specific code
 
-        # Exception will be handled by consensus mechanism
-        gl.eq_principle.strict_eq(do_something)
+# Resource limit violations also trigger VMError
+# (handled automatically by the VM)
 ```
+
+## Catching UserError
+
+Handle user errors from sub-VMs:
+
+```python
+def risky_operation():
+    raise gl.UserError("Operation failed")
+
+try:
+    result = gl.eq_principle.strict_eq(risky_operation)
+except gl.UserError as e:
+    print(f"Caught user error: {e.message}")
+```
+
+## Error Propagation
+
+Errors flow from non-deterministic to deterministic code:
+
+```python
+def nondet_block():
+    if some_condition:
+        raise gl.UserError("INVALID_STATE")
+    return "success"
+
+try:
+    gl.eq_principle.strict_eq(nondet_block)
+except gl.UserError as e:
+    if e.message == "INVALID_STATE":
+        # Handle specific error condition
+        pass
+```
+
+## VM Result Types
+
+GenVM produces four result types:
+
+- **Return** - Successful execution with encoded result
+- **VMError** - VM errors (exit codes, resource limits)
+- **UserError** - User-generated errors with UTF-8 messages
+- **InternalError** - Critical VM failures (not visible to contracts)
