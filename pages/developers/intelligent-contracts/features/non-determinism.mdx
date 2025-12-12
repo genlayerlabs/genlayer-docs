@@ -1,0 +1,56 @@
+# Non-determinism
+
+## Equality Principle
+
+Execute non-deterministic operations using consensus:
+
+```python
+def non_deterministic_function():
+    # This code may produce different results on different nodes
+    return random.randint(1, 100)
+
+# Validators reach consensus on the result
+result = gl.eq_principle.strict_eq(non_deterministic_function)
+```
+
+## Accessing External Data
+
+Use non-deterministic blocks for external API calls:
+
+```python
+@gl.public.write
+def fetch_external_data(self):
+    def fetch_data():
+        # External API call - inherently non-deterministic
+        response = requests.get("https://api.example.com/data")
+        return response.json()
+
+    # Consensus ensures all validators agree on the result
+    data = gl.eq_principle.strict_eq(fetch_data)
+    return data
+```
+
+## Random Values
+
+Generate consensus-based random values:
+
+```python
+@gl.public.write
+def generate_random(self):
+    def random_generator():
+        import random
+        return random.random()
+
+    # All validators will agree on this "random" value
+    consensus_random = gl.eq_principle.strict_eq(random_generator)
+    return consensus_random
+```
+
+## When to Use
+
+Non-deterministic operations are needed for:
+- External API calls
+- Random number generation
+- Current timestamp access
+- File system operations
+- Any operation that might vary between nodes

@@ -1,0 +1,72 @@
+# Calling LLMs
+
+## Basic LLM Calls
+
+Execute prompts using large language models:
+
+```python
+def llm_call():
+    response = gl.nondet.exec_prompt("Answer this question")
+    return response.strip().lower()
+
+# Consensus ensures consistent LLM responses
+answer = gl.eq_principle.strict_eq(llm_call)
+```
+
+## JSON Response Format
+
+Request structured responses from LLMs:
+
+```python
+def structured_llm_call():
+    prompt = """
+    Return a JSON object with these keys:
+    - "score": random integer from 1 to 100
+    - "status": either "active" or "inactive"
+    """
+    return gl.nondet.exec_prompt(prompt, response_format='json')
+
+result = gl.eq_principle.strict_eq(structured_llm_call)
+score = result['score']  # Access JSON fields
+```
+
+This approach guarantees that `exec_prompt` returns a valid JSON object, however
+correspondence to the specified format depends on the underlying LLM.
+
+## Image Processing
+
+Process images with vision models:
+
+```python
+def vision_analysis():
+    prompt = "Describe what you see in this image"
+    image_data = b"\x89PNG...'
+    return gl.nondet.exec_prompt(
+        prompt,
+        images=[image_data]
+    )
+
+description = gl.eq_principle.strict_eq(vision_analysis)
+```
+
+Limit of images is just two
+
+## Response Validation
+
+Validate and process LLM responses:
+
+```python
+def validated_call():
+    response = gl.nondet.exec_prompt(
+        "Generate a number between 1 and 100",
+        response_format='json'
+    )
+
+    # Validate the response
+    if response['number'] < 1 or response['number'] > 100:
+        raise Exception(f"Invalid number: {response['number']}")
+
+    return response['number']
+
+result = gl.eq_principle.strict_eq(validated_call)
+```

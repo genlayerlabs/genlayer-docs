@@ -1,0 +1,43 @@
+# Web Access
+
+## HTTP Requests
+
+Send data to external services:
+
+```python
+def post_request():
+    response = gl.nondet.web.request(
+        webhook_url,
+        method='POST',
+        body={}
+    )
+    return response.status_code
+
+status_code = gl.eq_principle.strict_eq(post_request)
+```
+
+## Web Rendering
+
+Render web page and extract content:
+
+```python
+def render_page():
+    # Render HTML content
+    html_content = gl.nondet.web.render(url, mode='html')
+    return html_content
+
+page_html = gl.eq_principle.strict_eq(render_page)
+```
+
+## Screenshot Capture
+
+Take screenshots of web pages:
+
+```python
+def take_screenshot():
+    # Capture page as image
+    screenshot = gl.nondet.web.render(url, mode='screenshot')
+    return screenshot
+
+image_data = gl.eq_principle.strict_eq(take_screenshot)
+```
