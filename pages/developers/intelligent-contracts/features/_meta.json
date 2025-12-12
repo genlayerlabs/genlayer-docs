@@ -1,0 +1,15 @@
+{
+    "features": "Features",
+    "types": "Types",
+    "storage": "Storage",
+    "error-handling": "Error Handling",
+    "upgradability": "Upgradability",
+    "balances": "Balances",
+    "interacting-with-intelligent-contracts": "Interacting with Intelligent Contracts",
+    "interacting-with-evm-contracts": "Interacting with EVM Contracts",
+    "vector-storage": "Vector Storage",
+    "debugging": "Debugging",
+    "non-determinism": "Non-determinism",
+    "calling-llms": "Calling LLMs",
+    "web-access": "Web Access"
+}

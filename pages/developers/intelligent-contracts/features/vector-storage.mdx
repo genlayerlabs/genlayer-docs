@@ -1,0 +1,54 @@
+# Vector Storage
+
+## Vector Database
+
+Store and query high-dimensional vectors using VecDB:
+
+```python
+import numpy as np
+import genlayer_embeddings as gle
+
+class Contract(gl.Contract):
+    # VecDB[dtype, dimensions, metadata_type, distance_metric]
+    vectors: gle.VecDB[np.float32, typing.Literal[5], str, gle.EuclideanDistanceSquared]
+
+    @gl.public.write
+    def store_vector(self, data: list[float], label: str):
+        vector = np.array(data, dtype=np.float32)
+        self.vectors.insert(vector, label)
+```
+
+## K-Nearest Neighbors
+
+Find similar vectors using KNN search:
+
+```python
+@gl.public.view
+def find_similar(self, query: list[float], k: int):
+    query_vector = np.ones(5, dtype=np.float32)
+    results = list(self.vectors.knn(query_vector, k))
+    return results
+```
+
+## Text Embeddings
+
+Generate embeddings from text using sentence transformers:
+
+```python
+@gl.public.write
+def embed_text(self, text: str):
+    def generate_embedding():
+        embeddings_generator = gle.SentenceTransformer('all-MiniLM-L6-v2')
+        return embeddings_generator(text)
+
+    # Run in non-deterministic context
+    embedding = gl.eq_principle.strict_eq(generate_embedding)
+    return embedding.sum()  # Process the embedding
+```
+
+## Distance Metrics
+
+Choose appropriate distance metrics for your use case:
+- `gle.EuclideanDistanceSquared` - For general similarity
+- `gle.CosineDistance` - For semantic similarity
+- `gle.ManhattanDistance` - For sparse data

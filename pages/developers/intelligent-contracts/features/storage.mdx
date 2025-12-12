@@ -1,0 +1,115 @@
+import { Callout } from "nextra-theme-docs";
+
+# Storage
+
+## Basic Types
+
+Store persistent data using class attributes:
+
+```python
+class Contract(gl.Contract):
+    counter: u32
+    name: str
+    active: bool
+
+    @gl.public.write
+    def set_data(self, count: u32, new_name: str):
+        self.counter = count
+        self.name = new_name
+```
+
+## DynArray
+
+Use `DynArray[T]` instead of `list[T]` for persistent arrays:
+
+```python
+class Contract(gl.Contract):
+    items: DynArray[str]
+    scores: DynArray[u32]
+
+    @gl.public.write
+    def add_item(self, item: str):
+        self.items.append(item)
+
+    @gl.public.view
+    def get_all_items(self):
+        return [item for item in self.items]
+```
+
+## TreeMap
+
+Use `TreeMap[K, V]` instead of `dict[K, V]` for persistent mappings:
+
+```python
+class Contract(gl.Contract):
+    balances: TreeMap[str, u32]
+
+    @gl.public.write
+    def update_balance(self, user: str, amount: u32):
+        self.balances[user] = amount
+
+    @gl.public.view
+    def get_balance(self, user: str):
+        return self.balances.get(user, u32(0))
+```
+
+## Storage Classes
+
+Create custom storage types with `@allow_storage`:
+
+```python
+@allow_storage
+@dataclass
+class UserData:
+    scores: DynArray[u32]
+    username: str
+
+class Contract(gl.Contract):
+    users: DynArray[UserData]
+
+    @gl.public.write
+    def add_user(self, name: str):
+        user = UserData(scores=DynArray[u32](), username=name)
+        self.users.append(user)
+```
+
+## Memory Operations
+
+Copy storage objects to memory for non-deterministic operations:
+
+```python
+@gl.public.write
+def process_user(self):
+    storage_user = self.users[0]
+    memory_user = gl.storage.copy_to_memory(storage_user)
+
+    def nondet_operation():
+        return f"User: {memory_user.username}"
+
+    result = gl.eq_principle.strict_eq(nondet_operation)
+```
+
+<Callout type="warning" emoji="🏗️">
+    In future reading from storage directly in non-deterministic blocks will be supported.
+</Callout>
+
+## Type Restrictions
+
+- Use `DynArray[T]` instead of `list[T]`
+- Use `TreeMap[K, V]` instead of `dict[K, V]`
+- Use sized integers (`u32`, `i64`) instead of `int`
+- Use `bigint` only for arbitrary precision needs
+- All generic types must be fully specified
+
+## Default Values
+
+Storage is zero-initialized:
+| Type       | Default value |
+|------------|---------------|
+| `u*`, `i*` | `0`           |
+| `bigint`   | `0`           |
+| `bool`     | `False`       |
+| `float`    | `+0.0`        |
+| `str`      | `""`          |
+| `DynArray` | `[]`          |
+| `TreeMap`  | `{}`          |

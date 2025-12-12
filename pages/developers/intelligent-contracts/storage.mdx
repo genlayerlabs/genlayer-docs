@@ -197,7 +197,7 @@ memory_user = gl.storage.copy_to_memory(storage_user)
 def my_nondet_function():
     # Storage objects cannot be used directly in nondet blocks
     # print('storage: not accessible', storage_user)  # Error - storage not accessible!
-    
+
     # But memory objects work fine
     print('copied out: ok', memory_user)  # Works!
     return str(memory_user)  # String conversion also works with memory objects

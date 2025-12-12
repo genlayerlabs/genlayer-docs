@@ -1,0 +1,45 @@
+# Error Handling
+
+## VMErrors
+
+```python
+if invalid_condition:
+    exit(1)  # Terminates with VMError
+```
+
+## User Errors
+
+Raise immediate user errors to interrupt execution of current sub-vm:
+
+```python
+gl.advanced.user_error_immediate("Transaction not allowed")
+```
+
+## Try-Catch with UserError
+
+Handle user errors within contract execution:
+
+```python
+class Contract(gl.Contract):
+    @gl.public.write
+    def safe_operation(self):
+        try:
+            gl.advanced.user_error_immediate("Something went wrong")
+        except gl.vm.UserError as e:
+            print('Handled error:', e.message)
+```
+
+## Python Exceptions
+
+Standard Python exceptions in non-deterministic contexts:
+
+```python
+class Contract(gl.Contract):
+    @gl.public.write
+    def risky_operation(self):
+        def do_something():
+            raise Exception("Operation failed")
+
+        # Exception will be handled by consensus mechanism
+        gl.eq_principle.strict_eq(do_something)
+```
