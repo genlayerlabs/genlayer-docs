@@ -1,0 +1,54 @@
+import { Callout } from "nextra-theme-docs";
+
+# Interacting with EVM Contracts
+
+## Contract Interface Definition
+
+Define EVM contract interfaces using decorators:
+
+```python
+@gl.evm.contract_interface
+class TokenContract:
+    class View:
+        def balance_of(self, owner: Address) -> u256: ...
+        def total_supply(self) -> u256: ...
+
+    class Write:
+        def transfer(self, to: Address, amount: u256) -> bool: ...
+        def approve(self, spender: Address, amount: u256) -> bool: ...
+```
+
+## Calling EVM Contracts
+
+Interact with EVM contracts through defined interfaces:
+
+```python
+token_address: Address = ...
+# Read from EVM contract
+token = TokenContract(token_address)
+supply = token.view().total_supply()
+
+# Write to EVM contract
+token.emit().transfer(receiver_address, u256(100))
+```
+
+## Balance Access
+
+Access EVM contract balances directly:
+
+```python
+evm_contract = TokenContract(address)
+balance = evm_contract.balance  # Get contract's ETH balance
+```
+
+## Message Emission
+
+Send messages to EVM contracts:
+
+```python
+TokenContract(token_address).emit().approve(spender, amount)
+```
+
+<Callout type="info">
+  Messages to EVM contract can be emitted only on finality
+</Callout>

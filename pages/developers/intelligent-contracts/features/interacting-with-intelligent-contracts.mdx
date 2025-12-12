@@ -1,0 +1,52 @@
+# Interacting with Intelligent Contracts
+
+## Getting Contract References
+
+Access other contracts by their address:
+
+```python
+contract_address = Address("0x03FB09251eC05ee9Ca36c98644070B89111D4b3F")
+
+dynamically_typed_contract = gl.get_contract_at(contract_address)
+
+@gl.contract_interface
+class GenLayerContractIface:
+    class View:
+        def method_name(self, a: int, b: str): ...
+
+    class Write:
+        pass
+
+statically_typed_contract = GenLayerContractIface(contract_address)
+```
+
+Both approaches result in the same runtime value,
+however the statically typed approach provides type checking and autocompletion in IDEs.
+
+## Calling View Methods
+
+Call read-only methods on other contracts:
+
+```python
+addr: Address = ...
+other = gl.get_contract_at(addr)
+result = other.view().get_token_balance()
+```
+
+## Emitting Messages
+
+Send asynchronous messages to other contracts:
+
+```python
+other = gl.get_contract_at(addr)
+other.emit(on='accepted').update_status("active")
+other.emit(on='finalized').update_status("active")
+```
+
+## Deploying New Contracts
+
+```python
+gl.deploy_contract(code=contract_code)
+salt: u256 = u256(1) # not zero
+child_address = gl.deploy_contract(code=contract_code, salt=salt)
+```
