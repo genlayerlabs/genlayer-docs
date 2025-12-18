@@ -277,10 +277,9 @@ node:
   # Mode can be "validator" or "full".
   # Default value is "validator".
   mode: "validator"
-  # Address of your ValidatorWallet contract (from wizard output or validator-info)
-  # Run: genlayer staking validator-info to find this
+  # Address of the ValidatorWallet contract (required for validator mode)
   validatorWalletAddress: ""
-  # Address of your operator key (the key imported into this node)
+  # Address of the operator that owns the ValidatorWallet
   operatorAddress: ""
   admin:
     port: 9155
@@ -331,7 +330,7 @@ merkletree:
 
 # metrics configuration
 metrics:
-   interval: "15s"  # Default interval for all collectors (can be overridden per collector)
+  interval: "15s"  # Default interval for all collectors (can be overridden per collector)
 #   collectors:
 #     node:
 #       enabled: true
