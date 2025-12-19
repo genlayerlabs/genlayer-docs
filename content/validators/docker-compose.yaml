@@ -10,12 +10,9 @@ services:
     ports:
       - "${WEBDRIVER_PORT:-4444}:4444"
     restart: unless-stopped
-
   genlayer-node:
-    image: yeagerai/genlayer-node:${NODE_VERSION:-v0.4.0}
-    entrypoint: [
-      "sh", "-c", "/app/bin/genlayernode run --password ${NODE_PASSWORD:-12345678}",
-    ]
+    image: yeagerai/genlayer-node:${NODE_VERSION:-latest}
+    entrypoint: ["sh", "-c", "/app/bin/genlayernode run --password ${NODE_PASSWORD:-12345678}"]
     container_name: genlayer-node
     restart: unless-stopped
     env_file:

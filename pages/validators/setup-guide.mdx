@@ -174,6 +174,7 @@ Below are the **initial** recommended system requirements. These guidelines may 
    You should see a list like this
 
    ```sh
+      v0.4.1
       v0.4.0
       v0.3.11
       v0.3.10
@@ -199,7 +200,7 @@ Below are the **initial** recommended system requirements. These guidelines may 
 
 2. Download the packaged application
    ```sh
-   export version=v0.4.0 # set your desired version here
+   export version=v0.4.1 # set your desired version here
    wget https://storage.googleapis.com/gh-af/genlayer-node/bin/amd64/${version}/genlayer-node-linux-amd64-${version}.tar.gz
    ```
 3. Extract the node software
@@ -218,6 +219,12 @@ Below are the **initial** recommended system requirements. These guidelines may 
    ```sh
    python3 ./third_party/genvm/bin/setup.py
    ```
+It does following:
+
+- Downloads missing runners if any
+- Verifies runners hashes
+- Sets `elf`/`mach-o` interpreter for all binaries (modules, genvm)
+- Rust precompilation for built-in runners
 
 ### Configuration
 
@@ -234,18 +241,16 @@ You can use the following example configuration. **Note:** For most users, you w
 ```yaml
 # rollup configuration
 rollup:
-  genlayerchainrpcurl: "TODO: Set your GenLayer Chain ZKSync HTTP RPC URL here" # ZKSync RPC URL
-  genlayerchainwebsocketurl: "TODO: Set your GenLayer Chain ZKSync WebSocket RPC URL here" # ZKSync WebSocket URL
+  genlayerchainrpcurl: "TODO: Set your GenLayer Chain ZKSync HTTP RPC URL here" # GenLayer Chain RPC URL
+  genlayerchainwebsocketurl: "TODO: Set your GenLayer Chain ZKSync WebSocket RPC URL here" # GenLayer Chain WebSocket URL
 # consensus contracts configuration
 consensus:
   # Asimov - Phase 4
   contractmainaddress: "0x67fd4aC71530FB220E0B7F90668BAF977B88fF07" # ConsensusMain Smart Contract Address
   contractdataaddress: "0xB6E1316E57d47d82FDcEa5002028a554754EF243" # ConsensusData Smart Contract Address
   genesis: 4632386 # (Optional) Genesis block number for this consensus deployment. If not provided, it will be auto-detected by searching for the first log from the ConsensusMain contract.
-
 # data directory
 datadir: "./data/node"
-
 # logging configuration
 logging:
   level: "INFO"
@@ -268,7 +273,6 @@ logging:
     localtime: false
     # compress: determines if the rotated log files should be compressed using gzip
     compress: true
-
 # node configuration
 node:
   # Uncomment if the ID of the node is different from the validator wallet address.
@@ -277,10 +281,9 @@ node:
   # Mode can be "validator" or "full".
   # Default value is "validator".
   mode: "validator"
-  # Address of your ValidatorWallet contract (from wizard output or validator-info)
-  # Run: genlayer staking validator-info to find this
+  # Address of the ValidatorWallet contract (required for validator mode)
   validatorWalletAddress: ""
-  # Address of your operator key (the key imported into this node)
+  # Address of the operator that owns the ValidatorWallet
   operatorAddress: ""
   admin:
     port: 9155
@@ -289,10 +292,10 @@ node:
     endpoints:
       # Group-level configuration (enables/disables all methods in a group)
       groups:
-        genlayer: true         # gen_* methods (call, getContractSchema, etc.)
-        genlayer_debug: true   # gen_dbg_* methods (ping, load_test, trie)
-        ethereum: true         # eth_* proxy methods
-        zksync: true           # zks_* proxy methods
+        genlayer: true # gen_* methods (call, getContractSchema, etc.)
+        genlayer_debug: true # gen_dbg_* methods (ping, load_test, trie)
+        ethereum: true # eth_* proxy methods
+        zksync: true # zks_* proxy methods
       # Method-level configuration (overrides group settings for specific methods)
       methods:
         gen_call: true
@@ -312,14 +315,12 @@ node:
       metrics: true # Enable metrics endpoint
       health: true # Enable health endpoint
       balance: true # Enable balance endpoint
-
 # genvm configuration
 genvm:
   root_dir: ./third_party/genvm
   start_manager: true # if true node will start genvm manager itself
   manager_url: http://127.0.0.1:3999
   permits: # Leave empty for autodiscovery, put a number for updating genvm permits on startup
-
 # Advanced configuration
 merkleforest:
   maxdepth: 16
@@ -328,10 +329,9 @@ merkleforest:
 merkletree:
   maxdepth: 16
   dbpath: "./data/node/merkle/tree/"
-
 # metrics configuration
 metrics:
-   interval: "15s"  # Default interval for all collectors (can be overridden per collector)
+  interval: "15s" # Default interval for all collectors (can be overridden per collector)
 #   collectors:
 #     node:
 #       enabled: true
@@ -418,19 +418,10 @@ Note environment variable names for LLM API keys (e.g., `HEURISTKEY`, `COMPUT3KE
 
 This is the configuration of webdriver module that enables the GenVM to access the internet. You should not need to modify this.
 
-#### `genvm.yaml`
+#### `genvm-manager.yaml`
 
-This is the configuration of the GenVM itself, such as how many threads it can use and what are the addresses of various modules. You should not need to edit this file either.
-
-#### Precompilation (Recommended)
-
-Run precompilation of pre-delivered wasm modules (this step is optional but **highly** recommended for improved performance):
-
-```bash
-./third_party/genvm/bin/genvm precompile
-```
-
-Precompilation should be re-run after switching to a different node release.
+This is the configuration of the GenVM manager. You should not need to modify this. However, if you are running the node on
+macos (natively), you may want to set `permits` to some large value, as auto-detection is not supported there yet, such as `32`.
 
 #### Greyboxing LLMs
 
@@ -545,13 +536,13 @@ Once you have configured everything, you are ready to start the node.
     ```sh
     # For Heurist
     export HEURISTKEY='your_heurist_api_key'
-    
+
     # For Comput3
     export COMPUT3KEY='your_comput3_api_key'
-    
+
     # For io.net
     export IOINTELLIGENCE_API_KEY='your_ionet_api_key'
-    
+
     # For other providers, use the appropriate environment variable name
     ```
 
@@ -621,12 +612,9 @@ services:
     ports:
       - "${WEBDRIVER_PORT:-4444}:4444"
     restart: unless-stopped
-
   genlayer-node:
-    image: yeagerai/genlayer-node:${NODE_VERSION:-v0.4.0}
-    entrypoint: [
-      "sh", "-c", "/app/bin/genlayernode run --password ${NODE_PASSWORD:-12345678}",
-    ]
+    image: yeagerai/genlayer-node:${NODE_VERSION:-latest}
+    entrypoint: ["sh", "-c", "/app/bin/genlayernode run --password ${NODE_PASSWORD:-12345678}"]
     container_name: genlayer-node
     restart: unless-stopped
     env_file:
