@@ -2,14 +2,25 @@
 
 ### New features
 
+- Add show and list subcommands for account management
+- Split authentication credentials for Prometheus and Loki
 - Add IsPrimed health check for unprimed validators
+- Add primed state and warning for unprimed validators
 
 ### Misc
 
+- Refactor txcalldata decoding to a new encoding package
+- Remove unused `pkg/cryptoutils/address.go`
+- Update deployment configuration options for network and cleanup
 - Refactor gas estimator
 
 ### Bug fixes
 
+- Implement indefinite retry for validator priming until primed
+- Implement health check and timeout handling for GenVM manager
+- Fix undetermined transaction rotations when ProcessIdleness
+- Improve message handling to prevent dropped events
+- Add GenVM contracts cache and enhance sync progress logging
 - Fix sync filtering process
 - Improve messages around genlayerRPC chain connectivity
 - Stop retrying activation after transaction is activated
