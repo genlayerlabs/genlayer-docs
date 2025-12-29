@@ -11,6 +11,12 @@ import { Callout } from "nextra-theme-docs";
   A fully Zero-downtime upgrade procedure is coming in a future update. 
 </Callout>
 
+## General Procedure
+
+1. **Download the new package and extract into a fresh folder** - Always use a clean directory for the new version.
+2. **Override with your custom config** - Configure the files in the new installation as you did when [setting up your node](/validators/setup-guide). Example: `.env` and `config.yaml`. You can refer to your previous settings. Avoid directly copying these files, as new versions may include updated default configurations.
+3. **Copy the contents of your old data folder** - The `data/` folder is the stateful directory used by the node, containing the database and keystore. This step is not needed if your data folder is located outside of the project directory.
+
 ## v0.3.x → v0.4 (Breaking Change)
 
 `v0.4` switches to a new consensus deployment with staking. For this reason, the validator must be set up from scratch without reusing the old database stored at `data/node/genlayer.db`.

@@ -408,9 +408,10 @@ The GenVM configuration files are located at `third_party/genvm/config/`
 
 This is the configuration file of the LLM module. In this file you can set up and configure various LLM providers, as well as the system prompts of your validator.
 
-You can turn on and off various LLMs by setting the `enabled` field to `false`.
+You should not need to modify this in general.
 
-At this stage, select one LLM and set all other to disabled.
+However, from here you can:
+- turn on and off various LLMs by setting the `enabled` field to `false`: By default they all come enabled for you to use. You will get warnings in the logs for each one that's enabled and not configured. Disabling non used LLM providers will hide those warnings
 
 Note environment variable names for LLM API keys (e.g., `HEURISTKEY`, `COMPUT3KEY`, `IOINTELLIGENCE_API_KEY`). You will need to ensure the appropriate key is correctly set before [running the node](#running-the-node).
 
