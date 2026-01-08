@@ -91,16 +91,16 @@ merkletree:
 # metrics configuration
 metrics:
   interval: "15s" # Default interval for all collectors (can be overridden per collector)
-#   collectors:
-#     node:
-#       enabled: true
-#       # interval: "30s"  # Optional: Override default interval for this collector
-#     genvm:
-#       enabled: true
-#       # interval: "20s"  # Optional: Override default interval for this collector
-#       # enable_simulated_traffic: false  # Optional: Enable simulated network traffic metrics for GenVM processes (default: false)
-#       # simulated_rx_bytes_per_process: 1024  # Optional: Simulated received bytes per process per interval (default: 1024)
-#       # simulated_tx_bytes_per_process: 512   # Optional: Simulated transmitted bytes per process per interval (default: 512)
-#     webdriver:
-#       enabled: true
-#       # interval: "60s"  # Optional: Override default interval for this collector
+  collectors:
+    node:
+      enabled: true
+      # interval: "30s"  # Optional: Override default interval for this collector
+    genvm:
+      enabled: true
+      # interval: "20s"  # Optional: Override default interval for this collector
+      # enable_simulated_traffic: false  # Optional: Enable simulated network traffic metrics for GenVM processes (default: false)
+      # simulated_rx_bytes_per_process: 1024  # Optional: Simulated received bytes per process per interval (default: 1024)
+      # simulated_tx_bytes_per_process: 512   # Optional: Simulated transmitted bytes per process per interval (default: 512)
+    webdriver:
+      enabled: true
+      # interval: "60s"  # Optional: Override default interval for this collector
