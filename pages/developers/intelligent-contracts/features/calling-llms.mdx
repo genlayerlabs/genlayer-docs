@@ -1,3 +1,5 @@
+import { Callout } from 'nextra-theme-docs'
+
 # Calling LLMs
 
 ## Basic LLM Calls
@@ -49,7 +51,10 @@ def vision_analysis():
 description = gl.eq_principle.strict_eq(vision_analysis)
 ```
 
-Limit of images is just two
+<Callout type="warning">
+    Limit of images is two
+</Callout>
+
 
 ## Response Validation
 

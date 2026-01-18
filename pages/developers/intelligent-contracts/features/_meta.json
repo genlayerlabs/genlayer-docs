@@ -1,6 +1,5 @@
 {
     "features": "Features",
-    "types": "Types",
     "storage": "Storage",
     "error-handling": "Error Handling",
     "upgradability": "Upgradability",
@@ -10,6 +9,7 @@
     "vector-storage": "Vector Storage",
     "debugging": "Debugging",
     "special-methods": "Special Methods",
+    "random": "Random",
     "non-determinism": "Non-determinism",
     "calling-llms": "Calling LLMs",
     "web-access": "Web Access"
