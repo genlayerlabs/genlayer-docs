@@ -1,0 +1,45 @@
+import { Callout } from "nextra-theme-docs";
+
+# Balances
+
+## Getting Contract Balance
+
+Access your contract's balance using `self.balance` within contract methods:
+
+```python
+class Contract(gl.Contract):
+    @gl.public.view
+    def get_balance(self):
+        return self.balance  # Shows contract's current balance
+```
+
+## Getting Another Contract's Balance
+
+Get any contract's balance by address:
+
+```python
+other_contract = gl.get_contract_at(contract_address)
+print(other_contract.balance)
+```
+
+## Transferring Funds
+
+Transfer funds from sender to current contract:
+
+```python
+other_contract = gl.get_contract_at(gl.message.sender_address)
+other_contract.emit_transfer(value=u256(5))
+other_contract.emit(value=u256(5), on='finalized').transfer(Address("0x..."))
+```
+
+## Balance Context
+
+Balance behavior depends on execution context:
+- In `write` methods: `self.balance` reflects actual contract balance after state changes
+- In `view` methods: Balance shows current state without modifications
+- Transfers can only occur in write context
+
+<Callout type="warning">
+  If message is emitted on acceptance and previous transaction gets successfully appealed after the emit,
+  the balance will be decremented nonetheless
+</Callout>
