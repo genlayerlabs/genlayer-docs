@@ -192,7 +192,7 @@ Below are the **initial** recommended system requirements. These guidelines may 
 
 2. Download the packaged application
    ```sh
-   export version=v0.4.3 # set your desired version here
+   export version=v0.4.4 # set your desired version here
    wget https://storage.googleapis.com/gh-af/genlayer-node/bin/amd64/${version}/genlayer-node-linux-amd64-${version}.tar.gz
    ```
 3. Extract the node software
@@ -620,6 +620,7 @@ services:
       - ${NODE_CONFIG_PATH:-./configs/node/config.yaml}:/app/configs/node/config.yaml:ro
       - ${NODE_DATA_PATH:-./data}:/app/data
       - ./genvm-module-web-docker.yaml:/app/third_party/genvm/config/genvm-module-web.yaml
+      - /var/run/docker.sock:/var/run/docker.sock:ro # required for webdriver metrics collection
     security_opt:
       - no-new-privileges:true
     logging:

@@ -1,0 +1,25 @@
+## v0.4.4
+
+### New features
+
+- Improve logging with context-aware tracing and cleaner console output
+- Refactor ZkSync client to split RPC and WSS connections for better reliability
+- Move storage writing to genvm for improved performance
+
+### Bug fixes
+
+- Skip priming check for full nodes
+- Add Docker socket mount for webdriver metrics collection in docker-compose configurations
+- Prevent incorrect sync state by updating blocksBehind calculation
+- Fix memory leak from threads package
+- Fix memory leak in consensus processing
+- Fix bug in latest transaction with effect calculation
+- Fix wallet mutex using read lock instead of write lock when unlocking accounts
+
+### Misc
+
+- Fix signer for full nodes
+- Improve logs for http servers
+- Improve signer initialization for faster and more reliable transaction signing
+- Add logs for previous activator on idleness checks
+- Migrate zksync-go to go-ethereum
