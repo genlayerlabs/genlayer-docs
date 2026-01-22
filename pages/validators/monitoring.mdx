@@ -52,7 +52,7 @@ metrics:
 
 To check if metrics are working correctly:
 
-```bash
+```bash copy
 # Get all available metrics
 curl http://localhost:9153/metrics
 
@@ -268,7 +268,7 @@ prometheus.scrape "alloy" {
 
 4. **Start Alloy**:
 
-```bash
+```bash copy
 docker compose --profile monitoring up -d
 ```
 
@@ -277,11 +277,11 @@ docker compose --profile monitoring up -d
 - Open Alloy UI: http://localhost:12345/targets — the "genlayer_node" scrape target should show status **UP**.
 - Check logs for successful sends:
 
-```bash
+```bash copy
 docker logs genlayer-node-alloy | grep "sent batch"
 ```
 
-```bash
+```bash copy
 docker logs genlayer-node-alloy | grep "remote_write"
 ```
 
@@ -293,7 +293,7 @@ Look for messages indicating successful batch sending (no error codes like 401, 
 Troubleshooting
 - No local metrics:
 
-```bash
+```bash copy
 curl http://localhost:9153/metrics
 ```
 
@@ -302,6 +302,6 @@ Authentication errors (401/403): Double-check MONITORING_USERNAME and MONITORING
 No data pushed: Ensure URLs in .env have no trailing slash.
 Help: Share Alloy logs
 
-```bash
+```bash copy
 docker logs genlayer-node-alloy
 ```
