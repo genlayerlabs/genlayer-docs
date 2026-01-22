@@ -114,50 +114,7 @@ One full node can be shared between multiple validators. The optimal validator-t
 
 ### System Requirements
 
-Below are the **initial** recommended system requirements. These guidelines may change as the network grows and evolves.
-
-#### RAM
-
-- **Recommended:** 16 GB
-- **Why:**
-  - GenLayer's _genvm_ can spawn multiple Sub-VMs for contract calls and non-deterministic blocks.
-  - Each Sub-VM can consume up to ~4 GB of RAM for storage.
-
-#### CPU
-
-- **Recommended:** Modern multi-core processor with at least 8 cores/16 threads
-
-#### Architecture
-
-- **Recommended:** `AMD64`
-- `ARM64` is not supported at this time
-
-#### Storage
-
-- **Recommended Disk Space:** 128 GB+
-- **Preferred Type:** SSD or NVMe (M.2)
-
-#### Network
-
-- 100 Mbps connection
-- **Recommended:**: 1 Gbps+
-
-#### GPU (Optional)
-
-- GPU is **Not Required**
-- If you want to run LLMs locally, you will need to select appropriate hardware (typically a CUDA-compatible GPU with sufficient VRAM for the model you intend to use)
-
-<Callout emoji="⚠️">
-  These requirements are a starting point. As GenLayer evolves and usage
-  patterns change (e.g., more complex AI-driven Intelligent Contracts), the
-  recommended hardware may change.
-</Callout>
-
-#### Software
-
-- Operating System - 64-bit Linux (Ubuntu, Debian, CentOS, etc.)
-- `docker` - for running the WebDriver container
-- `python3`, `python3-pip` and `python3-venv` for GenVM setup
+See the [System Requirements](/validators/system-requirements) page for detailed hardware and software specifications.
 
 ### Setup
 
