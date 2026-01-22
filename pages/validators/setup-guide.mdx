@@ -28,7 +28,7 @@ The wizard outputs all three addresses at the end. Save them - you'll need the V
 
 - **Node.js** (v18 or higher)
 - **GenLayer CLI** - Install the latest version:
-  ```bash
+  ```bash copy
   npm install -g genlayer
   ```
 - **GEN tokens** - You need at least **42,000 GEN** for the minimum self-stake requirement
@@ -37,7 +37,7 @@ The wizard outputs all three addresses at the end. Save them - you'll need the V
 
 The easiest way to create your validator wallet is using the interactive wizard:
 
-```bash
+```bash copy
 genlayer staking wizard
 ```
 
@@ -63,13 +63,13 @@ The wizard creates and exports an operator keystore file for you to transfer to 
 
 After completing the wizard, verify your status:
 
-```bash
+```bash copy
 genlayer staking validator-info --validator 0xYourValidatorWallet...
 ```
 
 ### Managing Your Validator
 
-```bash
+```bash copy
 # Add more stake
 genlayer staking validator-deposit --amount 1000gen
 
@@ -124,8 +124,8 @@ See the [System Requirements](/validators/system-requirements) page for detailed
 
    You can use this command to list available versions:
 
-   ```sh
-   curl -s "https://storage.googleapis.com/storage/v1/b/gh-af/o?prefix=genlayer-node/bin/amd64" | grep -o '"name": *"[^"]*"' | sed -n 's/.*\/\(v[^/]*\)\/.*/\1/p' | sort -ru
+   ```sh copy
+   curl -s "https://storage.googleapis.com/storage/v1/b/gh-af/o?prefix=genlayer-node/bin/amd64" | grep -o '"name": *"[^"]*"' | sed -n 's/.*\/\(v[^/]*\)\/.*/\1/p' | sort -ru | head -n 5
    ```
 
    You should see a list like this
@@ -149,24 +149,24 @@ See the [System Requirements](/validators/system-requirements) page for detailed
    Typically, you will want to run the latest version
 
 2. Download the packaged application
-   ```sh
+   ```sh copy
    export version=v0.4.4 # set your desired version here
    wget https://storage.googleapis.com/gh-af/genlayer-node/bin/amd64/${version}/genlayer-node-linux-amd64-${version}.tar.gz
    ```
 3. Extract the node software
-   ```sh
+   ```sh copy
    mkdir -p ${version}
    tar -xzvf `genlayer-node-linux-amd64-${version}.tar.gz` -C `./${version}`
    ```
 4. Change the directory
 
-   ```sh
+   ```sh copy
    cd `./${version}`
    ```
 
 5. Run Genvm setup
 
-   ```sh
+   ```sh copy
    python3 ./third_party/genvm/bin/setup.py
    ```
 It does following:
@@ -188,7 +188,7 @@ The file needs to be located at `configs/node/config.yaml`
 
 You can use the following example configuration. **Note:** For most users, you will only need to modify the `zksyncurl` and `zksyncwebsocketurl` values below.
 
-```yaml
+```yaml copy
 # rollup configuration
 rollup:
   genlayerchainrpcurl: "TODO: Set your GenLayer Chain ZKSync HTTP RPC URL here" # GenLayer Chain RPC URL
@@ -325,7 +325,7 @@ Any configuration value in `config.yaml` can be overridden using environment var
 
 **Usage example:**
 
-```sh
+```sh copy
 # Override the RPC port
 export GENLAYERNODE_CONSENSUS_CONTRACTMAINADDRESS="0x..."
 
@@ -402,7 +402,7 @@ The operator key is used by your node to sign blocks and perform validator dutie
 
 If you used `genlayer staking wizard`, it exported an operator keystore file. Transfer this file to your validator server and import it:
 
-```sh
+```sh copy
 ./bin/genlayernode account import \
   --password "your node password" \
   --passphrase "password you set when exporting from wizard" \
@@ -423,7 +423,7 @@ Account imported:
 
 You can also generate a new operator key directly on the server:
 
-```sh
+```sh copy
 ./bin/genlayernode account new -c $(pwd)/configs/node/config.yaml --setup --password "your secret password"
 ```
 
@@ -433,7 +433,7 @@ Then use this address when running the wizard on your local machine.
 
 To restore from a backup (e.g., after migrating to a new server):
 
-```sh
+```sh copy
 ./bin/genlayernode account import \
   --password "your node password" \
   --passphrase "your backup encryption passphrase" \
@@ -450,7 +450,7 @@ To restore from a backup (e.g., after migrating to a new server):
 
 After setting up your operator key, back it up securely:
 
-```sh
+```sh copy
 ./bin/genlayernode account export \
   --password "your node password" \
   --address "your operator address" \
@@ -484,7 +484,7 @@ Once you have configured everything, you are ready to start the node.
 
     Set the appropriate environment variable for your chosen LLM provider:
 
-    ```sh
+    ```sh copy
     # For Heurist
     export HEURISTKEY='your_heurist_api_key'
 
@@ -499,14 +499,14 @@ Once you have configured everything, you are ready to start the node.
 
 2.  Run the WebDriver container
 
-    ```sh
+    ```sh copy
     docker compose up -d # Starts the WebDriver needed by the GenVM web module
     ```
 
 3.  (Optional) Run two services (modules) in background (this is a crucial step for running _Intelligent_ contracts). This can be done automatically or manually.
     - To start them automatically in node configuration set `genvm.manage_modules` to `true`
     - To start them manually run
-      ```bash
+      ```bash copy
        ./third_party/genvm/bin/genvm-modules web & ./third_party/genvm/bin/genvm-modules llm &
       ```
 
@@ -520,7 +520,7 @@ Once you have configured everything, you are ready to start the node.
 
     To ensure your node is correctly configured, you can run the following command:
 
-    ```sh
+    ```sh copy
     ./bin/genlayernode doctor
     ```
 
@@ -532,7 +532,7 @@ Once you have configured everything, you are ready to start the node.
 
 5.  Run the node
 
-    ```sh
+    ```sh copy
     ./bin/genlayernode run -c $(pwd)/configs/node/config.yaml --password "your secret password" # The same password you used when creating the account
     ```
 
@@ -550,7 +550,7 @@ You can also run the GenLayer node using Docker and Docker Compose.
 
 1. Create a `docker-compose.yaml` file with the following content:
 
-```yaml
+```yaml copy
 services:
   webdriver-container:
     container_name: genlayer-node-webdriver
@@ -604,7 +604,7 @@ Create `genvm-module-web-docker.yaml` in the same directory as your `docker-comp
 - Copy the contents of `third_party/genvm/config/genvm-module-web.yaml` into `genvm-module-web-docker.yaml`.
 - Modify the `webdriver_host` configuration to use the service name `webdriver-container` instead of `localhost`:
 
-```yaml
+```yaml copy
 webdriver_host: http://webdriver-container:4444
 ```
 
@@ -621,7 +621,7 @@ The key difference:
   This `.env` file serves two purposes: it configures Docker Compose variables (like `NODE_VERSION`, `NODE_PASSWORD`, ports) and can also include `GENLAYERNODE_*` variables to override node configuration values as described in [Overriding Configuration with Environment Variables](#overriding-configuration-with-environment-variables).
 </Callout>
 
-```env
+```env copy
 # GenLayer Node Release Configuration
 
 # =============================================================================
@@ -662,7 +662,7 @@ or simply use the provided `docker-compose.yaml`, `.env.example` and the `genvm-
 
 To ensure your node is correctly configured, you can run the following command:
 
-```sh
+```sh copy
 source .env && docker run --rm --env-file ./.env \
   -v ${NODE_CONFIG_PATH:-./configs/node/config.yaml}:/app/configs/node/config.yaml \
   yeagerai/genlayer-node:${NODE_VERSION:-v0.4.0} \
@@ -671,7 +671,7 @@ source .env && docker run --rm --env-file ./.env \
 
 5. Start the services using Docker Compose:
 
-```sh
+```sh copy
 source .env && docker compose --profile node up -d
 ```
 
@@ -683,7 +683,7 @@ GenLayer validators expose comprehensive metrics that are ready for consumption 
 
 The metrics endpoint is exposed on the operations port (default: 9153) configured in your `config.yaml`:
 
-```yaml
+```yaml copy
 node:
   ops:
     port: 9153 # Metrics port
@@ -708,7 +708,7 @@ The validator exposes various metric collectors that can be individually configu
 
 You can customize metrics collection in your `config.yaml`:
 
-```yaml
+```yaml copy
 metrics:
   interval: "15s"  # Default collection interval
   collectors:
@@ -727,7 +727,7 @@ metrics:
 
 To check if metrics are working correctly:
 
-```bash
+```bash copy
 # Get all available metrics
 curl http://localhost:9153/metrics
 
@@ -776,7 +776,7 @@ To contribute your node's metrics and logs to the centralized GenLayer Foundatio
 
 1. **Create or update .env** (next to your docker-compose.yaml):
 
-```env
+```env copy
 # Grafana Cloud credentials (request from Foundation team in Discord)
 CENTRAL_MONITORING_URL=https://prometheus-prod-...grafana.net
 CENTRAL_LOKI_URL=https://logs-prod-...grafana.net
@@ -795,7 +795,7 @@ METRICS_SCRAPE_INTERVAL=15s
 
 2. **Add or verify the Alloy service in docker-compose.yaml (copy if missing):
 
-```yaml
+```yaml copy
 alloy:
   image: grafana/alloy:latest
   container_name: genlayer-node-alloy
@@ -835,7 +835,7 @@ volumes:
 
 3. **Create or update ./alloy-config.river** (use the provided version — it handles logs and metrics forwarding):
 
-```river
+```river copy
 // Grafana Alloy Configuration for GenLayer Node Telemetry
 // Handles both log collection and metrics forwarding
 
@@ -943,7 +943,7 @@ prometheus.scrape "alloy" {
 
 4. **Start Alloy**:
 
-```bash
+```bash copy
 docker compose --profile monitoring up -d
 ```
 
@@ -952,11 +952,11 @@ docker compose --profile monitoring up -d
 - Open Alloy UI: http://localhost:12345/targets — the "genlayer_node" scrape target should show status **UP**.
 - Check logs for successful sends:
 
-```bash
+```bash copy
 docker logs genlayer-node-alloy | grep "sent batch"
 ```
 
-```bash
+```bash copy
 docker logs genlayer-node-alloy | grep "remote_write"
 ```
 
@@ -968,7 +968,7 @@ Look for messages indicating successful batch sending (no error codes like 401, 
 Troubleshooting
 - No local metrics:
 
-```bash
+```bash copy
 curl http://localhost:9153/metrics
 ```
 
@@ -977,6 +977,6 @@ Authentication errors (401/403): Double-check MONITORING_USERNAME and MONITORING
 No data pushed: Ensure URLs in .env have no trailing slash.
 Help: Share Alloy logs
 
-```bash
+```bash copy
 docker logs genlayer-node-alloy
 ```
