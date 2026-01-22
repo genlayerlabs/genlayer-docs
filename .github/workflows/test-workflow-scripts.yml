@@ -1,0 +1,58 @@
+name: Test Workflow Scripts
+
+on:
+  pull_request:
+    paths:
+      - '.github/scripts/**'
+      - '.github/actions/**'
+      - '.github/tests/**'
+      - '.github/workflows/sync-docs-from-node.yml'
+      - '.github/workflows/test-workflow-scripts.yml'
+  push:
+    branches:
+      - main
+    paths:
+      - '.github/scripts/**'
+      - '.github/actions/**'
+      - '.github/tests/**'
+      - '.github/workflows/sync-docs-from-node.yml'
+      - '.github/workflows/test-workflow-scripts.yml'
+  workflow_dispatch:
+
+jobs:
+  test-scripts:
+    name: Run Shell Script Tests
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Install bats-core
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y bats
+
+      - name: Install yq (required for sanitization scripts)
+        run: |
+          sudo wget -qO /usr/local/bin/yq https://github.com/mikefarah/yq/releases/latest/download/yq_linux_amd64
+          sudo chmod +x /usr/local/bin/yq
+
+      - name: Run version-utils tests
+        run: bats .github/tests/version-utils.bats
+
+      - name: Run sanitize-config tests
+        run: bats .github/tests/sanitize-config.bats
+
+      - name: Run sanitize-docker-compose tests
+        run: bats .github/tests/sanitize-docker-compose.bats
+
+      - name: Run sync tests
+        run: bats .github/tests/sync.bats
+
+      - name: Run aggregate-reports tests
+        run: bats .github/tests/aggregate-reports.bats
+
+      - name: Run all tests (summary)
+        run: |
+          echo "Running all bats tests..."
+          bats .github/tests/*.bats --tap
