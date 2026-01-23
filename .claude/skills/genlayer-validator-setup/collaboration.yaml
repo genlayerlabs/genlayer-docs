@@ -1,0 +1,95 @@
+# Collaboration: skill dependencies and composition
+
+name: genlayer-validator-setup
+version: "1.1.0"
+
+dependencies:
+  - name: nodejs
+    description: "Node.js v18+ must be installed"
+    check: "node --version | grep -E 'v(1[89]|[2-9][0-9])'"
+    install: "curl -fsSL https://deb.nodesource.com/setup_20.x | sudo -E bash - && sudo apt install -y nodejs"
+
+  - name: docker
+    description: "Docker must be installed and running"
+    check: "docker info"
+    install: "curl -fsSL https://get.docker.com | sh && sudo usermod -aG docker $USER"
+
+  - name: docker-compose
+    description: "Docker Compose must be available"
+    check: "docker compose version"
+    install: "Usually included with Docker. If missing, install docker-compose-plugin"
+
+  - name: python3
+    description: "Python 3 must be installed"
+    check: "python3 --version"
+    install: "sudo apt install -y python3"
+
+  - name: python3-pip
+    description: "pip3 must be installed for GenVM setup"
+    check: "pip3 --version"
+    install: "sudo apt install -y python3-pip"
+
+  - name: python3-venv
+    description: "python3-venv must be installed for GenVM setup"
+    check: "python3 -m venv --help"
+    install: "sudo apt install -y python3-venv"
+
+  - name: wget
+    description: "wget must be installed for downloading node binaries"
+    check: "wget --version"
+    install: "sudo apt install -y wget"
+
+  - name: tar
+    description: "tar must be installed for extracting archives"
+    check: "tar --version"
+    install: "sudo apt install -y tar"
+
+  - name: jq
+    description: "jq is recommended for JSON parsing"
+    check: "jq --version"
+    install: "sudo apt install -y jq"
+
+  - name: curl
+    description: "curl is needed for health checks and API calls"
+    check: "curl --version"
+    install: "sudo apt install -y curl"
+
+composition:
+  - when: "First-time validator setup"
+    sequence:
+      - genlayer-validator-setup
+
+  - when: "Setup with monitoring"
+    sequence:
+      - genlayer-validator-setup
+      - genlayer-validator-monitor
+
+  - when: "Update existing validator"
+    sequence:
+      - genlayer-validator-update
+
+triggers:
+  - pattern: "install node|setup validator|install validator"
+    suggest: genlayer-validator-setup
+  - pattern: "become validator|run validator|start validating"
+    suggest: genlayer-validator-setup
+  - pattern: "genlayer node|genlayer setup"
+    suggest: genlayer-validator-setup
+  - pattern: "42000 gen|stake gen|self stake"
+    suggest: genlayer-validator-setup
+  - pattern: "validator guide|validator tutorial"
+    suggest: genlayer-validator-setup
+  - pattern: "how to validate|how to run node"
+    suggest: genlayer-validator-setup
+  - pattern: "systemd service|create service|enable service"
+    suggest: genlayer-validator-setup
+  - pattern: "docker compose|docker deployment"
+    suggest: genlayer-validator-setup
+  - pattern: "import operator key|operator keystore"
+    suggest: genlayer-validator-setup
+  - pattern: "llm provider|llm api key|heurist|comput3|ionet"
+    suggest: genlayer-validator-setup
+  - pattern: "webdriver|web module"
+    suggest: genlayer-validator-setup
+  - pattern: "testnet asimov|testnet node"
+    suggest: genlayer-validator-setup

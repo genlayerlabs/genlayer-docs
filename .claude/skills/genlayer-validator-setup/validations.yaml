@@ -1,0 +1,252 @@
+validations:
+  # ============================================================================
+  # SYSTEM REQUIREMENTS
+  # ============================================================================
+
+  - id: architecture-amd64
+    name: "System is AMD64 architecture"
+    type: command
+    command: "uname -m | grep -E '^(x86_64|amd64)$' >/dev/null"
+    expect: "exit 0"
+    message: "Only AMD64 Linux is supported. ARM64 (including Apple Silicon) is not supported."
+
+  - id: ram-sufficient
+    name: "System has at least 16GB RAM"
+    type: command
+    command: "[ $(free -g | awk '/Mem:/ {print $2}') -ge 15 ]"
+    expect: "exit 0"
+    message: "At least 16GB RAM is required. Current system has insufficient memory."
+
+  - id: disk-sufficient
+    name: "System has at least 100GB free disk space"
+    type: command
+    command: "[ $(df -BG . | awk 'NR==2 {print $4}' | tr -d 'G') -ge 100 ]"
+    expect: "exit 0"
+    message: "At least 100GB free disk space is required."
+
+  # ============================================================================
+  # SOFTWARE PREREQUISITES
+  # ============================================================================
+
+  - id: nodejs-installed
+    name: "Node.js v18+ is installed"
+    type: command
+    command: "node --version 2>/dev/null | grep -E 'v(1[89]|[2-9][0-9])' >/dev/null"
+    expect: "exit 0"
+    message: "Node.js v18+ is required. Install with: curl -fsSL https://deb.nodesource.com/setup_20.x | sudo -E bash - && sudo apt install -y nodejs"
+
+  - id: npm-installed
+    name: "npm is installed"
+    type: command
+    command: "command -v npm >/dev/null 2>&1"
+    expect: "exit 0"
+    message: "npm is required. Usually installed with Node.js."
+
+  - id: docker-installed
+    name: "Docker is installed"
+    type: command
+    command: "command -v docker >/dev/null 2>&1"
+    expect: "exit 0"
+    message: "Docker is required. Install with: curl -fsSL https://get.docker.com | sh"
+
+  - id: docker-compose-installed
+    name: "Docker Compose is installed"
+    type: command
+    command: "docker compose version >/dev/null 2>&1"
+    expect: "exit 0"
+    message: "Docker Compose is required. Usually included with Docker."
+
+  - id: python3-installed
+    name: "Python 3 is installed"
+    type: command
+    command: "command -v python3 >/dev/null 2>&1"
+    expect: "exit 0"
+    message: "Python 3 is required. Install with: sudo apt install python3"
+
+  - id: python3-pip-installed
+    name: "pip3 is installed"
+    type: command
+    command: "command -v pip3 >/dev/null 2>&1"
+    expect: "exit 0"
+    message: "pip3 is required. Install with: sudo apt install python3-pip"
+
+  - id: python3-venv-installed
+    name: "python3-venv is installed"
+    type: command
+    command: "dpkg -l python3-venv >/dev/null 2>&1 || python3 -m venv --help >/dev/null 2>&1"
+    expect: "exit 0"
+    message: "python3-venv is required. Install with: sudo apt install python3-venv"
+
+  - id: wget-installed
+    name: "wget is installed"
+    type: command
+    command: "command -v wget >/dev/null 2>&1"
+    expect: "exit 0"
+    message: "wget is required. Install with: sudo apt install wget"
+
+  - id: jq-installed
+    name: "jq is installed"
+    type: command
+    command: "command -v jq >/dev/null 2>&1"
+    expect: "exit 0"
+    message: "jq is recommended. Install with: sudo apt install jq"
+
+  # ============================================================================
+  # GENLAYER CLI
+  # ============================================================================
+
+  - id: genlayer-cli-installed
+    name: "GenLayer CLI is installed"
+    type: command
+    command: "command -v genlayer >/dev/null 2>&1"
+    expect: "exit 0"
+    message: "GenLayer CLI not installed. Install with: npm install -g genlayer"
+
+  # ============================================================================
+  # DOCKER STATE
+  # ============================================================================
+
+  - id: docker-running
+    name: "Docker daemon is running"
+    type: command
+    command: "docker info >/dev/null 2>&1"
+    expect: "exit 0"
+    message: "Docker daemon is not running. Start with: sudo systemctl start docker"
+
+  - id: docker-no-sudo
+    name: "Current user can run Docker without sudo"
+    type: command
+    command: "docker ps >/dev/null 2>&1"
+    expect: "exit 0"
+    message: "Cannot run Docker without sudo. Run: sudo usermod -aG docker $USER, then log out and back in."
+
+  # ============================================================================
+  # POST-INSTALLATION CHECKS
+  # ============================================================================
+
+  - id: config-file-exists
+    name: "Config file exists"
+    type: command
+    command: "[ -f configs/node/config.yaml ]"
+    expect: "exit 0"
+    message: "Configuration file not found. Create configs/node/config.yaml"
+
+  - id: config-valid-yaml
+    name: "Config file is valid YAML"
+    type: command
+    command: "python3 -c 'import yaml; yaml.safe_load(open(\"configs/node/config.yaml\"))' 2>/dev/null"
+    expect: "exit 0"
+    message: "Configuration file has YAML syntax errors."
+
+  - id: genvm-binaries-exist
+    name: "GenVM binaries are downloaded"
+    type: command
+    command: "[ -f third_party/genvm/bin/genvm ] && [ -f third_party/genvm/bin/genvm-modules ]"
+    expect: "exit 0"
+    message: "GenVM binaries not found. Run: python3 ./third_party/genvm/bin/setup.py"
+
+  - id: llm-key-configured
+    name: "At least one LLM API key is set"
+    type: command
+    command: "[ -n \"${HEURISTKEY:-}\" ] || [ -n \"${COMPUT3KEY:-}\" ] || [ -n \"${IOINTELLIGENCE_API_KEY:-}\" ]"
+    expect: "exit 0"
+    message: "No LLM API key configured. Set HEURISTKEY, COMPUT3KEY, or IOINTELLIGENCE_API_KEY"
+
+  - id: webdriver-running
+    name: "WebDriver container is running"
+    type: command
+    command: "docker ps | grep -q webdriver"
+    expect: "exit 0"
+    message: "WebDriver container not running. Start with: docker compose up -d"
+
+  - id: node-health-ok
+    name: "Node health endpoint returns OK"
+    type: command
+    command: "curl -sf http://localhost:9153/health | grep -q 'up'"
+    expect: "exit 0"
+    message: "Node health check failed. Check if node is running."
+
+  # ============================================================================
+  # SYSTEMD SERVICE CHECKS
+  # ============================================================================
+
+  - id: systemd-service-exists
+    name: "Systemd service file exists"
+    type: command
+    command: "[ -f /etc/systemd/system/genlayer-node.service ]"
+    expect: "exit 0"
+    message: "Systemd service not installed. Create service file in /etc/systemd/system/"
+
+  - id: systemd-service-enabled
+    name: "Systemd service is enabled"
+    type: command
+    command: "systemctl is-enabled genlayer-node >/dev/null 2>&1"
+    expect: "exit 0"
+    message: "Service not enabled. Run: sudo systemctl enable genlayer-node"
+
+  - id: systemd-service-active
+    name: "Systemd service is active"
+    type: command
+    command: "systemctl is-active genlayer-node >/dev/null 2>&1"
+    expect: "exit 0"
+    message: "Service not running. Run: sudo systemctl start genlayer-node"
+
+  # ============================================================================
+  # WEBDRIVER HEALTH CHECKS
+  # ============================================================================
+
+  - id: webdriver-healthy
+    name: "WebDriver container is healthy"
+    type: command
+    command: "docker inspect --format='{{.State.Health.Status}}' genlayer-node-webdriver 2>/dev/null | grep -q 'healthy'"
+    expect: "exit 0"
+    message: "WebDriver not healthy. Check: docker logs genlayer-node-webdriver"
+
+  # ============================================================================
+  # ENVIRONMENT FILE CHECKS
+  # ============================================================================
+
+  - id: env-file-exists
+    name: ".env file exists"
+    type: command
+    command: "[ -f /opt/genlayer-node/.env ] || [ -f .env ]"
+    expect: "exit 0"
+    message: ".env file not found. Create from template."
+
+  - id: rpc-url-configured
+    name: "RPC URL is configured"
+    type: command
+    command: "grep -q 'GENLAYERNODE_ROLLUP_GENLAYERCHAINRPCURL' /opt/genlayer-node/.env 2>/dev/null || grep -q 'GENLAYERNODE_ROLLUP_GENLAYERCHAINRPCURL' .env 2>/dev/null"
+    expect: "exit 0"
+    message: "RPC URL not configured in .env file"
+
+  - id: validator-address-configured
+    name: "Validator address is configured"
+    type: command
+    command: "grep -q 'GENLAYERNODE_NODE_VALIDATORWALLETADDRESS' /opt/genlayer-node/.env 2>/dev/null || grep -q 'GENLAYERNODE_NODE_VALIDATORWALLETADDRESS' .env 2>/dev/null"
+    expect: "exit 0"
+    message: "Validator address not configured in .env file"
+
+  - id: rpc-url-reachable
+    name: "RPC URL is reachable"
+    type: command
+    command: "curl -sf -X POST https://genlayer-testnet.rpc.caldera.xyz/http -H 'Content-Type: application/json' -d '{\"jsonrpc\":\"2.0\",\"method\":\"eth_blockNumber\",\"params\":[],\"id\":1}' | grep -q 'result'"
+    expect: "exit 0"
+    message: "Cannot reach RPC endpoint. Check network connectivity."
+
+# Validations that must pass before installation
+on_stop:
+  - architecture-amd64
+  - nodejs-installed
+  - docker-installed
+  - docker-running
+  - python3-installed
+
+# Validations that are warnings
+on_warn:
+  - ram-sufficient
+  - disk-sufficient
+  - jq-installed
+  - docker-no-sudo
+  - python3-pip-installed
+  - python3-venv-installed
