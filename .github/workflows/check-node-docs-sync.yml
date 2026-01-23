@@ -1,4 +1,4 @@
-name: Check Documentation Sync
+name: Check Node Documentation Sync
 
 on:
   pull_request:
@@ -7,7 +7,7 @@ on:
 
 jobs:
   check-sync:
-    name: 'Verify Documentation is Synced'
+    name: 'Verify Node Documentation is Synced'
     runs-on: ubuntu-latest
     steps:
       - name: Checkout repository
