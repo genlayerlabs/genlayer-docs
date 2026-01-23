@@ -1,6 +1,8 @@
 {
   "setup-guide": "Setup Guide",
+  "monitoring": "Monitoring",
   "system-requirements": "System Requirements",
+  "genvm-configuration": "GenVM Configuration",
   "upgrade": "Upgrade Guide",
   "changelog": "Changelog"
 }
