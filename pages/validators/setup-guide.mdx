@@ -6,6 +6,19 @@ Running a GenLayer Validator node ensures the security and reliability of the Ge
 
 For a deeper understanding of how staking works in GenLayer, see the [Staking documentation](/understand-genlayer-protocol/core-concepts/optimistic-democracy/staking).
 
+## System Requirements
+
+| Resource | Requirement |
+|----------|-------------|
+| **Memory** | 16 GB RAM |
+| **CPU** | 8-core (AMD64 only) |
+| **Disk** | 128 GB SSD/NVMe |
+| **Network** | 100 Mbps |
+| **OS** | 64-bit Linux |
+| **Software** | Docker, Python 3 (with pip and venv) |
+
+GPU not required unless running LLMs locally. See [detailed requirements](/validators/system-requirements) for more info.
+
 ## Create the Validator Wallet
 
 Before setting up your validator node, you need to create your validator wallet and stake GEN tokens.
@@ -111,10 +124,6 @@ Possible options:
 Each validator needs access to a [ZKSync Full Node](https://docs.zksync.io/zksync-era/tooling/external-node) connected to the GenLayer chain. Validators use this node to read the chain state and submit transactions.
 
 One full node can be shared between multiple validators. The optimal validator-to-node ratio is currently under evaluation.
-
-### System Requirements
-
-See the [System Requirements](/validators/system-requirements) page for detailed hardware and software specifications.
 
 ### Setup
 
