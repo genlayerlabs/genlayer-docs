@@ -29,7 +29,8 @@ function updateDockerComposeInSetupGuide() {
 
   // Pattern to match the docker-compose YAML block
   // Looks for the text before the yaml block, the yaml block itself, and the text after
-  const dockerComposePattern = /(Create a `docker-compose\.yaml` file with the following content:[^`]*```yaml\n)([\s\S]*?)(\n```)/;
+  // Note: The yaml block may have additional attributes like "copy" (```yaml copy)
+  const dockerComposePattern = /(Create a `docker-compose\.yaml` file with the following content:[^`]*```yaml[^\n]*\n)([\s\S]*?)(\n```)/;
 
   if (dockerComposePattern.test(setupGuideContent)) {
     // Replace the docker-compose content while preserving the surrounding text
