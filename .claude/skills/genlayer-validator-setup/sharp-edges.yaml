@@ -1,0 +1,687 @@
+# Sharp edges for genlayer-validator-setup
+#
+# CRITICAL: These edge cases MUST be actively checked during skill execution,
+# not just used for reactive diagnosis after failures.
+#
+# HOW TO USE THIS FILE:
+# 1. BEFORE each major phase, review relevant edges
+# 2. PROACTIVELY check for edge case conditions
+# 3. FIX or WARN before proceeding
+# 4. Document when each edge was checked
+#
+# Example: Before starting update, explicitly check:
+#   - Is OpenAI key set but provider disabled? → Fix before switching
+#   - Is database structure incorrect? → Fix before switching
+#   - Is GenVM setup complete? → Verify before switching
+#
+# BAD: Wait for node to fail, then search edges for diagnosis
+# GOOD: Check edges before each step, prevent failures
+#
+# See pre-update-checklist.md for structured validation approach.
+
+edges:
+  # ============================================================================
+  # PREREQUISITES
+  # ============================================================================
+
+  - id: wrong-architecture
+    description: "Installing on ARM64 instead of AMD64"
+    detect: |
+      uname -m
+      # Must return x86_64, not aarch64 or arm64
+    impact: "Binaries will not execute. Container won't start."
+    fix: |
+      Use an AMD64 Linux server:
+      - AWS: t3/m5/c5 instances (not Graviton)
+      - GCP: n1/n2 instances
+      - Azure: D/E series
+
+      If on Mac M1/M2, use a cloud server or VM.
+    severity: critical
+
+  - id: insufficient-ram
+    description: "Server has less than 16GB RAM"
+    detect: |
+      free -g | grep Mem | awk '{print $2}'
+      # Should be >= 16
+    impact: "Node may crash under load or during contract execution."
+    fix: |
+      Upgrade to a server with at least 16GB RAM.
+      Recommended: 32GB for production validators.
+    severity: high
+
+  - id: nodejs-not-installed
+    description: "Node.js is not installed or version too old"
+    detect: |
+      node --version
+      # Should be v18 or higher
+    impact: "Cannot install genlayer CLI."
+    fix: |
+      Install Node.js 18+:
+      curl -fsSL https://deb.nodesource.com/setup_20.x | sudo -E bash -
+      sudo apt install -y nodejs
+    severity: critical
+
+  - id: docker-not-installed
+    description: "Docker or Docker Compose not installed"
+    detect: |
+      docker --version
+      docker compose version
+    impact: "Cannot run WebDriver or Docker-based deployment."
+    fix: |
+      Install Docker:
+      curl -fsSL https://get.docker.com | sh
+      sudo usermod -aG docker $USER
+      # Log out and back in
+    severity: critical
+
+  # ============================================================================
+  # WALLET AND STAKING
+  # ============================================================================
+
+  - id: insufficient-gen-balance
+    description: "Wallet has less than 42,000 GEN for staking"
+    detect: |
+      genlayer staking balance --address YOUR_ADDRESS
+    impact: "Cannot create validator. Staking wizard will fail."
+    fix: |
+      Acquire at least 42,000 GEN tokens:
+      - Purchase on supported exchanges
+      - Transfer from another wallet
+      - Use testnet faucet (for testnet only)
+    severity: critical
+
+  - id: keystore-export-forgotten
+    description: "Didn't export operator keystore during wizard"
+    detect: |
+      ls /path/to/operator-keystore.json
+    impact: "Cannot import operator key to node."
+    fix: |
+      Re-run parts of the wizard or use the account new command
+      to generate a new operator key, then update the operator
+      address in your validator settings.
+    severity: high
+
+  - id: wrong-network-selected
+    description: "Selected wrong network in staking wizard"
+    detect: |
+      Check the RPC URL in your config matches the network
+      you selected during wallet creation.
+    impact: "Validator won't be recognized on the correct network."
+    fix: |
+      Re-run staking wizard with correct network selection
+      or manually update configuration to match.
+    severity: critical
+
+  # ============================================================================
+  # DOWNLOAD AND EXTRACTION
+  # ============================================================================
+
+  - id: download-failed
+    description: "Node binary download failed"
+    detect: |
+      ls genlayer-node-linux-amd64-*.tar.gz
+      # Check file size is reasonable (>50MB)
+    impact: "Cannot proceed with installation."
+    fix: |
+      Check network connectivity:
+      curl -I https://storage.googleapis.com
+
+      Retry download or use alternative mirror.
+    severity: high
+
+  - id: extraction-failed
+    description: "Tar extraction failed or incomplete"
+    detect: |
+      ls -la ${VERSION}/bin/genlayernode
+      ls -la ${VERSION}/third_party/genvm/bin/
+    impact: "Missing binaries, node won't start."
+    fix: |
+      Re-download and extract:
+      rm -rf ${VERSION}
+      tar -xzvf genlayer-node-linux-amd64-${VERSION}.tar.gz -C ./${VERSION}
+    severity: high
+
+  - id: setup-py-failed
+    description: "GenVM setup.py failed to download dependencies"
+    detect: |
+      ls ${VERSION}/third_party/genvm/bin/genvm
+      ls ${VERSION}/third_party/genvm/bin/genvm-modules
+    impact: "GenVM cannot execute intelligent contracts."
+    fix: |
+      Check Python and pip are installed:
+      python3 --version
+      pip3 --version
+
+      Re-run setup:
+      cd ${VERSION} && python3 ./third_party/genvm/bin/setup.py
+    severity: critical
+
+  # ============================================================================
+  # CONFIGURATION
+  # ============================================================================
+
+  - id: invalid-yaml
+    description: "config.yaml has syntax errors"
+    detect: |
+      python3 -c "import yaml; yaml.safe_load(open('configs/node/config.yaml'))"
+    impact: "Node will fail to start with config parse error."
+    fix: |
+      Validate YAML syntax:
+      - Check indentation (use spaces, not tabs)
+      - Ensure colons have space after them
+      - Quote strings with special characters
+    severity: high
+
+  - id: wrong-contract-addresses
+    description: "Using outdated or wrong consensus contract addresses"
+    detect: |
+      grep contractmainaddress configs/node/config.yaml
+      # Compare with official documentation
+    impact: "Node cannot interact with consensus, transactions fail."
+    fix: |
+      Use the official contract addresses from docs:
+      contractmainaddress: "0x67fd4aC71530FB220E0B7F90668BAF977B88fF07"
+      contractdataaddress: "0xB6E1316E57d47d82FDcEa5002028a554754EF243"
+    severity: critical
+
+  - id: rpc-url-unreachable
+    description: "RPC or WebSocket URL is not accessible"
+    detect: |
+      curl -X POST ${RPC_URL} -H "Content-Type: application/json" \
+        -d '{"jsonrpc":"2.0","method":"eth_blockNumber","params":[],"id":1}'
+    impact: "Node cannot sync with the network."
+    fix: |
+      Verify RPC URL is correct and accessible:
+      1. Check URL spelling
+      2. Verify network connectivity
+      3. Check if provider is operational
+    severity: critical
+
+  # ============================================================================
+  # KEY IMPORT
+  # ============================================================================
+
+  - id: wrong-passphrase
+    description: "Using wrong passphrase for keystore import"
+    detect: |
+      Error message: "could not decrypt key with given passphrase"
+    impact: "Cannot import operator key."
+    fix: |
+      Use the exact passphrase set during wizard export.
+      If forgotten, generate a new operator key and update
+      your validator's operator address.
+    severity: high
+
+  - id: keystore-permissions
+    description: "Keystore file has wrong permissions"
+    detect: |
+      ls -la /path/to/operator-keystore.json
+      # Should be readable by current user
+    impact: "Import command cannot read the file."
+    fix: |
+      Fix permissions:
+      chmod 600 /path/to/operator-keystore.json
+    severity: medium
+
+  # ============================================================================
+  # LLM CONFIGURATION
+  # ============================================================================
+
+  - id: no-llm-key-set
+    description: "No LLM provider API key configured"
+    detect: |
+      env | grep -E "(HEURISTKEY|COMPUT3KEY|IOINTELLIGENCE_API_KEY)"
+    impact: "Node cannot execute intelligent contracts."
+    fix: |
+      Set at least one LLM API key:
+      export HEURISTKEY='your_key'
+
+      Add to shell profile for persistence:
+      echo "export HEURISTKEY='your_key'" >> ~/.bashrc
+    severity: critical
+
+  - id: llm-key-invalid
+    description: "LLM API key is invalid or expired"
+    detect: |
+      Check LLM module logs for authentication errors.
+    impact: "Contract executions fail with LLM errors."
+    fix: |
+      Verify API key in provider dashboard.
+      Generate new key if needed.
+    severity: high
+
+  - id: openai-backend-disabled
+    description: "OpenAI backend disabled in GenVM config despite OPENAIKEY being set"
+    detect: |
+      # PROACTIVE CHECK (before switching versions):
+      # 1. Check which LLM key is set in .env
+      grep -E '(OPENAIKEY)=' .env | grep -v '^#' | grep -v '=$'
+
+      # 2. If OPENAIKEY is set, check if OpenAI is enabled in GenVM config
+      grep -A 5 'openai:' third_party/genvm/config/genvm-module-llm.yaml | grep 'enabled: false'
+
+      # REACTIVE DETECTION (after node fails to bootstrap):
+      # Node logs show: "failed to start module via manager error=\"starting module Llm: manager request failed: 500"
+      journalctl -u genlayer-node | grep -i "module_failed_to_start\|starting module Llm"
+    impact: |
+      ⚠️ CRITICAL BOOTSTRAP FAILURE - NODE NEVER BECOMES OPERATIONAL ⚠️
+
+      This is NOT a runtime failure - this is a COMPLETE BOOTSTRAP FAILURE:
+      - Node NEVER successfully starts
+      - Lifecycle worker fails to initialize
+      - Node enters crash loop (systemd keeps restarting it)
+      - INFINITE DOWNTIME until manually fixed
+      - Validator is 100% offline
+      - NO validations, NO consensus participation, NO rewards
+      - Health endpoint unreachable
+      - RPC endpoints never become available
+
+      Timeline:
+      - 08:44:02: Node service started
+      - 08:45:35: LLM module fails to start (attempt 3)
+      - 08:47:00: Lifecycle worker failed to start
+      - 08:47:00: Node crashed
+      - 08:47:10: Systemd auto-restart → Same failure cycle repeats
+
+      IMPACT ON UPDATE:
+      If this occurs during an update from working node:
+      - Old version stopped (as planned)
+      - New version FAILS to bootstrap (unexpected)
+      - Result: Complete outage instead of 10-15 sec downtime
+      - Validator misses ALL validations until manually fixed
+
+      WHY THIS HAPPENS:
+      Downloaded v0.4.4 tarball includes GenVM config with OpenAI disabled by default.
+      Enabled providers: Heurist, Comput3, io.net, LibertAI
+      If you're using OpenAI, you MUST enable it manually after extraction.
+    fix: |
+      PROACTIVE FIX (during update preparation, BEFORE switching):
+      ================================================================
+      After extracting new version, BEFORE switching symlinks:
+
+      # Check if current .env uses OpenAI
+      if grep -q 'OPENAIKEY=' /opt/genlayer-node/.env | grep -v '=$'; then
+        echo "OpenAI key detected - enabling in new version"
+        sed -i '/^  openai:/,/^  / s/enabled: false/enabled: true/' \
+          /opt/genlayer-node/${NEW_VERSION}/third_party/genvm/config/genvm-module-llm.yaml
+      fi
+
+      # Verify it's enabled
+      grep -A 2 'openai:' /opt/genlayer-node/${NEW_VERSION}/third_party/genvm/config/genvm-module-llm.yaml
+      # Should show: enabled: true
+
+      REACTIVE FIX (after node failed to bootstrap):
+      ==============================================
+      1. Stop the failing node:
+         sudo systemctl stop genlayer-node
+
+      2. Enable OpenAI in GenVM config:
+         sed -i '/^  openai:/,/^  / s/enabled: false/enabled: true/' \
+           /opt/genlayer-node/third_party/genvm/config/genvm-module-llm.yaml
+
+      3. Verify the change:
+         grep -A 2 'openai:' /opt/genlayer-node/third_party/genvm/config/genvm-module-llm.yaml
+         # Should show: enabled: true
+
+      4. Restart the node:
+         sudo systemctl start genlayer-node
+
+      5. Verify bootstrap succeeds:
+         sudo journalctl -u genlayer-node -f --no-hostname
+         # Should see: "genvm is ready"
+         # Should NOT see: "module_failed_to_start"
+
+      6. Verify node is operational:
+         curl -s http://localhost:9153/health | jq '.status'
+         # Should show: "up" or "down" (syncing) but NOT connection refused
+    severity: critical
+    when_to_check: |
+      MANDATORY CHECKS:
+      1. During update preparation (after extracting new version)
+      2. After any version switch (verify bootstrap succeeds)
+      3. When setting up new installation with OpenAI
+
+      NEVER skip this check if using OpenAI!
+
+  # ============================================================================
+  # RUNTIME
+  # ============================================================================
+
+  - id: port-already-in-use
+    description: "Required ports (9151, 9153, 4444) already in use"
+    detect: |
+      lsof -i :9151
+      lsof -i :9153
+      lsof -i :4444
+    impact: "Node or WebDriver cannot start."
+    fix: |
+      Kill conflicting processes:
+      lsof -i :PORT
+      kill -9 PID
+
+      Or change ports in config.yaml.
+    severity: high
+
+  - id: webdriver-not-running
+    description: "WebDriver container not started"
+    detect: |
+      docker ps | grep webdriver
+      curl http://localhost:4444/status
+    impact: "Web module cannot execute, contracts fail."
+    fix: |
+      Start WebDriver:
+      docker compose up -d
+
+      Check logs:
+      docker logs genlayer-node-webdriver
+    severity: high
+
+  - id: node-not-syncing
+    description: "Node started but not syncing blocks"
+    detect: |
+      curl -s http://localhost:9153/health | jq .status
+      curl -s http://localhost:9153/metrics | grep synced
+    impact: "Validator cannot participate in consensus."
+    fix: |
+      Check:
+      1. RPC URL is correct and accessible
+      2. Network has sufficient peers
+      3. Firewall allows outbound connections
+
+      Check logs for errors.
+    severity: high
+
+  - id: docker-env-not-sourced
+    description: "Running docker compose without sourcing .env"
+    detect: |
+      # Check if running without environment variables
+      docker compose config | grep NODE_VERSION
+    impact: "Docker containers start with wrong or missing configuration."
+    fix: |
+      Always source .env before docker compose:
+      source .env && docker compose --profile node up -d
+    severity: high
+
+  - id: screen-tmux-not-used
+    description: "Running node in SSH session without screen/tmux"
+    detect: |
+      # Check if running in screen or tmux
+      echo $STY $TMUX
+    impact: "Node stops when SSH session disconnects."
+    fix: |
+      Use screen or tmux for persistent sessions:
+
+      # Using screen
+      screen -S genlayer
+      ./bin/genlayernode run ...
+      # Detach: Ctrl+A, D
+      # Reattach: screen -r genlayer
+
+      # Using tmux
+      tmux new -s genlayer
+      ./bin/genlayernode run ...
+      # Detach: Ctrl+B, D
+      # Reattach: tmux attach -t genlayer
+
+      OR use systemd service (recommended for production):
+      See create-systemd-service pattern.
+    severity: high
+
+  # ============================================================================
+  # SYSTEMD SERVICE (from infrastructure patterns)
+  # ============================================================================
+
+  - id: systemd-service-not-enabled
+    description: "Systemd service created but not enabled for auto-start"
+    detect: |
+      systemctl is-enabled genlayer-node
+    impact: "Node won't start automatically after server reboot."
+    fix: |
+      Enable the service:
+      sudo systemctl enable genlayer-node
+
+      Then verify:
+      sudo systemctl is-enabled genlayer-node
+    severity: medium
+
+  - id: env-file-not-sourced
+    description: "Running node without environment file loaded"
+    detect: |
+      # Check if required env vars are set
+      [ -z "$GENLAYERNODE_ROLLUP_GENLAYERCHAINRPCURL" ] && echo "not set"
+    impact: "Node fails to connect to rollup or consensus contracts."
+    fix: |
+      For manual runs, source the .env file first:
+      source /opt/genlayer-node/.env
+      ./bin/genlayernode run --password "$NODE_PASSWORD"
+
+      For systemd, ensure EnvironmentFile is set in service file.
+    severity: high
+
+  - id: wrong-llm-env-var-name
+    description: "Using wrong environment variable name for LLM provider"
+    detect: |
+      # io.net uses IOINTELLIGENCEKEY (no underscore), not IOINTELLIGENCE_API_KEY
+      env | grep -E "IOINTELLIGENCE"
+    impact: "LLM module fails to authenticate."
+    fix: |
+      Correct environment variable names:
+      - Heurist: HEURISTKEY
+      - Comput3: COMPUT3KEY
+      - io.net: IOINTELLIGENCEKEY (not IOINTELLIGENCE_API_KEY)
+      - OpenAI: OPENAIKEY
+      - LibertAI: LIBERTAI_API_KEY
+      - Anthropic: ANTHROPICKEY
+      - Google: GEMINIKEY
+    severity: high
+
+  - id: data-directory-permissions
+    description: "Data directory has wrong ownership"
+    detect: |
+      ls -la /opt/genlayer-node/data/
+      # Should be owned by the user running the node
+    impact: "Node cannot write to data directory, fails to start."
+    fix: |
+      Fix ownership:
+      sudo chown -R $USER:$USER /opt/genlayer-node/data/
+
+      Or for systemd service user:
+      sudo chown -R ansible:ansible /opt/genlayer-node/data/
+    severity: high
+
+  - id: webdriver-not-healthy
+    description: "WebDriver container running but not healthy"
+    detect: |
+      docker inspect --format='{{.State.Health.Status}}' genlayer-node-webdriver
+      # Should return 'healthy'
+    impact: "Web module cannot execute, contracts fail."
+    fix: |
+      Check WebDriver logs:
+      docker logs genlayer-node-webdriver
+
+      Restart if needed:
+      docker compose down
+      docker compose up -d
+
+      Wait for healthy:
+      until docker inspect --format='{{.State.Health.Status}}' genlayer-node-webdriver | grep -q 'healthy'; do sleep 2; done
+    severity: high
+
+  - id: missing-python-packages
+    description: "Missing python3-pip or python3-venv packages"
+    detect: |
+      dpkg -l | grep -E "python3-pip|python3-venv"
+    impact: "GenVM setup.py fails to install dependencies."
+    fix: |
+      Install required Python packages:
+      sudo apt update
+      sudo apt install -y python3 python3-pip python3-venv
+    severity: high
+
+  - id: new-operator-not-funded
+    description: "Generated new operator key but didn't fund it"
+    detect: |
+      # Check operator balance is zero or very low
+      # Node will fail to submit transactions
+      journalctl -u genlayer-node | grep -i "insufficient funds"
+    impact: "Node cannot submit transactions (activate, propose, vote). Validator will miss duties."
+    fix: |
+      1. Get operator address from node logs or keystore
+      2. Send ETH to the operator address for gas fees
+      3. Recommended minimum: 0.1 ETH for initial operations
+
+      To find operator address:
+      cat /opt/genlayer-node/data/node/keystore/*/address
+
+      Or check logs:
+      journalctl -u genlayer-node | grep "operator"
+    severity: critical
+
+  - id: new-operator-not-registered
+    description: "Generated new operator key but didn't update validator settings"
+    detect: |
+      # Check if operator address in config matches what's registered
+      # Node will show unauthorized errors
+      journalctl -u genlayer-node | grep -i "unauthorized\|not authorized\|operator mismatch"
+    impact: "Node cannot act on behalf of validator. All transactions will be rejected."
+    fix: |
+      Update validator's operator address:
+
+      Option 1: Using staking UI
+      - Go to staking dashboard
+      - Find your validator
+      - Update operator address to the new one
+
+      Option 2: Using genlayer CLI
+      genlayer staking update-operator --validator YOUR_VALIDATOR_ADDRESS --new-operator NEW_OPERATOR_ADDRESS
+    severity: critical
+
+  - id: consensus-genesis-not-set
+    description: "Consensus genesis block not configured"
+    detect: |
+      grep GENLAYERNODE_CONSENSUS_GENESIS .env
+      # Should have a value (usually 0 for testnet)
+    impact: "Node may sync from wrong starting point."
+    fix: |
+      Add to .env file:
+      GENLAYERNODE_CONSENSUS_GENESIS=0
+
+      For testnet, genesis is typically 0.
+    severity: medium
+
+  - id: strip-components-extraction
+    description: "Extracting tarball without --strip-components"
+    detect: |
+      # Check if node was extracted with nested directory
+      ls /opt/genlayer-node/genlayer-node-*/
+    impact: "Binaries at wrong path, commands fail."
+    fix: |
+      Use --strip-components=1 when extracting:
+      sudo tar -xzvf genlayer-node.tar.gz -C /opt/genlayer-node --strip-components=1
+
+      Or move files to correct location:
+      sudo mv /opt/genlayer-node/genlayer-node-*/* /opt/genlayer-node/
+    severity: medium
+
+T  # ============================================================================
+  # UPDATE PROCEDURE
+  # ============================================================================
+
+  - id: high-downtime-update
+    description: "Stopping old node before preparing new version causes 3-4 minute downtime"
+    detect: |
+      # Detect if update procedure stops node before preparation
+      # Check if these steps happen in wrong order:
+      # 1. systemctl stop (WRONG - should be last)
+      # 2. Download new version
+      # 3. GenVM setup (~2 minutes)
+      # 4. systemctl start
+    impact: |
+      CRITICAL VALIDATOR IMPACT:
+      - 3-4 minutes downtime vs 10-15 seconds with correct procedure
+      - Missed ~12-24 validation opportunities (at 10-20s block times)
+      - Lost consensus participation in current epoch
+      - Missed rewards from validations during downtime
+      - Validator needs to re-prime after reconnecting
+      - Potential slashing penalties for extended downtime
+    fix: |
+      CORRECT UPDATE PROCEDURE (Zero-Downtime):
+
+      Phase 1: PREPARE WHILE OLD NODE RUNS (No Downtime)
+      ===================================================
+      1. Download new version to /tmp
+      2. Create new version directory
+      3. Extract tarball
+      4. Run GenVM setup (THIS IS THE SLOW PART - 2+ minutes)
+      5. Copy config.yaml and .env
+      6. Enable OpenAI in GenVM config if needed
+      7. Create data directory and symlinks to shared DB
+      8. Copy keystore
+
+      Phase 2: QUICK SWITCH (10-15 seconds downtime)
+      ==============================================
+      1. Stop old node: systemctl stop genlayer-node
+      2. Update symlinks (very fast - <1 second)
+      3. Start new node: systemctl start genlayer-node
+
+      KEY PRINCIPLE: Never stop old node until new version is 100% ready to start.
+
+      See update-procedure.md for detailed commands.
+    severity: critical
+    validator_impact: "missed validations, lost rewards, priming delay, potential slashing"
+
+  - id: database-not-shared-patch-versions
+    description: "Database copied instead of shared between v0.4.x patch versions"
+    detect: |
+      # Check if each patch version has its own database instead of shared
+      ls -la /opt/genlayer-node/v0.4.3/data/node/genlayer.db
+      ls -la /opt/genlayer-node/v0.4.4/data/node/genlayer.db
+      # If both are directories (not symlinks), they're not shared
+
+      # Correct structure should show:
+      # v0.4.3/data/node/genlayer.db -> ../../../v0.4/data/node/genlayer.db (symlink)
+      # v0.4.4/data/node/genlayer.db -> ../../../v0.4/data/node/genlayer.db (symlink)
+    impact: |
+      - Wasted disk space (duplicate databases)
+      - Each version has different sync state
+      - Cannot switch between patch versions easily
+      - Future v0.4.x updates will need their own copy
+      - When upgrading improperly configured old installations, sync state diverges
+    fix: |
+      FIX EXISTING INSTALLATION WITH SEPARATE DATABASES:
+
+      1. Stop the node:
+         sudo systemctl stop genlayer-node
+
+      2. Create shared v0.4 directory:
+         sudo mkdir -p /opt/genlayer-node/v0.4/data/node
+         sudo chown -R $USER:$USER /opt/genlayer-node/v0.4
+
+      3. Move the MOST RECENT database to shared location:
+         # Use the database from the version with highest sync block
+         sudo mv /opt/genlayer-node/v0.4.4/data/node/genlayer.db /opt/genlayer-node/v0.4/data/node/
+
+      4. Replace old databases with symlinks:
+         sudo rm -rf /opt/genlayer-node/v0.4.3/data/node/genlayer.db
+         ln -s /opt/genlayer-node/v0.4/data/node/genlayer.db /opt/genlayer-node/v0.4.3/data/node/genlayer.db
+         ln -s /opt/genlayer-node/v0.4/data/node/genlayer.db /opt/genlayer-node/v0.4.4/data/node/genlayer.db
+
+      5. Verify both versions point to shared DB:
+         readlink /opt/genlayer-node/v0.4.3/data/node/genlayer.db
+         readlink /opt/genlayer-node/v0.4.4/data/node/genlayer.db
+         # Both should output: /opt/genlayer-node/v0.4/data/node/genlayer.db
+
+      6. Start the node:
+         sudo systemctl start genlayer-node
+
+      STRUCTURE FOR NEW INSTALLATIONS:
+
+      For major.minor versions (v0.4.x), use shared database:
+      /opt/genlayer-node/v0.4/data/node/genlayer.db (shared DB)
+      /opt/genlayer-node/v0.4.3/data/node/genlayer.db -> symlink to shared
+      /opt/genlayer-node/v0.4.4/data/node/genlayer.db -> symlink to shared
+
+      Keystore and logs remain version-specific (not shared).
+    severity: high
+    note: "This issue typically occurs when upgrading from old installations that weren't set up with shared storage"

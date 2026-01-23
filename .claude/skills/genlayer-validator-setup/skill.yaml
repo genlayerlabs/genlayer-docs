@@ -1,0 +1,1094 @@
+name: genlayer-validator-setup
+kind: setup
+version: "1.3.0"
+description: "Interactive wizard to set up a GenLayer validator node on Linux."
+severity: high
+tags:
+  - validator
+  - node
+  - installation
+  - blockchain
+  - genlayer
+
+purpose: |
+  Guide validators through complete GenLayer node installation on Linux servers.
+  Walks through prerequisites verification, wallet creation, software download,
+  configuration, key import, LLM setup, and node startup.
+  Supports both binary (systemd service) and Docker Compose deployment methods.
+  Provides interactive wizard for configuration with sensible defaults.
+
+owns:
+  - "Validator node installation from scratch"
+  - "Node configuration generation"
+  - "Operator key management"
+  - "LLM provider configuration"
+  - "Systemd service setup"
+  - "Telemetry/monitoring setup"
+  - "Node upgrades and version management"
+
+# Default configuration values (from infrastructure)
+defaults:
+  network: testnet-asimov
+  # NOTE: rpc_url and websocket_url have NO defaults - user must provide
+  consensus_contract_main: "0x67fd4aC71530FB220E0B7F90668BAF977B88fF07"
+  consensus_contract_data: "0xB6E1316E57d47d82FDcEa5002028a554754EF243"
+  consensus_genesis: 4632386
+  install_path: "/opt/genlayer-node"
+  data_dir: "./data/node"
+  node_rpc_port: 9151
+  node_admin_port: 9155
+  node_ops_port: 9153
+  webdriver_port: 4444
+  genvm_manager_url: "http://127.0.0.1:3999"
+  metrics_interval: "15s"
+
+# Required user configuration (no defaults)
+required_inputs:
+  - rpc_url: "GenLayer Chain ZKSync HTTP RPC URL"
+  - websocket_url: "GenLayer Chain ZKSync WebSocket URL"
+  - validator_wallet_address: "From staking wizard or existing wallet"
+  - operator_address: "From keystore import or generate new"
+  - llm_api_key: "From chosen LLM provider"
+
+# Directory structure after installation
+directory_structure:
+  install_path: "/opt/genlayer-node"
+  layout:
+    - path: "{VERSION}/"
+      description: "Version-specific directory containing all node files"
+      contents:
+        - "bin/genlayernode"
+        - "third_party/genvm/"
+        - "docker-compose.yaml"
+        - ".env"
+        - "data/node/genlayer.db"
+        - "data/node/keystore/"
+        - "data/node/logs/"
+        - "data/node/merkle/"
+        - "configs/node/config.yaml"
+    - path: "bin -> {VERSION}/bin"
+      description: "Symlink to current version binary"
+    - path: "third_party -> {VERSION}/third_party"
+      description: "Symlink to current version third_party"
+    - path: "data -> {VERSION}/data"
+      description: "Symlink to current version data"
+    - path: "configs -> {VERSION}/configs"
+      description: "Symlink to current version configs"
+    - path: "docker-compose.yaml -> {VERSION}/docker-compose.yaml"
+      description: "Symlink to current version docker-compose"
+    - path: ".env -> {VERSION}/.env"
+      description: "Symlink to current version .env"
+    - path: "alloy-config.river"
+      description: "Telemetry configuration (if monitoring enabled)"
+
+inputs_required:
+  - id: server_location
+    description: "Where the validator node will run"
+    type: choice
+    question: "Where will you run the validator node?"
+    options:
+      - label: "This machine (local setup)"
+        value: local
+        description: "Running validator on this computer"
+      - label: "Remote Linux server (SSH)"
+        value: remote-ssh
+        description: "Generic Linux server accessed via SSH"
+      - label: "Google Cloud Platform VM"
+        value: gcp
+        description: "GCP Compute Engine instance"
+      - label: "AWS EC2 Instance"
+        value: aws
+        description: "Amazon Web Services EC2 instance"
+      - label: "Azure VM"
+        value: azure
+        description: "Azure Virtual Machine"
+      - label: "Other cloud provider"
+        value: other-cloud
+        description: "DigitalOcean, Linode, Vultr, etc."
+    required: true
+
+  - id: connection_details
+    description: "Connection information for remote server"
+    type: string
+    condition: "server_location != local"
+    question: "Provide connection details for your server"
+    help: |
+      For SSH: Enter username@hostname or username@IP
+      For GCP: Enter project-id/zone/instance-name
+      For AWS: Enter instance-id/region
+      For Azure: Enter resource-group/vm-name
+    required: true
+
+  - id: is_new_validator
+    description: "Whether user needs to run staking wizard to become a validator"
+    type: boolean
+    question: "Do you need to create a new validator wallet and stake GEN tokens?"
+    options:
+      - label: "Yes, run staking wizard"
+        value: true
+        description: "I need to create validator wallet and stake 42,000+ GEN"
+      - label: "No, I already have a validator wallet"
+        value: false
+        description: "I already completed staking and have my operator keystore"
+    required: true
+
+  - id: deployment_method
+    description: "How to run the node"
+    type: choice
+    question: "How would you like to run the node?"
+    options:
+      - label: "Systemd Service (Recommended)"
+        value: binary
+        description: "Run as a system service with auto-restart"
+      - label: "Docker Compose"
+        value: docker
+        description: "Run everything in Docker containers"
+      - label: "Manual (screen/tmux)"
+        value: manual
+        description: "Run manually in terminal session"
+    required: true
+
+  - id: node_version
+    description: "Version of genlayer-node to install"
+    type: string
+    how_to_find: |
+      curl -s "https://storage.googleapis.com/storage/v1/b/gh-af/o?prefix=genlayer-node/bin/amd64" | \
+      grep -o '"name": *"[^"]*"' | sed -n 's/.*\/\(v[^/]*\)\/.*/\1/p' | sort -ru | head -5
+    required: true
+
+  - id: validator_wallet_address
+    description: "Your validator wallet address"
+    type: string
+    source: "From staking wizard or existing wallet"
+    required: true
+
+  - id: operator_address
+    description: "Your operator address"
+    type: string
+    source: "From wizard export, previous installation, or generate new"
+    required: true
+
+  - id: operator_key_source
+    description: "Where to get the operator key"
+    type: choice
+    question: "How would you like to configure the operator key?"
+    options:
+      - label: "Import from staking wizard export"
+        value: import
+        description: "I have the operator-keystore.json from the wizard"
+      - label: "Copy from previous installation"
+        value: copy
+        description: "Copy keystore from existing node installation"
+      - label: "Generate new operator key"
+        value: generate
+        description: "Create a new operator key (requires updating validator settings)"
+    required: true
+
+  - id: llm_provider
+    description: "LLM provider for intelligent contract execution"
+    type: choice
+    question: "Which LLM provider will you use?"
+    options:
+      - label: "Heurist"
+        value: heurist
+        env_var: "HEURISTKEY"
+      - label: "Comput3"
+        value: comput3
+        env_var: "COMPUT3KEY"
+      - label: "io.net"
+        value: ionet
+        env_var: "IOINTELLIGENCEKEY"
+      - label: "OpenAI"
+        value: openai
+        env_var: "OPENAIKEY"
+      - label: "LibertAI"
+        value: libertai
+        env_var: "LIBERTAI_API_KEY"
+      - label: "Anthropic"
+        value: anthropic
+        env_var: "ANTHROPICKEY"
+      - label: "Google (Gemini)"
+        value: google
+        env_var: "GEMINIKEY"
+    required: true
+
+  - id: llm_api_key
+    description: "API key for the chosen LLM provider"
+    type: secret
+    required: true
+
+  - id: node_password
+    description: "Password to encrypt the operator keystore (min 8 characters)"
+    type: secret
+    required: true
+
+  - id: config_source
+    description: "How to configure config.yaml"
+    type: choice
+    question: "How would you like to configure the node?"
+    options:
+      - label: "Interactive wizard (Recommended)"
+        value: wizard
+        description: "Answer questions to generate config.yaml"
+      - label: "Copy from previous version"
+        value: copy
+        description: "Use config.yaml from an existing installation"
+      - label: "Manual configuration"
+        value: manual
+        description: "I'll edit config.yaml manually"
+    required: true
+
+  - id: enable_monitoring
+    description: "Enable telemetry push to central monitoring"
+    type: boolean
+    default: false
+    required: false
+
+# Configuration wizard questions
+config_wizard:
+  sections:
+    - id: rollup
+      name: "Rollup Configuration (Required - No Defaults)"
+      questions:
+        - id: genlayerchainrpcurl
+          prompt: "GenLayer Chain RPC URL"
+          required: true
+          validation: "Must be a valid HTTP(S) URL - user must provide ZKSync RPC endpoint"
+        - id: genlayerchainwebsocketurl
+          prompt: "GenLayer Chain WebSocket URL"
+          required: true
+          validation: "Must be a valid WSS URL - user must provide ZKSync WebSocket endpoint"
+
+    - id: node_identity
+      name: "Node Identity"
+      questions:
+        - id: validatorWalletAddress
+          prompt: "Validator Wallet Address"
+          source: "From staking wizard or existing"
+          validation: "Must be a valid Ethereum address (0x...)"
+        - id: operatorAddress
+          prompt: "Operator Address"
+          source: "From keystore import or generate"
+          validation: "Must be a valid Ethereum address (0x...)"
+
+    - id: rpc_endpoints
+      name: "RPC Endpoints Configuration"
+      questions:
+        - id: rpc_enabled
+          prompt: "Enable RPC endpoints?"
+          type: boolean
+          default: true
+        - id: rpc_port
+          prompt: "RPC port"
+          type: number
+          default: 9151
+          condition: "rpc_enabled == true"
+        - id: rpc_groups
+          prompt: "Which RPC endpoint groups to enable?"
+          type: multi_choice
+          default: ["genlayer", "ethereum", "zksync"]
+          options:
+            - label: "genlayer"
+              description: "gen_* methods (call, getContractSchema, etc.)"
+            - label: "genlayer_debug"
+              description: "gen_dbg_* methods (ping, load_test, trie)"
+            - label: "ethereum"
+              description: "eth_* proxy methods"
+            - label: "zksync"
+              description: "zks_* proxy methods"
+          condition: "rpc_enabled == true"
+        - id: rpc_custom_methods
+          prompt: "Configure individual methods? (Advanced)"
+          type: boolean
+          default: false
+          condition: "rpc_enabled == true"
+
+    - id: ops_endpoints
+      name: "Operations Endpoints Configuration"
+      questions:
+        - id: ops_enabled
+          prompt: "Enable ops endpoints?"
+          type: boolean
+          default: true
+        - id: ops_port
+          prompt: "Ops port"
+          type: number
+          default: 9153
+          condition: "ops_enabled == true"
+        - id: ops_metrics
+          prompt: "Enable /metrics endpoint?"
+          type: boolean
+          default: true
+          condition: "ops_enabled == true"
+        - id: ops_health
+          prompt: "Enable /health endpoint?"
+          type: boolean
+          default: true
+          condition: "ops_enabled == true"
+        - id: ops_balance
+          prompt: "Enable /balance endpoint?"
+          type: boolean
+          default: true
+          condition: "ops_enabled == true"
+
+    - id: metrics
+      name: "Metrics Configuration"
+      condition: "ops_metrics == true"
+      questions:
+        - id: metrics_interval
+          prompt: "Default metrics collection interval"
+          type: string
+          default: "15s"
+          validation: "Duration format (e.g., 15s, 1m)"
+        - id: metrics_node_enabled
+          prompt: "Enable node metrics collector?"
+          type: boolean
+          default: true
+        - id: metrics_node_interval
+          prompt: "Node metrics interval (leave empty for default)"
+          type: string
+          default: ""
+          condition: "metrics_node_enabled == true"
+        - id: metrics_genvm_enabled
+          prompt: "Enable GenVM metrics collector?"
+          type: boolean
+          default: true
+        - id: metrics_genvm_interval
+          prompt: "GenVM metrics interval (leave empty for default)"
+          type: string
+          default: ""
+          condition: "metrics_genvm_enabled == true"
+        - id: metrics_webdriver_enabled
+          prompt: "Enable WebDriver metrics collector?"
+          type: boolean
+          default: true
+        - id: metrics_webdriver_interval
+          prompt: "WebDriver metrics interval (leave empty for default)"
+          type: string
+          default: ""
+          condition: "metrics_webdriver_enabled == true"
+
+patterns:
+  - id: verify-prerequisites
+    description: |
+      Check all required software is installed before proceeding.
+    commands:
+      - "uname -m | grep -E '^(x86_64|amd64)$'"
+      - "node --version"
+      - "npm --version"
+      - "docker --version"
+      - "docker compose version"
+      - "python3 --version"
+      - "pip3 --version"
+      - "python3 -m venv --help"
+
+  - id: install-prerequisites-ubuntu
+    description: |
+      Install required packages on Ubuntu/Debian.
+    commands:
+      - "sudo apt update"
+      - "sudo apt install -y python3 python3-pip python3-venv wget curl jq tar"
+
+  - id: install-genlayer-cli
+    description: |
+      Install the GenLayer CLI globally via npm.
+    command: "npm install -g genlayer"
+
+  - id: create-validator-wallet
+    description: |
+      Run the interactive staking wizard to create validator wallet.
+      User must have 42,000+ GEN tokens.
+    command: "genlayer staking wizard"
+    outputs:
+      - "validator_wallet_address"
+      - "operator_keystore_path"
+      - "export_passphrase"
+
+  - id: list-available-versions
+    description: |
+      List available node versions from the release bucket.
+    command: |
+      curl -s "https://storage.googleapis.com/storage/v1/b/gh-af/o?prefix=genlayer-node/bin/amd64" | \
+      grep -o '"name": *"[^"]*"' | sed -n 's/.*\/\(v[^/]*\)\/.*/\1/p' | sort -ru | head -10
+
+  - id: download-and-extract
+    description: |
+      Download to /tmp, then extract to versioned directory structure.
+    commands:
+      - "export VERSION=${VERSION}"
+      - "wget https://storage.googleapis.com/gh-af/genlayer-node/bin/amd64/${VERSION}/genlayer-node-linux-amd64-${VERSION}.tar.gz -O /tmp/genlayer-node-${VERSION}.tar.gz"
+      - "sudo mkdir -p /opt/genlayer-node/${VERSION}"
+      - "sudo tar -xzvf /tmp/genlayer-node-${VERSION}.tar.gz -C /opt/genlayer-node/${VERSION} --strip-components=1"
+      - "sudo mkdir -p /opt/genlayer-node/${VERSION}/{data/node,configs/node}"
+      - "sudo chown -R $USER:$USER /opt/genlayer-node"
+      - "rm /tmp/genlayer-node-${VERSION}.tar.gz"
+
+  - id: setup-symlinks
+    description: |
+      Create symlinks for current version for easy access from /opt/genlayer-node.
+    commands:
+      - "ln -sfn /opt/genlayer-node/${VERSION}/bin /opt/genlayer-node/bin"
+      - "ln -sfn /opt/genlayer-node/${VERSION}/third_party /opt/genlayer-node/third_party"
+      - "ln -sfn /opt/genlayer-node/${VERSION}/data /opt/genlayer-node/data"
+      - "ln -sfn /opt/genlayer-node/${VERSION}/configs /opt/genlayer-node/configs"
+      - "ln -sfn /opt/genlayer-node/${VERSION}/docker-compose.yaml /opt/genlayer-node/docker-compose.yaml"
+      - "ln -sfn /opt/genlayer-node/${VERSION}/.env /opt/genlayer-node/.env"
+
+  - id: run-genvm-setup
+    description: |
+      Run GenVM post-install script to download dependencies.
+    command: "python3 /opt/genlayer-node/third_party/genvm/bin/setup.py"
+
+  - id: create-env-file
+    description: |
+      Create .env file from template if it doesn't exist.
+    check: "[ -f /opt/genlayer-node/.env ]"
+    template: |
+      # GenLayer Node Environment Configuration
+      # Generated by genlayer-validator-setup skill
+
+      # Node identification
+      NODE_ID=${NODE_ID}
+      NODE_TYPE=validator
+      NODE_ENV=testnet-asimov
+      NODE_VERSION=${VERSION}
+
+      # Node password (for keystore encryption)
+      NODE_PASSWORD=${PASSWORD}
+
+      # LLM API Key (only set the one you're using)
+      OPENAIKEY=${OPENAI_KEY}
+      HEURISTKEY=${HEURIST_KEY}
+      COMPUT3KEY=${COMPUT3_KEY}
+      IOINTELLIGENCEKEY=${IONET_KEY}
+      LIBERTAI_API_KEY=${LIBERTAI_KEY}
+      ANTHROPICKEY=${ANTHROPIC_KEY}
+      GEMINIKEY=${GEMINI_KEY}
+
+      # Rollup configuration
+      GENLAYERNODE_ROLLUP_GENLAYERCHAINRPCURL=${RPC_URL}
+      GENLAYERNODE_ROLLUP_GENLAYERCHAINWEBSOCKETURL=${WEBSOCKET_URL}
+
+      # Consensus configuration
+      GENLAYERNODE_CONSENSUS_CONTRACTMAINADDRESS=0x67fd4aC71530FB220E0B7F90668BAF977B88fF07
+      GENLAYERNODE_CONSENSUS_CONTRACTDATAADDRESS=0xB6E1316E57d47d82FDcEa5002028a554754EF243
+      GENLAYERNODE_CONSENSUS_GENESIS=4632386
+
+      # Node configuration
+      GENLAYERNODE_NODE_VALIDATORWALLETADDRESS=${VALIDATOR_ADDRESS}
+      GENLAYERNODE_NODE_OPERATORADDRESS=${OPERATOR_ADDRESS}
+      GENLAYERNODE_NODE_MODE=validator
+
+      # Ports
+      NODE_RPC_PORT=${RPC_PORT:-9151}
+      NODE_OPS_PORT=${OPS_PORT:-9153}
+      NODE_ADMIN_PORT=${ADMIN_PORT:-9155}
+
+      # Monitoring (optional)
+      # CENTRAL_MONITORING_USERNAME=
+      # CENTRAL_MONITORING_PASSWORD=
+      # CENTRAL_LOKI_USERNAME=
+      # CENTRAL_LOKI_PASSWORD=
+      # VALIDATOR_NAME=
+
+  - id: generate-config-yaml
+    description: |
+      Generate config.yaml from wizard answers.
+    template: |
+      # GenLayer Node Configuration
+      # Generated by genlayer-validator-setup skill
+
+      # Rollup configuration
+      rollup:
+        genlayerchainrpcurl: "${RPC_URL}"
+        genlayerchainwebsocketurl: "${WEBSOCKET_URL}"
+
+      # Consensus contracts configuration
+      consensus:
+        contractmainaddress: "0x67fd4aC71530FB220E0B7F90668BAF977B88fF07"
+        contractdataaddress: "0xB6E1316E57d47d82FDcEa5002028a554754EF243"
+        genesis: 4632386
+
+      # Data directory
+      datadir: "./data/node"
+
+      # Logging configuration
+      logging:
+        level: "INFO"
+        json: false
+        file:
+          enabled: true
+          level: "DEBUG"
+          folder: logs
+          maxsize: 10
+          maxage: 7
+          maxbackups: 100
+          localtime: false
+          compress: true
+
+      # Node configuration
+      node:
+        mode: "validator"
+        validatorWalletAddress: "${VALIDATOR_ADDRESS}"
+        operatorAddress: "${OPERATOR_ADDRESS}"
+        admin:
+          port: ${ADMIN_PORT:-9155}
+        rpc:
+          port: ${RPC_PORT:-9151}
+          endpoints:
+            groups:
+              genlayer: ${RPC_GENLAYER:-true}
+              genlayer_debug: ${RPC_DEBUG:-false}
+              ethereum: ${RPC_ETHEREUM:-true}
+              zksync: ${RPC_ZKSYNC:-true}
+        ops:
+          port: ${OPS_PORT:-9153}
+          endpoints:
+            metrics: ${OPS_METRICS:-true}
+            health: ${OPS_HEALTH:-true}
+            balance: ${OPS_BALANCE:-true}
+        dev:
+          disableSubscription: false
+
+      # GenVM configuration
+      genvm:
+        root_dir: ./third_party/genvm
+        start_manager: true
+        manager_url: http://127.0.0.1:3999
+        permits:
+
+      # Merkle tree configuration
+      merkleforest:
+        maxdepth: 16
+        dbpath: "./data/node/merkle/forest/data.db"
+        indexdbpath: "./data/node/merkle/index.db"
+      merkletree:
+        maxdepth: 16
+        dbpath: "./data/node/merkle/tree/"
+
+      # Metrics configuration
+      metrics:
+        interval: "${METRICS_INTERVAL:-15s}"
+        collectors:
+          node:
+            enabled: ${METRICS_NODE:-true}
+            ${METRICS_NODE_INTERVAL:+interval: "${METRICS_NODE_INTERVAL}"}
+          genvm:
+            enabled: ${METRICS_GENVM:-true}
+            ${METRICS_GENVM_INTERVAL:+interval: "${METRICS_GENVM_INTERVAL}"}
+          webdriver:
+            enabled: ${METRICS_WEBDRIVER:-true}
+            ${METRICS_WEBDRIVER_INTERVAL:+interval: "${METRICS_WEBDRIVER_INTERVAL}"}
+
+  - id: copy-config-from-previous
+    description: |
+      Copy config.yaml from a previous version.
+    command: |
+      cp /opt/genlayer-node/${PREVIOUS_VERSION}/configs/node/config.yaml \
+         /opt/genlayer-node/${VERSION}/configs/node/config.yaml
+
+  - id: import-operator-key-from-wizard
+    description: |
+      Import operator keystore exported from staking wizard.
+    command: |
+      cd /opt/genlayer-node && \
+      ./bin/genlayernode account import \
+        --password "${NODE_PASSWORD}" \
+        --passphrase "${EXPORT_PASSPHRASE}" \
+        --path "${KEYSTORE_PATH}" \
+        --quiet
+
+  - id: copy-operator-key-from-previous
+    description: |
+      Copy operator keystore from previous installation.
+    command: |
+      cp -r ${PREVIOUS_KEYSTORE_PATH}/* /opt/genlayer-node/data/node/keystore/
+
+  - id: generate-new-operator-key
+    description: |
+      Generate a new operator key.
+    command: |
+      cd /opt/genlayer-node && \
+      ./bin/genlayernode account new \
+        --setup \
+        --password "${NODE_PASSWORD}"
+    warnings:
+      - "You must update your validator's operator address after generating!"
+      - "You must fund the new operator address with ETH for gas fees!"
+    post_steps:
+      - "Note the new operator address from command output"
+      - "Fund the operator address with ETH (for transaction gas)"
+      - "Update validator settings to use new operator address"
+
+  - id: start-webdriver
+    description: |
+      Start WebDriver container and wait for healthy status.
+    commands:
+      - "cd /opt/genlayer-node && docker compose up -d"
+      - "echo 'Waiting for WebDriver to be healthy...'"
+      - "until docker inspect --format='{{.State.Health.Status}}' genlayer-node-webdriver 2>/dev/null | grep -q 'healthy'; do sleep 2; done"
+      - "echo 'WebDriver is healthy'"
+
+  - id: run-doctor-check
+    description: |
+      Validate configuration before starting.
+    command: "cd /opt/genlayer-node && source .env && ./bin/genlayernode doctor"
+
+  - id: run-node-manual
+    description: |
+      Start node manually (use with screen/tmux).
+    commands:
+      - "cd /opt/genlayer-node"
+      - "source .env"
+      - "./bin/genlayernode run --password '${NODE_PASSWORD}'"
+
+  - id: create-systemd-service
+    description: |
+      Create systemd service for persistent node operation.
+    template: |
+      [Unit]
+      Description=GenLayer Node Service
+      After=network.target docker.service
+      Wants=docker.service
+
+      [Service]
+      Type=simple
+      User=${USER}
+      Group=${USER}
+      WorkingDirectory=/opt/genlayer-node
+      EnvironmentFile=/opt/genlayer-node/.env
+      ExecStart=/opt/genlayer-node/bin/genlayernode run --password ${NODE_PASSWORD}
+      Restart=always
+      RestartSec=10
+      StandardOutput=journal
+      StandardError=journal
+      NoNewPrivileges=true
+      ReadWritePaths=/opt/genlayer-node/data/
+
+      [Install]
+      WantedBy=multi-user.target
+    install_commands:
+      - "sudo cp /tmp/genlayer-node.service /etc/systemd/system/"
+      - "sudo systemctl daemon-reload"
+      - "sudo systemctl enable genlayer-node"
+      - "sudo systemctl start genlayer-node"
+
+  - id: run-node-docker
+    description: |
+      Start node using Docker Compose method.
+    commands:
+      - "cd /opt/genlayer-node && source .env && docker compose --profile node up -d"
+
+  - id: verify-node-running
+    description: |
+      Check node is running and syncing.
+    commands:
+      - "curl -s http://localhost:9153/health | jq"
+      - "curl -s http://localhost:9153/metrics | grep genlayer_node_synced"
+
+  - id: check-systemd-status
+    description: |
+      Check systemd service status for binary deployment.
+    commands:
+      - "sudo systemctl status genlayer-node"
+      - "journalctl -u genlayer-node -f --no-pager -n 50"
+
+  - id: enable-monitoring
+    description: |
+      Enable telemetry push to central monitoring (optional).
+    env_vars:
+      - "CENTRAL_MONITORING_USERNAME"
+      - "CENTRAL_MONITORING_PASSWORD"
+      - "CENTRAL_LOKI_USERNAME"
+      - "CENTRAL_LOKI_PASSWORD"
+      - "VALIDATOR_NAME"
+    command: "cd /opt/genlayer-node && docker compose --profile monitoring up -d"
+
+anti_patterns:
+  - id: skip-prerequisites
+    description: "Starting installation without checking prerequisites"
+    why_bad: "Will fail mid-installation with confusing errors."
+    fix: "Run prerequisite checks first."
+
+  - id: wrong-architecture
+    description: "Installing on ARM64 (Apple Silicon, AWS Graviton)"
+    why_bad: "Only AMD64 is supported. Binaries won't run."
+    fix: "Use an AMD64 Linux server."
+
+  - id: insufficient-tokens
+    description: "Creating validator with less than 42,000 GEN"
+    why_bad: "Cannot stake and validator won't be active."
+    fix: "Acquire 42,000+ GEN before running staking wizard."
+
+  - id: missing-llm-key
+    description: "Not setting any LLM API key"
+    why_bad: "Node cannot execute intelligent contracts."
+    fix: "Set at least one LLM provider API key."
+
+  - id: plaintext-password-in-history
+    description: "Typing password directly in command line"
+    why_bad: "Password saved in shell history."
+    fix: "Use environment variables or prompt input."
+
+  - id: skip-doctor-check
+    description: "Running node without running doctor first"
+    why_bad: "May miss configuration issues that cause runtime failures."
+    fix: "Always run ./bin/genlayernode doctor before starting the node."
+
+  - id: extract-without-strip-components
+    description: "Extracting tarball without --strip-components=1"
+    why_bad: "Creates nested directory structure, binaries at wrong path."
+    fix: "Use: tar -xzvf ... --strip-components=1"
+
+  - id: wrong-llm-env-var
+    description: "Using wrong environment variable name for LLM provider"
+    why_bad: "LLM module fails to authenticate."
+    fix: |
+      Correct names:
+      - Heurist: HEURISTKEY
+      - io.net: IOINTELLIGENCEKEY (not IOINTELLIGENCE_API_KEY)
+      - OpenAI: OPENAIKEY
+
+  - id: displaying-unmasked-secrets
+    description: "Showing full API keys, passwords, or tokens in conversation"
+    why_bad: "Exposes sensitive credentials in conversation history and logs."
+    fix: |
+      Always mask secrets when displaying:
+      - API keys: Show first 8 and last 4 chars (sk-proj-********...YblE)
+      - Passwords: Never display, use ***MASKED***
+      - When reading .env: cat .env | sed -E 's/(KEY|PASSWORD|TOKEN)=([^[:space:]]{12}).*/\1=\2********.../'
+
+  - id: secrets-in-systemd-service
+    description: "Including plaintext passwords in systemd service file"
+    why_bad: "Service files may be readable by multiple users. Passwords exposed."
+    fix: |
+      Use EnvironmentFile directive:
+      - EnvironmentFile=/opt/genlayer-node/.env
+      - ExecStart=.../genlayernode run --password "${NODE_PASSWORD}"
+
+  - id: secrets-in-command-output
+    description: "Showing secrets in command output or verification steps"
+    why_bad: "Secrets visible in terminal scrollback and logs."
+    fix: |
+      Mask secrets in verification:
+      - env | grep KEY | sed -E 's/=.*/=***MASKED***/'
+      - Show only that key is set, not the value
+
+  - id: executing-remote-commands-that-expose-secrets
+    description: "Using gcloud/ssh --command to grep/cat files containing secrets"
+    why_bad: |
+      CRITICAL SECURITY VIOLATION:
+      - Exposes secrets in plain text in command output
+      - Creates audit trail of secrets in command history
+      - Violates secret masking policy
+      - Risk of user sharing output with exposed secrets
+    examples_of_forbidden_commands: |
+      ❌ NEVER DO THIS:
+      - gcloud compute ssh ... --command="grep 'OPENAIKEY' /opt/genlayer-node/.env"
+      - ssh username@host "cat /opt/genlayer-node/.env"
+      - gcloud compute ssh ... --command="cat /opt/genlayer-node/.env | grep KEY"
+      - ssh username@host "echo $OPENAIKEY"
+    fix: |
+      INSTEAD, instruct the user to check values themselves:
+
+      ✅ CORRECT approach:
+      "To verify your API key is set, please SSH to your VM and run:
+        grep 'OPENAIKEY' /opt/genlayer-node/.env
+
+      This will show the key value on your secure terminal, not in this conversation."
+
+      NEVER execute commands via Bash tool that will display secrets.
+      NEVER use --command flag with SSH/gcloud to read secrets.
+      ALWAYS provide instructions for user to run on their own terminal.
+    severity: critical
+
+procedure:
+  - step: "Check prerequisites"
+    decision_point: false
+    detail: |
+      Verify system meets requirements:
+      - AMD64 architecture (x86_64)
+      - Node.js v18+, Docker, Python 3
+      - 16GB+ RAM, 8+ cores, 128GB+ SSD
+    commands:
+      - "uname -m"
+      - "node --version"
+      - "docker compose version"
+      - "python3 --version"
+    on_failure: "Install missing prerequisites"
+
+  - step: "Decide: New validator or existing?"
+    decision_point: true
+    question: "Do you need to create a new validator wallet and stake GEN tokens?"
+    options:
+      - answer: "Yes, I need to become a validator"
+        next_step: "Install GenLayer CLI and run staking wizard"
+      - answer: "No, I already have a validator wallet"
+        next_step: "Download node software"
+        requires:
+          - "validator_wallet_address"
+          - "operator_keystore (or will generate new)"
+
+  - step: "Install GenLayer CLI and run staking wizard"
+    condition: "is_new_validator == true"
+    detail: |
+      Install CLI and run staking wizard.
+      Requires 42,000+ GEN tokens.
+    commands:
+      - "npm install -g genlayer"
+      - "genlayer staking wizard"
+    outputs:
+      - "validator_wallet_address"
+      - "operator-keystore.json"
+      - "export_passphrase"
+    notes:
+      - "Save the operator keystore file securely"
+      - "Remember the export passphrase"
+
+  - step: "Determine version to install"
+    detail: |
+      If user specified "latest", fetch the latest version.
+      Otherwise, use the specified version or let user choose.
+    decision_point: true
+    question: "Which version would you like to install?"
+    options:
+      - answer: "Latest version (recommended)"
+        action: "Fetch latest from storage"
+        command: 'VERSION=$(curl -s "https://storage.googleapis.com/storage/v1/b/gh-af/o?prefix=genlayer-node/bin/amd64" | grep -o ''"name": *"[^"]*"'' | sed -n ''s/.*\/\(v[^/]*\)\/.*/\1/p'' | sort -Vr | head -1)'
+      - answer: "Specific version"
+        action: "List available versions and let user choose"
+        command: 'curl -s "https://storage.googleapis.com/storage/v1/b/gh-af/o?prefix=genlayer-node/bin/amd64" | grep -o ''"name": *"[^"]*"'' | sed -n ''s/.*\/\(v[^/]*\)\/.*/\1/p'' | sort -ru | head -5'
+    notes:
+      - "If user input contains 'latest', automatically use the latest version"
+      - "Version is stored in ${VERSION} variable for subsequent steps"
+
+  - step: "Download node software"
+    detail: |
+      Download and extract to versioned directory structure with shared storage for database.
+
+      Directory structure created:
+      /opt/genlayer-node/
+      ├── v0.4/                    # Major version (shared storage)
+      │   └── data/node/           # Shared database directory
+      │       └── genlayer.db      # Database shared across v0.4.x
+      ├── v0.4.3/                  # Patch version
+      │   ├── bin/
+      │   ├── third_party/
+      │   ├── configs/
+      │   ├── data/node/
+      │   │   ├── genlayer.db -> ../../v0.4/data/node/genlayer.db (symlink)
+      │   │   ├── keystore/        # Version-specific keystore
+      │   │   └── logs/            # Version-specific logs
+      │   ├── docker-compose.yaml
+      │   └── .env
+      └── [convenience symlinks pointing to current version]
+
+    command: |
+      # Extract major version for shared storage (e.g., v0.4 from v0.4.3)
+      MAJOR_VERSION=$(echo ${VERSION} | grep -oE 'v[0-9]+\.[0-9]+' || echo ${VERSION})
+      echo "Installing version: ${VERSION} (major: ${MAJOR_VERSION})"
+
+      # Download to /tmp
+      wget https://storage.googleapis.com/gh-af/genlayer-node/bin/amd64/${VERSION}/genlayer-node-linux-amd64-${VERSION}.tar.gz -O /tmp/genlayer-node-${VERSION}.tar.gz
+
+      # Create major version directory for shared storage FIRST
+      sudo mkdir -p /opt/genlayer-node/${MAJOR_VERSION}/data/node
+      echo "Created major version directory: /opt/genlayer-node/${MAJOR_VERSION}/data/node"
+
+      # Create patch version directory structure
+      sudo mkdir -p /opt/genlayer-node/${VERSION}
+      sudo tar -xzvf /tmp/genlayer-node-${VERSION}.tar.gz -C /opt/genlayer-node/${VERSION} --strip-components=1
+
+      # Create version-specific directories (keystore and logs are NOT shared)
+      sudo mkdir -p /opt/genlayer-node/${VERSION}/data/node/keystore
+      sudo mkdir -p /opt/genlayer-node/${VERSION}/data/node/logs
+      sudo mkdir -p /opt/genlayer-node/${VERSION}/configs/node
+      echo "Created version-specific directories"
+
+      # Remove any existing genlayer.db file in patch version (we'll symlink it)
+      sudo rm -f /opt/genlayer-node/${VERSION}/data/node/genlayer.db
+
+      # Create symlink from patch version to major version shared database
+      sudo ln -sfn ../../${MAJOR_VERSION}/data/node/genlayer.db /opt/genlayer-node/${VERSION}/data/node/genlayer.db
+      echo "Created symlink: /opt/genlayer-node/${VERSION}/data/node/genlayer.db -> ../../${MAJOR_VERSION}/data/node/genlayer.db"
+
+      # Change ownership
+      sudo chown -R $USER:$USER /opt/genlayer-node
+
+      # Setup convenience symlinks pointing to current version
+      ln -sfn /opt/genlayer-node/${VERSION}/bin /opt/genlayer-node/bin
+      ln -sfn /opt/genlayer-node/${VERSION}/third_party /opt/genlayer-node/third_party
+      ln -sfn /opt/genlayer-node/${VERSION}/data /opt/genlayer-node/data
+      ln -sfn /opt/genlayer-node/${VERSION}/configs /opt/genlayer-node/configs
+      ln -sfn /opt/genlayer-node/${VERSION}/docker-compose.yaml /opt/genlayer-node/docker-compose.yaml
+      ln -sfn /opt/genlayer-node/${VERSION}/.env /opt/genlayer-node/.env
+
+      # Verify structure
+      echo "Directory structure:"
+      ls -la /opt/genlayer-node/
+      echo ""
+      echo "Major version directory:"
+      ls -la /opt/genlayer-node/${MAJOR_VERSION}/data/node/
+      echo ""
+      echo "Patch version data directory:"
+      ls -la /opt/genlayer-node/${VERSION}/data/node/
+
+  - step: "Run GenVM setup"
+    detail: "Download GenVM dependencies."
+    command: "python3 /opt/genlayer-node/third_party/genvm/bin/setup.py"
+
+  - step: "Create .env file"
+    decision_point: true
+    question: ".env file configuration"
+    check: "[ -f /opt/genlayer-node/.env ]"
+    options:
+      - answer: ".env exists - keep existing"
+        action: "Skip, optionally update specific values"
+      - answer: ".env exists - recreate"
+        action: "Backup and create new from template"
+      - answer: ".env doesn't exist - create new"
+        action: "Create from template with wizard values"
+
+  - step: "Decide: Configuration source"
+    decision_point: true
+    question: "How would you like to configure config.yaml?"
+    options:
+      - answer: "Interactive wizard (Recommended)"
+        next_step: "Run configuration wizard"
+      - answer: "Copy from previous version"
+        next_step: "Copy existing config"
+        requires: "previous_version_path"
+      - answer: "Manual configuration"
+        next_step: "Skip - user will edit manually"
+
+  - step: "Run configuration wizard"
+    condition: "config_source == wizard"
+    sub_steps:
+      - name: "Rollup URLs (Required - No Defaults)"
+        questions:
+          - "GenLayer Chain RPC URL (user must provide ZKSync HTTP RPC URL)"
+          - "GenLayer Chain WebSocket URL (user must provide ZKSync WebSocket URL)"
+      - name: "Node Identity"
+        questions:
+          - "Validator Wallet Address"
+          - "Operator Address"
+      - name: "RPC Endpoints"
+        questions:
+          - "Enable RPC endpoints? (default: yes)"
+          - "RPC port (default: 9151)"
+          - "Enable genlayer group? (default: yes)"
+          - "Enable genlayer_debug group? (default: no)"
+          - "Enable ethereum group? (default: yes)"
+          - "Enable zksync group? (default: yes)"
+      - name: "Ops Endpoints"
+        questions:
+          - "Enable ops endpoints? (default: yes)"
+          - "Ops port (default: 9153)"
+          - "Enable /metrics? (default: yes)"
+          - "Enable /health? (default: yes)"
+          - "Enable /balance? (default: yes)"
+      - name: "Metrics (if ops_metrics enabled)"
+        questions:
+          - "Default metrics interval (default: 15s)"
+          - "Enable node metrics? (default: yes)"
+          - "Enable GenVM metrics? (default: yes)"
+          - "Enable WebDriver metrics? (default: yes)"
+          - "Custom intervals for any collector? (default: no)"
+
+  - step: "Decide: Operator key source"
+    decision_point: true
+    question: "How would you like to configure the operator key?"
+    options:
+      - answer: "Import from staking wizard export"
+        command: "./bin/genlayernode account import --password '${PASSWORD}' --passphrase '${PASSPHRASE}' --path '${KEYSTORE_PATH}' --quiet"
+      - answer: "Copy from previous installation"
+        command: "cp -r ${PREV_KEYSTORE}/* /opt/genlayer-node/data/node/keystore/"
+      - answer: "Generate new operator key"
+        command: "./bin/genlayernode account new --setup --password '${PASSWORD}'"
+        warnings:
+          - "You must update your validator's operator address after generating!"
+          - "You must fund the new operator address with ETH for gas fees!"
+        post_steps:
+          - "Note the new operator address from command output"
+          - "Send ETH to the new operator address for transaction gas"
+          - "Update validator settings via staking UI or CLI to use new operator"
+
+  - step: "Configure LLM provider"
+    detail: "Set API key for chosen LLM provider in .env"
+    decision_point: true
+    question: "Which LLM provider?"
+    options:
+      - "Heurist → HEURISTKEY"
+      - "Comput3 → COMPUT3KEY"
+      - "io.net → IOINTELLIGENCEKEY"
+      - "OpenAI → OPENAIKEY"
+      - "LibertAI → LIBERTAI_API_KEY"
+      - "Anthropic → ANTHROPICKEY"
+      - "Google → GEMINIKEY"
+
+  - step: "Start WebDriver"
+    detail: "Start WebDriver container and wait for healthy status."
+    commands:
+      - "cd /opt/genlayer-node && docker compose up -d"
+      - "until docker inspect --format='{{.State.Health.Status}}' genlayer-node-webdriver | grep -q 'healthy'; do sleep 2; done"
+
+  - step: "Run doctor check"
+    detail: "Validate configuration before starting."
+    command: "cd /opt/genlayer-node && source .env && ./bin/genlayernode doctor"
+
+  - step: "Decide: Deployment method"
+    decision_point: true
+    question: "How would you like to run the node?"
+    options:
+      - answer: "Systemd Service (Recommended)"
+        next_step: "Create and start systemd service"
+      - answer: "Docker Compose"
+        next_step: "Start with docker compose"
+      - answer: "Manual (screen/tmux)"
+        next_step: "Start manually"
+
+  - step: "Create and start systemd service"
+    condition: "deployment_method == binary"
+    commands:
+      - "# Create service file"
+      - "sudo cp /tmp/genlayer-node.service /etc/systemd/system/"
+      - "sudo systemctl daemon-reload"
+      - "sudo systemctl enable genlayer-node"
+      - "sudo systemctl start genlayer-node"
+
+  - step: "Verify node is running"
+    commands:
+      - "curl -s http://localhost:9153/health | jq"
+      - "curl -s http://localhost:9153/metrics | grep genlayer_node_synced"
+
+  - step: "Decide: Clean up previous version?"
+    decision_point: true
+    condition: "previous_version_exists"
+    question: "Installation complete! Would you like to remove the previous version (${PREVIOUS_VERSION})?"
+    detail: |
+      This will free up disk space by removing the old version directory.
+      Shared database storage will be kept (used by the current version).
+    options:
+      - answer: "Yes, remove previous version"
+        command: "sudo rm -rf /opt/genlayer-node/${PREVIOUS_VERSION}"
+        note: "Only removes the patch version directory, keeps major version shared storage"
+      - answer: "No, keep previous version"
+        action: "Skip cleanup"
+        note: "Previous version will remain at /opt/genlayer-node/${PREVIOUS_VERSION}"
+
+  - step: "Decide: Enable monitoring?"
+    decision_point: true
+    question: "Enable telemetry push to central monitoring?"
+    options:
+      - answer: "Yes"
+        next_step: "Configure and start monitoring"
+      - answer: "No"
+        next_step: "Done"
+
+handoffs:
+  - skill: "genlayer-validator-monitor"
+    when: "After node is running, to set up monitoring dashboards."
+  - skill: "genlayer-validator-manage"
+    when: "To manage stake, exit, or update validator identity."
+  - skill: "genlayer-validator-upgrade"
+    when: "To upgrade to a new node version."

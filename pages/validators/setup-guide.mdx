@@ -6,6 +6,32 @@ Running a GenLayer Validator node ensures the security and reliability of the Ge
 
 For a deeper understanding of how staking works in GenLayer, see the [Staking documentation](/understand-genlayer-protocol/core-concepts/optimistic-democracy/staking).
 
+<Callout type="info" emoji="🤖">
+**Prefer an Assisted Setup?**
+
+If you have [Claude Code](https://docs.anthropic.com/en/docs/claude-code) installed, you can use an interactive wizard that guides you through the entire setup process.
+
+**Install the skill:**
+```bash
+claude
+/plugin marketplace add genlayerlabs/genlayer-docs
+/plugin install genlayer-validator-setup@genlayer-docs
+```
+
+**Run the wizard:**
+```bash
+# For new installations
+/genlayer-validator-setup install node
+
+# For upgrading an existing node
+/genlayer-validator-setup upgrade node
+```
+
+The wizard handles prerequisites verification, software download, configuration, operator key setup, and deployment - all interactively. It supports local machines, remote SSH servers, and cloud VMs (GCP, AWS, Azure).
+
+Continue below for the manual setup guide.
+</Callout>
+
 ## Create the Validator Wallet
 
 Before setting up your validator node, you need to create your validator wallet and stake GEN tokens.

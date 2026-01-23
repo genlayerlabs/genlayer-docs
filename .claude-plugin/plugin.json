@@ -1,0 +1,16 @@
+{
+  "name": "genlayer-docs",
+  "description": "GenLayer validator setup and node management skills",
+  "version": "1.3.0",
+  "author": "GenLayer",
+  "repository": "https://github.com/genlayerlabs/genlayer-docs",
+  "skills": [
+    {
+      "path": ".claude/skills/genlayer-validator-setup",
+      "name": "genlayer-validator-setup",
+      "description": "Interactive wizard to set up a GenLayer validator node on Linux",
+      "version": "1.3.0",
+      "tags": ["validator", "node", "installation", "blockchain", "genlayer"]
+    }
+  ]
+}
