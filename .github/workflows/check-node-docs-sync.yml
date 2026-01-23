@@ -1,0 +1,46 @@
+name: Check Node Documentation Sync
+
+on:
+  pull_request:
+    branches:
+      - main
+
+jobs:
+  check-sync:
+    name: 'Verify Node Documentation is Synced'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Run documentation sync scripts
+        run: |
+          npm run node-generate-changelog
+          npm run node-update-setup-guide
+          npm run node-update-config
+          npm run node-update-docker-compose
+          npm run node-generate-api-docs
+
+      - name: Check for uncommitted changes
+        run: |
+          if [[ -n "$(git status --porcelain)" ]]; then
+            echo "::error::Documentation is out of sync. Please run the sync scripts locally and commit the changes."
+            echo ""
+            echo "Files with uncommitted changes:"
+            git status --porcelain
+            echo ""
+            echo "Diff:"
+            git diff
+            exit 1
+          else
+            echo "Documentation is in sync."
+          fi

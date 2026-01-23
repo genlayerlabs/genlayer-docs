@@ -28,7 +28,9 @@ function updateConfigInSetupGuide() {
   
   // Pattern to match the YAML config block
   // Looks for the text before the yaml block, the yaml block itself, and the text after
-  const configPattern = /(You can use the following example configuration[^`]*```yaml\n)([\s\S]*?)(\n```)/;
+  // Note: The yaml block may have additional attributes like "copy" (```yaml copy)
+  // Uses [\s\S]*? to match any characters (including backticks in inline code) until the yaml block
+  const configPattern = /(You can use the following example configuration[\s\S]*?```yaml[^\n]*\n)([\s\S]*?)(\n```)/;
   
   if (configPattern.test(setupGuideContent)) {
     // Replace the config content while preserving the surrounding text

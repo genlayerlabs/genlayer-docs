@@ -58,57 +58,18 @@ function updateSetupGuideVersions() {
   // Read the setup guide
   let setupGuideContent = fs.readFileSync(setupGuidePath, 'utf8');
   
-  // Update the version list with abbreviated format
-  // Show all current minor version, then first 3 and last 3 of previous minor version with "..." in between
+  // Update the version list to match the curl command output
+  // The curl command uses: grep -v "rc" | head -n 5
+  // So we filter out rc versions and show only 5 versions
 
-  // Parse version to get major.minor
-  const parseMinorVersion = (v) => {
-    const match = v.match(/v(\d+)\.(\d+)\.\d+/);
-    if (!match) return null;
-    return `${match[1]}.${match[2]}`;
-  };
+  // Filter out testnet and rc versions for the display list (matches grep -v "rc")
+  const releaseVersions = versions.filter(v => !v.includes('testnet') && !v.includes('rc'));
 
-  // Filter out testnet versions for the display list
-  const releaseVersions = versions.filter(v => !v.includes('testnet'));
+  // Take only the first 5 versions (matches head -n 5)
+  const displayVersions = releaseVersions.slice(0, 5);
 
-  // Get the current minor version (from latest version)
-  const currentMinor = parseMinorVersion(latestVersion);
-
-  // Get all versions from current minor version
-  const currentMinorVersions = releaseVersions.filter(v => parseMinorVersion(v) === currentMinor);
-
-  // Get the previous minor version
-  const previousMinorVersions = releaseVersions.filter(v => {
-    const minor = parseMinorVersion(v);
-    return minor && minor !== currentMinor;
-  });
-
-  // Build the abbreviated list
-  const versionListItems = [
-    ...currentMinorVersions.map(v => `      ${v}`)
-  ];
-
-  if (previousMinorVersions.length > 0) {
-    const first3 = previousMinorVersions.slice(0, 3);
-    const last3 = previousMinorVersions.slice(-3);
-
-    // Add first 3 of previous minor
-    versionListItems.push(...first3.map(v => `      ${v}`));
-
-    // Add "..." if there are versions in between
-    if (previousMinorVersions.length > 6) {
-      versionListItems.push('      ...');
-    }
-
-    // Add last 3 of previous minor (avoid duplicates if list is small)
-    const last3Unique = last3.filter(v => !first3.includes(v));
-    versionListItems.push(...last3Unique.map(v => `      ${v}`));
-
-    // Add trailing "..." to indicate older versions exist
-    versionListItems.push('      ...');
-  }
-
-  const versionListIndented = versionListItems.join('\n');
+  // Build the version list (no indentation, matches actual curl output)
+  const versionListIndented = displayVersions.map(v => `   ${v}`).join('\n');
 
   // Replace the version list (between "You should see a list like this" and "Typically you will want")
   const versionListPattern = /(You should see a list like this\s*\n\s*```sh\n)([\s\S]*?)(\n\s*```\s*\n\s*Typically,? you will want)/;
