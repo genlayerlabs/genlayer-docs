@@ -125,25 +125,17 @@ See the [System Requirements](/validators/system-requirements) page for detailed
    You can use this command to list available versions:
 
    ```sh copy
-   curl -s "https://storage.googleapis.com/storage/v1/b/gh-af/o?prefix=genlayer-node/bin/amd64" | grep -o '"name": *"[^"]*"' | sed -n 's/.*\/\(v[^/]*\)\/.*/\1/p' | sort -ru | head -n 5
+   curl -s "https://storage.googleapis.com/storage/v1/b/gh-af/o?prefix=genlayer-node/bin/amd64" | grep -o '"name": *"[^"]*"' | sed -n 's/.*\/\(v[^/]*\)\/.*/\1/p' | sort -ru | grep -v "rc" | head -n 5
    ```
 
    You should see a list like this
 
    ```sh
-      v0.4.4
-      v0.4.3
-      v0.4.2
-      v0.4.1
-      v0.4.0
-      v0.3.11
-      v0.3.10
-      v0.3.9
-      ...
-      v0.3.2
-      v0.3.1
-      v0.3.0
-      ...
+   v0.4.4
+   v0.4.3
+   v0.4.2
+   v0.4.1
+   v0.4.0
    ```
 
    Typically, you will want to run the latest version
