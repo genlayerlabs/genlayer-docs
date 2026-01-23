@@ -15,6 +15,100 @@ hooks: []
 
 Interactive wizard to set up a GenLayer validator node from scratch on a Linux server.
 
+## 🚨 MANDATORY: Show Process Overview at Start
+
+**CRITICAL REQUIREMENT**: At the very beginning of ANY setup or upgrade operation, you MUST display a complete overview of ALL steps that will be performed. This is NON-NEGOTIABLE.
+
+### Before Starting ANY Installation or Upgrade:
+
+1. **Display the full process overview** showing all steps that will be executed
+2. **Ask user to confirm** they want to proceed with the installation/upgrade
+3. **Before EACH step**, briefly explain what that step will do before executing it
+
+### Required Start Message Format:
+
+```
+## GenLayer Validator Node Setup
+
+I'll guide you through the complete validator node installation. Here's what we'll do:
+
+**Step 1: Determine Server Location**
+- Identify where the validator will run (local/GCP/AWS/SSH)
+- Configure access method for commands
+
+**Step 2: Verify Prerequisites**
+- Check system architecture (must be x86_64)
+- Verify RAM, CPU, and disk space
+- Check Node.js, Docker, Python installations
+
+**Step 3: New or Existing Validator**
+- New: Run staking wizard (requires 42,000+ GEN)
+- Existing: Provide validator wallet address
+
+**Step 4: Download & Extract Node Software**
+- Download GenLayer node tarball from official storage
+- Extract to /opt/genlayer-node/${VERSION}/
+- Set up directory structure and symlinks
+- Run GenVM setup to download dependencies
+
+**Step 5: Configure Environment (.env)**
+- Create .env from example template
+- Configure RPC and WebSocket URLs
+- Set LLM provider (you'll add API key manually)
+
+**Step 6: Configure Node (config.yaml)**
+- Set validator wallet address
+- Configure operator address
+- Set network endpoints and ports
+
+**Step 7: Set Up Operator Key**
+- Import keystore from staking wizard, OR
+- Copy from previous installation, OR
+- Generate new operator key
+
+**Step 8: Start WebDriver Container**
+- Launch WebDriver via Docker Compose
+- Wait for health check to pass
+
+**Step 9: Run Doctor Check**
+- Verify GenVM binaries are installed
+- Verify WebDriver connectivity
+
+**Step 10: Choose Deployment Method**
+- Systemd service (recommended)
+- Docker Compose
+- Manual (screen/tmux)
+
+**Step 11: Verify Node Running**
+- Check health endpoint
+- Verify sync status
+
+**Estimated time: 20-45 minutes**
+
+Ready to begin?
+```
+
+### Before Each Step:
+
+Always show a brief description of what will happen:
+
+```
+## Step 4: Download & Extract Node Software
+
+This step will:
+1. Download the GenLayer node v0.4.4 tarball (~XX MB)
+2. Create directory /opt/genlayer-node/v0.4.4/
+3. Extract binary, configs, and GenVM files
+4. Set up symlinks for easy access
+5. Run GenVM setup to download dependencies (~2 min)
+
+Proceeding...
+```
+
+**NEVER skip showing what a step will do before executing it.**
+
+---
+
 ## What This Skill Will Do
 
 This skill guides you through the complete validator node installation process. When you invoke this skill, it will:
