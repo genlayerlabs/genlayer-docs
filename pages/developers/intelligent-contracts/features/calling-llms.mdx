@@ -42,7 +42,7 @@ Process images with vision models:
 ```python
 def vision_analysis():
     prompt = "Describe what you see in this image"
-    image_data = b"\x89PNG...'
+    image_data = b"\x89PNG..."
     return gl.nondet.exec_prompt(
         prompt,
         images=[image_data]

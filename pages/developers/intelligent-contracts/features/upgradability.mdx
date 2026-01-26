@@ -1,8 +1,8 @@
 # Upgradability
 
 During deployment contract may freeze certain storage slots. Frozen slots can be modified
-only if sender of the transaction is in *upgraders* list. Hence frozen empty *upgraders* list
-with frozen code slot makes contract non-upgradable.
+only if sender of the transaction is in *upgraders* list. Therefore, an empty locked *upgraders* list
+with a frozen code slot makes the contract non-upgradable.
 
 See [GenVM specification](https://sdk.genlayer.com/v0.2.7/spec/04-contract-interface/04-upgradability.html) for more details.
 
@@ -22,7 +22,7 @@ class Proxy(gl.Contract):
         root = gl.storage.Root.get()
         code_vla = root.code.get()
 
-        # If message.sender is not in upgraders, below will issue a VMError
+        # If gl.message.sender_address is not in upgraders, below will issue a VMError
         code_vla.truncate() # Clear existing code
         code_vla.extend(new_code) # Put the new code
 ```

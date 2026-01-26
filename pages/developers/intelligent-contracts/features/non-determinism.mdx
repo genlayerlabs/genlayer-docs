@@ -17,6 +17,8 @@ GenLayer provides three equality principles for handling non-deterministic opera
 Requires exact matches between validator outputs. Use for deterministic results or objective data:
 
 ```python
+import random
+
 def non_deterministic_function():
     # This code may produce different results on different nodes
     return random.randint(1, 100)

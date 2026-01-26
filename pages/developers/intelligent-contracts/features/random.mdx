@@ -1,7 +1,7 @@
 # Random
 
 Getting random in deterministic part may be difficult. Trying to delegate it to non-deterministic block will cause
-yout contract to either never agree on that block or to trust the leader. For that reason it is advised to use seeded random
+your contract to either never agree on that block or to trust the leader. For that reason it is advised to use seeded random.
 
 ## Seed acquisition methods
 
@@ -12,12 +12,13 @@ yout contract to either never agree on that block or to trust the leader. For th
 ```python3
 def get_random_seed() -> bytes:
     import os
+    import hashlib
     f = os.fdopen(0, 'rb', buffering=0, closefd=False)
     f.seek(0)
     hash_obj = hashlib.sha256()
     while True:
         chunk = f.read(8192)
         if not chunk:
-            return hash_obj.hexdigest()
+            return hash_obj.digest()
         hash_obj.update(chunk)
 ```

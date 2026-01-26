@@ -6,8 +6,9 @@ Send data to external services:
 
 ```python
 def post_request():
+    url = "https://test-server.genlayer.com/body/echo"
     response = gl.nondet.web.request(
-        webhook_url,
+        url,
         method='POST',
         body={}
     )
@@ -22,6 +23,7 @@ Render web page and extract content:
 
 ```python
 def render_page():
+    url = "https://test-server.genlayer.com/static/genvm/hello.html"
     # Render HTML content
     html_content = gl.nondet.web.render(url, mode='html')
     return html_content
@@ -35,6 +37,7 @@ Take screenshots of web pages:
 
 ```python
 def take_screenshot():
+    url = "https://test-server.genlayer.com/static/genvm/hello.html"
     # Capture page as image
     screenshot = gl.nondet.web.render(url, mode='screenshot')
     return screenshot
