@@ -1,0 +1,119 @@
+# Non-determinism
+
+## When to Use
+
+Non-deterministic operations are needed for:
+- External API calls
+- LLM and AI model calls
+- Random number generation
+- Any operation that might vary between nodes
+
+## Equality Principle
+
+GenLayer provides three equality principles for handling non-deterministic operations. For detailed information, see [Equivalence Principle](/developers/intelligent-contracts/equivalence-principle).
+
+### Strict Equality
+
+Requires exact matches between validator outputs. Use for deterministic results or objective data:
+
+```python
+import random
+
+def non_deterministic_function():
+    # This code may produce different results on different nodes
+    return random.randint(1, 100)
+
+# Validators reach consensus on the result
+result = gl.eq_principle.strict_eq(non_deterministic_function)
+```
+
+### Comparative Principle
+
+Validators perform the same task and compare results using predefined criteria:
+
+```python
+def comparative_example():
+    return gl.nondet.web.request("https://api.example.com/count")
+
+# Results are compared with acceptable margin of error
+result = gl.eq_principle.prompt_comparative(
+    comparative_example,
+    "Results should not differ by more than 5%"
+)
+```
+
+### Non-Comparative Principle
+
+Validators evaluate outputs based on task and criteria without performing the same computation:
+
+```python
+result = gl.eq_principle.prompt_non_comparative(
+    input="This product is amazing!",
+    task="Classify the sentiment as positive, negative, or neutral",
+    criteria="""
+        Output must be one of: positive, negative, neutral
+        Consider context and tone
+    """
+)
+```
+
+### Custom Equality Principles
+
+For advanced use cases, create custom consensus logic using `gl.vm.run_nondet`:
+
+```python
+def custom_consensus_example(self, data: str):
+    def leader_fn():
+        # Leader performs the operation
+        response = gl.nondet.exec_prompt(f"Rate this sentiment 1-10: <data>{data}</data>. Answer only with integer, without reasoning")
+        return int(response.strip())
+
+    def validator_fn(leader_result):
+        own_score = leader_fn()
+
+        if isinstance(leader_result, Exception):
+            return False
+
+        # Accept if within acceptable range
+        return abs(own_score - leader_result) <= 2
+
+    return gl.vm.run_nondet(leader_fn, validator_fn)
+```
+
+## Operations
+
+### Accessing External Data
+
+Use non-deterministic blocks for external API calls. For more web access examples, see [Web Access](/developers/intelligent-contracts/features/web-access):
+
+```python
+@gl.public.write
+def fetch_external_data(self):
+    def fetch_data():
+        # External API call - inherently non-deterministic
+        response = gl.nondet.web.request("https://example.com/data")
+        return response
+
+    # Consensus ensures all validators agree on the result
+    data = gl.eq_principle.strict_eq(fetch_data)
+    return data
+```
+
+### LLM Integration
+
+Execute AI prompts using comparative principle. For more detailed examples, see [Calling LLMs](/developers/intelligent-contracts/features/calling-llms):
+
+```python
+@gl.public.write
+def ai_decision(self, prompt: str):
+    def call_llm():
+        response = gl.nondet.exec_prompt(prompt)
+        return response.strip()
+
+    # Use comparative principle for LLM response consensus
+    decision = gl.eq_principle.prompt_comparative(
+        call_llm,
+        principle="Responses should be semantically equivalent in meaning"
+    )
+    return decision
+```

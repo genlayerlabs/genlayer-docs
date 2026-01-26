@@ -1,5 +1,6 @@
 {
   "introduction": "Introduction to Intelligent Contracts",
+  "features": "Feature List",
   "tooling-setup": "Tooling Setup",
   "first-contract": "Your First Contract",
   "types": "Types",
@@ -9,7 +10,6 @@
   "debugging": "Debugging",
   "deploying": "Deploying",
   "crafting-prompts": "Crafting Prompts",
-  "advanced-features": "Advanced Features",
   "security-and-best-practices": "Security and Best Practices",
   "examples": "Examples",
   "tools": "Tools",
