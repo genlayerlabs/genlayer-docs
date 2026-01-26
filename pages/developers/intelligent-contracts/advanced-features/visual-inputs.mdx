@@ -1,0 +1,161 @@
+# Visual Inputs: Images and Webpage Screenshots
+
+## Core concepts
+
+Use visual inputs in two ways:
+
+1. Images: pass one or more image byte arrays via `images=[...]` to `gl.nondet.exec_prompt(...)`.
+2. Webpage screenshots: call `gl.nondet.web.render(url, mode='screenshot', ...)` to get screenshot bytes and pass them to `images=[...]`.
+
+Notes:
+- Only `mode='screenshot'` returns image bytes compatible with `images=[...]`.
+- `mode='text'` and `mode='html'` return strings (not images); use them for content extraction, not visual inputs.
+- If a page is JS-driven, set `wait_after_loaded` (e.g. `"1000ms"`, `"1s"`) so content appears before capture.
+
+## Methods overview
+
+- **gl.nondet.exec_prompt(prompt: str, images: list[bytes] | None = None)**
+  - **prompt**: Instruction for the model.
+  - **images**: Optional list of PNG/JPEG bytes. One or multiple images.
+  - **returns**: Response string.
+
+- **gl.nondet.web.render(url: str, mode: Literal['text','html','screenshot'] = 'text', wait_after_loaded: str | None = None)**
+  - **url**: Absolute URL to render.
+  - **mode**: `'text' | 'html' | 'screenshot'` (default `'text'`).
+  - **wait_after_loaded**: Optional delay after DOM load (e.g. `"1000ms"`).
+  - **returns**: `str` for `text`/`html`; screenshot bytes for `screenshot`.
+
+## Notes on parameters
+
+- For `images`, supply raw bytes for each image. If you have a PIL image, save to a `BytesIO` buffer in PNG/JPEG and call `getvalue()`.
+- For webpage screenshots, use `gl.nondet.web.render(...)` and pass the returned bytes to `images=[...]`.
+---
+
+## Example 1: Analyze a single image
+
+```python filename="visual_inputs_single" copy
+# { "Depends": "py-genlayer:test" }
+
+from genlayer import *
+import sys
+
+
+class VisualSingle(gl.Contract):
+    color: str
+
+    def __init__(self):
+        pass
+
+    @gl.public.write
+    def analyze_image(self) -> None:
+        # 1) Provide image bytes (PNG/JPEG)
+        im_data = b"\x89PNG..."  # replace with actual bytes
+
+        # 2) Run non-deterministic prompt with a single image
+        def run() -> str:
+            return gl.nondet.exec_prompt(
+                'Return only the dominant color name of the image.',
+                images=[im_data],
+            )
+
+        # 3) Use strict_eq to achieve consensus on exact string output
+        self.color = gl.eq_principle.strict_eq(run)
+
+    @gl.public.view
+    def get_dominant_color(self) -> str:
+        return self.color
+```
+
+## Example 2: Compare two images
+
+```python filename="visual_inputs_multiple" copy
+# { "Depends": "py-genlayer:test" }
+
+from genlayer import *
+import io
+import sys
+
+
+class VisualCompare(gl.Contract):
+    difference: str
+
+    def __init__(self):
+        pass
+
+    @gl.public.write
+    def analyze_images(self) -> None:
+        # 1) Provide original image bytes
+        original = b"\x89PNG..."
+
+        # 2) Create a second image variant in-memory (e.g., mirrored)
+        def run() -> str:
+            import PIL.Image as Image
+            from PIL import ImageOps
+
+            im = Image.open(io.BytesIO(original))
+            mirrored = ImageOps.mirror(im.convert('RGB'))
+            buf = io.BytesIO()
+            mirrored.save(buf, format='PNG')
+            alt = buf.getvalue()
+
+            # 3) Ask the model to identify a single-word difference
+            return gl.nondet.exec_prompt(
+                'Describe the key difference. Choose from: mirroring, rotation, blur, contrast, brightness. Reply with one word.',
+                images=[original, alt],
+            )
+
+        self.difference = gl.eq_principle.strict_eq(run)
+
+    @gl.public.view
+    def get_difference(self) -> str:
+        return self.difference
+```
+
+## Example 3: Analyze a webpage screenshot
+
+```python filename="visual_inputs_web_screenshot" copy
+# { "Depends": "py-genlayer:test" }
+
+from genlayer import *
+import sys
+
+
+class VisualWeb(gl.Contract):
+    banner: str
+
+    def __init__(self):
+        pass
+
+    @gl.public.write
+    def analyze_banner(self) -> None:
+        # 1) Render page and capture screenshot (use wait_after_loaded if needed)
+        def run() -> str:
+            img = gl.nondet.web.render(
+                'https://test-server.genlayer.com/static/genvm/hello.html',
+                mode='screenshot',
+                # wait_after_loaded='1000ms',
+            )
+
+            # 2) Feed screenshot into prompt as image input
+            return gl.nondet.exec_prompt(
+                'Extract the main visible word. Answer with lowercase letters only.',
+                images=[img],
+            )
+
+        # 3) Use strict_eq since we expect identical string output across validators
+        self.banner = gl.eq_principle.strict_eq(run)
+
+    @gl.public.view
+    def read_banner(self) -> str:
+        return self.banner
+```
+
+---
+
+### Troubleshooting
+
+- Ensure image bytes are valid PNG/JPEG; corrupted bytes will cause parsing errors.
+- Prefer stable pages for screenshots; rapidly changing content may lead to inconsistent outputs.
+- When expecting exact equality, keep the prompt restrictive so validators converge on the same string.
+
+
