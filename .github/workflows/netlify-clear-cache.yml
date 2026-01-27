@@ -1,0 +1,13 @@
+name: Netlify (clear cache)
+
+on:
+  push:
+    branches: [main]
+
+jobs:
+  clear-cache-deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Trigger Netlify build (clear cache)
+        run: |
+          curl -X POST -d '{}' "${{ secrets.NETLIFY_BUILD_HOOK_URL }}?clear_cache=true&trigger_branch=main&trigger_title=main+clear+cache"
