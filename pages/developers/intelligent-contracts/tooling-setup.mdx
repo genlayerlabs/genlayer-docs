@@ -51,7 +51,29 @@ Ensure you have the following installed and updated:
    npm install -g genlayer
    ```
 
-2. **Initialize GenLayer Environment**
+2. **Install GenLayer Linter (Recommended)**
+
+   The GenLayer Linter validates your contracts before deployment, catching common errors early:
+
+   ```bash
+   pip install genvm-linter
+   ```
+
+   Run validation on your contracts:
+
+   ```bash
+   genvm-lint check my_contract.py
+   ```
+
+   The linter checks for:
+   - Forbidden imports (`random`, `os`, `sys`, etc.)
+   - Non-deterministic patterns
+   - SDK type validation
+   - Method signature correctness
+
+   See the [GenLayer Linter Reference](/api-references/genlayer-linter) for full documentation.
+
+3. **Initialize GenLayer Environment**
 
    Run the following command to set up your development environment:
 
