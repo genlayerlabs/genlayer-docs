@@ -626,22 +626,28 @@ source .env && docker run --rm --env-file ./.env \
 source .env && docker compose --profile node up -d
 ```
 
-### Quick Start with Docker Compose
+### Telemetry
 
 For a quick setup using Docker Compose:
 
 1. **Configure your `.env` file** with the required variables for monitoring:
 
    ```env copy
-   # Grafana Cloud credentials (request from Foundation team in Discord #testnet-asimov)
-   CENTRAL_MONITORING_URL=https://prometheus-prod-...grafana.net
-   CENTRAL_LOKI_URL=https://logs-prod-...grafana.net
-   MONITORING_USERNAME=1234567890          # your instance ID
-   MONITORING_PASSWORD=glc_xxxxxxxxxxxxxxxxxxxxxxxxxxxx  # API key
+   # Central monitoring server endpoints for GenLayer Foundation
+   CENTRAL_MONITORING_URL=https://prometheus-prod-66-prod-us-east-3.grafana.net/api/prom/push
+   CENTRAL_LOKI_URL=https://logs-prod-042.grafana.net/loki/api/v1/push
 
-   # Your node labels (customize for easy filtering in dashboards)
-   NODE_ID=0xYourValidatorAddressOrCustomID
-   VALIDATOR_NAME=validatorname
+   # Authentication for central monitoring
+   # Metrics (Prometheus) credentials
+   CENTRAL_MONITORING_USERNAME=your-metrics-username
+   CENTRAL_MONITORING_PASSWORD=your-metrics-password
+   # Logs (Loki) credentials
+   CENTRAL_LOKI_USERNAME=your-logs-username
+   CENTRAL_LOKI_PASSWORD=your-logs-password
+
+   # Node identification
+   NODE_ID=validator-001
+   VALIDATOR_NAME=MyValidator
    ```
 
 2. **Run docker compose**:
