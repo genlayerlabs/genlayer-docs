@@ -376,17 +376,44 @@ Look for messages indicating successful batch sending (no error codes like 401, 
   `instance="${NODE_ID}"` or `validator_name="${VALIDATOR_NAME}"`  
   (example: `genlayer_node_uptime_seconds{instance="0xYourID"}`).
 
-Troubleshooting
-- No local metrics:
+## Troubleshooting
+
+### Using the Alloy UI
+
+The Grafana Alloy service includes a built-in web UI for troubleshooting and monitoring the telemetry pipeline. Access it at:
+
+```
+http://localhost:12345
+```
+
+The Alloy UI provides:
+- **Targets view** (`/targets`): Shows the status of all scrape targets. Check if your node's metrics endpoint shows as **UP**.
+- **Graph view** (`/graph`): Explore and query collected metrics locally before they're forwarded.
+- **Component health**: View the status of all Alloy pipeline components (scrapers, relabelers, writers).
+
+<Callout type="info">
+  If metrics are not appearing in the central Grafana Cloud, first verify they show correctly in the local Alloy UI. This helps isolate whether the issue is with metrics collection or forwarding.
+</Callout>
+
+### Common Issues
+
+- **No local metrics**:
 
 ```bash copy
 curl http://localhost:9153/metrics
 ```
 
 — it should return Prometheus-formatted data.
-Authentication errors (401/403): Double-check CENTRAL_MONITORING_USERNAME, CENTRAL_MONITORING_PASSWORD, CENTRAL_LOKI_USERNAME, and CENTRAL_LOKI_PASSWORD in .env.
-No data pushed: Ensure URLs in .env have no trailing slash.
-Help: Share Alloy logs
+
+- **Authentication errors (401/403)**: Double-check `CENTRAL_MONITORING_USERNAME`, `CENTRAL_MONITORING_PASSWORD`, `CENTRAL_LOKI_USERNAME`, and `CENTRAL_LOKI_PASSWORD` in `.env`.
+
+- **No data pushed**: Ensure URLs in `.env` have no trailing slash.
+
+- **Target showing DOWN in Alloy UI**: Verify your node is running and the ops port (9153) is accessible. Check that `NODE_METRICS_ENDPOINT` in `.env` is correct.
+
+### Getting Help
+
+Share Alloy logs when asking for assistance:
 
 ```bash copy
 docker logs genlayer-node-alloy
