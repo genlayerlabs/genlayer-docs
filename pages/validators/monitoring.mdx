@@ -127,8 +127,18 @@ METRICS_SCRAPE_INTERVAL=15s
 2. **Add or verify the Alloy service in docker-compose.yaml (copy if missing):
 
 ```yaml
+# Grafana Alloy for both logs and metrics forwarding
+# Supports both single node and multi-node configurations
+#
+# Single Node Mode:
+#   Set NODE_ID, VALIDATOR_NAME, NODE_METRICS_ENDPOINT in .env
+#   docker compose --profile monitoring up -d
+#
+# Multi-Node Mode:
+#   Set SCRAPE_TARGETS_JSON in .env
+#   docker compose --profile monitoring up -d
 alloy:
-  image: grafana/alloy:latest
+  image: grafana/alloy:v1.12.0
   container_name: genlayer-node-alloy
   command:
     - run
@@ -140,20 +150,36 @@ alloy:
     - ${NODE_LOGS_PATH:-./data/node/logs}:/var/log/genlayer:ro
     - alloy_data:/var/lib/alloy
   environment:
-    - CENTRAL_LOKI_URL=${CENTRAL_LOKI_URL}
-    - CENTRAL_MONITORING_URL=${CENTRAL_MONITORING_URL}
-    - CENTRAL_MONITORING_USERNAME=${CENTRAL_MONITORING_USERNAME}
-    - CENTRAL_MONITORING_PASSWORD=${CENTRAL_MONITORING_PASSWORD}
-    - CENTRAL_LOKI_USERNAME=${CENTRAL_LOKI_USERNAME}
-    - CENTRAL_LOKI_PASSWORD=${CENTRAL_LOKI_PASSWORD}
-    - NODE_ID=${NODE_ID}
-    - VALIDATOR_NAME=${VALIDATOR_NAME}
-    - NODE_METRICS_ENDPOINT=${NODE_METRICS_ENDPOINT}
+    # Central monitoring endpoints
+    - CENTRAL_LOKI_URL=${CENTRAL_LOKI_URL:-https://logs-prod-042.grafana.net/loki/api/v1/push}
+    - CENTRAL_MONITORING_URL=${CENTRAL_MONITORING_URL:-https://prometheus-prod-66-prod-us-east-3.grafana.net/api/prom/push}
+
+    # Metrics (Prometheus) authentication
+    - CENTRAL_MONITORING_USERNAME=${CENTRAL_MONITORING_USERNAME:-telemetric}
+    - CENTRAL_MONITORING_PASSWORD=${CENTRAL_MONITORING_PASSWORD:-12345678}
+
+    # Logs (Loki) authentication
+    - CENTRAL_LOKI_USERNAME=${CENTRAL_LOKI_USERNAME:-telemetric}
+    - CENTRAL_LOKI_PASSWORD=${CENTRAL_LOKI_PASSWORD:-12345678}
+
+    # Single node configuration
+    - NODE_ID=${NODE_ID:-local}
+    - VALIDATOR_NAME=${VALIDATOR_NAME:-default}
+    - NODE_METRICS_ENDPOINT=${NODE_METRICS_ENDPOINT:-host.docker.internal:9153}
+
+    # Multi-node configuration
+    # When set, overrides single node config above
     - SCRAPE_TARGETS_JSON=${SCRAPE_TARGETS_JSON:-}
+
+    # Scraping configuration
     - METRICS_SCRAPE_INTERVAL=${METRICS_SCRAPE_INTERVAL:-15s}
     - METRICS_SCRAPE_TIMEOUT=${METRICS_SCRAPE_TIMEOUT:-10s}
     - ALLOY_SELF_MONITORING_INTERVAL=${ALLOY_SELF_MONITORING_INTERVAL:-60s}
+
+    # Log collection configuration
     - LOG_FILE_PATTERN=${LOG_FILE_PATTERN:-/var/log/genlayer/node*.log}
+
+    # Log batching configuration
     - LOKI_BATCH_SIZE=${LOKI_BATCH_SIZE:-1MiB}
     - LOKI_BATCH_WAIT=${LOKI_BATCH_WAIT:-1s}
   ports:
@@ -161,6 +187,8 @@ alloy:
   restart: unless-stopped
   profiles:
     - monitoring
+  extra_hosts:
+    - "host.docker.internal:host-gateway"
 
 volumes:
   alloy_data:
@@ -176,51 +204,69 @@ volumes:
 // Log Collection and Forwarding
 // ==========================================
 
+// Discovery component to find log files using local.file_match
+// Supports different log file patterns:
+// - Single node: "/var/log/genlayer/node.log"
+// - Multi-node: "/var/log/genlayer/*/logs/node.log" (each node in subdirectory)
+// - Custom pattern via LOG_FILE_PATTERN env var
 local.file_match "genlayer_logs" {
   path_targets = [{
-    __path__ = coalesce(env("LOG_FILE_PATTERN"), "/var/log/genlayer/node*.log"),
+    __path__ = coalesce(sys.env("LOG_FILE_PATTERN"), "/var/log/genlayer/node*.log"),
   }]
 }
 
+// Relabel to add metadata labels to log entries
 discovery.relabel "add_labels" {
   targets = local.file_match.genlayer_logs.targets
 
+  // Add instance label from environment variable
   rule {
     target_label = "instance"
-    replacement  = env("NODE_ID")
+    replacement  = sys.env("NODE_ID")
   }
 
+  // Add validator_name label from environment variable
   rule {
     target_label = "validator_name"
-    replacement  = env("VALIDATOR_NAME")
+    replacement  = sys.env("VALIDATOR_NAME")
   }
 
+  // Add component label
   rule {
     target_label = "component"
     replacement  = "alloy"
   }
 
+  // Add job label
   rule {
     target_label = "job"
     replacement  = "genlayer-node"
   }
 }
 
+// Source component to read log files
 loki.source.file "genlayer" {
   targets    = discovery.relabel.add_labels.output
   forward_to = [loki.write.central.receiver]
+
+  // Tail from end to avoid ingesting entire log history on startup
   tail_from_end = true
 }
 
+// Write logs to central Loki instance
 loki.write "central" {
   endpoint {
-    url = env("CENTRAL_LOKI_URL") + "/loki/api/v1/push"
+    url = sys.env("CENTRAL_LOKI_URL")
+
+    // HTTP Basic Authentication
     basic_auth {
-      username = env("CENTRAL_LOKI_USERNAME")
-      password = env("CENTRAL_LOKI_PASSWORD")
+      username = sys.env("CENTRAL_LOKI_USERNAME")
+      password = sys.env("CENTRAL_LOKI_PASSWORD")
     }
-    batch_size = coalesce(env("LOKI_BATCH_SIZE"), "1MiB")
-    batch_wait = coalesce(env("LOKI_BATCH_WAIT"), "1s")
+
+    // Configurable batch settings for efficient log sending
+    batch_size = coalesce(sys.env("LOKI_BATCH_SIZE"), "1MiB")
+    batch_wait = coalesce(sys.env("LOKI_BATCH_WAIT"), "1s")
   }
 }
 
@@ -228,30 +274,58 @@ loki.write "central" {
 // Prometheus Metrics Collection and Forwarding
 // ==========================================
 
+// Scrape metrics from GenLayer node(s)
+// Supports both single node and multi-node configurations
+//
+// Single Node Mode:
+//   Set NODE_METRICS_ENDPOINT, NODE_ID, VALIDATOR_NAME
+//
+// Multi-Node Mode:
+//   Set SCRAPE_TARGETS_JSON with JSON array of target objects
+//   Example: [{"__address__":"host.docker.internal:9250","instance":"0x...","validator_name":"node-1"}]
 prometheus.scrape "genlayer_node" {
-  targets = json_decode(coalesce(env("SCRAPE_TARGETS_JSON"), format("[{\"__address__\":\"%s\",\"instance\":\"%s\",\"validator_name\":\"%s\"}]", coalesce(env("NODE_METRICS_ENDPOINT"), "localhost:9153"), coalesce(env("NODE_ID"), "local"), coalesce(env("VALIDATOR_NAME"), "default"))))
+  // Dynamic targets based on environment variable
+  // If SCRAPE_TARGETS_JSON is set, use it (multi-node mode)
+  // Otherwise, build single target from individual env vars (single node mode)
+  targets = encoding.from_json(coalesce(sys.env("SCRAPE_TARGETS_JSON"), string.format("[{\"__address__\":\"%s\",\"instance\":\"%s\",\"validator_name\":\"%s\"}]", coalesce(sys.env("NODE_METRICS_ENDPOINT"), "host.docker.internal:9153"), coalesce(sys.env("NODE_ID"), "local"), coalesce(sys.env("VALIDATOR_NAME"), "default"))))
+
   forward_to = [prometheus.relabel.metrics.receiver]
-  scrape_interval = coalesce(env("METRICS_SCRAPE_INTERVAL"), "15s")
-  scrape_timeout  = coalesce(env("METRICS_SCRAPE_TIMEOUT"), "10s")
+
+  // Configurable scrape intervals
+  scrape_interval = coalesce(sys.env("METRICS_SCRAPE_INTERVAL"), "15s")
+  scrape_timeout  = coalesce(sys.env("METRICS_SCRAPE_TIMEOUT"), "10s")
 }
 
+// Relabel metrics to filter before forwarding
 prometheus.relabel "metrics" {
   forward_to = [prometheus.remote_write.central.receiver]
-  // Optional: filter only GenLayer metrics to save bandwidth
-  // rule {
-  //   source_labels = ["__name__"]
-  //   regex        = "genlayer_.*"
-  //   action       = "keep"
-  // }
+
+  // Option 1: Forward all metrics (default)
+  // Currently forwarding all metrics from the node.
+
+  // Option 2: Only keep genlayer_node_* metrics to reduce bandwidth (recommended)
+  // To enable filtering and reduce bandwidth, uncomment the following rule:
+  /*
+  rule {
+    source_labels = ["__name__"]
+    regex        = "genlayer_node_.*"
+    action       = "keep"
+  }
+  */
 }
 
+// Remote write configuration for sending metrics to central Prometheus
 prometheus.remote_write "central" {
   endpoint {
-    url = env("CENTRAL_MONITORING_URL") + "/api/v1/write"
+    url = sys.env("CENTRAL_MONITORING_URL")
+
+    // HTTP Basic Authentication
     basic_auth {
-      username = env("CENTRAL_MONITORING_USERNAME")
-      password = env("CENTRAL_MONITORING_PASSWORD")
+      username = sys.env("CENTRAL_MONITORING_USERNAME")
+      password = sys.env("CENTRAL_MONITORING_PASSWORD")
     }
+
+    // Queue configuration for reliability
     queue_config {
       capacity          = 10000
       max_shards        = 5
@@ -265,12 +339,16 @@ prometheus.remote_write "central" {
 // Alloy Self-Monitoring
 // ==========================================
 
+// Alloy internal exporter for health monitoring
 prometheus.exporter.self "alloy" {}
 
+// Expose Alloy's own metrics on the HTTP server
 prometheus.scrape "alloy" {
   targets    = prometheus.exporter.self.alloy.targets
-  forward_to = []
-  scrape_interval = coalesce(env("ALLOY_SELF_MONITORING_INTERVAL"), "60s")
+  forward_to = []  // Not forwarding Alloy metrics to reduce noise
+
+  // Configurable scrape interval for Alloy's internal health monitoring
+  scrape_interval = coalesce(sys.env("ALLOY_SELF_MONITORING_INTERVAL"), "60s")
 }
 ```
 
