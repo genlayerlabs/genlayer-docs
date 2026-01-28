@@ -119,12 +119,12 @@ NODE_ID=validator-001
 VALIDATOR_NAME=MyValidator
 
 # Usually defaults are fine
-NODE_METRICS_ENDPOINT=localhost:9153
+NODE_METRICS_ENDPOINT=host.docker.internal:9153
 LOG_FILE_PATTERN=/var/log/genlayer/node*.log
 METRICS_SCRAPE_INTERVAL=15s
 ```
 
-2. **Add or verify the Alloy service in docker-compose.yaml (copy if missing):
+2. **Add or verify the Alloy service in docker-compose.yaml** (copy if missing):
 
 ```yaml
 # Grafana Alloy for both logs and metrics forwarding
