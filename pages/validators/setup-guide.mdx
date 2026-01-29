@@ -21,6 +21,72 @@ For a deeper understanding of how staking works in GenLayer, see the [Staking do
 
 GPU not required unless running LLMs locally. See [detailed requirements](/validators/system-requirements) for more info.
 
+## Choose Your Setup Method
+
+GenLayer offers two ways to set up your validator node. Both methods result in the same configuration—choose the one that fits your workflow.
+
+| Method | Best For |
+|--------|----------|
+| **AI-Assisted Setup** | New validators, quick setup, guided troubleshooting |
+| **Manual Setup** | Experienced operators, custom configurations, automation pipelines |
+
+### Option 1: AI-Assisted Setup (Recommended)
+
+We've released an interactive AI wizard that guides you through the entire validator setup process step-by-step. Instead of reading through documentation and running commands manually, the wizard handles everything interactively.
+
+#### What it does
+
+- Walks you through all setup steps interactively
+- Checks prerequisites automatically (architecture, RAM, Docker, Node.js, Python)
+- Detects common issues before they cause problems (port conflicts, disk space, wrong architecture)
+- Generates configurations based on your answers
+- Supports multiple deployment options: local machine, remote SSH, GCP, AWS, Azure
+- Handles both new validators (staking wizard) and existing validators
+- Includes zero-downtime update procedure for upgrades
+
+#### How to use it
+
+1. Install [Claude Code](https://claude.ai/code) (Anthropic's CLI tool)
+
+2. Add the GenLayer plugin marketplace and install the plugin:
+   ```bash copy
+   claude /plugin marketplace add genlayerlabs/skills
+   claude /plugin install genlayernode@genlayerlabs
+   ```
+
+3. Run the wizard:
+   ```bash copy
+   claude /genlayernode install
+   ```
+
+That's it. The wizard will ask questions and guide you through everything.
+
+#### Available commands
+
+| Command | Description |
+|---------|-------------|
+| `/genlayernode install` | Fresh validator setup |
+| `/genlayernode update` | Upgrade existing node |
+| `/genlayernode configure grafana` | Set up monitoring |
+
+<Callout type="info">
+  The AI wizard uses the same underlying steps as the manual setup below. You can switch between methods at any point or use the manual guide as a reference.
+</Callout>
+
+For more information, see the [GenLayer Skills plugin repository](https://github.com/genlayerlabs/skills).
+
+---
+
+### Option 2: Manual Setup
+
+If you prefer to run commands manually, need fine-grained control over each step, or are integrating with existing automation pipelines, follow the detailed instructions in the sections below.
+
+The manual setup covers:
+1. **Create the Validator Wallet** — Set up your wallet and stake GEN tokens
+2. **Set Up the Validator Node** — Download, configure, and run the node software
+
+---
+
 ## Create the Validator Wallet
 
 Before setting up your validator node, you need to create your validator wallet and stake GEN tokens.
