@@ -142,18 +142,18 @@ One full node can be shared between multiple validators. The optimal validator-t
    You should see a list like this
 
    ```sh
+   v0.4.5
    v0.4.4
    v0.4.3
    v0.4.2
    v0.4.1
-   v0.4.0
    ```
 
    Typically, you will want to run the latest version
 
 2. Download the packaged application
    ```sh copy
-   export version=v0.4.4 # set your desired version here
+   export version=v0.4.5 # set your desired version here
    wget https://storage.googleapis.com/gh-af/genlayer-node/bin/amd64/${version}/genlayer-node-linux-amd64-${version}.tar.gz
    ```
 3. Extract the node software
@@ -273,7 +273,7 @@ genvm:
   root_dir: ./third_party/genvm
   start_manager: true # if true node will start genvm manager itself
   manager_url: http://127.0.0.1:3999
-  permits: # Leave empty for autodiscovery, put a number for updating genvm permits on startup
+  permits: 8 # Leave empty for autodiscovery, put a number for updating genvm permits on startup
 # Advanced configuration
 merkleforest:
   maxdepth: 16

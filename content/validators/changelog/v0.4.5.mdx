@@ -1,0 +1,19 @@
+## v0.4.5
+
+### New features
+
+- Decouple epoch advance from finalization, allowing them to run as independent processes with separate retry mechanisms
+- Implement sync waiting mechanism to ensure GenVM has latest state before contract execution
+- Add `genlayer_node_info` Prometheus metric exposing node and protocol version
+
+### Bug fixes
+
+- Add canPrime check to verify epoch state before validator priming, preventing priming when epochs are out of sync
+- Return user-friendly error instead of system error when sync times out
+- Fix genvm executor process handling
+
+### Misc
+
+- Improve GenVM logging with context-aware logger
+- Update health checker to use ZkSync connectivity checks
+- Increase default genvm permits to 8 in config.yaml.example
