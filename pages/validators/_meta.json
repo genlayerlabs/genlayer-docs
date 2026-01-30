@@ -1,8 +1,5 @@
 {
   "setup-guide": "Setup Guide",
-  "monitoring": "Monitoring & Telemetry",
-  "system-requirements": "System Requirements",
-  "genvm-configuration": "GenVM Configuration",
   "upgrade": "Upgrade Guide",
   "changelog": "Changelog"
 }

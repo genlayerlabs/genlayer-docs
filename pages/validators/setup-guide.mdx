@@ -4,88 +4,7 @@ import { Callout } from "nextra-theme-docs";
 
 Running a GenLayer Validator node ensures the security and reliability of the GenLayer network. Below are the requirements for running a GenLayer validator.
 
-Validators require both a staking deposit and a validator priming transaction to enter the set.
-
 For a deeper understanding of how staking works in GenLayer, see the [Staking documentation](/understand-genlayer-protocol/core-concepts/optimistic-democracy/staking).
-
-## System Requirements
-
-| Resource | Requirement |
-|----------|-------------|
-| **Memory** | 16 GB RAM |
-| **CPU** | 8-core (AMD64 only) |
-| **Disk** | 128 GB SSD/NVMe |
-| **Network** | 100 Mbps |
-| **OS** | 64-bit Linux |
-| **Software** | Docker, Python 3 (with pip and venv) |
-
-GPU not required unless running LLMs locally. See [detailed requirements](/validators/system-requirements) for more info.
-
-## Choose Your Setup Method
-
-GenLayer offers two ways to set up your validator node. Both methods result in the same configuration—choose the one that fits your workflow.
-
-| Method | Best For |
-|--------|----------|
-| **AI-Assisted Setup** | New validators, quick setup, guided troubleshooting |
-| **Manual Setup** | Experienced operators, custom configurations, automation pipelines |
-
-### Option 1: AI-Assisted Setup (Recommended)
-
-We've released an interactive AI wizard that guides you through the entire validator setup process step-by-step. Instead of reading through documentation and running commands manually, the wizard handles everything interactively.
-
-#### What it does
-
-- Walks you through all setup steps interactively
-- Checks prerequisites automatically (architecture, RAM, Docker, Node.js, Python)
-- Detects common issues before they cause problems (port conflicts, disk space, wrong architecture)
-- Generates configurations based on your answers
-- Supports multiple deployment options: local machine, remote SSH, GCP, AWS, Azure
-- Handles both new validators (staking wizard) and existing validators
-- Includes minimal-downtime update procedure for upgrades
-
-#### How to use it
-
-1. Install [Claude Code](https://claude.ai/code) (Anthropic's CLI tool)
-
-2. Add the GenLayer plugin marketplace and install the plugin:
-   ```bash copy
-   claude /plugin marketplace add genlayerlabs/claude-code-skills
-   claude /plugin install genlayernode@genlayerlabs
-   ```
-
-3. Run the wizard:
-   ```bash copy
-   claude /genlayernode install
-   ```
-
-That's it. The wizard will ask questions and guide you through everything.
-
-#### Available commands
-
-| Command | Description |
-|---------|-------------|
-| `/genlayernode install` | Fresh validator setup |
-| `/genlayernode update` | Upgrade existing node |
-| `/genlayernode configure grafana` | Set up monitoring |
-
-<Callout type="info">
-  The AI wizard uses the same underlying steps as the manual setup below. You can switch between methods at any point or use the manual guide as a reference.
-</Callout>
-
-For more information, see the [GenLayer Claude Code Skills plugin repository](https://github.com/genlayerlabs/claude-code-skills).
-
----
-
-### Option 2: Manual Setup
-
-If you prefer to run commands manually, need fine-grained control over each step, or are integrating with existing automation pipelines, follow the detailed instructions in the sections below.
-
-The manual setup covers:
-1. **Create the Validator Wallet** — Set up your wallet and stake GEN tokens
-2. **Set Up the Validator Node** — Download, configure, and run the node software
-
----
 
 ## Create the Validator Wallet
 
@@ -109,7 +28,7 @@ The wizard outputs all three addresses at the end. Save them - you'll need the V
 
 - **Node.js** (v18 or higher)
 - **GenLayer CLI** - Install the latest version:
-  ```bash copy
+  ```bash
   npm install -g genlayer
   ```
 - **GEN tokens** - You need at least **42,000 GEN** for the minimum self-stake requirement
@@ -118,7 +37,7 @@ The wizard outputs all three addresses at the end. Save them - you'll need the V
 
 The easiest way to create your validator wallet is using the interactive wizard:
 
-```bash copy
+```bash
 genlayer staking wizard
 ```
 
@@ -144,13 +63,13 @@ The wizard creates and exports an operator keystore file for you to transfer to 
 
 After completing the wizard, verify your status:
 
-```bash copy
+```bash
 genlayer staking validator-info --validator 0xYourValidatorWallet...
 ```
 
 ### Managing Your Validator
 
-```bash copy
+```bash
 # Add more stake
 genlayer staking validator-deposit --amount 1000gen
 
@@ -193,6 +112,53 @@ Each validator needs access to a [ZKSync Full Node](https://docs.zksync.io/zksyn
 
 One full node can be shared between multiple validators. The optimal validator-to-node ratio is currently under evaluation.
 
+### System Requirements
+
+Below are the **initial** recommended system requirements. These guidelines may change as the network grows and evolves.
+
+#### RAM
+
+- **Recommended:** 16 GB
+- **Why:**
+  - GenLayer's _genvm_ can spawn multiple Sub-VMs for contract calls and non-deterministic blocks.
+  - Each Sub-VM can consume up to ~4 GB of RAM for storage.
+
+#### CPU
+
+- **Recommended:** Modern multi-core processor with at least 8 cores/16 threads
+
+#### Architecture
+
+- **Recommended:** `AMD64`
+- `ARM64` is not supported at this time
+
+#### Storage
+
+- **Recommended Disk Space:** 128 GB+
+- **Preferred Type:** SSD or NVMe (M.2)
+
+#### Network
+
+- 100 Mbps connection
+- **Recommended:**: 1 Gbps+
+
+#### GPU (Optional)
+
+- GPU is **Not Required**
+- If you want to run LLMs locally, you will need to select appropriate hardware (typically a CUDA-compatible GPU with sufficient VRAM for the model you intend to use)
+
+<Callout emoji="⚠️">
+  These requirements are a starting point. As GenLayer evolves and usage
+  patterns change (e.g., more complex AI-driven Intelligent Contracts), the
+  recommended hardware may change.
+</Callout>
+
+#### Software
+
+- Operating System - 64-bit Linux (Ubuntu, Debian, CentOS, etc.)
+- `docker` - for running the WebDriver container
+- `python3`, `python3-pip` and `python3-venv` for GenVM setup
+
 ### Setup
 
 #### Download the node software
@@ -201,41 +167,48 @@ One full node can be shared between multiple validators. The optimal validator-t
 
    You can use this command to list available versions:
 
-   ```sh copy
-   curl -s "https://storage.googleapis.com/storage/v1/b/gh-af/o?prefix=genlayer-node/bin/amd64" | grep -o '"name": *"[^"]*"' | sed -n 's/.*\/\(v[^/]*\)\/.*/\1/p' | sort -ru | grep -v "rc" | head -n 5
+   ```sh
+   curl -s "https://storage.googleapis.com/storage/v1/b/gh-af/o?prefix=genlayer-node/bin/amd64" | grep -o '"name": *"[^"]*"' | sed -n 's/.*\/\(v[^/]*\)\/.*/\1/p' | sort -ru
    ```
 
    You should see a list like this
 
    ```sh
-   v0.4.5
-   v0.4.4
-   v0.4.3
-   v0.4.2
-   v0.4.1
+      v0.4.3
+      v0.4.2
+      v0.4.1
+      v0.4.0
+      v0.3.11
+      v0.3.10
+      v0.3.9
+      ...
+      v0.3.2
+      v0.3.1
+      v0.3.0
+      ...
    ```
 
    Typically, you will want to run the latest version
 
 2. Download the packaged application
-   ```sh copy
-   export version=v0.4.5 # set your desired version here
+   ```sh
+   export version=v0.4.3 # set your desired version here
    wget https://storage.googleapis.com/gh-af/genlayer-node/bin/amd64/${version}/genlayer-node-linux-amd64-${version}.tar.gz
    ```
 3. Extract the node software
-   ```sh copy
+   ```sh
    mkdir -p ${version}
    tar -xzvf `genlayer-node-linux-amd64-${version}.tar.gz` -C `./${version}`
    ```
 4. Change the directory
 
-   ```sh copy
+   ```sh
    cd `./${version}`
    ```
 
 5. Run Genvm setup
 
-   ```sh copy
+   ```sh
    python3 ./third_party/genvm/bin/setup.py
    ```
 It does following:
@@ -255,9 +228,9 @@ This is the main configuration file of your node. Without it, your node won't st
 
 The file needs to be located at `configs/node/config.yaml`
 
-You can use the following example configuration. **Note:** For most users, you will only need to modify the `genlayerchainrpcurl` and `genlayerchainwebsocketurl` values below.
+You can use the following example configuration. **Note:** For most users, you will only need to modify the `zksyncurl` and `zksyncwebsocketurl` values below.
 
-```yaml copy
+```yaml
 # rollup configuration
 rollup:
   genlayerchainrpcurl: "TODO: Set your GenLayer Chain ZKSync HTTP RPC URL here" # GenLayer Chain RPC URL
@@ -339,7 +312,7 @@ genvm:
   root_dir: ./third_party/genvm
   start_manager: true # if true node will start genvm manager itself
   manager_url: http://127.0.0.1:3999
-  permits: 8 # Leave empty for autodiscovery, put a number for updating genvm permits on startup
+  permits: # Leave empty for autodiscovery, put a number for updating genvm permits on startup
 # Advanced configuration
 merkleforest:
   maxdepth: 16
@@ -394,7 +367,7 @@ Any configuration value in `config.yaml` can be overridden using environment var
 
 **Usage example:**
 
-```sh copy
+```sh
 # Override the RPC port
 export GENLAYERNODE_CONSENSUS_CONTRACTMAINADDRESS="0x..."
 
@@ -409,7 +382,59 @@ Environment variables take precedence over values in `config.yaml`, making them 
 
 #### GenVM Configuration
 
-See the [GenVM Configuration](/validators/genvm-configuration) page for detailed LLM provider setup, configuration files, and advanced features like greyboxing.
+You need to set up an LLM for your node to use to provide answers to natural language prompts. You can use any LLM you wish, however the quality of its answers will affect the performance of your node.
+
+<Callout>
+  GenLayer has partnered with multiple LLM providers to offer free credits for validators:
+
+  **[Heurist](https://www.heurist.ai/)** - A Layer 2 network for AI model hosting and inference, built on the ZK Stack. It offers serverless access to open-source AI models through a decentralized network. GenLayer Validators can obtain free [Heurist API credits](https://dev-api-form.heurist.ai) by using the referral code: _"genlayer"_.
+
+  **[Comput3](https://genlayer.comput3.ai/)** - A decentralized compute network providing access to various AI models. GenLayer Validators can use the Comput3.ai inferencing API with access to llama3, hermes3 and qwen3 models. Validators can obtain free [Comput3 API credits](https://genlayer.comput3.ai/) to get started with their validator setup.
+
+  **[io.net](/partners/ionet)** - A decentralized compute network providing GPU access for AI inference. GenLayer Validators can create an account at [id.io.net](https://id.io.net/login) and obtain free credits by [filling out this form](https://form.typeform.com/to/pDmCCViV).
+</Callout>
+
+The GenVM configuration files are located at `third_party/genvm/config/`
+
+#### `genvm-module-llm.yaml`
+
+This is the configuration file of the LLM module. In this file you can set up and configure various LLM providers, as well as the system prompts of your validator.
+
+You should not need to modify this in general.
+
+However, from here you can:
+- turn on and off various LLMs by setting the `enabled` field to `false`: By default they all come enabled for you to use. You will get warnings in the logs for each one that's enabled and not configured. Disabling non used LLM providers will hide those warnings
+
+Note environment variable names for LLM API keys (e.g., `HEURISTKEY`, `COMPUT3KEY`, `IOINTELLIGENCE_API_KEY`). You will need to ensure the appropriate key is correctly set before [running the node](#running-the-node).
+
+#### `genvm-module-web.yaml`
+
+This is the configuration of webdriver module that enables the GenVM to access the internet. You should not need to modify this.
+
+#### `genvm-manager.yaml`
+
+This is the configuration of the GenVM manager. You should not need to modify this. However, if you are running the node on
+macos (natively), you may want to set `permits` to some large value, as auto-detection is not supported there yet, such as `32`.
+
+#### Greyboxing LLMs
+
+Greyboxing is a way to further customise your LLM setup to improve its performance as well as security.
+
+<Callout type="info" emoji="💡">
+  Greyboxing is an advanced feature. Familiarity with Lua scripting and LLM
+  prompt engineering is recommended for customization.
+</Callout>
+
+`genvm-modules llm` provides user with ability to customize [greyboxing](/_temp/security-and-best-practices/grey-boxing) via lua scripting. Right now users can customize prompt templates, specify temperature and system prompt.
+
+Related scripts are located at:
+
+1. `./scripts/genvm-greyboxing.lua` – user defined script
+2. `./share/lib/genvm/greyboxing/lib-greyboxing.lua` – more low-level library
+
+<Callout emoji="🏗️">
+  More features and built-in filters will be added soon
+</Callout>
 
 #### Import the Operator Key
 
@@ -419,7 +444,7 @@ The operator key is used by your node to sign blocks and perform validator dutie
 
 If you used `genlayer staking wizard`, it exported an operator keystore file. Transfer this file to your validator server and import it:
 
-```sh copy
+```sh
 ./bin/genlayernode account import \
   --password "your node password" \
   --passphrase "password you set when exporting from wizard" \
@@ -440,7 +465,7 @@ Account imported:
 
 You can also generate a new operator key directly on the server:
 
-```sh copy
+```sh
 ./bin/genlayernode account new -c $(pwd)/configs/node/config.yaml --setup --password "your secret password"
 ```
 
@@ -450,7 +475,7 @@ Then use this address when running the wizard on your local machine.
 
 To restore from a backup (e.g., after migrating to a new server):
 
-```sh copy
+```sh
 ./bin/genlayernode account import \
   --password "your node password" \
   --passphrase "your backup encryption passphrase" \
@@ -467,7 +492,7 @@ To restore from a backup (e.g., after migrating to a new server):
 
 After setting up your operator key, back it up securely:
 
-```sh copy
+```sh
 ./bin/genlayernode account export \
   --password "your node password" \
   --address "your operator address" \
@@ -499,9 +524,9 @@ Once you have configured everything, you are ready to start the node.
 
 1.  Set the LLM Provider API Key
 
-    Set the appropriate environment variable for your chosen LLM provider. See the [GenVM Configuration](/validators/genvm-configuration) page for details on LLM providers and obtaining API credits.
+    Set the appropriate environment variable for your chosen LLM provider:
 
-    ```sh copy
+    ```sh
     # For Heurist
     export HEURISTKEY='your_heurist_api_key'
 
@@ -516,14 +541,14 @@ Once you have configured everything, you are ready to start the node.
 
 2.  Run the WebDriver container
 
-    ```sh copy
+    ```sh
     docker compose up -d # Starts the WebDriver needed by the GenVM web module
     ```
 
 3.  (Optional) Run two services (modules) in background (this is a crucial step for running _Intelligent_ contracts). This can be done automatically or manually.
     - To start them automatically in node configuration set `genvm.manage_modules` to `true`
     - To start them manually run
-      ```bash copy
+      ```bash
        ./third_party/genvm/bin/genvm-modules web & ./third_party/genvm/bin/genvm-modules llm &
       ```
 
@@ -537,7 +562,7 @@ Once you have configured everything, you are ready to start the node.
 
     To ensure your node is correctly configured, you can run the following command:
 
-    ```sh copy
+    ```sh
     ./bin/genlayernode doctor
     ```
 
@@ -549,7 +574,7 @@ Once you have configured everything, you are ready to start the node.
 
 5.  Run the node
 
-    ```sh copy
+    ```sh
     ./bin/genlayernode run -c $(pwd)/configs/node/config.yaml --password "your secret password" # The same password you used when creating the account
     ```
 
@@ -567,7 +592,7 @@ You can also run the GenLayer node using Docker and Docker Compose.
 
 1. Create a `docker-compose.yaml` file with the following content:
 
-```yaml copy
+```yaml
 services:
   webdriver-container:
     container_name: genlayer-node-webdriver
@@ -595,7 +620,6 @@ services:
       - ${NODE_CONFIG_PATH:-./configs/node/config.yaml}:/app/configs/node/config.yaml:ro
       - ${NODE_DATA_PATH:-./data}:/app/data
       - ./genvm-module-web-docker.yaml:/app/third_party/genvm/config/genvm-module-web.yaml
-      - /var/run/docker.sock:/var/run/docker.sock:ro # required for webdriver metrics collection
     security_opt:
       - no-new-privileges:true
     logging:
@@ -621,7 +645,7 @@ Create `genvm-module-web-docker.yaml` in the same directory as your `docker-comp
 - Copy the contents of `third_party/genvm/config/genvm-module-web.yaml` into `genvm-module-web-docker.yaml`.
 - Modify the `webdriver_host` configuration to use the service name `webdriver-container` instead of `localhost`:
 
-```yaml copy
+```yaml
 webdriver_host: http://webdriver-container:4444
 ```
 
@@ -638,7 +662,7 @@ The key difference:
   This `.env` file serves two purposes: it configures Docker Compose variables (like `NODE_VERSION`, `NODE_PASSWORD`, ports) and can also include `GENLAYERNODE_*` variables to override node configuration values as described in [Overriding Configuration with Environment Variables](#overriding-configuration-with-environment-variables).
 </Callout>
 
-```env copy
+```env
 # GenLayer Node Release Configuration
 
 # =============================================================================
@@ -679,7 +703,7 @@ or simply use the provided `docker-compose.yaml`, `.env.example` and the `genvm-
 
 To ensure your node is correctly configured, you can run the following command:
 
-```sh copy
+```sh
 source .env && docker run --rm --env-file ./.env \
   -v ${NODE_CONFIG_PATH:-./configs/node/config.yaml}:/app/configs/node/config.yaml \
   yeagerai/genlayer-node:${NODE_VERSION:-v0.4.0} \
@@ -688,39 +712,389 @@ source .env && docker run --rm --env-file ./.env \
 
 5. Start the services using Docker Compose:
 
-```sh copy
+```sh
 source .env && docker compose --profile node up -d
 ```
 
-### Telemetry
+### Monitoring with Metrics
 
-For a quick setup using Docker Compose:
+GenLayer validators expose comprehensive metrics that are ready for consumption by Prometheus and other monitoring tools. This allows you to monitor your validator's performance, health, and resource usage.
 
-1. **Configure your `.env` file** with the required variables for monitoring:
+#### Accessing Metrics
 
-   ```env copy
-   # Central monitoring server endpoints for GenLayer Foundation
-   CENTRAL_MONITORING_URL=https://prometheus-prod-66-prod-us-east-3.grafana.net/api/prom/push
-   CENTRAL_LOKI_URL=https://logs-prod-042.grafana.net/loki/api/v1/push
+The metrics endpoint is exposed on the operations port (default: 9153) configured in your `config.yaml`:
 
-   # Authentication for central monitoring
-   # Metrics (Prometheus) credentials
-   CENTRAL_MONITORING_USERNAME=your-metrics-username
-   CENTRAL_MONITORING_PASSWORD=your-metrics-password
-   # Logs (Loki) credentials
-   CENTRAL_LOKI_USERNAME=your-logs-username
-   CENTRAL_LOKI_PASSWORD=your-logs-password
+```yaml
+node:
+  ops:
+    port: 9153 # Metrics port
+    endpoints:
+      metrics: true # Enable metrics endpoint
+```
 
-   # Node identification
-   NODE_ID=validator-001
-   VALIDATOR_NAME=MyValidator
-   ```
+Once your node is running, you can access the metrics at:
+```
+http://localhost:9153/metrics
+```
 
-2. **Run docker compose**:
-   ```bash copy
-   docker compose --profile monitoring up -d
-   ```
+#### Available Metrics
 
-3. **Verify your node is pushing metrics** by checking the [GenLayer Foundation public dashboard](https://genlayerfoundation.grafana.net/public-dashboards/66a372d856ea44e78cf9ac21a344f792)
+The validator exposes various metric collectors that can be individually configured:
 
-For detailed monitoring setup including Prometheus metrics, Grafana dashboards, and centralized logging with Alloy, see the [Monitoring Guide](/validators/monitoring).
+- **Node Metrics**: Core validator performance metrics including block processing, transaction handling, and consensus participation
+- **GenVM Metrics**: Virtual machine performance metrics, including execution times and resource usage
+- **WebDriver Metrics**: Metrics related to web access and external data fetching
+
+#### Configuring Metrics Collection
+
+You can customize metrics collection in your `config.yaml`:
+
+```yaml
+metrics:
+  interval: "15s"  # Default collection interval
+  collectors:
+    node:
+      enabled: true
+      interval: "30s"  # Override interval for specific collector
+    genvm:
+      enabled: true
+      interval: "20s"
+    webdriver:
+      enabled: true
+      interval: "60s"
+```
+
+#### Example Metrics Query
+
+To check if metrics are working correctly:
+
+```bash
+# Get all available metrics
+curl http://localhost:9153/metrics
+
+# Check specific metric (example)
+curl -s http://localhost:9153/metrics | grep genlayer_node_
+```
+
+<Callout type="info">
+  The metrics endpoint also provides `/health` and `/balance` endpoints on the same port for additional monitoring capabilities.
+</Callout>
+
+#### Monitoring Best Practices
+
+1. **Set up alerts** for critical metrics like node synchronization status and missed blocks
+2. **Monitor resource usage** to ensure your validator has sufficient CPU, memory, and disk space
+3. **Track GenVM performance** to optimize LLM provider selection and configuration
+4. **Use visualization tools** like Grafana to create dashboards for easy monitoring
+
+<Callout emoji="📊">
+  For production validators, we recommend setting up a complete monitoring stack with Prometheus and Grafana. This enables real-time visibility into your validator's performance and helps identify issues before they impact your validator's operation.
+</Callout>
+
+#### Logs and metrics forwarding
+
+You can forward your logs and metrics to external systems for centralized monitoring and alerting by using the service `alloy` provided in the `docker-compose.yaml` from the extracted tarball.
+
+#### Centralized Push to GenLayer Foundation Grafana Cloud (using Alloy)
+
+To contribute your node's metrics and logs to the centralized GenLayer Foundation Grafana Cloud dashboard (improving aggregate network visibility, alerts, and community monitoring), use the built-in Alloy service.
+
+**Why contribute?**
+- Helps the Foundation and community track overall testnet health (validator participation, latency, resource usage).
+- May positively influence testnet points/rewards (visible healthy nodes are prioritized).
+- Setup takes 10–15 minutes once credentials are provided.
+
+**Prerequisites**
+- Metrics enabled in `config.yaml` (`endpoints.metrics: true` — default in recent versions).
+- Ops port 9153 exposed in docker-compose (`ports: - "9153:9153"`).
+- Credentials from the Foundation team (ask in #testnet-asimov):
+  - `CENTRAL_MONITORING_URL` — Prometheus remote write base URL (e.g., `https://prometheus-prod-XX.grafana.net`)
+  - `CENTRAL_LOKI_URL` — Loki push base URL (e.g., `https://logs-prod-XX.grafana.net`)
+  - `MONITORING_USERNAME` — Instance ID (a number)
+  - `MONITORING_PASSWORD` — Grafana Cloud API Key (with write permissions for metrics and logs)
+
+**Steps**
+
+1. **Create or update .env** (next to your docker-compose.yaml):
+
+```env
+# Grafana Cloud credentials (request from Foundation team in Discord)
+CENTRAL_MONITORING_URL=https://prometheus-prod-...grafana.net
+CENTRAL_LOKI_URL=https://logs-prod-...grafana.net
+MONITORING_USERNAME=1234567890          # your instance ID
+MONITORING_PASSWORD=glc_xxxxxxxxxxxxxxxxxxxxxxxxxxxx  # API key
+
+# Your node labels (customize for easy filtering in dashboards)
+NODE_ID=0xYourValidatorAddressOrCustomID
+VALIDATOR_NAME=validatorname
+
+# Usually defaults are fine
+NODE_METRICS_ENDPOINT=localhost:9153
+LOG_FILE_PATTERN=/var/log/genlayer/node*.log
+METRICS_SCRAPE_INTERVAL=15s
+```
+
+2. **Add or verify the Alloy service in docker-compose.yaml (copy if missing):
+
+```yaml
+alloy:
+  image: grafana/alloy:v1.12.0
+  container_name: genlayer-node-alloy
+  command:
+    - run
+    - /etc/alloy/config.river
+    - --server.http.listen-addr=0.0.0.0:12345
+    - --storage.path=/var/lib/alloy/data
+  volumes:
+    - ./alloy-config.river:/etc/alloy/config.river:ro
+    - ${NODE_LOGS_PATH:-./data/node/logs}:/var/log/genlayer:ro
+    - alloy_data:/var/lib/alloy
+  environment:
+      # Central monitoring endpoints
+      - CENTRAL_LOKI_URL=${CENTRAL_LOKI_URL:-https://logs-prod-042.grafana.net/loki/api/v1/push}
+      - CENTRAL_MONITORING_URL=${CENTRAL_MONITORING_URL:-https://prometheus-prod-66-prod-us-east-3.grafana.net/api/prom/push}
+
+      # Metrics (Prometheus) authentication
+      - CENTRAL_MONITORING_USERNAME=${CENTRAL_MONITORING_USERNAME:-telemetric}
+      - CENTRAL_MONITORING_PASSWORD=${CENTRAL_MONITORING_PASSWORD:-12345678}
+
+      # Logs (Loki) authentication
+      - CENTRAL_LOKI_USERNAME=${CENTRAL_LOKI_USERNAME:-telemetric}
+      - CENTRAL_LOKI_PASSWORD=${CENTRAL_LOKI_PASSWORD:-12345678}
+
+      # Single node configuration
+      - NODE_ID=${NODE_ID:-local}
+      - VALIDATOR_NAME=${VALIDATOR_NAME:-default}
+      - NODE_METRICS_ENDPOINT=${NODE_METRICS_ENDPOINT:-host.docker.internal:9153}
+
+      # Multi-node configuration
+      # When set, overrides single node config above
+      - SCRAPE_TARGETS_JSON=${SCRAPE_TARGETS_JSON:-}
+
+      # Scraping configuration
+      - METRICS_SCRAPE_INTERVAL=${METRICS_SCRAPE_INTERVAL:-15s}
+      - METRICS_SCRAPE_TIMEOUT=${METRICS_SCRAPE_TIMEOUT:-10s}
+      - ALLOY_SELF_MONITORING_INTERVAL=${ALLOY_SELF_MONITORING_INTERVAL:-60s}
+
+      # Log collection configuration
+      - LOG_FILE_PATTERN=${LOG_FILE_PATTERN:-/var/log/genlayer/node*.log}
+
+      # Log batching configuration
+      - LOKI_BATCH_SIZE=${LOKI_BATCH_SIZE:-1MiB}
+      - LOKI_BATCH_WAIT=${LOKI_BATCH_WAIT:-1s}
+
+  ports:
+    - "12345:12345"  # Alloy UI for debugging
+  restart: unless-stopped
+  profiles:
+    - monitoring
+
+volumes:
+  alloy_data:
+```
+
+3. **Create or update ./alloy-config.river** (use the provided version — it handles logs and metrics forwarding):
+
+```river
+// Grafana Alloy Configuration for GenLayer Node Telemetry
+// Handles both log collection and metrics forwarding
+
+// ==========================================
+// Log Collection and Forwarding
+// ==========================================
+
+// Discovery component to find log files using local.file_match
+// Supports different log file patterns:
+// - Single node: "/var/log/genlayer/node.log"
+// - Multi-node: "/var/log/genlayer/*/logs/node.log" (each node in subdirectory)
+// - Custom pattern via LOG_FILE_PATTERN env var
+local.file_match "genlayer_logs" {
+  path_targets = [{
+    __path__ = coalesce(sys.env("LOG_FILE_PATTERN"), "/var/log/genlayer/node*.log"),
+  }]
+}
+
+// Relabel to add metadata labels to log entries
+discovery.relabel "add_labels" {
+  targets = local.file_match.genlayer_logs.targets
+
+  // Add instance label from environment variable
+  rule {
+    target_label = "instance"
+    replacement  = sys.env("NODE_ID")
+  }
+
+  // Add validator_name label from environment variable
+  rule {
+    target_label = "validator_name"
+    replacement  = sys.env("VALIDATOR_NAME")
+  }
+
+  // Add component label
+  rule {
+    target_label = "component"
+    replacement  = "alloy"
+  }
+
+  // Add job label
+  rule {
+    target_label = "job"
+    replacement  = "genlayer-node"
+  }
+}
+
+// Source component to read log files
+loki.source.file "genlayer" {
+  targets    = discovery.relabel.add_labels.output
+  forward_to = [loki.write.central.receiver]
+
+  // Tail from end to avoid ingesting entire log history on startup
+  tail_from_end = true
+}
+
+// Write logs to central Loki instance
+loki.write "central" {
+  endpoint {
+    url = sys.env("CENTRAL_LOKI_URL")
+
+    // HTTP Basic Authentication
+    basic_auth {
+      username = sys.env("CENTRAL_LOKI_USERNAME")
+      password = sys.env("CENTRAL_LOKI_PASSWORD")
+    }
+
+    // Enable retry with default exponential backoff
+    // Note: Alloy's loki.write doesn't have a retry block; retries are handled automatically
+    // with exponential backoff by default when the endpoint is unreachable
+
+    // Configurable batch settings for efficient log sending
+    batch_size = coalesce(sys.env("LOKI_BATCH_SIZE"), "1MiB")   // Maximum batch size before sending
+    batch_wait = coalesce(sys.env("LOKI_BATCH_WAIT"), "1s")     // Maximum wait time before sending partial batch
+  }
+}
+
+// ==========================================
+// Prometheus Metrics Collection and Forwarding
+// ==========================================
+
+// Scrape metrics from GenLayer node(s)
+// Supports both single node and multi-node configurations
+//
+// Single Node Mode:
+//   Set NODE_METRICS_ENDPOINT, NODE_ID, VALIDATOR_NAME
+//
+// Multi-Node Mode:
+//   Set SCRAPE_TARGETS_JSON with JSON array of target objects
+//   Example: [{"__address__":"host.docker.internal:9250","instance":"0x...","validator_name":"node-1"}]
+prometheus.scrape "genlayer_node" {
+  // Dynamic targets based on environment variable
+  // If SCRAPE_TARGETS_JSON is set, use it (multi-node mode)
+  // Otherwise, build single target from individual env vars (single node mode)
+  targets = encoding.from_json(coalesce(sys.env("SCRAPE_TARGETS_JSON"), string.format("[{\"__address__\":\"%s\",\"instance\":\"%s\",\"validator_name\":\"%s\"}]", coalesce(sys.env("NODE_METRICS_ENDPOINT"), "host.docker.internal:9153"), coalesce(sys.env("NODE_ID"), "local"), coalesce(sys.env("VALIDATOR_NAME"), "default"))))
+
+  forward_to = [prometheus.relabel.metrics.receiver]
+
+  // Configurable scrape intervals
+  scrape_interval = coalesce(sys.env("METRICS_SCRAPE_INTERVAL"), "15s")
+  scrape_timeout  = coalesce(sys.env("METRICS_SCRAPE_TIMEOUT"), "10s")
+}
+
+// Relabel metrics to filter before forwarding
+prometheus.relabel "metrics" {
+  forward_to = [prometheus.remote_write.central.receiver]
+
+  // Option 1: Forward all metrics (default)
+  // Currently forwarding all metrics from the node.
+
+  // Option 2: Only keep genlayer_node_* metrics to reduce bandwidth (recommended)
+  // To enable filtering and reduce bandwidth, uncomment the following rule:
+  /*
+  rule {
+    source_labels = ["__name__"]
+    regex        = "genlayer_node_.*"
+    action       = "keep"
+  }
+  */
+}
+
+// Remote write configuration for sending metrics to central Prometheus
+prometheus.remote_write "central" {
+  endpoint {
+    url = sys.env("CENTRAL_MONITORING_URL")
+
+    // HTTP Basic Authentication
+    basic_auth {
+      username = sys.env("CENTRAL_MONITORING_USERNAME")
+      password = sys.env("CENTRAL_MONITORING_PASSWORD")
+    }
+
+    // Queue configuration for reliability
+    queue_config {
+      capacity          = 10000
+      max_shards        = 5
+      max_samples_per_send = 500
+      batch_send_deadline = "15s"
+    }
+  }
+}
+
+// ==========================================
+// Alloy Self-Monitoring
+// ==========================================
+
+// Alloy internal exporter for health monitoring
+prometheus.exporter.self "alloy" {}
+
+// Expose Alloy's own metrics on the HTTP server
+prometheus.scrape "alloy" {
+  targets    = prometheus.exporter.self.alloy.targets
+  forward_to = []  // Not forwarding Alloy metrics to reduce noise
+
+  // Configurable scrape interval for Alloy's internal health monitoring
+  scrape_interval = coalesce(sys.env("ALLOY_SELF_MONITORING_INTERVAL"), "60s")
+}}
+```
+
+4. **Start Alloy**:
+
+```bash
+docker compose --profile monitoring up -d
+```
+
+5. **Verify it works**:
+
+- Open Alloy UI: http://localhost:12345/targets — the "genlayer_node" scrape target should show status **UP**.
+- Check logs for successful sends:
+
+```bash
+docker logs genlayer-node-alloy | grep "sent batch"
+```
+
+```bash
+docker logs genlayer-node-alloy | grep "sent batch"
+```
+
+```bash
+docker logs genlayer-node-alloy | grep "remote_write"
+```
+
+Look for messages indicating successful batch sending (no error codes like 401, 403, 500).
+- In Foundation Grafana Cloud: search for metrics with labels  
+  `instance="${NODE_ID}"` or `validator_name="${VALIDATOR_NAME}"`  
+  (example: `genlayer_node_uptime_seconds{instance="0xYourID"}`).
+
+Troubleshooting
+- No local metrics:
+
+```bash
+curl http://localhost:9153/metrics
+```
+
+— it should return Prometheus-formatted data.
+Authentication errors (401/403): Double-check MONITORING_USERNAME and MONITORING_PASSWORD in .env.
+No data pushed: Ensure URLs in .env have no trailing slash.
+Help: Share Alloy logs
+
+```bash
+docker logs genlayer-node-alloy
+```
