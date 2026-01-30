@@ -174,25 +174,18 @@ Below are the **initial** recommended system requirements. These guidelines may 
    You should see a list like this
 
    ```sh
-      v0.4.3
-      v0.4.2
-      v0.4.1
-      v0.4.0
-      v0.3.11
-      v0.3.10
-      v0.3.9
-      ...
-      v0.3.2
-      v0.3.1
-      v0.3.0
-      ...
+   v0.4.5
+   v0.4.4
+   v0.4.3
+   v0.4.2
+   v0.4.1
    ```
 
    Typically, you will want to run the latest version
 
 2. Download the packaged application
    ```sh
-   export version=v0.4.3 # set your desired version here
+   export version=v0.4.5 # set your desired version here
    wget https://storage.googleapis.com/gh-af/genlayer-node/bin/amd64/${version}/genlayer-node-linux-amd64-${version}.tar.gz
    ```
 3. Extract the node software
@@ -312,7 +305,7 @@ genvm:
   root_dir: ./third_party/genvm
   start_manager: true # if true node will start genvm manager itself
   manager_url: http://127.0.0.1:3999
-  permits: # Leave empty for autodiscovery, put a number for updating genvm permits on startup
+  permits: 8 # Leave empty for autodiscovery, put a number for updating genvm permits on startup
 # Advanced configuration
 merkleforest:
   maxdepth: 16
@@ -620,6 +613,7 @@ services:
       - ${NODE_CONFIG_PATH:-./configs/node/config.yaml}:/app/configs/node/config.yaml:ro
       - ${NODE_DATA_PATH:-./data}:/app/data
       - ./genvm-module-web-docker.yaml:/app/third_party/genvm/config/genvm-module-web.yaml
+      - /var/run/docker.sock:/var/run/docker.sock:ro # required for webdriver metrics collection
     security_opt:
       - no-new-privileges:true
     logging:

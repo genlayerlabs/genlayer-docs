@@ -1,5 +1,51 @@
 # Changelog
 
+## v0.4.5
+
+### New features
+
+- Decouple epoch advance from finalization, allowing them to run as independent processes with separate retry mechanisms
+- Implement sync waiting mechanism to ensure GenVM has latest state before contract execution
+- Add `genlayer_node_info` Prometheus metric exposing node and protocol version
+
+### Bug fixes
+
+- Add canPrime check to verify epoch state before validator priming, preventing priming when epochs are out of sync
+- Return user-friendly error instead of system error when sync times out
+- Fix genvm executor process handling
+
+### Misc
+
+- Improve GenVM logging with context-aware logger
+- Update health checker to use ZkSync connectivity checks
+- Increase default genvm permits to 8 in config.yaml.example
+
+## v0.4.4
+
+### New features
+
+- Improve logging with context-aware tracing and cleaner console output
+- Refactor ZkSync client to split RPC and WSS connections for better reliability
+- Move storage writing to genvm for improved performance
+
+### Bug fixes
+
+- Skip priming check for full nodes
+- Add Docker socket mount for webdriver metrics collection in docker-compose configurations
+- Prevent incorrect sync state by updating blocksBehind calculation
+- Fix memory leak from threads package
+- Fix memory leak in consensus processing
+- Fix bug in latest transaction with effect calculation
+- Fix wallet mutex using read lock instead of write lock when unlocking accounts
+
+### Misc
+
+- Fix signer for full nodes
+- Improve logs for http servers
+- Improve signer initialization for faster and more reliable transaction signing
+- Add logs for previous activator on idleness checks
+- Migrate zksync-go to go-ethereum
+
 ## v0.4.3
 
 ### Bug fixes
