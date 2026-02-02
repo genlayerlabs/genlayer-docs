@@ -51,7 +51,7 @@ jobs:
       version: ${{ steps.final_version.outputs.version }}
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
         
       - name: Extract version parameter
         id: extract
@@ -96,7 +96,7 @@ jobs:
       fail-fast: false
     steps:
       - name: Checkout documentation repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
 
@@ -107,7 +107,7 @@ jobs:
           sudo chmod +x /usr/local/bin/yq
 
       - name: Clone source repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
         with:
           repository: genlayerlabs/genlayer-node
           token: ${{ secrets.NODE_REPO_TOKEN || secrets.GITHUB_TOKEN }}
@@ -185,7 +185,7 @@ jobs:
       sync_reports: ${{ steps.calculate.outputs.all_reports }}
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
         
       - name: Download all sync artifacts
         uses: actions/download-artifact@v4
@@ -240,7 +240,7 @@ jobs:
       generation_success: ${{ steps.generate.outputs.success }}
     steps:
       - name: Checkout documentation repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
       
@@ -308,7 +308,7 @@ jobs:
       pull-requests: write
     steps:
       - name: Checkout documentation repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
         with:
           fetch-depth: 0
           token: ${{ secrets.GITHUB_TOKEN }}
@@ -448,7 +448,7 @@ jobs:
     if: always()
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
         
       - name: Download final artifact with sync reports
         uses: actions/download-artifact@v4
