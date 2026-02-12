@@ -1,19 +1,67 @@
 import { Callout } from "nextra-theme-docs";
 
-# Validator upgrade guide
+# Validator Upgrade Guide
+
+Before upgrading, check the [changelog](/validators/changelog) for the target version to determine whether the upgrade is **breaking** or **non-breaking**.
+
+| Upgrade Type | How to Identify | Database | Downtime |
+|---|---|---|---|
+| **Non-breaking** | Patch/minor release, no consensus contract changes | Carries over | Minimal |
+| **Breaking** | Changelog mentions "upgrade consensus contracts" or new consensus deployment | Must be deleted | Full restart required |
 
 <Callout type="info" emoji="💡">
-  For non-breaking changes, you can minimize the downtime by keeping your existing validator node running while
-  you download and configure the new version according to the steps below. Once
-  the upgrade is fully configured and ready to run, stop the old node and
-  start the new one. 
-
-  A fully Zero-downtime upgrade procedure is coming in a future update. 
+  When in doubt, treat it as a breaking change — the only cost is a longer sync time.
 </Callout>
 
-## General Procedure
+---
 
-1. **Download the new package and extract into a fresh folder** - Always use a clean directory for the new version.
-2. **Override with your custom config** - Configure the files in the new installation as you did when [setting up your node](/validators/setup-guide). Example: `.env` and `config.yaml`. You can refer to your previous settings. Avoid directly copying these files, as new versions may include updated default configurations.
-3. **Copy the contents of your old data folder** - The `data/` folder is the stateful directory used by the node, containing the database and keystore. This step is not needed if your data folder is located outside of the project directory.
-4. **Run genvm setup** - Running `python3 ./third_party/genvm/bin/setup.py` to set up the GenVM environment.
+## Non-Breaking Upgrade
+
+You can minimize downtime by preparing the new version while your current node is still running.
+
+1. **Download and extract into a fresh folder** — See [download instructions](/validators/setup-guide#download-the-node-software). Always use a clean directory.
+2. **Run GenVM setup** — `python3 ./third_party/genvm/bin/setup.py`
+3. **Configure the new version** — Set up `config.yaml` and `.env` as described in the [configuration section](/validators/setup-guide#configuration). You can reference your previous settings, but **do not blindly copy config files** — new versions may include updated defaults or new fields.
+4. **Copy the data folder** — Copy `data/` from your old installation to the new one (contains database and keystore). Skip this if your `datadir` points outside the project directory.
+5. **Validate** — Run `./bin/genlayernode doctor` and ensure all checks pass.
+6. **Switch over** — Stop the old node, then start the new one.
+
+---
+
+## Breaking Change Upgrade
+
+Breaking changes involve a new consensus deployment. The old database is incompatible, so it cannot be reused. Your operator key, validator wallet, and staked GEN are **not affected** — no re-staking is needed.
+
+<Callout type="warning" emoji="⚠️">
+  **Always back up your keystore before a breaking upgrade.** You can copy the `data/node/keystore/` directory or use `genlayernode account export`. See [backing up your operator key](/validators/setup-guide#backing-up-your-operator-key).
+</Callout>
+
+1. **Read the changelog** — Check the [changelog](/validators/changelog) for version-specific instructions and what changed.
+2. **Back up your keystore** — Copy `data/node/keystore/` to a safe location.
+3. **Download and extract into a fresh folder** — See [download instructions](/validators/setup-guide#download-the-node-software).
+4. **Run GenVM setup** — `python3 ./third_party/genvm/bin/setup.py`
+5. **Configure from scratch** — Create `config.yaml` and `.env` using the new example files as a base. **Do not copy your old config** — the schema may have changed. Refer to the [configuration section](/validators/setup-guide#configuration) for the current format.
+6. **Import your operator key** — Copy your backed-up keystore into `data/node/keystore/`, or re-import using the CLI. See [restoring your operator key](/validators/setup-guide#restoring-your-operator-key).
+7. **Do NOT copy the old database** — Delete `data/node/genlayer.db` if you accidentally copied the full `data/` folder. The node will create a fresh database and sync from genesis.
+8. **Validate** — Run `./bin/genlayernode doctor` and ensure all checks pass.
+9. **Stop the old node, start the new one.**
+
+---
+
+## Migration Notes
+
+### v0.4.x to v0.5.0 (Breaking)
+
+- The five separate consensus contract addresses (`contractmanageraddress`, `contractmainaddress`, etc.) have been replaced by a single `consensusaddress` field. Do not copy your old consensus config — use the new example `config.yaml`.
+- Genesis block changed from `817855` to `17326`.
+- Database must be wiped (the node creates a fresh one on startup).
+- No re-staking required — your operator key, validator wallet, and staked GEN are unaffected.
+
+---
+
+## Quick Troubleshooting
+
+- **Node won't start** — Run `./bin/genlayernode doctor`. If it reports unknown config fields, reconfigure from the new example.
+- **Not participating in consensus** — Verify the consensus contract address, `validatorWalletAddress`, and `operatorAddress` are correct.
+- **Key errors** — Your operator key wasn't imported. See [restoring your operator key](/validators/setup-guide#restoring-your-operator-key).
+- **Slow sync after breaking upgrade** — Expected. Ensure `genesis` is set in `config.yaml` to avoid scanning from block 0.
