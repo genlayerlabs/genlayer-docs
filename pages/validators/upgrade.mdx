@@ -20,11 +20,10 @@ Before upgrading, check the [changelog](/validators/changelog) for the target ve
 You can minimize downtime by preparing the new version while your current node is still running.
 
 1. **Download and extract into a fresh folder** — See [download instructions](/validators/setup-guide#download-the-node-software). Always use a clean directory.
-2. **Run GenVM setup** — `python3 ./third_party/genvm/bin/setup.py`
-3. **Configure the new version** — Set up `config.yaml` and `.env` as described in the [configuration section](/validators/setup-guide#configuration). You can reference your previous settings, but **do not blindly copy config files** — new versions may include updated defaults or new fields.
-4. **Copy the data folder** — Copy `data/` from your old installation to the new one (contains database and keystore). Skip this if your `datadir` points outside the project directory.
-5. **Validate** — Run `./bin/genlayernode doctor` and ensure all checks pass.
-6. **Switch over** — Stop the old node, then start the new one.
+2. **Configure the new version** — Set up `config.yaml` and `.env` as described in the [configuration section](/validators/setup-guide#configuration). You can reference your previous settings, but **do not blindly copy config files** — new versions may include updated defaults or new fields.
+3. **Copy the data folder** — Copy `data/` from your old installation to the new one (contains database and keystore). Skip this if your `datadir` points outside the project directory.
+4. **Validate** — Run `./bin/genlayernode doctor` and ensure all checks pass.
+5. **Switch over** — Stop the old node, then start the new one.
 
 ---
 
@@ -39,12 +38,11 @@ Breaking changes involve a new consensus deployment. The old database is incompa
 1. **Read the changelog** — Check the [changelog](/validators/changelog) for version-specific instructions and what changed.
 2. **Back up your keystore** — Copy `data/node/keystore/` to a safe location.
 3. **Download and extract into a fresh folder** — See [download instructions](/validators/setup-guide#download-the-node-software).
-4. **Run GenVM setup** — `python3 ./third_party/genvm/bin/setup.py`
-5. **Configure from scratch** — Create `config.yaml` and `.env` using the new example files as a base. **Do not copy your old config** — the schema may have changed. Refer to the [configuration section](/validators/setup-guide#configuration) for the current format.
-6. **Import your operator key** — Copy your backed-up keystore into `data/node/keystore/`, or re-import using the CLI. See [restoring your operator key](/validators/setup-guide#restoring-your-operator-key).
-7. **Do NOT copy the old database** — Delete `data/node/genlayer.db` if you accidentally copied the full `data/` folder. The node will create a fresh database and sync from genesis.
-8. **Validate** — Run `./bin/genlayernode doctor` and ensure all checks pass.
-9. **Stop the old node, start the new one.**
+4. **Configure from scratch** — Create `config.yaml` and `.env` using the new example files as a base. **Do not copy your old config** — the schema may have changed. Refer to the [configuration section](/validators/setup-guide#configuration) for the current format.
+5. **Import your operator key** — Copy your backed-up keystore into `data/node/keystore/`, or re-import using the CLI. See [restoring your operator key](/validators/setup-guide#restoring-your-operator-key).
+6. **Do NOT copy the old database** — Delete `data/node/genlayer.db` if you accidentally copied the full `data/` folder. The node will create a fresh database and sync from genesis.
+7. **Validate** — Run `./bin/genlayernode doctor` and ensure all checks pass.
+8. **Stop the old node, start the new one.**
 
 ---
 
