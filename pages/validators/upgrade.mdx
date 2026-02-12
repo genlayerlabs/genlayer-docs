@@ -29,7 +29,7 @@ You can minimize downtime by preparing the new version while your current node i
 
 ## Breaking Change Upgrade
 
-Breaking changes involve a new consensus deployment. The old database is incompatible, so it cannot be reused. Your operator key, validator wallet, and staked GEN are **not affected** — no re-staking is needed.
+Breaking changes involve a new consensus deployment. The old database is incompatible, so it cannot be reused. **Re-staking is required** — you must stake again using the [validator wizard](/validators/setup-guide#using-the-validator-wizard).
 
 <Callout type="warning" emoji="⚠️">
   **Always back up your keystore before a breaking upgrade.** You can copy the `data/node/keystore/` directory or use `genlayernode account export`. See [backing up your operator key](/validators/setup-guide#backing-up-your-operator-key).
@@ -50,10 +50,10 @@ Breaking changes involve a new consensus deployment. The old database is incompa
 
 ### v0.4.x to v0.5.0 (Breaking)
 
-- The five separate consensus contract addresses (`contractmanageraddress`, `contractmainaddress`, etc.) have been replaced by a single `consensusaddress` field. Do not copy your old consensus config — use the new example `config.yaml`.
-- Genesis block changed from `817855` to `17326`.
+- The two consensus contract addresses (`contractmainaddress` and `contractdataaddress`) have been replaced by a single `consensusaddress` field. Do not copy your old consensus config — use the new example `config.yaml`.
+- The GenLayer Chain ZKSync RPC URLs (`genlayerchainrpcurl` and `genlayerchainwebsocketurl`) have changed. Update both the HTTP RPC and WebSocket URLs in your `config.yaml` to the new endpoints.
 - Database must be wiped (the node creates a fresh one on startup).
-- No re-staking required — your operator key, validator wallet, and staked GEN are unaffected.
+- Re-staking is required — breaking changes involve a new consensus deployment, so you must stake again using the [validator wizard](/validators/setup-guide#using-the-validator-wizard).
 
 ---
 
