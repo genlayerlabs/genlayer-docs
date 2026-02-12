@@ -1,5 +1,39 @@
 # Changelog
 
+## v0.5.0
+
+### New features
+
+- Upgrade consensus contracts from v0.4 to v0.5
+- Add gen_getContractCode endpoint
+- Return full VMResult data from gen_call
+
+### Bug fixes
+
+- Check pending queue head before activation
+- Enable and fix gen_call write simulation
+- Exclude stack field from console output
+- Move GenVM execution outside retry loop to avoid double GenVM execution on submitting failure
+- Use ConsoleWriter for caller field filtering
+- Remove nested retry from epoch finalization
+- Add logging for silent tx submission failures
+- Retry ProcessIdleness on failure in lastVoteWatcher
+- Handle shutdown errors gracefully
+- Remove --create-venv=false flag from post-install scripts
+- Install Python dependencies globally to avoid venv build issues
+- Update validator priming logic to use current epoch
+- Epoch advance scheduler not running for epoch 0
+- Prevent panic on closing done channel during event processing
+- Handle new consensus ResultType
+- New behavior for finalizing epochs
+
+### Misc
+
+- Inject txID into context for automatic log propagation
+- Enable validator idle reveal idleness
+- Add profiling with pyroscope
+- Fix to handle zksync local-node compatibility
+
 ## v0.4.5
 
 ### New features

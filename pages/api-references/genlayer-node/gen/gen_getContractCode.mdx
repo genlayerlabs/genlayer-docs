@@ -1,0 +1,94 @@
+### gen_getContractCode
+
+Retrieves the code of a deployed GenLayer intelligent contract at a specific block height and transaction status.
+
+**Method:** `gen_getContractCode`
+
+**Parameters:**
+
+- `request` (object, required): The contract code request parameters
+  - `address` (string, required): The contract address to query
+  - `blockNumber` (string, optional): The block number to query at (hex-encoded). If not provided, uses latest block
+  - `status` (string, optional): The transaction status filter (`"finalized"` or `"accepted"`). If not provided, uses accepted state
+
+**Returns:** Base64-encoded contract code
+
+**Example Request - Latest Accepted State:**
+
+```json
+{
+  "jsonrpc": "2.0",
+  "method": "gen_getContractCode",
+  "params": [
+    {
+      "address": "0x73ca5a2b51edf506ceaf110a41780ec51294d89f"
+    }
+  ],
+  "id": 1
+}
+```
+
+**Example Request - Specific Block and Status:**
+
+```json
+{
+  "jsonrpc": "2.0",
+  "method": "gen_getContractCode",
+  "params": [
+    {
+      "address": "0x73ca5a2b51edf506ceaf110a41780ec51294d89f",
+      "blockNumber": "0x151ec5",
+      "status": "finalized"
+    }
+  ],
+  "id": 1
+}
+```
+
+**Example Response:**
+
+```json
+{
+  "jsonrpc": "2.0",
+  "result": "IyB7ICJEZXBlbmRzIjogInB5LWdlbmxheWVyOnRlc3QiIH0KCmZyb20gZ2VubGF5ZXIgaW1wb3J0ICoKCgpjbGFzcyBTdG9yYWdlKGdsLkNvbnRyYWN0KToKICAgIHN0b3JhZ2U6IHN0cgoKICAgIGRlZiBfX2luaXRfXyhzZWxmLCBpbml0aWFsX3N0b3JhZ2U6IHN0cik6CiAgICAgICAgc2VsZi5zdG9yYWdlID0gaW5pdGlhbF9zdG9yYWdlCgogICAgQGdsLnB1YmxpYy52aWV3CiAgICBkZWYgZ2V0X3N0b3JhZ2Uoc2VsZikgLT4gc3RyOgogICAgICAgIHJldHVybiBzZWxmLnN0b3JhZ2UKCiAgICBAZ2wucHVibGljLndyaXRlCiAgICBkZWYgdXBkYXRlX3N0b3JhZ2Uoc2VsZiwgbmV3X3N0b3JhZ2U6IHN0cikgLT4gTm9uZToKICAgICAgICBzZWxmLnN0b3JhZ2UgPSBuZXdfc3RvcmFnZQo=",
+  "id": 1
+}
+```
+
+**Notes:**
+
+- The `blockNumber` parameter should be hex-encoded with a `0x` prefix
+- Valid `status` values are `"accepted"` (default) and `"finalized"`
+- The returned code is base64-encoded
+- If the contract doesn't exist at the specified block/status, an error will be returned
+- If the address does not have code (not a contract), an error will be returned
+
+**cURL Example:**
+
+```bash
+# Get latest accepted code
+curl -X POST http://localhost:9151 \
+  -H "Content-Type: application/json" \
+  -d '{
+    "jsonrpc": "2.0",
+    "method": "gen_getContractCode",
+    "params": [{
+      "address": "0x73ca5a2b51edf506ceaf110a41780ec51294d89f"
+    }],
+    "id": 1
+  }'
+
+# Get code at specific block with finalized status
+curl -X POST http://localhost:9151 \
+  -H "Content-Type: application/json" \
+  -d '{
+    "jsonrpc": "2.0",
+    "method": "gen_getContractCode",
+    "params": [{
+      "address": "0x73ca5a2b51edf506ceaf110a41780ec51294d89f",
+      "blockNumber": "0x151ec5",
+      "status": "finalized"
+    }],
+    "id": 1
+  }'
+```
