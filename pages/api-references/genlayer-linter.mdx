@@ -1,0 +1,237 @@
+# GenLayer Linter Reference
+
+The GenLayer Linter (`genvm-linter`) is a command-line tool for validating Intelligent Contracts and extracting ABI schemas. It performs static analysis to catch common errors before deployment.
+
+## Installation
+
+```bash
+pip install genvm-linter
+```
+
+## Command Line Syntax
+
+```bash
+genvm-lint <command> <contract.py> [options]
+```
+
+## Commands
+
+### check
+
+The default validation workflow that runs both lint and validate checks.
+
+```bash
+USAGE:
+   genvm-lint check <contract.py> [options]
+
+OPTIONS:
+   --json    Output results in JSON format
+
+EXAMPLES:
+   genvm-lint check my_contract.py
+   genvm-lint check my_contract.py --json
+```
+
+### lint
+
+Fast AST-based static analysis (~50ms). Checks for common issues without requiring the GenLayer SDK.
+
+```bash
+USAGE:
+   genvm-lint lint <contract.py> [options]
+
+OPTIONS:
+   --json    Output results in JSON format
+
+EXAMPLES:
+   genvm-lint lint my_contract.py
+   genvm-lint lint my_contract.py --json
+```
+
+**Checks performed:**
+- Forbidden imports (`random`, `os`, `sys`, `subprocess`, etc.)
+- Non-deterministic patterns (float usage)
+- Contract header structure
+
+### validate
+
+Semantic validation using the GenLayer SDK (~200ms). Requires downloading GenVM artifacts.
+
+```bash
+USAGE:
+   genvm-lint validate <contract.py> [options]
+
+OPTIONS:
+   --json    Output results in JSON format
+
+EXAMPLES:
+   genvm-lint validate my_contract.py
+   genvm-lint validate my_contract.py --json
+```
+
+**Validates:**
+- Types exist in SDK
+- Decorators correctly applied
+- Storage fields have valid types
+- Method signatures correct
+
+### schema
+
+Extract the ABI schema from an Intelligent Contract.
+
+```bash
+USAGE:
+   genvm-lint schema <contract.py> [options]
+
+OPTIONS:
+   --json            Output results in JSON format
+   --output <file>   Write schema to file
+
+EXAMPLES:
+   genvm-lint schema my_contract.py
+   genvm-lint schema my_contract.py --json
+   genvm-lint schema my_contract.py --output abi.json
+```
+
+### download
+
+Pre-download GenVM artifacts for offline validation.
+
+```bash
+USAGE:
+   genvm-lint download [options]
+
+OPTIONS:
+   --version <version>   Download a specific version
+   --list                Show cached versions
+
+EXAMPLES:
+   genvm-lint download                    # Download latest
+   genvm-lint download --version v0.2.12  # Download specific version
+   genvm-lint download --list             # Show cached versions
+```
+
+## Output Formats
+
+### Human-readable (default)
+
+```
+✓ Lint passed (3 checks)
+✓ Validation passed
+  Contract: MyContract
+  Methods: 26 (16 view, 10 write)
+```
+
+### JSON (--json flag)
+
+```json
+{
+  "ok": true,
+  "lint": {
+    "ok": true,
+    "passed": 3
+  },
+  "validate": {
+    "ok": true,
+    "contract": "MyContract",
+    "methods": 26,
+    "view_methods": 16,
+    "write_methods": 10,
+    "ctor_params": 5
+  }
+}
+```
+
+### Error Output (JSON)
+
+When validation fails:
+
+```json
+{
+  "ok": false,
+  "lint": {
+    "ok": false,
+    "errors": [
+      {
+        "code": "E001",
+        "message": "Forbidden import: random",
+        "line": 3
+      }
+    ]
+  }
+}
+```
+
+## Exit Codes
+
+| Code | Description |
+|------|-------------|
+| `0` | All checks passed |
+| `1` | Lint or validation errors |
+| `2` | Contract file not found |
+| `3` | SDK download failed |
+
+## Common Lint Errors
+
+### Forbidden Imports
+
+The following modules are forbidden in Intelligent Contracts as they introduce non-determinism:
+
+- `random` - Use `gl.random` instead
+- `os`, `sys`, `subprocess` - System access not allowed
+- `socket`, `urllib`, `requests` - Use `gl.get_webpage()` instead
+- `time`, `datetime` - Use `gl.block_timestamp` instead
+
+### Non-deterministic Patterns
+
+- **Float usage**: Floating-point arithmetic can produce different results across validators. Use `Decimal` or integer math.
+- **Dictionary iteration**: In Python < 3.7, dict ordering was non-deterministic. Use `sorted()` when iterating.
+
+## Integration Examples
+
+### CI/CD Pipeline
+
+```yaml
+# GitHub Actions example
+- name: Validate contracts
+  run: |
+    pip install genvm-linter
+    genvm-lint check contracts/*.py --json
+```
+
+### Pre-commit Hook
+
+```yaml
+# .pre-commit-config.yaml
+repos:
+  - repo: local
+    hooks:
+      - id: genvm-lint
+        name: GenVM Linter
+        entry: genvm-lint check
+        language: python
+        files: \.py$
+        additional_dependencies: ['genvm-linter']
+```
+
+### Programmatic Usage
+
+```python
+import subprocess
+import json
+
+result = subprocess.run(
+    ['genvm-lint', 'check', 'my_contract.py', '--json'],
+    capture_output=True,
+    text=True
+)
+
+validation = json.loads(result.stdout)
+if not validation['ok']:
+    print("Validation failed:", validation)
+```
+
+## Related Tools
+
+- [GenLayer Test](/api-references/genlayer-test) - Testing framework for Intelligent Contracts
+- [GenLayer CLI](/api-references/genlayer-cli) - CLI for deploying and managing contracts
