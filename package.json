@@ -37,5 +37,8 @@
     "@playwright/test": "^1.55.0",
     "@types/node": "22.10.1",
     "typescript": "^5.0.0"
+  },
+  "overrides": {
+    "next-mdx-remote": "6.0.0"
   }
 }
