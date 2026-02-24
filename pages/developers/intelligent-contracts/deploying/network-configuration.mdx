@@ -65,21 +65,7 @@ genlayer deploy --contract contracts/my_contract.py
 
 ### Getting Testnet Tokens
 
-Before deploying to TestnetAsimov, you'll need testnet tokens. Use the faucet to get free GEN tokens:
-
-```bash
-# Request testnet tokens
-curl -X POST https://genlayer-faucet.vercel.app/api/faucet \
-  -H 'Content-Type: application/json' \
-  -d '{
-    "address": "0xYourEVMAddressHere",
-    "network": "Genlayer Testnet",
-    "token": "GEN",
-    "turnstileToken": ""
-  }'
-```
-
-**Important**: Replace `0xYourEVMAddressHere` with your actual EVM address.
+Before deploying to TestnetAsimov, you'll need testnet tokens. Use the [faucet](https://testnet-faucet.genlayer.foundation/) to get free GEN tokens.
 
 ### Using TestnetAsimov
 
