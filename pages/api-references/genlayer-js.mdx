@@ -522,6 +522,48 @@ console.log('Appeal processed:', appealReceipt);
 
 **Returns:** Appeal transaction hash
 
+### cancelTransaction
+
+Cancels a PENDING or ACTIVATED transaction on studio-based chains (localnet/studionet). The SDK automatically generates and signs the cancellation message using the client's configured account.
+
+```typescript
+import { createClient, createAccount, generatePrivateKey } from 'genlayer-js';
+import { localnet } from 'genlayer-js/chains';
+
+const client = createClient({
+  chain: localnet,
+  account: createAccount(generatePrivateKey()),
+});
+
+const result = await client.cancelTransaction({
+  hash: '0x4b8037744adab7ea8335b4f839979d20031d83a8ccdf706e0ae61312930335f6',
+});
+
+console.log('Cancelled:', result);
+// { transaction_hash: "0x4b80...", status: "CANCELED" }
+```
+
+**Parameters:**
+- `hash`: (`0x${string}`) The hash of the transaction to cancel
+
+**Returns:** `{ transaction_hash: string; status: "CANCELED" }`
+
+**Account types:**
+- **Private key accounts**: Signs locally using `account.signMessage`
+- **Injected provider accounts** (e.g. MetaMask): Signs via `personal_sign` through the browser provider
+
+**Errors:**
+- `"cancelTransaction is only available on studio-based chains (localnet/studionet)"` — Called on a non-studio chain (e.g. testnet-asimov)
+- `"No account set. Configure the client with an account to cancel transactions."` — No account configured on the client
+- `"No provider available for signing..."` — Address-only account with no browser wallet provider available
+- RPC error: `"Transaction cannot be cancelled: already being processed or in a terminal state"` — Transaction is already in consensus or in a terminal status
+
+**Notes:**
+- Only transactions with status PENDING or ACTIVATED can be cancelled
+- Calls the `sim_cancelTransaction` JSON-RPC method under the hood
+- The cancellation signature is `keccak256("cancel_transaction" + tx_hash_bytes)` signed by the transaction sender
+- Also available as a low-level RPC call: `client.request({ method: "sim_cancelTransaction", params: [hash, signature] })`
+
 
 ## Chain Information
 
