@@ -51,7 +51,42 @@ Ensure you have the following installed and updated:
    npm install -g genlayer
    ```
 
-2. **Initialize GenLayer Environment**
+2. **Install GenLayer Linter (Recommended)**
+
+   The GenLayer Linter validates your contracts before deployment, catching common errors early:
+
+   ```bash
+   pip install genvm-linter
+   ```
+
+   Run validation on your contracts:
+
+   ```bash
+   genvm-lint check my_contract.py
+   ```
+
+   The linter checks for:
+   - Forbidden imports (`random`, `os`, `sys`, etc.)
+   - Non-deterministic patterns
+   - SDK type validation
+   - Method signature correctness
+
+   See the [GenLayer Linter Reference](/api-references/genlayer-linter) for full documentation.
+
+3. **Install VS Code Extension (Recommended)**
+
+   The GenLayer VS Code extension provides syntax highlighting, snippets, and real-time linting for intelligent contracts:
+
+   - Install from [VS Code Marketplace](https://marketplace.visualstudio.com/items?itemName=genlayer-labs.genlayer)
+   - Or search "GenLayer" in VS Code Extensions
+
+   Features:
+   - Auto-detects GenLayer contracts by header
+   - Code snippets for common patterns
+   - Real-time error detection
+   - Integrated linting
+
+4. **Initialize GenLayer Environment**
 
    Run the following command to set up your development environment:
 

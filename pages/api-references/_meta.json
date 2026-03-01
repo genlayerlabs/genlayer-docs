@@ -3,6 +3,7 @@
   "genlayer-js": "GenLayerJS",
   "genlayer-py": "GenLayerPY",
   "genlayer-test": "GenLayer Test",
+  "genlayer-linter": "GenLayer Linter",
   "genlayer-node": "GenLayer Node API",
   "genlayer-sdk": {
     "title": "GenLayer SDK",
