@@ -1,0 +1,166 @@
+# Best Practices & Common Patterns
+
+This document grew from [a community issue](https://github.com/genlayerlabs/genlayer-docs/issues/345)
+and was originally published as a Gist. It has since been incorporated into **genlayer-utils**
+as the canonical guide to writing reliable GenLayer contracts.
+
+The guide is lengthy; the sections below mirror the original structure and point to
+helper functions in this library whenever possible.
+
+## Non-Deterministic Block Patterns
+
+Every call to `gl.nondet.web` or `gl.nondet.exec_prompt` must happen inside a
+function passed to an equivalence principle (`gl.eq_principle.strict_eq`,
+`prompt_comparative`, or `prompt_non_comparative`). The most common pattern is:
+
+```python
+import json
+
+def fetch_and_analyze(url, claim_text):
+    def _inner():
+        web_data = gl.nondet.web.render(url, mode="text")
+        result = gl.nondet.exec_prompt(
+            f"Fact-check this claim: {claim_text}\n\nEvidence: {web_data}\n\n"
+            "Respond ONLY with JSON: {\"verdict\": \"<true|false>\"}",
+            response_format="json",
+        )
+        return json.dumps(result, sort_keys=True)  # sort_keys is critical!
+
+    raw = gl.eq_principle.strict_eq(_inner)
+    return json.loads(raw)
+```
+
+See `nondet.py` for helpers such as `web_llm_strict` that encapsulate this boilerplate.
+
+### Choosing an equivalence principle
+
+| Principle                | Use When                                    |
+|--------------------------|---------------------------------------------|
+| `strict_eq`              | Output is constrained (yes/no, small JSON)  |
+| `prompt_comparative`     | "Close enough" is acceptable               |
+| `prompt_non_comparative` | Output is subjective/creative               |
+
+Always prefer `strict_eq` for performance and determinism; fall back only when necessary.
+
+## Prompt Engineering for Consensus
+
+Prompts must narrow the output space to maximize validator agreement:
+
+* Constrain outputs with enums (`<true|false>`) or fixed categories.
+* Use `response_format="json"` and ask for valid JSON only.
+* Short prompts with few fields reduce disagreement.
+* Add explicit instructions such as "Respond ONLY with valid JSON, no extra text".
+
+A few useful templates live in `llm.py` (e.g. `fact_check_prompt`, `classify_prompt`).
+
+## Access Control Patterns
+
+The platform has no built-in ACL, so contracts implement their own guards.
+
+```python
+def require_sender(expected):
+    if gl.message.sender_address != expected:
+        raise Exception("Unauthorized: caller is not the expected address")
+
+@gl.public.write
+def admin_action(self) -> None:
+    require_sender(self._owner)
+    # ...
+```
+
+Other patterns include ownership transfer and role-based maps (guards are provided
+in `access_control.py`).
+
+## Storage Patterns
+
+Common helpers are provided in `storage.py`:
+
+* `increment_or_init` for counters
+* `treemap_paginate` for paging large maps
+* `address_map_to_dict` to convert address-keyed maps for JSON views
+
+Example: paginating a `TreeMap` in a view method.
+
+## Debugging Tips
+
+1. Use GenLayer Studio for iteration.
+2. Test storage/view logic before adding nondeterministic calls.
+3. Mock web/AI results when starting.
+4. If transactions fail repeatedly, your prompt is likely too unconstrained.
+5. Prefer `mode="text"` for web.render() for consistency.
+
+## Common Mistakes
+
+| Mistake                                | Fix                                                                 |
+|----------------------------------------|---------------------------------------------------------------------|
+| Forgetting `sort_keys=True`             | Always `json.dumps(result, sort_keys=True)` before `strict_eq`      |
+| Using `dict`/`list` for storage         | Use `TreeMap` / `DynArray` instead                                 |
+| Missing `@allow_storage @dataclass`     | Required on every stored custom class                              |
+| Calling `gl.nondet` outside equivalent  | Wrap in `gl.eq_principle.*` function                               |
+
+
+## Event Indexing Pattern
+
+The SDK currently exposes `gl.advanced.emit_raw_event()` but doesn't provide a
+first-class query API. A practical workaround is to store emitted events in on‑chain
+storage so view methods can return historical event data to frontends.
+
+Pattern:
+
+1. Add a storage field on your contract: `self._events: TreeMap[str, DynArray[dict]]`
+2. When emitting an event, also append a record via a helper like
+    `append_indexed_event(self._events, "MyEvent", topics, blob)`
+3. Provide a view method that calls `query_indexed_events(self._events, "MyEvent", offset, limit)`
+
+See `src/genlayer_utils/storage.py` for `append_indexed_event()` and `query_indexed_events()` helpers.
+
+## Upgrade / Proxy Pattern
+
+When upgradeability is required, implement a minimal proxy that forwards
+unknown methods to an implementation contract using `__handle_undefined_method__`.
+
+Example (see `examples/upgrade_proxy.py`):
+
+1. Proxy stores `self._impl: Address` and `self._owner: Address` on deployment.
+2. `upgrade(new_impl)` is owner-only and sets `self._impl`.
+3. `__handle_undefined_method__` forwards unknown write calls to the implementation by
+    resolving `gl.get_contract_at(self._impl)` and calling the method dynamically.
+
+Note: This is an application-level pattern; for safety, ensure storage layout and
+method signatures are compatible between implementations.
+
+## New helpers
+
+`web_get_with_retry()` and `web_render_with_retry()` provide simple retry
+semantics for web calls when providers are flaky. `timeout_per_attempt` is
+advisory — the SDK currently does not expose per-request timeouts at the Python
+level, so the parameter documents intent and future-proofing.
+
+`record_event_strict()` is a helper that appends an event record to an
+on-chain `DynArray` and uses `gl.eq_principle.strict_eq()` to ensure validators
+agree on the event payload. Use it when you want deterministic, validated
+event records in storage (see `src/genlayer_utils/nondet.py`).
+
+## Gas-aware price-feed pattern
+
+When gas estimation isn't available, prefer a two-step workflow:
+
+1. Perform web/API fetching off-chain in the frontend or relayer.
+2. Provide a pure `@gl.public.view` method that normalizes or previews the
+   exact write payload without calling `gl.nondet.*`.
+3. Submit a minimal `@gl.public.write` that performs only the essential state
+   mutation (e.g., store a single `u256`). This keeps writes small and gas
+   predictable.
+
+See `examples/price_feed_gas_workflow.py` for a concrete demonstration.
+
+## Examples added
+
+- `examples/fact_checker.py` — full fact-checking example using `strict_eq` and
+    `web_llm_strict`.
+- `examples/price_feed_with_events.py` — price feed that emits on-chain event
+    records and raw events.
+- `examples/price_feed_gas_workflow.py` — gas-aware two-step price feed pattern.
+
+> For the full original text, see the [gist](https://gist.github.com/luch91/d865f976ed04785890ca6cf84ef13cce).
+
