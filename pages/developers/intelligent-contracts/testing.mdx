@@ -33,7 +33,7 @@ Direct Mode runs your contract Python code in-process -- no simulator, no Docker
 ```python
 # tests/test_storage.py
 
-def test_storage(direct_vm, direct_deploy):
+def test_storage(direct_deploy):
     # Deploy the contract in-memory
     storage = direct_deploy("contracts/Storage.py", "initial value")
 
@@ -136,7 +136,7 @@ def test_sentiment_analysis(direct_vm, direct_deploy):
     assert contract.get_sentiment() == "positive"
 ```
 
-<Callout type="tip">
+<Callout type="warning">
   Set `direct_vm.strict_mocks = True` to raise an error if any registered mock is never matched. This catches stale or misspelled patterns before they hide bugs.
 </Callout>
 
@@ -174,9 +174,10 @@ Studio Mode deploys your contracts to a running GenLayer Studio instance and int
 ### Quick Start
 
 ```python
-from gltest import get_contract_factory, get_default_account
+from gltest import get_contract_factory
 from gltest.assertions import tx_execution_succeeded
 
+# `default_account` is a pre-provided pytest fixture supplied by genlayer-test for Studio Mode
 def test_contract_integration(default_account):
     factory = get_contract_factory("Storage")
     contract = factory.deploy(args=["initial"])
