@@ -214,9 +214,33 @@ Rewards automatically increase the stake-per-share ratio without requiring user 
 Both validators and delegators face a **7-epoch unbonding period** when withdrawing:
 
 - Prevents rapid stake movements that could destabilize the network
-- Tokens stop earning rewards immediately upon exit
+- Exit is not processed immediately - validator remains active until next `validatorPrime()` call at next epoch
+- Exited tokens stop earning rewards only after the exit is processed in the next epoch
 - Countdown starts from the exit epoch
 - Funds become claimable when: `current_epoch >= exit_epoch + 7`
+
+**Detailed Exit Flow**:
+
+```
+Epoch N:   validatorExit(all_shares) called
+           → Exit scheduled in contract state
+           → Validator STILL ACTIVE and earning rewards
+           → Can still be selected for consensus participation
+
+Epoch N+1: validatorPrime() called (by anyone)
+           → Exit processed: stake reduced to 0
+           → Removed from validator tree
+           → No longer active or earning rewards
+           → Cannot be selected for new transactions
+
+Epoch N+2: epochAdvance() called
+           → Validator officially not in active validator set
+           → Fully excluded from consensus operations
+
+Epoch N+7: validatorClaim() callable
+           → 7 epochs have passed since exit call (epoch N)
+           → Tokens released to validator owner
+```
 
 ## Validator Priming
 
