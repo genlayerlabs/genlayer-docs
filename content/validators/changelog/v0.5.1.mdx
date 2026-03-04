@@ -1,0 +1,23 @@
+## v0.5.1
+
+### New features
+
+- Add transaction manager for nonce resilience
+- Add leader_results input and nondetDisagreementCallNo to gen_call
+- Handle hanging transactions via processIdleness
+- Add Morpheus as OpenAI-compatible LLM provider
+
+### Misc
+
+- Dedup duplicate NewTransaction events per block
+- Add CanFinalize pre-check before finalization
+- Make sync idempotent
+- Per-recipient head-by-head idleness finalization
+
+### Bug fixes
+
+- Detect ZkSync nonce inconsistency error
+- Capture RPC error message when data is not decodable
+- Correct consensus address and genesis block
+- Enrich context errors with last failure
+- Fetch on-chain data in Accepted/Undetermined handlers

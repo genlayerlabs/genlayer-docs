@@ -14,12 +14,14 @@ Executes a new message call immediately without creating a transaction on the bl
   - `blockNumber` (string, optional): The block number to query at (hex-encoded). If not provided, uses latest block
   - `status` (string, optional): The transaction status filter (`"finalized"` or `"accepted"`). If not provided, uses accepted state
   - `value` (string, optional): The value to send with the call (hex-encoded)
+  - `leader_results` (array of strings or null, optional): When provided, GenVM runs in validator mode (executing `validator_fn` instead of `leader_fn` in `run_nondet` calls). Each element is a hex-encoded equivalence output from a previous leader execution. When omitted or null, GenVM runs in leader mode
 
 **Returns:** A structured JSON object containing execution results and debug information
 
 **Response Fields:**
 
 - `data` (string): Hex-encoded return value from contract execution
+- `eqOutputs` (array of strings): Equivalence outputs from GenVM execution, each as a hex-encoded string. These are deterministic outputs used for consensus validation. Populated in leader mode; empty in validator mode
 - `status` (object): Execution status
   - `code` (number): Status code (0=success, 1=user error, 2=vm error, 3=internal error)
   - `message` (string): Human-readable status message
@@ -36,6 +38,7 @@ Executes a new message call immediately without creating a transaction on the bl
   - `data` (string): Message data as hex-encoded string
   - `onAcceptance` (boolean): Whether message is sent on acceptance
   - `saltNonce` (string): Salt nonce in hex format
+- `nondetDisagreementCallNo` (number or null): When running in validator mode (with `leader_results`), indicates which `run_nondet` call the validator disagreed on. Null when there is no disagreement or when running in leader mode
 
 **Example - Deploy Call:**
 
@@ -63,6 +66,7 @@ Executes a new message call immediately without creating a transaction on the bl
   "jsonrpc": "2.0",
   "result": {
     "data": "00",
+    "eqOutputs": [],
     "status": {
       "code": 0,
       "message": "success"
@@ -105,7 +109,8 @@ Executes a new message call immediately without creating a transaction on the bl
       }
     ],
     "events": [],
-    "messages": []
+    "messages": [],
+    "nondetDisagreementCallNo": null
   },
   "id": 1
 }
@@ -180,6 +185,7 @@ When a contract emits internal messages (e.g., a router contract forwarding call
   "jsonrpc": "2.0",
   "result": {
     "data": "00",
+    "eqOutputs": [],
     "status": {
       "code": 0,
       "message": "success"
@@ -213,7 +219,8 @@ When a contract emits internal messages (e.g., a router contract forwarding call
         "onAcceptance": false,
         "saltNonce": "0x0"
       }
-    ]
+    ],
+    "nondetDisagreementCallNo": null
   },
   "id": 1
 }
