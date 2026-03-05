@@ -48,12 +48,14 @@ Waits for a transaction receipt.
 receipt = client.wait_for_transaction_receipt(
   transaction_hash=transaction_hash,
   status='FINALIZED', # or 'ACCEPTED'
+  full_transaction=False,  # Optional: False for simplified receipt, True for complete
 )
 ```
 
 **Parameters:**
 - `transaction_hash`: The transaction hash
 - `status`: The desired transaction status ('FINALIZED' or 'ACCEPTED')
+- `full_transaction`: (Optional) `False` (default) returns a simplified receipt with binary data removed; `True` returns the complete receipt with all fields
 
 **Returns:** Transaction receipt object
 
@@ -65,8 +67,9 @@ Reads data from a deployed contract.
 ```python
 result = client.read_contract(
   address=contract_address,
-  function_name: 'get_complete_storage',
-  args: [],
+  function_name='get_complete_storage',
+  args=[],
+  state_status='accepted',  # Optional: 'accepted' or 'finalized'
 )
 ```
 
@@ -75,6 +78,7 @@ result = client.read_contract(
 - `address`: The contract address
 - `function_name`: The name of the function to call
 - `args`: An array of arguments for the function call
+- `state_status`: (Optional) The state to query against (`'accepted'` or `'finalized'`)
 
 **Returns:** The result of the contract function call
 <br/>
@@ -132,11 +136,15 @@ account_with_key = create_account('0x1234...') # Replace with actual private key
 
 ## Chain Information
 
-### localnet
+### Available Chains
 
-Provides configuration for the local GenLayer Studio chain.
 ```python
-from genlayer_py.chains import localnet
+from genlayer_py.chains import localnet, studionet, testnet_asimov
 ```
+
+- **localnet**: Local development network (GenLayer Studio)
+- **studionet**: Hosted development environment
+- **testnet_asimov**: Public test network
+
 **Usage:** Used when creating a client to specify the chain
 

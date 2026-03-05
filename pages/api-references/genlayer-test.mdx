@@ -10,6 +10,88 @@ For comprehensive test examples and implementation patterns, see our [Test Suite
 pip install genlayer-test
 ```
 
+## Two Testing Modes
+
+The testing suite provides two execution modes:
+
+| | Direct Mode | Studio Mode |
+|---|---|---|
+| **How it works** | Runs contract Python code directly in-memory | Deploys to GenLayer Studio, interacts via RPC |
+| **Speed** | ~milliseconds per test | ~minutes per test |
+| **Prerequisites** | Python >= 3.12 | Python >= 3.12 + GenLayer Studio (Docker) |
+| **Best for** | Unit tests, rapid development, CI/CD | Integration tests, consensus validation, testnet |
+
+**Start with Direct Mode** — it's faster, simpler, and doesn't require Docker. Use Studio Mode when you need full network behavior or multi-validator consensus.
+
+## Direct Mode
+
+Run contracts directly in Python — no simulator, no Docker, no network. Tests execute in milliseconds.
+
+### Quick Start
+
+```python
+def test_storage(direct_vm, direct_deploy):
+    # Deploy contract in-memory
+    storage = direct_deploy("contracts/Storage.py", "initial")
+
+    # Read state directly
+    assert storage.get_storage() == "initial"
+
+    # Write state directly
+    storage.update_storage("updated")
+    assert storage.get_storage() == "updated"
+```
+
+Run with pytest:
+
+```bash
+pytest tests/ -v
+```
+
+### Direct Mode Fixtures
+
+| Fixture | Description |
+|---------|-------------|
+| `direct_vm` | VM context with cheatcodes |
+| `direct_deploy` | Deploy contracts directly |
+| `direct_alice`, `direct_bob`, `direct_charlie` | Test addresses |
+| `direct_owner` | Default sender address |
+| `direct_accounts` | List of 10 test addresses |
+
+### Cheatcodes
+
+```python
+# Change sender
+direct_vm.sender = alice
+
+# Prank (temporary sender change)
+with direct_vm.prank(bob):
+    contract.method()  # Called as bob
+
+# Snapshots (captures full state: storage, mocks, sender, validators)
+snap_id = direct_vm.snapshot()
+contract.modify_state()
+direct_vm.revert(snap_id)  # Full state restored
+
+# Expect revert
+with direct_vm.expect_revert("Insufficient balance"):
+    contract.transfer(bob, 1000000)
+
+# Mock web/LLM (regex pattern matching)
+direct_vm.mock_web(r"api\.example\.com", {"status": 200, "body": "{}"})
+direct_vm.mock_llm(r"analyze.*", "positive sentiment")
+
+# Test validator consensus logic
+contract.update_price()          # Runs leader_fn, captures validator
+direct_vm.clear_mocks()          # Swap mocks for validator
+direct_vm.mock_llm(r".*", "different result")
+assert direct_vm.run_validator() is False  # Validator disagrees
+```
+
+## Studio Mode
+
+The rest of this document covers Studio Mode — deploying contracts to a running GenLayer Studio instance and interacting via RPC.
+
 ## Configuration
 
 The GenLayer Testing Suite can be configured using an optional `gltest.config.yaml` file in your project root. While not required, this file helps manage network configurations, contract paths, and environment settings.
@@ -493,7 +575,7 @@ The Mock LLM system allows you to simulate Large Language Model responses in Gen
 
 ```python
 mock_response = {
-    "response": {},                               # Optional: mocks gl.nondet.exec_prompt
+    "nondet_exec_prompt": {},                     # Optional: mocks gl.nondet.exec_prompt
     "eq_principle_prompt_comparative": {},        # Optional: mocks gl.eq_principle.prompt_comparative
     "eq_principle_prompt_non_comparative": {}     # Optional: mocks gl.eq_principle.prompt_non_comparative
 }
@@ -503,9 +585,11 @@ setup_validators(mock_response)
 
 ### Method Mappings
 
-- "response" -> gl.nondet.exec_prompt
-- "eq_principle_prompt_comparative" -> gl.eq_principle.prompt_comparative
-- "eq_principle_prompt_non_comparative" -> gl.eq_principle.prompt_non_comparative
+| Mock Key | GenLayer Method |
+|----------|----------------|
+| `"nondet_exec_prompt"` | `gl.nondet.exec_prompt` |
+| `"eq_principle_prompt_comparative"` | `gl.eq_principle.prompt_comparative` |
+| `"eq_principle_prompt_non_comparative"` | `gl.eq_principle.prompt_non_comparative` |
 
 ### How It Works
 
@@ -534,7 +618,7 @@ from gltest import get_contract_factory
 
 def test_with_mocked_llm(setup_validators):
     mock_response = {
-        "response": {
+        "nondet_exec_prompt": {
             "What is the weather?": "It's sunny today",
             "Calculate 2+2": "4"
         },
