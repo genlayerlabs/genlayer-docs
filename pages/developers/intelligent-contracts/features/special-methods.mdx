@@ -42,7 +42,7 @@ graph TD
     fallback_is_payable -->|yes| fallback1{{call __handle_undefined_method__}}
     fallback_is_payable -->|no| error1{{error}}
 
-    has_value -->|no| fallback_defined
+    has_value -->|no| fallback_defined[is __handle_undefined_method__ defined?]
     fallback_defined -->|yes| fallback2{{call __handle_undefined_method__}}
     fallback_defined -->|no| error2{{error}}
 ```

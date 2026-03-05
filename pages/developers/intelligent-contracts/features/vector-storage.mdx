@@ -19,15 +19,11 @@ The Vector Store provides standard CRUD (Create, Read, Update, Delete) operation
 ## How to Use Vector Store in Your Contracts
 To use the Vector Store in your Intelligent Contracts, you will interact with its methods to add and retrieve text data, calculate similarities, and manage vector storage. Below are the details of how to use this feature.
 
-#### Importing Vector Store
-First, import the VectorStore class from the standard library in your contract:
-
-```python
-from backend.node.genvm.std.vector_store import VectorStore
-```
+#### Using VecDB in Your Contract
+The `VecDB` type is available through the `genlayer` package. Import it with `from genlayer import *` along with other GenLayer types.
 
 #### Creating a Contract with Vector Store
-Here’s an example of a contract using the Vector Store for indexing and searching text logs:
+Here’s an example of a contract using `VecDB` for indexing and searching text logs:
 
 ```python
 # {
