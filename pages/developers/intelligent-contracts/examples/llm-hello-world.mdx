@@ -20,11 +20,11 @@ class LlmHelloWorld(gl.Contract):
 
         def get_message() -> str:
             task = "There is no context, I just want you to answer with a string equal to 'yes'"
-            result = gl.exec_prompt(task)
+            result = gl.nondet.exec_prompt(task)
             print(result)
             return result
 
-        self.message = gl.eq_principle_strict_eq(get_message)
+        self.message = gl.eq_principle.strict_eq(get_message)
 
     @gl.public.view
     def get_message(self) -> str:       
@@ -37,14 +37,14 @@ class LlmHelloWorld(gl.Contract):
 - **Write Method**: 
   - `set_message()` uses AI functionality to generate and store a message.
   - It contains an inner function `get_message()` that prompts an AI model with a simple task.
-  - Uses `gl.eq_principle_strict_eq()` to ensure deterministic AI responses across the network.
+  - Uses `gl.eq_principle.strict_eq()` to ensure deterministic AI responses across the network.
 - **Read Method**: 
   - `get_message()` returns the stored message.
 
 ## Key Components
 
-1. **AI Integration**: The contract uses `gl.exec_prompt()` to interact with an AI model.
-2. **Deterministic Execution**: `gl.eq_principle_strict_eq()` ensures that all nodes in the network arrive at the same exact result.
+1. **AI Integration**: The contract uses `gl.nondet.exec_prompt()` to interact with an AI model.
+2. **Deterministic Execution**: `gl.eq_principle.strict_eq()` ensures that all nodes in the network arrive at the same exact result.
 3. **State Management**: The contract maintains a single string state variable that stores the AI response.
 
 ## Deploying the Contract

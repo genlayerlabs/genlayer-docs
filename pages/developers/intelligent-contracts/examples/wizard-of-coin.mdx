@@ -3,7 +3,7 @@
 The Wizard of Coin contract sets up a scenario where a wizard possesses a valuable coin, which adventurers try to obtain. The wizard must decide whether to give the coin away based on specific conditions.
 
 ```python
-# { "Depends": "py-genlayer:test" }
+# { "Depends": "py-genlayer:latest" }
 from genlayer import *
 
 import json
@@ -19,6 +19,7 @@ class WizardOfCoin(gl.Contract):
     def ask_for_coin(self, request: str) -> None:
         if not self.have_coin:
             return
+
         prompt = f"""
 You are a wizard, and you hold a magical coin.
 Many adventurers will come and try to get you to give them the coin.
@@ -42,23 +43,25 @@ your output must be only JSON without any formatting prefix or suffix.
 This result should be perfectly parseable by a JSON parser without errors.
 """
 
-        def nondet():
-            res = gl.exec_prompt(prompt)
-            res = res.replace("```json", "").replace("```", "")
-            print(res)
-            dat = json.loads(res)
-            return dat["give_coin"]
+        def get_wizard_answer():
+            result = gl.nondet.exec_prompt(prompt)
+            result = result.replace("```json", "").replace("```", "")
+            print(result)
+            return result
 
-        result = gl.eq_principle_strict_eq(nondet)
-        assert isinstance(result, bool)
-        self.have_coin = result
+        result = gl.eq_principle.prompt_comparative(
+            get_wizard_answer, "The value of give_coin has to match"
+        )
+        parsed_result = json.loads(result)
+        assert isinstance(parsed_result["give_coin"], bool)
+        self.have_coin = not parsed_result["give_coin"]
 
     @gl.public.view
     def get_have_coin(self) -> bool:
         return self.have_coin
 ```
 
-You can check out this code on our [GitHub](https://github.com/genlayerlabs/genlayer-studio/blob/main/examples/contracts/wizard_of_coin.py)
+You can check out this code on our [GitHub](https://github.com/genlayerlabs/genlayer-testing-suite/blob/main/tests/examples/contracts/wizard_of_coin.py)
 
 ## Deploying the Contract
 

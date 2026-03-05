@@ -35,7 +35,7 @@ class UserStorage(gl.Contract):
 - **Read Methods**:
   - `get_complete_storage()` returns the entire storage dictionary, containing all user data.
   - `get_account_storage(account_address)` returns the stored value for a specific user account.
-- **Write Method**: `update_storage(new_storage)` allows updating the stored value for the user who called the contract (identified by `contract_runner.from_address`).
+- **Write Method**: `update_storage(new_storage)` allows updating the stored value for the user who called the contract (identified by `gl.message.sender_address`).
 
 ## Deploying the Contract
 
@@ -58,7 +58,7 @@ To interact with the deployed contract, go to the **Write Methods** section. Her
 
 When the `update_storage` method is executed:
 
-- The contract updates the `self.storage` dictionary, associating the new value with the address of the user who called the function (`contract_runner.from_address`).
+- The contract updates the `self.storage` dictionary, associating the new value with the address of the user who called the function (`gl.message.sender_address`).
 - You can then use the `get_account_storage()` or `get_complete_storage()` methods to verify that the value has been updated for the specific user.
 
 ## Handling Different Scenarios

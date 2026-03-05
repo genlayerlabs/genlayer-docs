@@ -20,9 +20,9 @@ class FetchGitHubProfile(gl.Contract):
         github_profile_url = "https://github.com/"+github_handle
 
         def fetch_github_profile_page_content() -> str:
-            return gl.get_webpage(github_profile_url, mode="text")
+            return gl.nondet.web.render(github_profile_url, mode="text")
     
-        self.github_profile = gl.eq_principle_strict_eq(fetch_github_profile_page_content)
+        self.github_profile = gl.eq_principle.strict_eq(fetch_github_profile_page_content)
         
     @gl.public.view
     def show_github_profile(self) -> str:       
@@ -35,14 +35,14 @@ class FetchGitHubProfile(gl.Contract):
 - **Write Method**: 
   - `fetch_github_profile(github_handle)` takes a GitHub username and retrieves their profile content.
   - Constructs the profile URL using the provided handle.
-  - Uses `gl.eq_principle_strict_eq()` to ensure all nodes agree on the same profile content.
+  - Uses `gl.eq_principle.strict_eq()` to ensure all nodes agree on the same profile content.
 - **Read Method**: 
   - `show_github_profile()` returns the stored profile content.
 
 ## Key Components
 
-1. **GitHub Integration**: The contract uses `gl.get_webpage()` to fetch content from GitHub profiles.
-2. **Deterministic Execution**: `gl.eq_principle_strict_eq()` ensures that all nodes in the network arrive at the same exact content.
+1. **GitHub Integration**: The contract uses `gl.nondet.web.render()` to fetch content from GitHub profiles.
+2. **Deterministic Execution**: `gl.eq_principle.strict_eq()` ensures that all nodes in the network arrive at the same exact content.
 3. **State Management**: The contract maintains a single string state variable that stores the profile content.
 
 ## Deploying the Contract
