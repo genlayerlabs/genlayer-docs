@@ -225,12 +225,12 @@ One full node can be shared between multiple validators. The optimal validator-t
 3. Extract the node software
    ```sh copy
    mkdir -p ${version}
-   tar -xzvf `genlayer-node-linux-amd64-${version}.tar.gz` -C `./${version}`
+   tar -xzvf genlayer-node-linux-amd64-${version}.tar.gz -C ./${version}
    ```
 4. Change the directory
 
    ```sh copy
-   cd `./${version}`
+   cd ./${version}
    ```
 
 5. Run Genvm setup
@@ -382,8 +382,7 @@ Any configuration value in `config.yaml` can be overridden using environment var
 |------------|---------------------|
 | `rollup.genlayerchainrpcurl` | `GENLAYERNODE_ROLLUP_GENLAYERCHAINRPCURL` |
 | `rollup.genlayerchainwebsocketurl` | `GENLAYERNODE_ROLLUP_GENLAYERCHAINWEBSOCKETURL` |
-| `consensus.contractmainaddress` | `GENLAYERNODE_CONSENSUS_CONTRACTMAINADDRESS` |
-| `consensus.contractdataaddress` | `GENLAYERNODE_CONSENSUS_CONTRACTDATAADDRESS` |
+| `consensus.consensusaddress` | `GENLAYERNODE_CONSENSUS_CONSENSUSADDRESS` |
 | `consensus.genesis` | `GENLAYERNODE_CONSENSUS_GENESIS` |
 | `node.mode` | `GENLAYERNODE_NODE_MODE` |
 | `node.validatorWalletAddress` | `GENLAYERNODE_NODE_VALIDATORWALLETADDRESS` |
@@ -394,8 +393,8 @@ Any configuration value in `config.yaml` can be overridden using environment var
 **Usage example:**
 
 ```sh copy
-# Override the RPC port
-export GENLAYERNODE_CONSENSUS_CONTRACTMAINADDRESS="0x..."
+# Override the consensus address
+export GENLAYERNODE_CONSENSUS_CONSENSUSADDRESS="0x..."
 
 # Set validator wallet address
 export GENLAYERNODE_NODE_VALIDATORWALLETADDRESS="0x..."
@@ -520,14 +519,14 @@ Once you have configured everything, you are ready to start the node.
     ```
 
 3.  (Optional) Run two services (modules) in background (this is a crucial step for running _Intelligent_ contracts). This can be done automatically or manually.
-    - To start them automatically in node configuration set `genvm.manage_modules` to `true`
+    - To start them automatically in node configuration set `genvm.start_manager` to `true`
     - To start them manually run
       ```bash copy
        ./third_party/genvm/bin/genvm-modules web & ./third_party/genvm/bin/genvm-modules llm &
       ```
 
 <Callout type="info">
-  Note: If you are using the default configuration, `genvm.manage_modules` is
+  Note: If you are using the default configuration, `genvm.start_manager` is
   set to `true` by default, meaning the node will manage these modules
   automatically.
 </Callout>
@@ -649,7 +648,7 @@ WEBDRIVER_PORT=4444
 # Node Service Configuration (optional - use node profile)
 # =============================================================================
 # Docker image version
-NODE_VERSION=v0.4.0
+NODE_VERSION=v0.5.1
 
 # Keystore password (used to unlock the pre-imported wallet)
 NODE_PASSWORD=12345678
@@ -666,6 +665,8 @@ NODE_OPS_PORT=9153
 
 # LLM API Key (required for GenVM LLM module)
 HEURISTKEY=
+COMPUT3KEY=
+IOINTELLIGENCE_API_KEY=
 ANTHROPICKEY=
 XAIKEY=
 GEMINIKEY=
@@ -681,7 +682,7 @@ To ensure your node is correctly configured, you can run the following command:
 ```sh copy
 source .env && docker run --rm --env-file ./.env \
   -v ${NODE_CONFIG_PATH:-./configs/node/config.yaml}:/app/configs/node/config.yaml \
-  yeagerai/genlayer-node:${NODE_VERSION:-v0.4.0} \
+  yeagerai/genlayer-node:${NODE_VERSION:-v0.5.1} \
   ./bin/genlayernode doctor
 ```
 
