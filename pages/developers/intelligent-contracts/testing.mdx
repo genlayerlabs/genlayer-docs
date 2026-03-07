@@ -1,0 +1,216 @@
+import { Callout } from 'nextra-theme-docs'
+
+# Testing Intelligent Contracts
+
+The [GenLayer Testing Suite](https://pypi.org/project/genlayer-test/) (`genlayer-test`) is a pytest-based framework for testing Intelligent Contracts. It provides two execution modes to match your workflow.
+
+## Installation
+
+```bash
+pip install genlayer-test
+```
+
+## Two Modes at a Glance
+
+|                   | Direct Mode                               | Studio Mode                                      |
+|-------------------|-------------------------------------------|--------------------------------------------------|
+| **How it works**  | Runs contract code in-memory (no network) | Deploys to GenLayer Studio via RPC               |
+| **Speed**         | Milliseconds per test                     | Minutes per test                                 |
+| **Prerequisites** | Python 3.12+                              | Python 3.12+ and GenLayer Studio (Docker)        |
+| **Best for**      | Unit tests, rapid iteration, CI/CD        | Integration tests, consensus validation, testnet |
+| **Mocking**       | `mock_web` / `mock_llm` cheatcodes        | Mock validators with LLM/web responses           |
+
+<Callout type="info">
+  **Start with Direct Mode.** It runs in milliseconds, requires no Docker, and covers the vast majority of contract logic. Add Studio Mode tests only when you need multi-validator consensus or full-network behavior.
+</Callout>
+
+## Direct Mode
+
+Direct Mode runs your contract Python code in-process -- no simulator, no Docker required.
+
+### Quick Start
+
+```python
+# tests/test_storage.py
+
+def test_storage(direct_deploy):
+    # Deploy the contract in-memory
+    storage = direct_deploy("contracts/Storage.py", "initial value")
+
+    # Call view methods directly
+    assert storage.get_storage() == "initial value"
+
+    # Call write methods directly
+    storage.update_storage("updated")
+    assert storage.get_storage() == "updated"
+```
+
+Run with pytest:
+
+```bash
+pytest tests/ -v
+```
+
+### Fixtures
+
+Direct Mode provides built-in pytest fixtures:
+
+| Fixture | Description |
+|---------|-------------|
+| `direct_vm` | VM context with cheatcodes |
+| `direct_deploy` | Deploy a contract in-memory |
+| `direct_alice`, `direct_bob`, `direct_charlie` | Predefined test addresses |
+| `direct_owner` | Default sender address |
+| `direct_accounts` | List of 10 test addresses |
+
+### Cheatcodes
+
+The `direct_vm` fixture exposes cheatcodes for controlling test execution:
+
+#### Changing the Sender
+
+```python
+def test_access_control(direct_vm, direct_deploy, direct_alice, direct_bob):
+    contract = direct_deploy("contracts/MyContract.py")
+
+    # Set sender permanently
+    direct_vm.sender = direct_alice
+    contract.owner_action()  # Called as alice
+
+    # Prank: temporarily change sender for a single call
+    with direct_vm.prank(direct_bob):
+        with direct_vm.expect_revert("Unauthorized"):
+            contract.owner_action()  # Reverts -- bob is not owner
+```
+
+#### Snapshots and Revert
+
+```python
+def test_state_isolation(direct_vm, direct_deploy):
+    contract = direct_deploy("contracts/Counter.py")
+
+    snap_id = direct_vm.snapshot()
+    contract.increment()
+    assert contract.get_count() == 1
+
+    direct_vm.revert(snap_id)
+    assert contract.get_count() == 0  # State fully restored
+```
+
+Snapshots capture full state: storage, mocks, sender, and validators.
+
+#### Expecting Reverts
+
+```python
+def test_insufficient_balance(direct_vm, direct_deploy, direct_alice):
+    contract = direct_deploy("contracts/Token.py", direct_alice, 100)
+
+    with direct_vm.expect_revert("Insufficient balance"):
+        contract.transfer(direct_alice, 999)
+```
+
+### Mocking Web and LLM Calls
+
+Non-deterministic calls (`gl.nondet.web`, `gl.nondet.exec_prompt`) must be mocked in Direct Mode. Use regex patterns to match URLs and prompt text.
+
+```python
+def test_price_feed(direct_vm, direct_deploy):
+    # Mock a web response (regex pattern matches the URL)
+    direct_vm.mock_web(
+        r"api\.example\.com/price",
+        {"status": 200, "body": '{"price": 42.50}'}
+    )
+
+    contract = direct_deploy("contracts/PriceFeed.py")
+    contract.update_price()
+    assert contract.get_price() == 4250  # Stored as integer
+```
+
+```python
+def test_sentiment_analysis(direct_vm, direct_deploy):
+    # Mock an LLM response (regex matches the prompt text)
+    direct_vm.mock_llm(r"classify.*sentiment", "positive")
+
+    contract = direct_deploy("contracts/Sentiment.py")
+    contract.analyze("I love GenLayer!")
+    assert contract.get_sentiment() == "positive"
+```
+
+<Callout type="warning">
+  Set `direct_vm.strict_mocks = True` to raise an error if any registered mock is never matched. This catches stale or misspelled patterns before they hide bugs.
+</Callout>
+
+### Testing Validator Consensus
+
+Verify that your equivalence principle produces consistent results across validators:
+
+```python
+def test_consensus_agreement(direct_vm, direct_deploy):
+    direct_vm.mock_llm(r".*", '{"verdict": "true"}')
+
+    contract = direct_deploy("contracts/FactChecker.py")
+    # Run as the leader -- captures the validator function internally
+    contract.check_claim("The sky is blue")
+
+    # Swap mocks to simulate a dissenting validator
+    direct_vm.clear_mocks()
+    direct_vm.mock_llm(r".*", '{"verdict": "false"}')
+    assert direct_vm.run_validator() is False  # Validator disagrees -> undetermined
+```
+
+## Studio Mode
+
+Studio Mode deploys your contracts to a running GenLayer Studio instance and interacts via RPC. Use it when you need:
+
+- Multi-validator consensus with real network behavior
+- Verification on `localnet` or `studionet`
+- Pre-testnet integration checks
+
+### Prerequisites
+
+- GenLayer Studio running locally (`genlayer up`)
+- Python 3.12+
+
+### Quick Start
+
+```python
+from gltest import get_contract_factory
+from gltest.assertions import tx_execution_succeeded
+
+# `default_account` is a pre-provided pytest fixture supplied by genlayer-test for Studio Mode
+def test_contract_integration(default_account):
+    factory = get_contract_factory("Storage")
+    contract = factory.deploy(args=["initial"])
+
+    tx = contract.update_storage(args=["new value"]).transact()
+    assert tx_execution_succeeded(tx)
+
+    result = contract.get_storage().call()
+    assert result == "new value"
+```
+
+Run with the `gltest` CLI:
+
+```bash
+gltest tests/ -v
+gltest --network studionet
+gltest --leader-only   # Skip consensus validation (faster)
+```
+
+For the full Studio Mode API -- mock validators, LLM/web responses, multi-network configuration -- see the [genlayer-test API Reference](/api-references/genlayer-test).
+
+## Testing Strategy
+
+Structure your test suite in layers:
+
+1. **Pure storage tests first** -- verify `__init__`, view methods, and write methods that do not call `gl.nondet`. These run instantly and catch most logic bugs.
+
+2. **Mock non-deterministic calls** -- add `mock_web` / `mock_llm` to test the full execution flow with controlled outputs. Cover both happy paths and edge cases (empty responses, unexpected LLM output, HTTP errors).
+
+3. **Consensus tests** -- use `direct_vm.run_validator()` to confirm your equivalence principle produces agreement on typical inputs. Also verify that validators disagree on inputs designed to be ambiguous.
+
+4. **Studio Mode last** -- run a smaller set of integration tests against `localnet` in CI to verify end-to-end behavior with real validators.
+
+<Callout type="tip">
+  Enable `direct_vm.check_pickling = True` to catch serialization bugs early. GenLayer stores contract state by pickling Python objects -- any custom class not decorated with `@allow_storage` and `@dataclass` will fail at runtime.
+</Callout>
