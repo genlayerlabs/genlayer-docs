@@ -125,7 +125,7 @@ genlayer staking wizard
 The wizard guides you through:
 
 1. **Account setup** - Create or select your owner account
-2. **Network selection** - Choose testnet-asimov
+2. **Network selection** - Choose testnet-asimov or testnet-bradbury
 3. **Balance verification** - Confirms you have at least 42,000 GEN
 4. **Operator setup** - Create and export an operator keystore for your validator server
 5. **Stake amount** - Enter how much GEN to stake (minimum 42,000)
@@ -264,7 +264,7 @@ rollup:
   genlayerchainwebsocketurl: "TODO: Set your GenLayer Chain ZKSync WebSocket RPC URL here" # GenLayer Chain WebSocket URL
 # consensus contracts configuration
 consensus:
-  # Testnet - Phase 5
+  # Testnet Asimov or Bradbury consensus contract
   consensusaddress: "0xe66B434bc83805f380509642429eC8e43AE9874a" # AddressManager Smart Contract Address
   genesis: 17326 # (Optional) Genesis block number for this consensus deployment. If not provided, it will be auto-detected by searching for the first log from the ConsensusMain contract.
 # data directory

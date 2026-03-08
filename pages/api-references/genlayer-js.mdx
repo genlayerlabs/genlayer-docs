@@ -10,7 +10,7 @@ Creates a new GenLayer client instance with various configuration options.
 
 ```typescript
 import { createClient } from 'genlayer-js';
-import { localnet, studionet, testnetAsimov } from 'genlayer-js/chains';
+import { localnet, studionet, testnetAsimov, testnetBradbury } from 'genlayer-js/chains';
 
 // Basic client with localnet chain
 const client = createClient({
@@ -38,7 +38,7 @@ const client = createClient({
 ```
 
 **Parameters:**
-- `chain`: The chain configuration (localnet, studionet, testnetAsimov)
+- `chain`: The chain configuration (localnet, studionet, testnetAsimov, testnetBradbury)
 - `account`: (Optional) Can be either:
   - An account object (from `createAccount()`) for direct signing with private key
   - A string address (e.g., '0x1234...') for external signing (MetaMask)
@@ -572,31 +572,32 @@ console.log('Cancelled:', result);
 GenLayerJS provides several chain configurations for different environments:
 
 - **localnet**: Local development network
-- **studionet**: Staging environment network  
-- **testnetAsimov**: Test network for production testing
+- **studionet**: Staging environment network
+- **testnetAsimov**: Test network for infrastructure and stress testing
+- **testnetBradbury**: Test network for AI/LLM use cases
 
 ```typescript
-import { localnet, studionet, testnetAsimov } from 'genlayer-js/chains';
+import { localnet, studionet, testnetAsimov, testnetBradbury } from 'genlayer-js/chains';
 
 // Use the appropriate chain for your environment
 const client = createClient({
-  chain: localnet, // or studionet, testnetAsimov
+  chain: testnetBradbury, // or localnet, studionet, testnetAsimov
 });
 ```
 
 ## Staking (Testnet)
 
-The SDK provides staking functionality for validators and delegators on testnet-asimov.
+The SDK provides staking functionality for validators and delegators on testnet.
 
 ### Setup
 
 ```typescript
-import { testnetAsimov } from 'genlayer-js/chains';
+import { testnetBradbury } from 'genlayer-js/chains';
 import { createClient, createAccount } from "genlayer-js";
 
 const account = createAccount();
 const client = createClient({
-  chain: testnetAsimov,
+  chain: testnetBradbury,
   account,
 });
 ```
