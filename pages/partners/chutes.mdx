@@ -6,6 +6,8 @@ Chutes provides serverless inference for open-source AI models running on decent
 
 Validators can call these models through a simple HTTP API without running their own GPU infrastructure.
 
+GenLayer Validators can request a discount on Chutes models by [filling out this form](https://docs.google.com/forms/d/e/1FAIpQLSd6I_Q0aiCalDQLX9FvzQ3hfFaKR4j1jaDEoa-jfpXhLclmog/viewform).
+
 ---
 
 ## Why Chutes
@@ -66,17 +68,11 @@ Your API key will be used in authenticated API requests.
 
 The Chutes API uses Bearer token authentication.
 
-Include your API key in the request header:
+Include your API key as a Bearer token in the `Authorization` header. You can verify your key is working by listing the available models:
 
 ```bash
-Authorization: Bearer YOUR_API_KEY
-```
-
-Example request:
-
-```bash
-curl https://api.chutes.ai/chutes \
-  -H "Authorization: Bearer YOUR_API_KEY"
+curl https://llm.chutes.ai/v1/models \
+  -H "Authorization: Bearer $CHUTES_API_KEY"
 ```
 
 The API follows standard REST conventions and returns JSON responses.
