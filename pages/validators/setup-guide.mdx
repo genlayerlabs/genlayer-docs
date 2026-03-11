@@ -208,18 +208,18 @@ One full node can be shared between multiple validators. The optimal validator-t
    You should see a list like this
 
    ```sh
+   v0.5.4
    v0.5.3
    v0.5.2
    v0.5.1
    v0.5.0
-   v0.4.5
    ```
 
    Typically, you will want to run the latest version
 
 2. Download the packaged application
    ```sh copy
-   export version=v0.5.3 # set your desired version here
+   export version=v0.5.4 # set your desired version here
    wget https://storage.googleapis.com/gh-af/genlayer-node/bin/amd64/${version}/genlayer-node-linux-amd64-${version}.tar.gz
    ```
 3. Extract the node software
@@ -377,6 +377,9 @@ Set the `consensus` section in your `config.yaml` according to the network you w
 consensus:
   consensusaddress: "0xe66B434bc83805f380509642429eC8e43AE9874a"
   genesis: 17326
+rollup:
+  genlayerchainrpcurl: 'TODO: Set your GenLayer Chain ZKSync HTTP RPC URL here'
+  genlayerchainwebsocketurl: 'TODO: Set your GenLayer Chain ZKSync WebSocket RPC URL here'
 
 ```
 
@@ -387,6 +390,9 @@ consensus:
 consensus:
   consensusaddress: "0x8aCE036C8C3C5D603dB546b031302FCf149648E8"
   genesis: 501711
+rollup:
+  genlayerchainrpcurl: 'TODO: Set your GenLayer Chain ZKSync HTTP RPC URL here'
+  genlayerchainwebsocketurl: 'TODO: Set your GenLayer Chain ZKSync WebSocket RPC URL here'
 
 ```
 

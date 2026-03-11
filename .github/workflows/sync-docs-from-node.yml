@@ -101,7 +101,7 @@ jobs:
           token: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Install yq for YAML sanitization
-        if: matrix.sync_type == 'config' || matrix.sync_type == 'config_asimov' || matrix.sync_type == 'config_bradbury' || matrix.sync_type == 'docker_compose'
+        if: matrix.sync_type == 'config' || matrix.sync_type == 'docker_compose'
         run: |
           sudo wget -qO /usr/local/bin/yq https://github.com/mikefarah/yq/releases/latest/download/yq_linux_amd64
           sudo chmod +x /usr/local/bin/yq
