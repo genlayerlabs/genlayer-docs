@@ -1,7 +1,7 @@
 services:
   webdriver-container:
     container_name: genlayer-node-webdriver
-    image: yeagerai/genlayer-genvm-webdriver:0.0.9
+    image: yeagerai/genlayer-genvm-webdriver:0.0.10
     shm_size: 2gb
     security_opt:
       - no-new-privileges:true
