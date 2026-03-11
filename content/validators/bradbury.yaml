@@ -2,6 +2,3 @@
 consensus:
   consensusaddress: "0x8aCE036C8C3C5D603dB546b031302FCf149648E8"
   genesis: 501711
-rollup:
-  genlayerchainrpcurl: 'TODO: Set your GenLayer Chain ZKSync HTTP RPC URL here'
-  genlayerchainwebsocketurl: 'TODO: Set your GenLayer Chain ZKSync WebSocket RPC URL here'
