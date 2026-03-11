@@ -37,6 +37,14 @@ networks:
       - "${ACCOUNT_PRIVATE_KEY_3}"
     from: "${ACCOUNT_PRIVATE_KEY_2}"  # Optional: specify default account
 
+  testnet_bradbury:  # Test network configuration (pre-configured)
+    # Pre-configured network - requires accounts to be specified
+    accounts:
+      - "${ACCOUNT_PRIVATE_KEY_1}"
+      - "${ACCOUNT_PRIVATE_KEY_2}"
+      - "${ACCOUNT_PRIVATE_KEY_3}"
+    from: "${ACCOUNT_PRIVATE_KEY_2}"  # Optional: specify default account
+
   custom_network:  # Custom network configuration
     id: 1234
     url: "http://custom.network:8545"
@@ -59,7 +67,8 @@ environment: .env  # Path to your environment file containing private keys and o
    - Pre-configured networks:
      - `localnet`: Local development network with auto-generated test accounts
      - `studionet`: GenLayer Studio network with auto-generated test accounts
-     - `testnet_asimov`: Public test network (requires account configuration)
+     - `testnet_asimov`: Public test network for infrastructure testing (requires account configuration)
+     - `testnet_bradbury`: Public test network for AI/LLM use cases (requires account configuration)
    - Network configurations can include:
      - `url`: The RPC endpoint for the network (optional for pre-configured networks)
      - `id`: Chain ID (optional for pre-configured networks)
@@ -629,7 +638,7 @@ gltest --network localnet
 gltest --network studionet
 
 # Run tests on testnet
-gltest --network testnet_asimov
+gltest --network testnet_bradbury
 ```
 
 Set a custom RPC endpoint:
@@ -659,5 +668,5 @@ When enabled, deployments and write operations run only on the leader node. On u
 
 **Note:** All configuration options can be combined. For example:
 ```bash
-gltest -v --network testnet_asimov --default-wait-interval 1000
+gltest -v --network testnet_bradbury --default-wait-interval 1000
 ```

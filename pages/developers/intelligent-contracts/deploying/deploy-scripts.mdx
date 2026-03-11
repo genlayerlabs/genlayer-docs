@@ -36,7 +36,7 @@ import {
   DecodedDeployData, 
   GenLayerChain 
 } from "genlayer-js/types";
-import { testnetAsimov } from "genlayer-js/chains";
+import { testnetBradbury } from "genlayer-js/chains";
 
 export default async function main(client: GenLayerClient<any>) {
   // Read the contract file
@@ -66,9 +66,9 @@ export default async function main(client: GenLayerClient<any>) {
     throw new Error(`Deployment failed. Receipt: ${JSON.stringify(receipt)}`);
   }
   
-  // Receipt structure differs between TestnetAsimov and localnet/studionet
+  // Receipt structure differs between testnet and localnet/studionet
   const deployedContractAddress = 
-    (client.chain as GenLayerChain).id !== testnetAsimov.id
+    (client.chain as GenLayerChain).id !== testnetBradbury.id
       ? receipt.data.contract_address
       : (receipt.txDataDecoded as DecodedDeployData)?.contractAddress;
 
@@ -93,7 +93,7 @@ import {
   DecodedDeployData,
   GenLayerChain
 } from "genlayer-js/types";
-import { testnetAsimov } from "genlayer-js/chains";
+import { testnetBradbury } from "genlayer-js/chains";
 
 export default async function main(client: GenLayerClient<any>) {
   console.log("🚀 Starting deployment process...");
@@ -150,9 +150,9 @@ async function deployContract(
     throw new Error(`Deployment failed for ${contractPath}. Receipt: ${JSON.stringify(receipt)}`);
   }
 
-  // Receipt structure differs between TestnetAsimov and localnet/studionet
+  // Receipt structure differs between testnet and localnet/studionet
   const deployedContractAddress = 
-    (client.chain as GenLayerChain).id !== testnetAsimov.id
+    (client.chain as GenLayerChain).id !== testnetBradbury.id
       ? receipt.data.contract_address
       : (receipt.txDataDecoded as DecodedDeployData)?.contractAddress;
 
@@ -234,9 +234,9 @@ export default async function main(client: GenLayerClient<any>) {
       throw new Error(`Deployment failed: ${JSON.stringify(receipt)}`);
     }
 
-    // Receipt structure differs between TestnetAsimov and localnet/studionet
+    // Receipt structure differs between testnet and localnet/studionet
     const deployedContractAddress = 
-      (client.chain as GenLayerChain).id !== testnetAsimov.id
+      (client.chain as GenLayerChain).id !== testnetBradbury.id
         ? receipt.data.contract_address
         : (receipt.txDataDecoded as DecodedDeployData)?.contractAddress;
 

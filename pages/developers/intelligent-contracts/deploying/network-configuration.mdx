@@ -2,7 +2,7 @@ import { Callout } from 'nextra-theme-docs'
 
 # Network Configuration
 
-GenLayer supports three different networks, each serving specific purposes in the development lifecycle:
+GenLayer supports multiple networks, each serving specific purposes in the development lifecycle:
 
 ## Localnet
 
@@ -55,17 +55,13 @@ genlayer deploy --contract contracts/my_contract.py
 
 ## TestnetAsimov
 
-**Purpose**: Production-like testing environment
-- **When to use**: For final testing
+**Purpose**: Infrastructure testing and stress testing
+- **When to use**: For infrastructure stability testing, scalability testing, and stress tests
 - **Setup**: Connect using network configuration
 - **Benefits**:
-  - Production-like environment
-  - Stable for testing dApp integrations
+  - Stable infrastructure testing environment
+  - Scalability and stress testing
   - Shared testnet for community testing
-
-### Getting Testnet Tokens
-
-Before deploying to TestnetAsimov, you'll need testnet tokens. Use the [faucet](https://testnet-faucet.genlayer.foundation/) to get free GEN tokens.
 
 ### Using TestnetAsimov
 
@@ -77,16 +73,45 @@ genlayer network testnet-asimov
 genlayer deploy --contract contracts/my_contract.py
 ```
 
+## TestnetBradbury
+
+**Purpose**: Production-like testing environment with real AI/LLM use cases
+- **When to use**: For deploying and testing intelligent contracts with real LLM models
+- **Setup**: Connect using network configuration
+- **Benefits**:
+  - Real AI workloads using powerful LLM models
+  - Production-like environment for intelligent contract testing
+  - Real use cases and contracts deployed
+  - Shared testnet for community testing
+
+<Callout emoji="ℹ️">
+  Testnet Bradbury configuration details will be available when the network goes live. The faucet and RPC endpoints are shared with Testnet Asimov.
+</Callout>
+
+### Getting Testnet Tokens
+
+Before deploying to TestnetBradbury, you'll need testnet tokens. Use the [faucet](https://testnet-faucet.genlayer.foundation/) to get free GEN tokens.
+
+### Using TestnetBradbury
+
+```bash
+# Set network to testnet
+genlayer network testnet-bradbury
+
+# Deploy to testnet
+genlayer deploy --contract contracts/my_contract.py
+```
+
 ## Network Comparison
 
-| Feature | Localnet | Studionet | TestnetAsimov |
-|---------|----------|-----------|---------------|
-| **Setup Complexity** | Medium | None | Low |
-| **Control Level** | Full | Limited | Limited |
-| **Persistence** | Local only | Temporary | Persistent |
-| **Collaboration** | No | Yes | Yes |
-| **Performance** | Fast | Medium | Production-like |
-| **Best for** | Development | Prototyping | Pre-production testing |
+| Feature | Localnet | Studionet | TestnetAsimov | TestnetBradbury |
+|---------|----------|-----------|---------------|-----------------|
+| **Setup Complexity** | Medium | None | Low | Low |
+| **Control Level** | Full | Limited | Limited | Limited |
+| **Persistence** | Local only | Temporary | Persistent | Persistent |
+| **Collaboration** | No | Yes | Yes | Yes |
+| **Performance** | Fast | Medium | Production-like | Production-like |
+| **Best for** | Development | Prototyping | Infrastructure testing | AI/LLM testing |
 
 ## Development Workflow
 
@@ -94,7 +119,7 @@ We recommend following this progression:
 
 1. **Start with Localnet**: Develop and test your contracts locally with full control
 2. **Test on Studionet**: Validate contracts in a shared environment
-3. **Deploy to TestnetAsimov**: Final testing in a production-like environment
+3. **Deploy to TestnetBradbury**: Final testing in a production-like environment with real AI workloads
 
 ## Managing Network Settings
 
@@ -123,8 +148,9 @@ This command will show you available networks and let you choose:
 ```
 ? Select a network:
 ❯ localnet
-  studionet  
+  studionet
   testnet-asimov
+  testnet-bradbury
   custom
 ```
 
@@ -134,6 +160,7 @@ This command will show you available networks and let you choose:
 genlayer network localnet
 genlayer network studionet
 genlayer network testnet-asimov
+genlayer network testnet-bradbury
 ```
 
 ### Network Switching Workflow
@@ -148,7 +175,7 @@ genlayer network studionet
 genlayer deploy --contract contracts/my_contract.py
 
 # Pre-production workflow
-genlayer network testnet-asimov
+genlayer network testnet-bradbury
 genlayer deploy --contract contracts/my_contract.py
 ```
 
