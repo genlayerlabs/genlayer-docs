@@ -208,18 +208,18 @@ One full node can be shared between multiple validators. The optimal validator-t
    You should see a list like this
 
    ```sh
+   v0.5.3
    v0.5.2
    v0.5.1
    v0.5.0
    v0.4.5
-   v0.4.4
    ```
 
    Typically, you will want to run the latest version
 
 2. Download the packaged application
    ```sh copy
-   export version=v0.5.2 # set your desired version here
+   export version=v0.5.3 # set your desired version here
    wget https://storage.googleapis.com/gh-af/genlayer-node/bin/amd64/${version}/genlayer-node-linux-amd64-${version}.tar.gz
    ```
 3. Extract the node software
@@ -264,11 +264,9 @@ rollup:
   genlayerchainwebsocketurl: "TODO: Set your GenLayer Chain ZKSync WebSocket RPC URL here" # GenLayer Chain WebSocket URL
 # consensus contracts configuration
 consensus:
-  # Testnet Asimov consensus contract
+  # Testnet - Phase 5
   consensusaddress: "0xe66B434bc83805f380509642429eC8e43AE9874a" # AddressManager Smart Contract Address
   genesis: 17326 # (Optional) Genesis block number for this consensus deployment. If not provided, it will be auto-detected by searching for the first log from the ConsensusMain contract.
-  # Testnet Bradbury consensus contract (use this instead of the above for Bradbury)
-  # consensusaddress: "0x0112Bf6e83497965A5fdD6Dad1E447a6E004271D" # AddressManager Smart Contract Address
 # data directory
 datadir: "./data/node"
 # logging configuration
