@@ -1,0 +1,4 @@
+# Asimov Phase 5 network consensus configuration
+consensus:
+  consensusaddress: "0xe66B434bc83805f380509642429eC8e43AE9874a"
+  genesis: 17326

@@ -255,7 +255,7 @@ This is the main configuration file of your node. Without it, your node won't st
 
 The file needs to be located at `configs/node/config.yaml`
 
-You can use the following example configuration. **Note:** For most users, you will only need to modify the `genlayerchainrpcurl` and `genlayerchainwebsocketurl` values below.
+You can use the following example configuration. **Note:** For most users, you will only need to modify the `genlayerchainrpcurl`, `genlayerchainwebsocketurl`, and the `consensus` section for your target network (see [Network-Specific Consensus Configuration](#network-specific-consensus-configuration) below).
 
 ```yaml copy
 # rollup configuration
@@ -363,6 +363,30 @@ metrics:
     webdriver:
       enabled: true
       # interval: "60s"  # Optional: Override default interval for this collector
+
+```
+
+#### Network-Specific Consensus Configuration
+
+Set the `consensus` section in your `config.yaml` according to the network you want to join:
+
+##### Testnet Asimov
+
+```yaml copy
+# Asimov Phase 5 network consensus configuration
+consensus:
+  consensusaddress: "0xe66B434bc83805f380509642429eC8e43AE9874a"
+  genesis: 17326
+
+```
+
+##### Testnet Bradbury
+
+```yaml copy
+# Bradbury Phase 1 network consensus configuration
+consensus:
+  consensusaddress: "0x8aCE036C8C3C5D603dB546b031302FCf149648E8"
+  genesis: 501711
 
 ```
 

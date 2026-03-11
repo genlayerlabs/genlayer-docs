@@ -1,0 +1,4 @@
+# Bradbury Phase 1 network consensus configuration
+consensus:
+  consensusaddress: "0x8aCE036C8C3C5D603dB546b031302FCf149648E8"
+  genesis: 501711

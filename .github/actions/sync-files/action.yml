@@ -38,7 +38,7 @@ runs:
   using: 'composite'
   steps:
     - name: Prepare config file
-      if: inputs.type == 'config'
+      if: inputs.type == 'config' || inputs.type == 'config_asimov' || inputs.type == 'config_bradbury'
       shell: bash
       run: |
         # For config type, handle special case:
@@ -92,7 +92,7 @@ runs:
       shell: bash
       run: |
         # Use prepared source for config/docker_compose types, otherwise use original source
-        if [[ "${{ inputs.type }}" == "config" ]] && [[ -n "$CONFIG_SOURCE" ]]; then
+        if [[ "${{ inputs.type }}" == "config" || "${{ inputs.type }}" == "config_asimov" || "${{ inputs.type }}" == "config_bradbury" ]] && [[ -n "$CONFIG_SOURCE" ]]; then
           SOURCE_PATH="$CONFIG_SOURCE"
         elif [[ "${{ inputs.type }}" == "docker_compose" ]] && [[ -n "$DOCKER_COMPOSE_SOURCE" ]]; then
           SOURCE_PATH="$DOCKER_COMPOSE_SOURCE"
@@ -109,7 +109,7 @@ runs:
           "${{ inputs.exclude_files }}"
     
     - name: Cleanup config temp directory
-      if: inputs.type == 'config' && always()
+      if: (inputs.type == 'config' || inputs.type == 'config_asimov' || inputs.type == 'config_bradbury') && always()
       shell: bash
       run: |
         if [[ -n "$TEMP_CONFIG_DIR" ]] && [[ -d "$TEMP_CONFIG_DIR" ]]; then
