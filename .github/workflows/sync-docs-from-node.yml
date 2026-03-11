@@ -92,7 +92,7 @@ jobs:
     needs: prepare
     strategy:
       matrix:
-        sync_type: [changelog, config, docker_compose, api_gen, api_debug, api_ops]
+        sync_type: [changelog, config, config_asimov, config_bradbury, docker_compose, api_gen, api_debug, api_ops]
       fail-fast: false
     steps:
       - name: Checkout documentation repository
@@ -101,7 +101,7 @@ jobs:
           token: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Install yq for YAML sanitization
-        if: matrix.sync_type == 'config' || matrix.sync_type == 'docker_compose'
+        if: matrix.sync_type == 'config' || matrix.sync_type == 'config_asimov' || matrix.sync_type == 'config_bradbury' || matrix.sync_type == 'docker_compose'
         run: |
           sudo wget -qO /usr/local/bin/yq https://github.com/mikefarah/yq/releases/latest/download/yq_linux_amd64
           sudo chmod +x /usr/local/bin/yq
@@ -115,6 +115,8 @@ jobs:
           sparse-checkout: |
             docs
             configs/node/config.yaml.example
+            configs/node/asimov.yaml.example
+            configs/node/bradbury.yaml.example
             release/docker-compose.yaml
           sparse-checkout-cone-mode: true
           path: source-repo
@@ -134,6 +136,18 @@ jobs:
               echo "title=Config File" >> $GITHUB_OUTPUT
               echo "source_path=source-repo/configs/node/config.yaml.example" >> $GITHUB_OUTPUT
               echo "target_path=content/validators/config.yaml" >> $GITHUB_OUTPUT
+              echo "filter_pattern=.*" >> $GITHUB_OUTPUT
+              ;;
+            "config_asimov")
+              echo "title=Config File (Asimov)" >> $GITHUB_OUTPUT
+              echo "source_path=source-repo/configs/node/asimov.yaml.example" >> $GITHUB_OUTPUT
+              echo "target_path=content/validators/asimov.yaml" >> $GITHUB_OUTPUT
+              echo "filter_pattern=.*" >> $GITHUB_OUTPUT
+              ;;
+            "config_bradbury")
+              echo "title=Config File (Bradbury)" >> $GITHUB_OUTPUT
+              echo "source_path=source-repo/configs/node/bradbury.yaml.example" >> $GITHUB_OUTPUT
+              echo "target_path=content/validators/bradbury.yaml" >> $GITHUB_OUTPUT
               echo "filter_pattern=.*" >> $GITHUB_OUTPUT
               ;;
             "docker_compose")
@@ -474,11 +488,13 @@ jobs:
           echo "" >> $GITHUB_STEP_SUMMARY
           
           # Process each sync type report
-          for sync_type in changelog config docker_compose api_gen api_debug api_ops; do
+          for sync_type in changelog config config_asimov config_bradbury docker_compose api_gen api_debug api_ops; do
             # Get proper title
             case "$sync_type" in
               "changelog") title="📝 Changelog Sync" ;;
               "config") title="⚙️ Config File Sync" ;;
+              "config_asimov") title="⚙️ Config File Sync (Asimov)" ;;
+              "config_bradbury") title="⚙️ Config File Sync (Bradbury)" ;;
               "docker_compose") title="🐳 Docker Compose Sync" ;;
               "api_gen") title="🔧 API Gen Methods Sync" ;;
               "api_debug") title="🐛 API Debug Methods Sync" ;;

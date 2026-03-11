@@ -5,66 +5,71 @@ const path = require('path');
 
 /**
  * Update the setup guide with the latest config from content/validators/config.yaml
+ * and network-specific consensus configs from content/validators/asimov.yaml and bradbury.yaml
  */
 function updateConfigInSetupGuide() {
   const configPath = path.join(process.cwd(), 'content/validators/config.yaml');
+  const asimovPath = path.join(process.cwd(), 'content/validators/asimov.yaml');
+  const bradburyPath = path.join(process.cwd(), 'content/validators/bradbury.yaml');
   const setupGuidePath = path.join(process.cwd(), 'pages/validators/setup-guide.mdx');
-  
-  if (!fs.existsSync(configPath)) {
-    console.error(`Config file ${configPath} does not exist`);
-    return;
-  }
-  
+
   if (!fs.existsSync(setupGuidePath)) {
     console.error(`Setup guide file ${setupGuidePath} does not exist`);
     return;
   }
-  
-  // Read the config.yaml content
-  const configContent = fs.readFileSync(configPath, 'utf8');
-  
-  // Read the setup guide
+
   let setupGuideContent = fs.readFileSync(setupGuidePath, 'utf8');
-  
-  // Pattern to match the YAML config block
-  // Looks for the text before the yaml block, the yaml block itself, and the text after
-  // Note: The yaml block may have additional attributes like "copy" (```yaml copy)
-  // Uses [\s\S]*? to match any characters (including backticks in inline code) until the yaml block
-  const configPattern = /(You can use the following example configuration[\s\S]*?```yaml[^\n]*\n)([\s\S]*?)(\n```)/;
-  
-  if (configPattern.test(setupGuideContent)) {
-    // Replace the config content while preserving the surrounding text
-    setupGuideContent = setupGuideContent.replace(
-      configPattern,
-      `$1${configContent}$3`
-    );
-    
-    // Write the updated content back
-    fs.writeFileSync(setupGuidePath, setupGuideContent);
-    console.log(`Updated setup guide config at ${new Date().toISOString()}`);
-  } else {
-    console.error('Could not find config pattern in setup guide');
-    
-    // Try a more general pattern as fallback
-    const fallbackPattern = /(```yaml\n)([\s\S]*?)(\n```)/;
-    const matches = setupGuideContent.match(fallbackPattern);
-    
-    if (matches) {
-      // Check if this looks like the config block by looking for consensus addresses
-      if (matches[2].includes('contractmanageraddress') || matches[2].includes('consensus:')) {
-        setupGuideContent = setupGuideContent.replace(
-          fallbackPattern,
-          `$1${configContent}$3`
-        );
-        fs.writeFileSync(setupGuidePath, setupGuideContent);
-        console.log(`Updated setup guide config using fallback pattern at ${new Date().toISOString()}`);
-      } else {
-        console.error('Found YAML block but it does not appear to be the config block');
-      }
+
+  // Update main config block from config.yaml
+  if (fs.existsSync(configPath)) {
+    const configContent = fs.readFileSync(configPath, 'utf8');
+    const configPattern = /(You can use the following example configuration[\s\S]*?```yaml[^\n]*\n)([\s\S]*?)(\n```)/;
+
+    if (configPattern.test(setupGuideContent)) {
+      setupGuideContent = setupGuideContent.replace(
+        configPattern,
+        `$1${configContent}$3`
+      );
+      console.log(`Updated main config block at ${new Date().toISOString()}`);
     } else {
-      console.error('Could not find any YAML block in setup guide');
+      console.error('Could not find main config pattern in setup guide');
     }
   }
+
+  // Update Asimov consensus config
+  if (fs.existsSync(asimovPath)) {
+    const asimovContent = fs.readFileSync(asimovPath, 'utf8');
+    const asimovPattern = /(##### Testnet Asimov\s*```yaml[^\n]*\n)([\s\S]*?)(\n```)/;
+
+    if (asimovPattern.test(setupGuideContent)) {
+      setupGuideContent = setupGuideContent.replace(
+        asimovPattern,
+        `$1${asimovContent}$3`
+      );
+      console.log(`Updated Asimov config block at ${new Date().toISOString()}`);
+    } else {
+      console.error('Could not find Asimov config pattern in setup guide');
+    }
+  }
+
+  // Update Bradbury consensus config
+  if (fs.existsSync(bradburyPath)) {
+    const bradburyContent = fs.readFileSync(bradburyPath, 'utf8');
+    const bradburyPattern = /(##### Testnet Bradbury\s*```yaml[^\n]*\n)([\s\S]*?)(\n```)/;
+
+    if (bradburyPattern.test(setupGuideContent)) {
+      setupGuideContent = setupGuideContent.replace(
+        bradburyPattern,
+        `$1${bradburyContent}$3`
+      );
+      console.log(`Updated Bradbury config block at ${new Date().toISOString()}`);
+    } else {
+      console.error('Could not find Bradbury config pattern in setup guide');
+    }
+  }
+
+  // Write the updated content back
+  fs.writeFileSync(setupGuidePath, setupGuideContent);
 }
 
 // Run the script

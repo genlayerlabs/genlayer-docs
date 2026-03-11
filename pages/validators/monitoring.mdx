@@ -117,6 +117,7 @@ CENTRAL_LOKI_PASSWORD=your-logs-password
 # Node identification
 NODE_ID=validator-001
 VALIDATOR_NAME=MyValidator
+NETWORK_NAME=asimov-phase5
 
 # Usually defaults are fine
 NODE_METRICS_ENDPOINT=host.docker.internal:9153
@@ -165,6 +166,7 @@ alloy:
     # Single node configuration
     - NODE_ID=${NODE_ID:-local}
     - VALIDATOR_NAME=${VALIDATOR_NAME:-default}
+    - NETWORK_NAME=${NETWORK_NAME:-asimov-phase5}
     - NODE_METRICS_ENDPOINT=${NODE_METRICS_ENDPOINT:-host.docker.internal:9153}
 
     # Multi-node configuration
@@ -237,6 +239,12 @@ discovery.relabel "add_labels" {
     replacement  = "alloy"
   }
 
+  // Add network label from environment variable
+  rule {
+    target_label = "network"
+    replacement  = coalesce(sys.env("NETWORK_NAME"), "asimov-phase5")
+  }
+
   // Add job label
   rule {
     target_label = "job"
@@ -278,16 +286,16 @@ loki.write "central" {
 // Supports both single node and multi-node configurations
 //
 // Single Node Mode:
-//   Set NODE_METRICS_ENDPOINT, NODE_ID, VALIDATOR_NAME
+//   Set NODE_METRICS_ENDPOINT, NODE_ID, VALIDATOR_NAME, NETWORK_NAME
 //
 // Multi-Node Mode:
 //   Set SCRAPE_TARGETS_JSON with JSON array of target objects
-//   Example: [{"__address__":"host.docker.internal:9250","instance":"0x...","validator_name":"node-1"}]
+//   Example: [{"__address__":"host.docker.internal:9250","instance":"0x...","validator_name":"node-1","network":"testnet-asimov"}]
 prometheus.scrape "genlayer_node" {
   // Dynamic targets based on environment variable
   // If SCRAPE_TARGETS_JSON is set, use it (multi-node mode)
   // Otherwise, build single target from individual env vars (single node mode)
-  targets = encoding.from_json(coalesce(sys.env("SCRAPE_TARGETS_JSON"), string.format("[{\"__address__\":\"%s\",\"instance\":\"%s\",\"validator_name\":\"%s\"}]", coalesce(sys.env("NODE_METRICS_ENDPOINT"), "host.docker.internal:9153"), coalesce(sys.env("NODE_ID"), "local"), coalesce(sys.env("VALIDATOR_NAME"), "default"))))
+  targets = encoding.from_json(coalesce(sys.env("SCRAPE_TARGETS_JSON"), string.format("[{\"__address__\":\"%s\",\"instance\":\"%s\",\"validator_name\":\"%s\",\"network\":\"%s\"}]", coalesce(sys.env("NODE_METRICS_ENDPOINT"), "host.docker.internal:9153"), coalesce(sys.env("NODE_ID"), "local"), coalesce(sys.env("VALIDATOR_NAME"), "default"), coalesce(sys.env("NETWORK_NAME"), "asimov-phase5"))))
 
   forward_to = [prometheus.relabel.metrics.receiver]
 
