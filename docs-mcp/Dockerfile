@@ -2,7 +2,7 @@ FROM node:20-slim
 
 RUN apt-get update && \
     apt-get install -y --no-install-recommends python3 make g++ && \
-    npm install -g @arabold/docs-mcp-server && \
+    npm install -g @arabold/docs-mcp-server@2.0.4 && \
     apt-get purge -y python3 make g++ && \
     apt-get autoremove -y && \
     rm -rf /var/lib/apt/lists/*
