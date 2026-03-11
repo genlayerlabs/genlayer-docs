@@ -1,0 +1,60 @@
+name: Build & Deploy Docs MCP Server
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "docs-mcp/**"
+      - "pages/**"
+      - ".github/workflows/docs-mcp.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  packages: write
+
+env:
+  IMAGE: ghcr.io/${{ github.repository }}/docs-mcp-server
+  DOCS_MCP_URL: https://docs-mcp.genlayer.com
+
+jobs:
+  build-and-push:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Log in to GitHub Container Registry
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Build and push
+        uses: docker/build-push-action@v6
+        with:
+          context: ./docs-mcp
+          push: true
+          tags: |
+            ${{ env.IMAGE }}:latest
+            ${{ env.IMAGE }}:sha-${{ github.sha }}
+
+  refresh-index:
+    runs-on: ubuntu-latest
+    needs: build-and-push
+    if: always()
+    steps:
+      - name: Trigger docs reindex
+        run: |
+          # Trigger a refresh of both libraries via the web UI's scrape endpoint.
+          # Uses formMode=refresh to only re-scrape changed pages.
+          # Fails silently if server is not yet deployed.
+          curl -sf -X POST "${{ env.DOCS_MCP_URL }}/web/jobs/scrape" \
+            -H "Content-Type: application/x-www-form-urlencoded" \
+            -d "formMode=refresh&library=genlayer-docs&url=https://docs.genlayer.com&scope=hostname" \
+            || echo "Docs refresh trigger failed (server may not be deployed yet)"
+
+          curl -sf -X POST "${{ env.DOCS_MCP_URL }}/web/jobs/scrape" \
+            -H "Content-Type: application/x-www-form-urlencoded" \
+            -d "formMode=refresh&library=genlayer-sdk&url=https://sdk.genlayer.com/main/&scope=hostname" \
+            || echo "SDK refresh trigger failed (server may not be deployed yet)"
