@@ -1,8 +1,11 @@
-FROM node:20-alpine
+FROM node:20-slim
 
-RUN apk add --no-cache python3 make g++ && \
+RUN apt-get update && \
+    apt-get install -y --no-install-recommends python3 make g++ && \
     npm install -g @arabold/docs-mcp-server && \
-    apk del python3 make g++
+    apt-get purge -y python3 make g++ && \
+    apt-get autoremove -y && \
+    rm -rf /var/lib/apt/lists/*
 
 ENV PORT=8080
 ENV DOCS_URL=https://docs.genlayer.com
