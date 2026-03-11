@@ -1,6 +1,8 @@
 FROM node:20-alpine
 
-RUN npm install -g @arabold/docs-mcp-server
+RUN apk add --no-cache python3 make g++ && \
+    npm install -g @arabold/docs-mcp-server && \
+    apk del python3 make g++
 
 ENV PORT=8080
 ENV DOCS_URL=https://docs.genlayer.com
