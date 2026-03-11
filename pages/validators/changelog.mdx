@@ -1,5 +1,26 @@
 # Changelog
 
+## v0.5.2
+
+### New features
+
+- Add recovery for missing TxData
+
+### Bug fixes
+
+- Invalidate timeout cache on SetTimeouts
+- Dedup propose on duplicate events
+- Stop retrying on ValidatorSelectionFailed
+- Prevent sync error race on ctx cancel
+- Recover sync on missing TxData
+- Reject stale block in idle check
+- Increment leader revealed metric counter
+- Sync commit idle timeout with contract timestamps
+
+### Misc
+
+- Use CtxLogger in HTTP handler constructors
+
 ## v0.5.1
 
 ### New features
