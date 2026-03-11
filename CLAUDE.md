@@ -105,6 +105,25 @@ Key locations that need updates for new validator releases:
 - Genesis block numbers are specified for faster node startup (optional but recommended)
 - GenVM diagnostics integration affects the `doctor` command behavior
 
+## Quick Markdown Search (qmd)
+
+[qmd](https://github.com/tobi/qmd) is recommended for fast navigation of this documentation codebase. It provides BM25 + vector semantic search + LLM re-ranking over all indexed MDX files.
+
+### Setup
+```bash
+npm install -g @tobilu/qmd
+# From the repo root:
+qmd collection add pages/ --mask '**/*.mdx' --name docs
+qmd embed  # generates vector embeddings (one-time, ~1 min)
+```
+
+### Usage
+```bash
+qmd search "equivalence principle"    # BM25 keyword search
+qmd query "how does consensus work"   # hybrid search with reranking
+qmd get docs/path/to/file.mdx        # show a specific document
+```
+
 ## GenLayer-Specific Context
 
 This documentation covers:

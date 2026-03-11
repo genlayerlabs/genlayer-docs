@@ -1,403 +1,538 @@
 import { Callout } from 'nextra-theme-docs'
 import { Fragment } from 'react';
 
-# Managing Intelligent Contract Operations with the Equivalence Principle
+# The Equivalence Principle
 
-The Equivalence Principle is a core concept in GenLayer's Intelligent Contract framework. It ensures consistency and reliability when handling non-deterministic operation results, such as responses from Large Language Models or web data retrieval, by establishing a standard for validators to agree on the correctness of these outputs. These functions give users detailed control over how the outputs are validated.
+The Equivalence Principle is how GenLayer achieves consensus on non-deterministic operations — things like web requests, LLM calls, or any computation that might produce different results on different nodes.
 
-Depending on how you want the validators to work, you can choose from a few options, such as a principle that uses LLMs or one that just uses a strict comparison.
-
-<Callout emoji="💡">
-    Advanced users may also choose to write their own equivalence principle
-</Callout>
-
-
-The Equivalence Principle involves multiple validators randomly selected to determine whether different outputs from non-deterministic operations can be considered equivalent. One validator acts as the leader, proposing the output, while others validate it and then return it instead of their computation.
-
-## Equivalence Principles Options
-
-Validators work to reach a consensus on whether the result set by the leader is acceptable, which might involve direct comparison or qualitative evaluation, depending on the contract's design. If the validators do not reach a consensus due to differing data interpretations or an error in data processing, the transaction will become undetermined.
-
-### Comparative Equivalence Principle
-
-In the Comparative Equivalence Principle, the leader and the validators perform identical tasks and then directly compare their respective results with the predefined criteria to ensure consistency and accuracy. This method uses an acceptable margin of error to handle slight variations in results between validators and is suitable for quantifiable outputs. However, computational demands and associated costs increase since multiple validators perform the same tasks as the leader.
-
-```python
-gl.eq_principle.prompt_comparative(
-    your_non_deterministic_function,
-    "The result must not differ by more than 5%"
-)
-```
-For example, if an intelligent contract is tasked with fetching the follower count of a Twitter account and the Equivalence Principle specifies that _follower counts should not differ by more than 5%_, validators will compare their results to the leader's result utilizing their own LLMs to ensure they fall within this margin.
-
-### Non-Comparative Equivalence Principle
-
-GenLayer SDK provides function `gl.eq_principle.prompt_non_comparative` for handling most scenarios that require performing subjective NLP tasks
-
-#### Non-Comparative Equivalence Principle Parameters
-
-The `gl.eq_principle.prompt_non_comparative` function takes three key parameters that define how validators should evaluate non-deterministic operations:
-
-1. **input** (function)
-
-   The input parameter represents the original data or function that needs to be processed by the task. For instance, when building a sentiment analysis contract, the input might be a text description that needs to be classified. The function processes this input before passing it to the validators for evaluation.
-
-2. **task** (str)
-
-   The task parameter provides a clear and concise instruction that defines exactly what operation needs to be performed on the input. This string should be specific enough to guide the validators in their evaluation process while remaining concise enough to be easily understood. For example, in a sentiment analysis context, the task might be "Classify the sentiment of this text as positive, negative, or neutral". This instruction serves as a guide for both the leader and validators in processing the input.
-
-3. **criteria** (str)
-
-   The criteria parameter defines the specific rules and requirements that validators use to determine if an output is acceptable. This string should contain a comprehensive set of validation parameters that ensure consistency across different validators. While the criteria can be structured in various ways, it typically outlines the expected format of the output and any specific considerations that should be taken into account during validation. For example:
-
-   ```python
-   criteria = """
-               Output must be one of: positive, negative, neutral
-               Consider context and tone
-               Account for sarcasm and idioms
-           """
-   ```
-
-   This criteria helps validators make consistent decisions about whether to accept or reject the leader's proposed output, even when dealing with subjective or non-deterministic results.
-
-#### Example Usage
-
-```python
-class SentimentAnalyzer(gl.Contract):
-    @gl.public.write
-    def analyze_sentiment(self, text: str) -> str:
-        self.sentiment = gl.eq_principle.prompt_non_comparative(
-            input=text,
-            task="Classify the sentiment of this text as positive, negative, or neutral",
-            criteria="""
-                Output must be one of: positive, negative, neutral
-                Consider context and tone
-                Account for sarcasm and idioms
-            """
-        )
-```
-
-In this example:
-- `input` is the text to analyze
-- `task` defines what operation to perform
-- `criteria` ensures consistent validation across validators without requiring exact output matching
-
-### Strict Equivalence Principle
-
-Method that requires exact matches between validator outputs. Use this when you need deterministic results or when dealing with objective, factual data.
-
-**When to use:**
-- Fetching specific data that should be identical (web content, API responses)
-- Boolean operations or exact classifications
-- When network consensus on exact values is critical
-
-**How it works:**
-- All validators execute the same function
-- Results must match exactly
-
-```python
-def fetch_content():
-    response = gl.nondet.web.get("https://example.com")
-    body = json.loads(response.body)
-    return body["valid"]
-
-self.valid = gl.eq_principle_strict_eq(fetch_content)
-```
-
-```python
-def check_condition():
-    web_data = gl.get_webpage(url)
-    prompt = f"Is this text positive? Answer only 'true' or 'false': {web_data}"
-    return gl.exec_prompt(prompt).strip()
-
-result = gl.eq_principle_strict_eq(check_condition)
-```
-
-### Custom Leader/Validator Pattern
-
-For advanced use cases, you can implement your own equivalence logic using the leader/validator pattern. GenLayer provides two variants with different error handling approaches.
-
-#### Safe Custom Pattern (`gl.vm.run_nondet`)
-
-Provides comprehensive error handling by running validators in a sandbox.
-
-**When to use:**
-- Production environments where stability is critical
-- Complex validation logic that might have errors
-- When you want automatic error comparison and fallback handling
-
-**How it works:**
-- Leader function executes the main operation
-- Validator function runs in a sandbox for safety
-- Automatic error handling with customizable comparison functions
-
-```python
-def analyze_article_quality(self, assignment_id: str, article_text: str):
-    assignment = self.assignments[assignment_id]
-    prompt = f"""
-    Analyze this article's quality and provide a score from 0 to 2.
-    Article: {article_text}
-    Guidelines: {assignment.title} - {assignment.description}
-    Return JSON: {{"analysis": "detailed explanation", "score": 0-2}}
-    """
-
-    def leader_fn():
-        response = gl.nondet.exec_prompt(prompt)
-        return json.loads(response)
-
-    def validator_fn(leader_res: gl.vm.Result) -> bool:
-        if not isinstance(leader_res, gl.vm.Return):
-            return False
-        
-        validator_res = leader_fn()
-        leader_score = leader_res.calldata["score"]
-        validator_score = validator_res["score"]
-        
-        # Exact match for score 0, ±1 tolerance for others
-        if validator_score == 0 or leader_score == 0:
-            return validator_score == leader_score
-        return abs(validator_score - leader_score) <= 1
-
-    return gl.vm.run_nondet(leader_fn, validator_fn)
-```
-
-#### Fast Custom Pattern (`gl.vm.run_nondet_unsafe`)
-
-The most generic API for non-deterministic execution. Does not use extra sandbox for catching validator errors - validator errors result in `Disagree` error in executor (same as if the function returned `False`).
-
-**When to use:**
-- Performance-critical applications where sandbox overhead matters
-- Simple validators that are unlikely to error
-- When you want direct control over error handling
-
-**Note:** Use `run_nondet` instead if you want to catch and inspect validator errors, or use sandbox inside of it.
-
-```python
-def analyze_sentiment_fast(self, text: str):
-    def leader_fn():
-        prompt = f"Rate sentiment 1-10: {text}"
-        result = gl.nondet.exec_prompt(prompt)
-        return int(result.strip())
-    
-    def validator_fn(leader_result: gl.vm.Result) -> bool:
-        if not isinstance(leader_result, gl.vm.Return):
-            return False
-        
-        score = leader_result.calldata
-        return isinstance(score, int) and 1 <= score <= 10
-    
-    return gl.vm.run_nondet_unsafe(leader_fn, validator_fn)
-```
-
-#### Advanced Error Handling with `run_nondet`
-
-```python
-# Custom error comparison functions
-def custom_validation_with_error_handling(self, data: str):
-    def leader_fn():
-        # Note: process_external_data() is not provided by GenVM - implement your own logic
-        return process_external_data(data)
-    
-    def validator_fn(leader_result):
-        if not isinstance(leader_result, gl.vm.Return):
-            return False
-        # Note: validate_result() is not provided by GenVM - implement your own logic
-        return validate_result(leader_result.calldata)
-    
-    def compare_user_errors(error1: gl.vm.UserError, error2: gl.vm.UserError) -> bool:
-        # Custom logic for comparing user errors
-        return "timeout" in error1.message and "timeout" in error2.message
-    
-    def compare_vm_errors(error1: gl.vm.VMError, error2: gl.vm.VMError) -> bool:
-        # Custom logic for comparing VM errors
-        return "memory" in error1.message and "memory" in error2.message
-    
-    return gl.vm.run_nondet(
-        leader_fn, 
-        validator_fn,
-        compare_user_errors=compare_user_errors,
-        compare_vm_errors=compare_vm_errors
-    )
-```
-
-### Data Flow
-<Fragment>
-  <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'stretch' }}>
-    <div style={{ flex: 1, marginRight: '10px', paddingRight: '10px', borderRight: '1px solid #ccc' }}>
-      <div>
-        ```mermaid
-        ---
-        title: Comparative Equivalence Principle
-        ---
-        graph TD
-
-            input[Input function]
-            criteria[Criteria]
-            final_result[Final result]
-            output_leader[Output leader]
-            output_validator[Output validator]
-
-            subgraph Leader
-                input_leader[Executing input function]
-                leader["Performing task (LLM)"]
-                input_leader --> leader
-            end
-
-            subgraph Validator
-                input_validator[Executing input function]
-                validator["Performing task (LLM)"]
-                input_validator --> validator
-            end
-
-            input --> Leader
-            input --> Validator
-
-            leader --> output_leader
-            validator --> output_validator
-
-
-            output_leader --> final_result
-            criteria --> final_result
-            output_validator --> final_result
-        ```
-      </div>
-    </div>
-
-    <div style={{ flex: 1, marginLeft: '10px', paddingLeft: '10px' }}>
-      <div>
-        ```mermaid
-        ---
-        title: Non-Comparative Equivalence Principle
-        ---
-        graph TD
-
-            task[Task & criteria]
-
-            input[Input function]
-
-            subgraph Leader
-                input_leader[Executing input function]
-                leader["Performing task (LLM)"]
-                input_leader --> leader
-            end
-
-            task --> leader
-
-            leader --> Output
-
-
-            subgraph Validator
-                input_validator[Executing input function]
-                validator["Validating (LLM)"]
-                input_validator --> validator
-            end
-
-            task --> validator
-            Output --> validator
-
-            input --> Leader
-            input --> Validator
-
-            final_result[Final result]
-            Output --> final_result
-            validator -..- final_result
-        ```
-      </div>
-    </div>
-
-  </div>
-</Fragment>
-
+The core idea: a **leader** executes the operation and proposes a result, then **validators** independently verify whether that result is acceptable.
 
 ## The Leader/Validator Pattern
 
-Behind the scenes, GenLayer's Equivalence Principle is implemented using a leader/validator pattern. This pattern ensures security and consensus when dealing with non-deterministic operations.
-
-Each nondeterministic block consists of two functions:
-
-**Leader Function**
-
-- Executes only on the designated leader node
-- Performs operations like web requests or NLP
-- Returns a result that will be shared with validator nodes
+Every non-deterministic operation in GenLayer is built on two functions:
 
 ```python
-def leader() -> T:
-    # Performs the actual nondeterministic operation
-    pass
+def leader_fn() -> T:
+    # Fetch data, call an LLM, compute something
+    return result
+
+def validator_fn(leader_result) -> bool:
+    # Independently verify the leader's result
+    # Returns True to accept, False to reject
+    return is_acceptable
 ```
 
-**Validator Function**
+The leader's result is only accepted if a majority of validators agree. If the majority rejects, the network rotates to a different leader and retries. If consensus still can't be reached, the transaction goes **undetermined** — it does not modify contract state.
 
-- Executes on multiple validator nodes
-- Receives the leader's result as input
-- Must independently verify the result's validity
-- Returns `True` to accept or `False` to reject
-
-```python
-def validator(leader_result: gl.vm.Return[T] | gl.vm.VMError | gl.vm.UserError) -> bool:
-    # Verifies the leader's result
-    # Returns True if acceptable, False otherwise
-    # Note: leader function could end with a UserError or VMError
-    # reasons for them can be "host unreachable" and "OOM", respectively
-    pass
+```mermaid
+graph TD
+    subgraph "Step 1: Leader"
+        L[execute leader_fn → result]
+    end
+    L -->|leader_result| V
+    subgraph "Step 2: Validator"
+        V[verify leader_result]
+        V --> C{Acceptable?}
+        C -->|yes| A[Accept]
+        C -->|no| R[Reject]
+    end
 ```
 
-### Writing Secure Validator Functions
+The typical validator pattern is: **re-run the leader function independently, then compare the results**. How you compare determines which validation pattern you're using.
 
-#### ❌ Bad Example
+<Callout emoji="💡">
+  **Always extract before comparing.** Raw web data varies between nodes (caching, cookies, dynamic content) and is expensive to write to the GenLayer chain — whatever data the leader returns has to be stored on-chain. The typical pattern is: **fetch web data → LLM extraction → return structured data**, all within the same non-deterministic block.
+</Callout>
+
+## Validation Patterns
+
+### Pattern 1: Partial Field Matching
+
+Often your leader function returns structured data with both an **analysis** (subjective text) and a **decision** (objective fields). Two LLMs will produce different analysis text, but should agree on the decision. Compare only the fields that matter:
+
 ```python
-def validator(leader_result):
-    return True  # Always accepts - insecure!
+@gl.public.write
+def resolve_match(self, match_id: str):
+    match = self.matches[match_id]
+
+    def leader_fn():
+        web_data = gl.nondet.web.get(match.source_url)
+        prompt = f"""
+        Analyze this match and determine the result.
+        Teams: {match.team1} vs {match.team2}
+        Page content: {web_data.body}
+        Return JSON: {{
+            "analysis": "your reasoning about the match result",
+            "score": "X:Y",
+            "winner": 1 or 2 or 0 for draw, or -1 if not finished
+        }}
+        """
+        response = gl.nondet.exec_prompt(prompt)
+        # In production, add retry/validation around JSON parsing
+        return json.loads(response)
+
+    def validator_fn(leader_result) -> bool:
+        if not isinstance(leader_result, gl.vm.Return):
+            return False
+        validator_data = leader_fn()
+        leader_data = leader_result.calldata
+        # Only compare the decision fields — analysis text will differ
+        return (
+            leader_data["winner"] == validator_data["winner"]
+            and leader_data["score"] == validator_data["score"]
+        )
+
+    result = gl.vm.run_nondet_unsafe(leader_fn, validator_fn)
+
+    if result["winner"] == -1:
+        raise gl.vm.UserError("Game not finished")
+    self.matches[match_id].winner = result["winner"]
+    self.matches[match_id].score = result["score"]
+    self.matches[match_id].analysis = result["analysis"]
 ```
 
-This validator is useless because it allows the leader to return any arbitrary data without verification. This would allow a single node to produce a rigged result, such as a false match result in football prediction market contract example
+The `analysis` field is stored but not compared — two LLMs will word their reasoning differently. The `winner` and `score` fields are the decision and must match exactly.
 
-#### ✅ Good Examples
+<Callout emoji="💡">
+  If you only need the decision fields (not the analysis), you can use `strict_eq` instead — see [Convenience Functions](#strict-equality-strict_eq).
+</Callout>
 
-**Independent Verification:**
+### Pattern 2: Numeric Tolerance
+
+When results are numeric but may vary slightly between nodes, compare within a threshold. This is common for two reasons:
+- **Time drift**: prices change between leader and validator execution
+- **LLM subjectivity**: quality scores from different LLMs rarely match exactly
+
+#### Price Oracle
+
+The most common use case — fetching a price that may drift between when the leader and validator execute:
+
 ```python
-def validator(leader_result):
-    # Independently fetch the same data
-    my_data = fetch_external_data()
+@gl.public.write
+def update_price(self, pair: str):
+    url = f"https://api.example.com/prices/{pair}"
 
-    # If we reached this line, we haven't encountered an error --- vote disagree
-    if not isinstance(leader_result, Return):
+    def leader_fn():
+        response = gl.nondet.web.get(url)
+        data = json.loads(response.body)
+        return data["price"]
+
+    def validator_fn(leader_result) -> bool:
+        if not isinstance(leader_result, gl.vm.Return):
+            return False
+        validator_price = leader_fn()
+        leader_price = leader_result.calldata
+        # 2% tolerance — price may drift between leader and validator execution
+        if leader_price == 0:
+            return validator_price == 0
+        return abs(leader_price - validator_price) / abs(leader_price) <= 0.02
+
+    self.prices[pair] = gl.vm.run_nondet_unsafe(leader_fn, validator_fn)
+```
+
+#### Quality Scoring
+
+For LLM-generated scores, use absolute tolerance — two LLMs rating the same content rarely give identical scores:
+
+```python
+@gl.public.write
+def evaluate_submission(self, submission_id: str):
+    submission = self.submissions[submission_id]
+
+    def leader_fn():
+        web_data = gl.nondet.web.get(submission.content_url)
+        prompt = f"""
+        Rate the quality of this content on a scale of 0-10.
+        Guidelines: {submission.guidelines}
+        Content: {web_data.body}
+        Return JSON: {{"score": N, "analysis": "brief explanation"}}
+        """
+        response = gl.nondet.exec_prompt(prompt)
+        return json.loads(response)
+
+    def validator_fn(leader_result) -> bool:
+        if not isinstance(leader_result, gl.vm.Return):
+            return False
+        validator_data = leader_fn()
+        leader_score = leader_result.calldata["score"]
+        validator_score = validator_data["score"]
+        # Gate: if either scores 0 (reject), both must agree on rejection
+        if leader_score == 0 or validator_score == 0:
+            return leader_score == validator_score
+        # Otherwise allow ±1 tolerance
+        return abs(leader_score - validator_score) <= 1
+
+    result = gl.vm.run_nondet_unsafe(leader_fn, validator_fn)
+    self.submissions[submission_id].score = result["score"]
+    self.submissions[submission_id].analysis = result["analysis"]
+```
+
+The gate check (score 0) ensures that if one node thinks the content should be rejected outright, both must agree — you don't want a ±1 tolerance to turn a rejection into an acceptance.
+
+### Pattern 3: LLM Comparison (Comparative)
+
+When results are complex (text, structured analysis) and can't be reduced to numbers, you can use an LLM to decide whether two outputs are equivalent.
+
+The simplest way is `prompt_comparative`:
+
+```python
+result = gl.eq_principle.prompt_comparative(
+    evaluate_single_source,
+    principle="`outcome` field must be exactly the same. All other fields must be similar",
+)
+```
+
+This uses a special `EqComparative` prompt template — not a regular `gl.nondet.exec_prompt` call. Node operators can customize these templates to tune how their validators evaluate equivalence, improving judgment quality over time. This is a key advantage over writing your own comparison prompts.
+
+For more control while keeping this benefit, use the template directly in a custom `run_nondet_unsafe` validator. This lets you combine LLM-based comparison with programmatic checks:
+
+<Callout emoji="⚠️">
+  The imports below use internal module paths (`_internal`, `_decode_nondet`). The template functionality is stable and used by all convenience functions, but the import path may change in future releases.
+</Callout>
+
+```python
+import genlayer.gl._internal.gl_call as gl_call
+from genlayer.gl.nondet import _decode_nondet
+
+@gl.public.write
+def analyze_event(self, event_id: str):
+    event = self.events[event_id]
+
+    def leader_fn():
+        web_data = gl.nondet.web.get(event.source_url)
+        prompt = f"""
+        Analyze this event and determine the outcome.
+        Title: {event.title}
+        Possible outcomes: {event.outcomes}
+        Page content: {web_data.body}
+        Return JSON: {{
+            "reasoning": "your detailed analysis",
+            "outcome": "chosen outcome or UNDETERMINED"
+        }}
+        """
+        response = gl.nondet.exec_prompt(prompt)
+        return json.loads(response)
+
+    def validator_fn(leader_result) -> bool:
+        if not isinstance(leader_result, gl.vm.Return):
+            return False
+        validator_data = leader_fn()
+
+        # Use the EqComparative template — node operators can customize this
+        verdict = gl_call.gl_call_generic(
+            {
+                'ExecPromptTemplate': {
+                    'template': 'EqComparative',
+                    'leader_answer': format(leader_result.calldata),
+                    'validator_answer': format(validator_data),
+                    'principle': "`outcome` must match exactly. Reasoning may differ.",
+                }
+            },
+            _decode_nondet,
+        ).get()
+
+        return verdict
+
+    result = gl.vm.run_nondet_unsafe(leader_fn, validator_fn)
+    self.events[event_id].outcome = result["outcome"]
+    self.events[event_id].analysis = result["reasoning"]
+```
+
+The `EqComparative` template sends both answers and your principle to the validator's LLM, which returns `true`/`false`. Because this goes through the template system, node operators can fine-tune the comparison prompt for their specific LLM — getting better judgment over time without any contract changes.
+
+**When to use:** Results are rich (text + structured data) and you need natural-language equivalence judgment — "outcomes must match", "key facts must agree", "sentiments must be the same".
+
+<Callout emoji="💡">
+  If comparative LLM comparison is too loose or too strict, consider whether you can reduce the problem to [partial field matching](#pattern-1-partial-field-matching) or [numeric tolerance](#pattern-2-numeric-tolerance) — those give you deterministic, programmatic control.
+</Callout>
+
+### Pattern 4: Non-Comparative Validation
+
+In rare cases, you may not want the validator to repeat the leader's work at all. Instead, the validator **evaluates the leader's output** against the source data.
+
+```mermaid
+graph TD
+    task[Task & criteria]
+    input[Input function]
+
+    subgraph Leader
+        input_leader[Execute input function] --> leader["Perform task (LLM)"]
+    end
+
+    subgraph Validator
+        input_validator[Execute input function] --> validator["Validate output (LLM)"]
+    end
+
+    task --> leader
+    task --> validator
+    input --> Leader
+    input --> Validator
+
+    leader --> Output
+    Output --> validator
+    Output --> final_result[Final result]
+    validator -.->|accept/reject| final_result
+```
+
+Note that the validator **does not perform the task** — it only judges whether the leader's output satisfies the criteria given the input.
+
+The simplest way is `prompt_non_comparative`:
+
+```python
+@gl.public.write
+def summarize_article(self, url: str):
+    result = gl.eq_principle.prompt_non_comparative(
+        lambda: gl.nondet.web.get(url).body.decode("utf-8"),
+        task="Summarize this article in 2-3 sentences",
+        criteria="""
+            Summary must capture the main point of the article
+            Must not include information not present in the source
+            Must be 2-3 sentences long
+        """
+    )
+    self.summaries[url] = result
+```
+
+Under the hood, this uses two special templates:
+- **`EqNonComparativeLeader`**: takes the input + task + criteria → produces the output
+- **`EqNonComparativeValidator`**: takes the input + leader's output + task + criteria → judges validity
+
+For more control, use these templates directly. Here the leader summarizes an article, and the validator uses the `EqNonComparativeValidator` template to judge the summary:
+
+```python
+import genlayer.gl._internal.gl_call as gl_call
+from genlayer.gl.nondet import _decode_nondet
+
+@gl.public.write
+def summarize_article(self, url: str):
+    task = "Summarize this article in 2-3 sentences"
+    criteria = """
+        Summary must capture the main point of the article.
+        Must not include information not present in the source.
+        Must be 2-3 sentences long.
+    """
+
+    def leader_fn():
+        web_data = gl.nondet.web.get(url).body.decode("utf-8")
+        result = gl_call.gl_call_generic(
+            {
+                'ExecPromptTemplate': {
+                    'template': 'EqNonComparativeLeader',
+                    'task': task,
+                    'input': web_data,
+                    'criteria': criteria,
+                }
+            },
+            _decode_nondet,
+        ).get()
+        return result
+
+    def validator_fn(leader_result) -> bool:
+        if not isinstance(leader_result, gl.vm.Return):
+            return False
+        web_data = gl.nondet.web.get(url).body.decode("utf-8")
+        verdict = gl_call.gl_call_generic(
+            {
+                'ExecPromptTemplate': {
+                    'template': 'EqNonComparativeValidator',
+                    'task': task,
+                    'input': web_data,
+                    'output': leader_result.calldata,
+                    'criteria': criteria,
+                }
+            },
+            _decode_nondet,
+        ).get()
+        return verdict
+
+    self.summaries[url] = gl.vm.run_nondet_unsafe(leader_fn, validator_fn)
+```
+
+The validator never writes its own summary — it only judges whether the leader's summary is faithful to the source. And because it uses the `EqNonComparativeValidator` template, node operators can tune the judgment prompt for their LLM.
+
+<Callout emoji="💡">
+  Non-comparative validation is rare in practice. Most use cases are better served by patterns 1-3 where the validator independently reproduces the result. Non-comparative is most useful when the output is open-ended and there's no meaningful way to compare two independent results — e.g., summarization, where two valid summaries can be completely different yet both correct.
+</Callout>
+
+## `run_nondet` vs `run_nondet_unsafe`
+
+GenLayer provides two variants for custom leader/validator logic. The difference is **who handles validator errors**.
+
+When writing custom leader/validator patterns, **use `run_nondet_unsafe`** and handle errors yourself inside the validator. This is what production contracts do — it gives you full control over error classification and comparison logic. If the validator throws an unhandled exception, it counts as `Disagree` (same as returning `False`).
+
+```python
+result = gl.vm.run_nondet_unsafe(leader_fn, validator_fn)
+```
+
+**`gl.vm.run_nondet`** is primarily used internally by the [convenience functions](#convenience-functions). It wraps the validator in a sandbox — if the validator throws, the sandbox catches it and compares the error against the leader's error using configurable comparison functions:
+
+```python
+result = gl.vm.run_nondet(
+    leader_fn,
+    validator_fn,
+    # Optional: customize how errors are compared (default: message equality)
+    compare_user_errors=my_user_error_comparator,
+    compare_vm_errors=my_vm_error_comparator
+)
+```
+
+| | `gl.vm.run_nondet_unsafe` | `gl.vm.run_nondet` |
+|---|---|---|
+| **Validator errors** | Unhandled exceptions = `Disagree` | Caught by sandbox, compared automatically |
+| **Error handling** | You implement it inside `validator_fn` | Built-in with `compare_user_errors` / `compare_vm_errors` callbacks |
+| **Use for** | Custom leader/validator patterns (recommended) | Convenience functions and simple validators where built-in error comparison suffices |
+
+### Advanced Error Handling with `run_nondet_unsafe`
+
+When your contract makes external calls that can fail in different ways, you may want to classify errors and handle each type differently. With `run_nondet_unsafe`, you implement this inside the validator:
+
+```python
+ERROR_EXPECTED = "[EXPECTED]"    # Business logic errors (deterministic)
+ERROR_EXTERNAL = "[EXTERNAL]"    # External API errors (deterministic)
+ERROR_TRANSIENT = "[TRANSIENT]"  # Temporary failures (timeouts, 5xx)
+ERROR_LLM = "[LLM_ERROR]"       # LLM/GenVM errors (non-deterministic)
+
+def _handle_leader_error(leaders_res, leader_fn) -> bool:
+    """Re-run leader_fn on validator and compare errors."""
+    leader_msg = leaders_res.message if hasattr(leaders_res, 'message') else ''
+    try:
+        leader_fn()
+        return False  # Leader errored but validator succeeded — disagree
+    except gl.vm.UserError as e:
+        validator_msg = e.message if hasattr(e, 'message') else str(e)
+        # Deterministic errors: must match exactly
+        if validator_msg.startswith(ERROR_EXPECTED) or validator_msg.startswith(ERROR_EXTERNAL):
+            return validator_msg == leader_msg
+        # Transient errors: both transient = agree
+        if validator_msg.startswith(ERROR_TRANSIENT) and leader_msg.startswith(ERROR_TRANSIENT):
+            return True
+        # LLM errors or unknown: disagree, force retry
         return False
-
-    # Verify the leader's result matches within tolerance
-    return calculate_similarity(leader_result.data, my_data) > 0.9
+    except Exception:
+        return False
 ```
 
-**NLP Validation:**
+Use this helper in your validator:
+
+```python
+def validator_fn(leaders_res) -> bool:
+    if not isinstance(leaders_res, gl.vm.Return):
+        return _handle_leader_error(leaders_res, leader_fn)
+    validator_result = leader_fn()
+    return abs(leaders_res.calldata["score"] - validator_result["score"]) <= 1
+```
+
+This gives fine-grained control:
+- **Expected/external errors** (e.g., "issue not found"): must match exactly
+- **Transient errors** (e.g., API timeout): if both nodes fail transiently, agree
+- **LLM errors**: always disagree — force retry with different validators
+
+### The Validator's Result Parameter
+
+The validator function receives a `gl.vm.Result` which can be one of:
+- **`gl.vm.Return[T]`** — leader succeeded; access the value via `.calldata`
+- **`gl.vm.UserError`** — leader raised an application error
+- **`gl.vm.VMError`** — leader hit a VM-level error (e.g., out of memory)
+
+Always check the type before accessing the result:
+
+```python
+def validator_fn(leader_result) -> bool:
+    if not isinstance(leader_result, gl.vm.Return):
+        return False  # reject if leader errored
+    data = leader_result.calldata
+    # ... verify data
+```
+
+## Convenience Functions
+
+GenLayer provides built-in equivalence functions for common patterns. These are shortcuts so you don't have to write leader/validator pairs manually.
+
+### Strict Equality (`strict_eq`)
+
+All validators execute the same function. Results must match **exactly**. Uses `run_nondet_unsafe` under the hood.
+
+```python
+def fetch_match_result():
+    web_data = gl.nondet.web.get(resolution_url)
+    prompt = f"""
+    Find the match result for {team1} vs {team2}.
+    Page: {web_data.body}
+    Return JSON: {{"score": "X:Y", "winner": 1 or 2 or 0}}
+    """
+    result = gl.nondet.exec_prompt(prompt)
+    return json.dumps(json.loads(result), sort_keys=True)
+
+result = json.loads(gl.eq_principle.strict_eq(fetch_match_result))
+```
+
+**Use when:** results are objective and should be identical — API data, boolean decisions, structured data where you don't need separate analysis text.
+
+<Callout emoji="💡">
+  Note the `sort_keys=True` — JSON key ordering can vary between nodes. Sorting ensures exact string comparison works. If you need to compare only some fields or allow tolerance, use a custom leader/validator pattern instead.
+</Callout>
+
+### Comparative (`prompt_comparative`)
+
+Both leader and validators perform the same task, then a **special LLM prompt template** compares their results against a principle you define. Uses `run_nondet` under the hood.
+
+```python
+result = gl.eq_principle.prompt_comparative(
+    evaluate_source,
+    principle="`outcome` must be exactly the same. All other fields must be similar"
+)
+```
+
+The comparison uses a built-in `EqComparative` prompt template that node operators can customize. The LLM receives the leader's answer, the validator's answer, and your principle, then returns true/false.
+
+**Use when:** results are complex (text + data) and you need natural-language equivalence criteria — "key facts must match", "conclusions must agree", "numerical values within 10%".
+
+### Non-Comparative (`prompt_non_comparative`)
+
+The leader performs a task, and validators evaluate the leader's output against criteria — **without repeating the task themselves**. Uses `run_nondet` under the hood.
+
+```python
+result = gl.eq_principle.prompt_non_comparative(
+    lambda: gl.nondet.web.get(url).body.decode("utf-8"),
+    task="Classify the sentiment as positive, negative, or neutral",
+    criteria="""
+        Output must be one of: positive, negative, neutral
+        Consider context and tone
+        Account for sarcasm and idioms
+    """
+)
+```
+
+Parameters:
+- **`fn`** — function that provides the input data (runs on both leader and validator)
+- **`task`** — instruction for the leader's LLM
+- **`criteria`** — rules the validator's LLM uses to judge the leader's output
+
+**Use when:** the task is subjective (NLP, classification, extraction) and you want validators to judge output quality rather than reproduce it.
+
+## Writing Secure Validators
+
+The validator's job is to **prevent malicious or incorrect data** from being accepted. A validator that always returns `True` defeats the entire consensus mechanism — it would let a single malicious node set any result.
+
+**Bad — accepts anything:**
 ```python
 def validator(leader_result):
-    # Fetch original content independently
-    original_text = fetch_webpage(url)
-
-    # Use NLP to verify the summary quality
-    if not isinstance(leader_result, Return):
-        return False
-
-    return is_valid_summary(original_text, leader_result.summary)
+    return True  # Insecure! Leader can return arbitrary data
 ```
 
-### Key Principles for Custom Validators
+**Good — independent verification:**
+```python
+def validator(leader_result):
+    if not isinstance(leader_result, gl.vm.Return):
+        return False
+    my_data = leader_fn()  # re-run independently
+    return abs(leader_result.calldata - my_data) <= tolerance
+```
 
-1. **Independent Verification**: Validators should independently verify results, not blindly trust the leader
-2. **Tolerance for Nondeterminism**: When dealing with AI outputs or time-sensitive data, allow reasonable variations:
-    - Use similarity thresholds instead of exact matches
-    - Account for timing differences in data fetches
-    - Accept semantically equivalent AI outputs
-3. **Error Handling**: Always check if the leader result is an error before processing. `gl.vm.run_nondet` provides fallbacks for validator functions errors, while `gl.vm.run_nondet_unsafe` does not. If you use the later you may wish to execute most part of the code in the sandbox and compare errors with custom advanced logic
-4. **Security First**: The validator's role is to prevent malicious or incorrect data from being accepted. When in doubt, reject
+Guidelines:
+1. **Never trust the leader** — always verify what you can independently
+2. **Tolerate nondeterminism** — use thresholds for scores, percentage tolerance for prices, field-level comparison for structured data
+3. **Check error types** — handle `UserError` and `VMError` before accessing `.calldata`
+4. **Reject when in doubt** — security first
 
-### Best Practices
 
-- Keep non-deterministic operations well-defined
-- Design validators that can handle slight variations in data
-- Consider network delays and timing differences
-- Use NLP for subjective tasks validation
-- Prefer to use built-in equivalence principle templates, as they can be customized by node and have a better security against prompt attacks
-- Document expected tolerances and validation criteria
-- Test validator functions with various edge cases and malicious inputs
