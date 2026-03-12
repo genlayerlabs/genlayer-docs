@@ -51,7 +51,7 @@ jobs:
           # Fails silently if server is not yet deployed.
           curl -sf -X POST "${{ env.DOCS_MCP_URL }}/web/jobs/scrape" \
             -H "Content-Type: application/x-www-form-urlencoded" \
-            -d "formMode=refresh&library=genlayer-docs&url=https://docs.genlayer.com&scope=hostname&scrapeMode=fetch&excludePattern=*/full-documentation.txt" \
+            -d "formMode=refresh&library=genlayer-docs&url=https://docs.genlayer.com&scope=hostname&scrapeMode=fetch&excludePattern=/full-documentation\.txt/" \
             || echo "Docs refresh trigger failed (server may not be deployed yet)"
 
           curl -sf -X POST "${{ env.DOCS_MCP_URL }}/web/jobs/scrape" \
