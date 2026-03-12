@@ -1,0 +1,179 @@
+# Using Chutes with GenLayer Validators
+
+This guide explains how GenLayer validators can use Chutes to access AI models through the Chutes API.
+
+Chutes provides serverless inference for open-source AI models running on decentralized GPU infrastructure powered by Bittensor.
+
+Validators can call these models through a simple HTTP API without running their own GPU infrastructure.
+
+GenLayer Validators can request a discount on Chutes models by [filling out this form](https://docs.google.com/forms/d/e/1FAIpQLSd6I_Q0aiCalDQLX9FvzQ3hfFaKR4j1jaDEoa-jfpXhLclmog/viewform).
+
+---
+
+## Why Chutes
+
+Running large AI models locally requires significant GPU infrastructure.
+
+Chutes allows validators to run AI workloads without managing GPUs, by providing:
+
+- Serverless model inference
+- Decentralized GPU compute
+- A simple REST API
+- Access to many open-source AI models
+
+Validators can integrate Chutes into their systems to run AI workloads while keeping infrastructure lightweight.
+
+---
+
+## Resources
+
+- [Chutes Website](https://chutes.ai)
+- [Chutes Documentation](https://chutes.ai/docs)
+- [Chutes API Reference](https://api.chutes.ai/docs)
+- [Available Models (API)](https://llm.chutes.ai/v1/models)
+- [Model Browser (Web UI)](https://chutes.ai/app?type=llm)
+
+---
+
+## 1. Create a Chutes Account
+
+First create an account: [https://chutes.ai](https://chutes.ai)
+
+Chutes supports multiple login methods including:
+- Google login
+- Fingerprint-based account identity
+
+When creating your account, store your fingerprint securely. It is an important identifier tied to your account.
+
+---
+
+## 2. Generate an API Key
+
+After creating an account, generate an API key.
+
+API keys allow applications to authenticate requests to the Chutes API.
+
+### Steps:
+1. Log into your Chutes account
+2. Open account settings
+3. Navigate to API Keys
+4. Generate a new key
+5. Store the key securely
+
+Your API key will be used in authenticated API requests.
+
+---
+
+## 3. Authenticate Requests
+
+The Chutes API uses Bearer token authentication.
+
+Include your API key as a Bearer token in the `Authorization` header. You can verify your key is working by listing the available models:
+
+```bash
+curl https://llm.chutes.ai/v1/models \
+  -H "Authorization: Bearer $CHUTES_API_KEY"
+```
+
+The API follows standard REST conventions and returns JSON responses.
+
+---
+
+## 4. Run Your First Model from a Validator
+
+Validators can call the Chutes inference API directly from their validator environment.
+
+Chutes provides an OpenAI-compatible inference endpoint for running language models.
+
+**Endpoint:** `https://llm.chutes.ai/v1/chat/completions`
+
+This naming convention is the same format commonly used on Hugging Face, where models are referenced as: `organization/model`
+
+For example: `deepseek-ai/DeepSeek-R1`
+
+The list of available models changes frequently. You can retrieve the latest models here:
+- API endpoint: [https://llm.chutes.ai/v1/models](https://llm.chutes.ai/v1/models)
+- Browse them visually: [https://chutes.ai/app?type=llm](https://chutes.ai/app?type=llm)
+
+### Example request from a validator environment:
+
+```bash
+curl https://llm.chutes.ai/v1/chat/completions \
+  -H "Authorization: Bearer $CHUTES_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "model": "model_team/model_name",
+    "messages": [
+      {
+        "role": "user",
+        "content": "Explain decentralized AI infrastructure in one sentence."
+      }
+    ]
+  }'
+```
+
+### Example response:
+
+```json
+{
+  "choices": [
+    {
+      "message": {
+        "role": "assistant",
+        "content": "Decentralized AI infrastructure allows developers and validators to access distributed compute resources for running AI models without owning the underlying hardware."
+      }
+    }
+  ]
+}
+```
+
+Validators can then use the returned output inside their application logic.
+
+**Example use cases include:**
+- Evaluating prompts or responses
+- Generating summaries or structured outputs
+- Integrating AI into validator tooling
+
+Because the Chutes API is stateless and accessed via HTTPS, it can be integrated into validator environments without additional infrastructure.
+
+---
+
+## 5. Discover Available Models
+
+The list of models available on Chutes changes frequently.
+
+You can retrieve the current list using: [https://llm.chutes.ai/v1/models](https://llm.chutes.ai/v1/models)
+
+**Example:**
+
+```bash
+curl https://llm.chutes.ai/v1/models
+```
+
+This endpoint returns the latest models available for inference.
+
+Models can also be browsed in the Chutes web interface: [https://chutes.ai/app?type=llm](https://chutes.ai/app?type=llm)
+
+---
+
+## Best Practices
+
+For validator deployments:
+- Create a dedicated API key
+- Store the key in environment variables
+- Avoid committing API keys to source control
+
+**Example:**
+
+```bash
+export CHUTES_API_KEY=your_api_key_here
+```
+
+---
+
+## Next Steps
+
+- [Explore the full API reference](https://api.chutes.ai/docs)
+- [View the latest available models](https://llm.chutes.ai/v1/models)
+- [Browse models in the Chutes app](https://chutes.ai/app?type=llm)
+- [Learn more about Chutes](https://chutes.ai/docs)
