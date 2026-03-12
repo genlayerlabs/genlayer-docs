@@ -3,7 +3,7 @@
 The Prediction Market contract sets up a scenario to determine the outcome of a football game between two teams. The contract uses the Equivalence Principle to ensure accurate and consistent decision-making based on the game's resolution data.
 
 ```python filename="PredictionMarket" copy
-# { "Depends": "py-genlayer:test" }
+# { "Depends": "py-genlayer:1jb45aa8ynh2a9c9xn3b7qqh8sm5q93hwfp7jqmwsfhh8jpz09h6" }
 
 from genlayer import *
 
@@ -49,7 +49,8 @@ class PredictionMarket(gl.Contract):
             return "Already resolved"
 
         def nondet() -> str:
-            web_data = gl.get_webpage(self.resolution_url, mode="text")
+            response = gl.nondet.web.get(self.resolution_url)
+            web_data = response.body.decode("utf-8")
             print(web_data)
 
             task = f"""In the following web page, find the winning team in a matchup between the following teams:
@@ -73,11 +74,11 @@ class PredictionMarket(gl.Contract):
             your output must be only JSON without any formatting prefix or suffix.
             This result should be perfectly parsable by a JSON parser without errors.
             """
-            result = gl.exec_prompt(task).replace("```json", "").replace("```", "")
+            result = gl.nondet.exec_prompt(task).replace("```json", "").replace("```", "")
             print(result)
             return json.dumps(json.loads(result), sort_keys=True)
 
-        result_json = json.loads(gl.eq_principle_strict_eq(nondet))
+        result_json = json.loads(gl.eq_principle.strict_eq(nondet))
 
         if result_json["winner"] > -1:
             self.has_resolved = True

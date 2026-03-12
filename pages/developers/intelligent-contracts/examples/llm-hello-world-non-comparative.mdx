@@ -3,7 +3,7 @@
 The LlmHelloWorldNonComparative contract demonstrates a simple example of integrating AI capabilities within an intelligent contract without requiring that all the validators execute the full task. They just need to evaluate the leader's response against the specified criteria. This is done by using the [non-comparative equivalence principle](/developers/intelligent-contracts/equivalence-principle#non-comparative-equivalence-principle).
 
 ```python
-# { "Depends": "py-genlayer:test" }
+# { "Depends": "py-genlayer:1jb45aa8ynh2a9c9xn3b7qqh8sm5q93hwfp7jqmwsfhh8jpz09h6" }
 
 from genlayer import *
 import typing
@@ -17,7 +17,7 @@ class LlmHelloWorldNonComparative(gl.Contract):
 
     @gl.public.write
     def set_message(self) -> typing.Any:
-        self.message = gl.eq_principle_prompt_non_comparative(
+        self.message = gl.eq_principle.prompt_non_comparative(
             lambda: "There is no context, I just want you to answer with truthy value in python (for example: 'yes', 'True', 1)",
             task="Answer with truthy value in python (for example: 'yes', 'True', 1)",
             criteria="Answer should be a truthy value in python"
@@ -33,7 +33,7 @@ class LlmHelloWorldNonComparative(gl.Contract):
 - **Initialization**: The `LlmHelloWorldNonComparative` class initializes with an empty string in the `message` variable.
 - **Write Method**: 
   - `set_message()` uses AI functionality to generate and store a message.
-  - Uses `gl.eq_principle_prompt_non_comparative()` with three parameters:
+  - Uses `gl.eq_principle.prompt_non_comparative()` with three parameters:
     - A lambda function providing the prompt
     - A task description
     - Validation criteria for the response
@@ -43,7 +43,7 @@ class LlmHelloWorldNonComparative(gl.Contract):
 ## Key Components
 
 1. **AI Integration**: The contract uses non-comparative equivalence principle to interact with an AI model.
-2. **Deterministic Execution**: `gl.eq_principle_prompt_non_comparative()` ensures that all nodes in the network accept responses that meet the specified criteria.
+2. **Deterministic Execution**: `gl.eq_principle.prompt_non_comparative()` ensures that all nodes in the network accept responses that meet the specified criteria.
 3. **State Management**: The contract maintains a single string state variable that stores the AI response.
 
 ## Deploying the Contract

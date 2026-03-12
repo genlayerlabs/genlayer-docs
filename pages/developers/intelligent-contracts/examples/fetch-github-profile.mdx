@@ -3,7 +3,7 @@
 The FetchGitHubProfile contract demonstrates how to fetch and store GitHub profile content within an intelligent contract. This contract shows how to use the [comparative equivalence principle](/developers/intelligent-contracts/equivalence-principle#comparative-equivalence-principle) to ensure all nodes agree on the same profile content.
 
 ```python
-# { "Depends": "py-genlayer:test" }
+# { "Depends": "py-genlayer:1jb45aa8ynh2a9c9xn3b7qqh8sm5q93hwfp7jqmwsfhh8jpz09h6" }
 
 from genlayer import *
 import typing
@@ -20,9 +20,10 @@ class FetchGitHubProfile(gl.Contract):
         github_profile_url = "https://github.com/"+github_handle
 
         def fetch_github_profile_page_content() -> str:
-            return gl.get_webpage(github_profile_url, mode="text")
-    
-        self.github_profile = gl.eq_principle_strict_eq(fetch_github_profile_page_content)
+            response = gl.nondet.web.get(github_profile_url)
+            return response.body.decode("utf-8")
+
+        self.github_profile = gl.eq_principle.strict_eq(fetch_github_profile_page_content)
         
     @gl.public.view
     def show_github_profile(self) -> str:       
@@ -35,14 +36,14 @@ class FetchGitHubProfile(gl.Contract):
 - **Write Method**: 
   - `fetch_github_profile(github_handle)` takes a GitHub username and retrieves their profile content.
   - Constructs the profile URL using the provided handle.
-  - Uses `gl.eq_principle_strict_eq()` to ensure all nodes agree on the same profile content.
+  - Uses `gl.eq_principle.strict_eq()` to ensure all nodes agree on the same profile content.
 - **Read Method**: 
   - `show_github_profile()` returns the stored profile content.
 
 ## Key Components
 
-1. **GitHub Integration**: The contract uses `gl.get_webpage()` to fetch content from GitHub profiles.
-2. **Deterministic Execution**: `gl.eq_principle_strict_eq()` ensures that all nodes in the network arrive at the same exact content.
+1. **GitHub Integration**: The contract uses `gl.nondet.web.get()` to fetch content from GitHub profiles.
+2. **Deterministic Execution**: `gl.eq_principle.strict_eq()` ensures that all nodes in the network arrive at the same exact content.
 3. **State Management**: The contract maintains a single string state variable that stores the profile content.
 
 ## Deploying the Contract

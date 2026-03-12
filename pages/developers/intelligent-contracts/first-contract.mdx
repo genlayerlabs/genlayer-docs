@@ -7,7 +7,7 @@ While a GenLayer Intelligent Contract is a pure Python program, there are few th
 ### Version Comment
 First of all, you need to place a magic comment with the version of GenVM you wish to use on the **first** line of your file
 ```py
-# { "Depends": "py-genlayer:test" }
+# { "Depends": "py-genlayer:1jb45aa8ynh2a9c9xn3b7qqh8sm5q93hwfp7jqmwsfhh8jpz09h6" }
 ```
 It is similar to Solidity's `pragma solidity`, and `test` after a colon is a version. When GenLayer releases, it will be changed to some exact hash of a version, which will be frozen forever.
 
@@ -56,7 +56,7 @@ In your contracts, you can use any Python types, but for persisted fields, there
 Here is a simple example of an Intelligent Contract that stores a name and allows changing it:
 
 ```py
-# { "Depends": "py-genlayer:test" }
+# { "Depends": "py-genlayer:1jb45aa8ynh2a9c9xn3b7qqh8sm5q93hwfp7jqmwsfhh8jpz09h6" }
 
 from genlayer import *
 
