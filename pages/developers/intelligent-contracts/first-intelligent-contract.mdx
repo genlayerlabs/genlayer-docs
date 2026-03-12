@@ -12,22 +12,22 @@ To illustrate how it works, let's get a webpage as plain HTML, and verify that i
 ```py
 example_web_address = 'https://example.org'
 def my_non_deterministic_block():
-    web_data = gl.get_webpage(example_web_address, mode='html')
+    web_data = gl.nondet.web.render(example_web_address, mode='html')
     return 'iana' in web_data
 
-print(gl.eq_principle_strict_eq(my_non_deterministic_block))
+print(gl.eq_principle.strict_eq(my_non_deterministic_block))
 ```
 
 Here are a few important parts:
-1. It is **mandatory** to call `gl.get_webpage` from a function invoked via `gl.eq_principle_*`, otherwise it will give an error
+1. It is **mandatory** to call `gl.nondet.web.render` (or `gl.nondet.web.get`) from a function invoked via `gl.eq_principle.*`, otherwise it will give an error
 2. Type annotations are not required
 3. `example_web_address` gets captured without the need to specify it explicitly
 4. We are getting the page in plain HTML, because we want text from a link (`<a>` HTML tag), which is not visible in the text representation
-5. We are using `eq_principle_strict_eq` because we return a `bool` (`True` or `False`), so there is no need to run LLMs or other complex computations: validators will agree _if_ they both get the exactly the same result, which makes sense for our case. However, if you wish to return more complex data (such as a text summary), you should use other `eq_principle`. More on this topic on the next page
+5. We are using `gl.eq_principle.strict_eq` because we return a `bool` (`True` or `False`), so there is no need to run LLMs or other complex computations: validators will agree _if_ they both get the exactly the same result, which makes sense for our case. However, if you wish to return more complex data (such as a text summary), you should use other `gl.eq_principle` methods. More on this topic on the next page
 
 ### As a Full Contract
 ```py
-# { "Depends": "py-genlayer:test" }
+# { "Depends": "py-genlayer:1jb45aa8ynh2a9c9xn3b7qqh8sm5q93hwfp7jqmwsfhh8jpz09h6" }
 
 from genlayer import *
 
@@ -37,7 +37,7 @@ class Contract(gl.Contract):
     def __init__(self):
         example_web_address = 'https://example.org'
         def my_non_deterministic_block():
-            web_data = gl.get_webpage(example_web_address, mode='html')
+            web_data = gl.nondet.web.render(example_web_address, mode='html')
             return 'iana' in web_data
-        self.had_iana = gl.eq_principle_strict_eq(my_non_deterministic_block)
+        self.had_iana = gl.eq_principle.strict_eq(my_non_deterministic_block)
 ```

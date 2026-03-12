@@ -32,8 +32,8 @@ Here’s an example of a contract using the Vector Store for indexing and search
 ```python
 # {
 #   "Seq": [
-#     { "Depends": "py-lib-genlayermodelwrappers:test" },
-#     { "Depends": "py-genlayer:test" }
+#     { "Depends": "py-lib-genlayermodelwrappers:1jb45aa8ynh2a9c9xn3b7qqh8sm5q93hwfp7jqmwsfhh8jpz09h6" },
+#     { "Depends": "py-genlayer:1jb45aa8ynh2a9c9xn3b7qqh8sm5q93hwfp7jqmwsfhh8jpz09h6" }
 #   ]
 # }
 
@@ -43,6 +43,7 @@ import numpy as np
 from dataclasses import dataclass
 
 
+@allow_storage
 @dataclass
 class StoreValue:
     log_id: u256

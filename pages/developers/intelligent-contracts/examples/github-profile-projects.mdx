@@ -3,7 +3,7 @@
 The GitHubProfilesRepositories contract demonstrates how to fetch GitHub profile data, analyze repository counts, and store profiles of high-contributing developers. This contract shows how to use the [comparative equivalence principle](/developers/intelligent-contracts/equivalence-principle#comparative-equivalence-principle) along with pattern matching to process web content.
 
 ```python
-# { "Depends": "py-genlayer:test" }
+# { "Depends": "py-genlayer:1jb45aa8ynh2a9c9xn3b7qqh8sm5q93hwfp7jqmwsfhh8jpz09h6" }
 
 from genlayer import *
 import typing
@@ -20,7 +20,8 @@ class GitHubProfilesRepositories(gl.Contract):
         github_profile_url = "https://github.com/"+github_handle
 
         def fetch_github_profile_repositories() -> int:
-            profile_web_page = gl.get_webpage(github_profile_url, mode="text")
+            response = gl.nondet.web.get(github_profile_url)
+            profile_web_page = response.body.decode("utf-8")
             # Regular expression to find the number between "Repositories" and "Projects"
             pattern = r"Repositories\s+(\d+)\s+Projects"
 
@@ -33,7 +34,7 @@ class GitHubProfilesRepositories(gl.Contract):
             else:
                 return 0
     
-        repositories = gl.eq_principle_strict_eq(fetch_github_profile_repositories)
+        repositories = gl.eq_principle.strict_eq(fetch_github_profile_repositories)
 
         if repositories > 25:
             self.github_profiles.append(github_handle)
@@ -55,9 +56,9 @@ class GitHubProfilesRepositories(gl.Contract):
 
 ## Key Components
 
-1. **GitHub Integration**: Uses `gl.get_webpage()` to fetch profile content.
+1. **GitHub Integration**: Uses `gl.nondet.web.get()` to fetch profile content.
 2. **Pattern Matching**: Employs regular expressions to extract repository counts.
-3. **Deterministic Execution**: Uses `gl.eq_principle_strict_eq()` to ensure network consensus.
+3. **Deterministic Execution**: Uses `gl.eq_principle.strict_eq()` to ensure network consensus.
 4. **Conditional Storage**: Only stores profiles meeting specific criteria.
 
 ## Deploying the Contract
