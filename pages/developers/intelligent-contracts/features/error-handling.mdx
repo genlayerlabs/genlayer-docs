@@ -21,10 +21,10 @@ User-generated errors with UTF-8 encoded messages:
 
 ```python
 # Can be caught in current sub-vm
-raise gl.UserError("Invalid input")
+raise gl.vm.UserError("Invalid input")
 
 # Immediate user error, more efficient but can't be caught
-gl.user_error_immediate("Insufficient funds")
+gl.advanced.user_error_immediate("Insufficient funds")
 ```
 
 ## VMError
@@ -45,11 +45,11 @@ Handle user errors from sub-VMs:
 
 ```python
 def risky_operation():
-    raise gl.UserError("Operation failed")
+    raise gl.vm.UserError("Operation failed")
 
 try:
     result = gl.eq_principle.strict_eq(risky_operation)
-except gl.UserError as e:
+except gl.vm.UserError as e:
     print(f"Caught user error: {e.message}")
 ```
 
@@ -60,12 +60,12 @@ Errors flow from non-deterministic to deterministic code:
 ```python
 def nondet_block():
     if some_condition:
-        raise gl.UserError("INVALID_STATE")
+        raise gl.vm.UserError("INVALID_STATE")
     return "success"
 
 try:
     gl.eq_principle.strict_eq(nondet_block)
-except gl.UserError as e:
+except gl.vm.UserError as e:
     if e.message == "INVALID_STATE":
         # Handle specific error condition
         pass
