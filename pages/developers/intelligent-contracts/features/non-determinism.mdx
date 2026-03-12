@@ -10,26 +10,27 @@ Non-deterministic operations are needed for:
 
 ## Equality Principle
 
-GenLayer provides three equality principles for handling non-deterministic operations. For detailed information, see [Equivalence Principle](/developers/intelligent-contracts/equivalence-principle).
+GenLayer provides `strict_eq` for exact-match consensus and custom validator functions (`run_nondet_unsafe`) for everything else. Convenience wrappers like `prompt_comparative` and `prompt_non_comparative` exist for common patterns. For detailed information, see [Equivalence Principle](/developers/intelligent-contracts/equivalence-principle).
 
 ### Strict Equality
 
-Requires exact matches between validator outputs. Use for deterministic results or objective data:
+Requires exact matches between validator outputs. Use when all nodes can converge on the same normalized value — e.g., fetching objective data from an API and extracting a structured result:
 
 ```python
-import random
+def fetch_current_block():
+    response = gl.nondet.web.request("https://api.example.com/block/latest")
+    data = json.loads(response)
+    return json.dumps({"height": data["height"], "hash": data["hash"]}, sort_keys=True)
 
-def non_deterministic_function():
-    # This code may produce different results on different nodes
-    return random.randint(1, 100)
-
-# Validators reach consensus on the result
-result = gl.eq_principle.strict_eq(non_deterministic_function)
+# All validators must return the exact same string
+result = gl.eq_principle.strict_eq(fetch_current_block)
 ```
 
-### Comparative Principle
+> **Note:** `strict_eq` is not suitable for random number generation or LLM calls, since those inherently produce different results on each node. Use a custom validator function or one of the convenience wrappers below for those cases.
 
-Validators perform the same task and compare results using predefined criteria:
+### Comparative (Convenience Shortcut)
+
+A convenience wrapper where both leader and validators perform the same task, then an LLM compares results using your criteria:
 
 ```python
 def comparative_example():
@@ -42,9 +43,9 @@ result = gl.eq_principle.prompt_comparative(
 )
 ```
 
-### Non-Comparative Principle
+### Non-Comparative (Convenience Shortcut)
 
-Validators evaluate outputs based on task and criteria without performing the same computation:
+A convenience wrapper where validators evaluate the leader's output against criteria without repeating the task:
 
 ```python
 result = gl.eq_principle.prompt_non_comparative(
@@ -57,9 +58,9 @@ result = gl.eq_principle.prompt_non_comparative(
 )
 ```
 
-### Custom Equality Principles
+### Custom Validator Functions
 
-For advanced use cases, create custom consensus logic using `gl.vm.run_nondet`:
+For full control over consensus logic, write a custom leader/validator pair with `run_nondet_unsafe`. This is the recommended approach for most contracts:
 
 ```python
 def custom_consensus_example(self, data: str):
@@ -77,7 +78,7 @@ def custom_consensus_example(self, data: str):
         # Accept if within acceptable range
         return abs(own_score - leader_result) <= 2
 
-    return gl.vm.run_nondet(leader_fn, validator_fn)
+    return gl.vm.run_nondet_unsafe(leader_fn, validator_fn)
 ```
 
 ## Operations

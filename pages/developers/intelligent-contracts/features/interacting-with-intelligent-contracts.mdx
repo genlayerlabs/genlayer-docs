@@ -50,3 +50,41 @@ gl.deploy_contract(code=contract_code)
 salt: u256 = u256(1) # not zero
 child_address = gl.deploy_contract(code=contract_code, salt=salt)
 ```
+
+## View vs Emit
+
+- **`view()`** is synchronous — it reads state from another contract and returns the result immediately. The target contract's state is read as of the current block.
+- **`emit()`** is asynchronous — it queues a write call that executes *after* the current transaction completes. The call is not blocking.
+
+### Accepted vs Finalized
+
+```python
+# Fast — executes after the transaction is accepted by initial consensus
+other.emit(on='accepted').do_something()
+
+# Safe — waits until the transaction is fully finalized (after appeal window)
+other.emit(on='finalized').do_something()
+```
+
+Use `on='accepted'` when speed matters and you can tolerate the small risk of the transaction being appealed. Use `on='finalized'` when correctness is critical.
+
+## Factory Pattern
+
+Deploy child contracts from a parent:
+
+```python
+def __init__(self, num_workers: int):
+    with open("/contract/Worker.py", "rt") as f:
+        worker_code = f.read()
+
+    for i in range(num_workers):
+        addr = gl.deploy_contract(
+            code=worker_code.encode("utf-8"),
+            args=[i, gl.message.contract_address],
+            salt_nonce=i + 1,
+            on="accepted",
+        )
+        self.worker_addresses.append(addr)
+```
+
+Child contracts are immutable after deployment. To update worker logic, redeploy through the factory.

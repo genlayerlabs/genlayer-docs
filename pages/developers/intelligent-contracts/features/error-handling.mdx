@@ -79,3 +79,39 @@ GenVM produces four result types:
 - **VMError** - VM errors (exit codes, resource limits)
 - **UserError** - User-generated errors with UTF-8 messages
 - **InternalError** - Critical VM failures (not visible to contracts)
+
+## Error Patterns for Consensus
+
+When using `run_nondet_unsafe`, errors affect how validators compare results. If the leader errors, the validator needs to decide: do I agree or disagree?
+
+One approach is to classify errors by their nature, so validators can handle each type appropriately:
+
+- **Deterministic errors** (business logic, client errors): should match exactly between leader and validator
+- **Transient errors** (network issues, server errors): both hitting a transient failure is expected
+- **LLM errors** (malformed output): disagreeing forces a retry, which is usually what you want
+
+### Example: Error Classification
+
+```python
+def validator_fn(leaders_res: gl.vm.Result) -> bool:
+    if not isinstance(leaders_res, gl.vm.Return):
+        # Leader errored — run the same logic to see if we error too
+        leader_msg = leaders_res.message if hasattr(leaders_res, 'message') else ''
+        try:
+            leader_fn()
+            return False  # Leader errored but we succeeded — disagree
+        except gl.UserError as e:
+            validator_msg = str(e)
+            # Both hit the same business logic error — agree
+            if validator_msg == leader_msg:
+                return True
+            return False
+        except Exception:
+            return False
+
+    # Leader succeeded — validate the result
+    validator_result = leader_fn()
+    return compare_results(leaders_res.calldata, validator_result)
+```
+
+This pattern ensures that consensus failures on broken LLM output or transient network issues lead to retries rather than locking in bad state.

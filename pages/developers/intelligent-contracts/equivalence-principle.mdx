@@ -7,6 +7,27 @@ The Equivalence Principle is how GenLayer achieves consensus on non-deterministi
 
 The core idea: a **leader** executes the operation and proposes a result, then **validators** independently verify whether that result is acceptable.
 
+## Quick Reference: Which Pattern to Use
+
+```
+Can validators reproduce the exact same normalized output?
+├── YES → strict_eq
+│         Exact match. Use when outputs are deterministic or can be
+│         canonicalized (e.g., JSON with sort_keys=True).
+│         Examples: blockchain RPC, stable REST APIs.
+│
+└── NO  → Write a custom validator function (run_nondet_unsafe)
+          You control the full logic: rerun and compare with tolerances,
+          derive status, extract stable fields, or evaluate the leader's
+          output directly without rerunning — whatever your contract needs.
+```
+
+For most contracts, you'll write a custom validator function. It gives you full control over comparison logic and error handling.
+
+<Callout type="info">
+GenLayer also provides `prompt_comparative` and `prompt_non_comparative` as convenience wrappers for common patterns, but in practice most contracts outgrow them quickly. Starting with a custom validator function gives you full flexibility from the start.
+</Callout>
+
 ## The Leader/Validator Pattern
 
 Every non-deterministic operation in GenLayer is built on two functions:

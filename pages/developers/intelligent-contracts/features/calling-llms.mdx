@@ -7,12 +7,17 @@ import { Callout } from 'nextra-theme-docs'
 Execute prompts using large language models:
 
 ```python
-def llm_call():
+def leader_fn():
     response = gl.nondet.exec_prompt("Answer this question")
     return response.strip().lower()
 
-# Consensus ensures consistent LLM responses
-answer = gl.eq_principle.strict_eq(llm_call)
+def validator_fn(leader_result) -> bool:
+    if not isinstance(leader_result, gl.vm.Return):
+        return False
+    my_result = leader_fn()
+    return my_result == leader_result.calldata
+
+answer = gl.vm.run_nondet_unsafe(leader_fn, validator_fn)
 ```
 
 ## JSON Response Format
@@ -28,9 +33,27 @@ def structured_llm_call():
     """
     return gl.nondet.exec_prompt(prompt, response_format='json')
 
-result = gl.eq_principle.strict_eq(structured_llm_call)
+def validate_structured(leader_result) -> bool:
+    if not isinstance(leader_result, gl.vm.Return):
+        return False
+    data = leader_result.calldata
+    # Validate structure rather than exact match — LLM outputs are non-deterministic
+    return (
+        isinstance(data, dict)
+        and isinstance(data.get("score"), int)
+        and 1 <= data["score"] <= 100
+        and data.get("status") in ("active", "inactive")
+    )
+
+result = gl.vm.run_nondet_unsafe(structured_llm_call, validate_structured)
 score = result['score']  # Access JSON fields
 ```
+
+<Callout type="info">
+    Using `strict_eq` with LLM calls will fail consensus because LLM outputs are non-deterministic.
+    Always use `run_nondet_unsafe` with a custom validator that checks the *structure* and *validity*
+    of the response rather than requiring an exact match.
+</Callout>
 
 This approach guarantees that `exec_prompt` returns a valid JSON object, however
 correspondence to the specified format depends on the underlying LLM.
@@ -48,7 +71,13 @@ def vision_analysis():
         images=[image_data]
     )
 
-description = gl.eq_principle.strict_eq(vision_analysis)
+def validate_description(leader_result) -> bool:
+    if not isinstance(leader_result, gl.vm.Return):
+        return False
+    # Accept any non-empty string description
+    return isinstance(leader_result.calldata, str) and len(leader_result.calldata.strip()) > 0
+
+description = gl.vm.run_nondet_unsafe(vision_analysis, validate_description)
 ```
 
 <Callout type="warning">
@@ -61,7 +90,7 @@ description = gl.eq_principle.strict_eq(vision_analysis)
 Validate and process LLM responses:
 
 ```python
-def validated_call():
+def generate_number():
     response = gl.nondet.exec_prompt(
         "Generate a number between 1 and 100",
         response_format='json'
@@ -73,5 +102,80 @@ def validated_call():
 
     return response['number']
 
-result = gl.eq_principle.strict_eq(validated_call)
+def validate_number(leader_result) -> bool:
+    if not isinstance(leader_result, gl.vm.Return):
+        return False
+    num = leader_result.calldata
+    return isinstance(num, int) and 1 <= num <= 100
+
+result = gl.vm.run_nondet_unsafe(generate_number, validate_number)
 ```
+
+## Defensive Response Parsing
+
+LLMs return unpredictable formats. Even with `response_format='json'`, the response may not match your expected schema. Here are some patterns for handling this:
+
+### Key Aliasing
+
+LLMs sometimes use alternate key names. One approach is to check for common variations:
+
+```python
+def parse_score(response: dict) -> int:
+    """Extract a numeric score, handling common LLM variations."""
+    raw = response.get("score")
+    if raw is None:
+        for alt in ("rating", "points", "value", "result"):
+            if alt in response:
+                raw = response[alt]
+                break
+
+    if raw is None:
+        raise gl.UserError(f"Missing 'score' key. Got keys: {list(response.keys())}")
+
+    # Coerce to int — handles "3", "3.5", floats, whitespace
+    try:
+        return max(0, int(round(float(str(raw).strip()))))
+    except (ValueError, TypeError):
+        raise gl.UserError(f"Non-numeric score: {raw}")
+```
+
+### JSON Cleanup
+
+LLMs sometimes wrap JSON in markdown fences or add trailing commas:
+
+```python
+import re
+
+def clean_llm_json(text: str) -> dict:
+    """Extract and clean JSON from LLM output."""
+    import json
+    first = text.find("{")
+    last = text.rfind("}")
+    if first == -1 or last == -1:
+        raise gl.UserError(f"No JSON object found in response")
+    text = text[first:last + 1]
+    text = re.sub(r",(?!\s*?[\{\[\"'\w])", "", text)  # Remove trailing commas
+    return json.loads(text)
+```
+
+### Always Use `response_format='json'`
+
+```python
+result = gl.nondet.exec_prompt(task, response_format="json")
+```
+
+This instructs the LLM to return JSON. It significantly improves reliability, but you should still validate and clean the output — LLMs don't always comply.
+
+## Error Handling in LLM Calls
+
+When using LLMs inside `run_nondet_unsafe`, consider how errors affect consensus. If the LLM returns garbage, you generally want the validator to *disagree* (return `False`) rather than agree on broken output — this forces a retry:
+
+```python
+def leader_fn():
+    result = gl.nondet.exec_prompt(prompt, response_format="json")
+    if not isinstance(result, dict):
+        raise gl.UserError(f"LLM returned non-dict: {type(result)}")
+    return result
+```
+
+See [Error Handling](/developers/intelligent-contracts/features/error-handling) for more on error classification patterns.
