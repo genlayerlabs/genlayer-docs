@@ -18,4 +18,5 @@ exec docs-mcp-server server \
   --port "$PORT" \
   --host 0.0.0.0 \
   --store-path "$STORE_PATH" \
-  --protocol http
+  --protocol http \
+  --read-only
