@@ -88,7 +88,7 @@ One approach is to classify errors by their nature, so validators can handle eac
 
 - **Deterministic errors** (business logic, client errors): should match exactly between leader and validator
 - **Transient errors** (network issues, server errors): both hitting a transient failure is expected
-- **LLM errors** (malformed output): disagreeing forces a retry, which is usually what you want
+- **LLM errors** (malformed output): disagreeing forces a rotation to a new leader, which is usually what you want
 
 ### Example: Error Classification
 

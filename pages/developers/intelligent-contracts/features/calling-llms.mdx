@@ -168,7 +168,7 @@ This instructs the LLM to return JSON. It significantly improves reliability, bu
 
 ## Error Handling in LLM Calls
 
-When using LLMs inside `run_nondet_unsafe`, consider how errors affect consensus. If the LLM returns garbage, you generally want the validator to *disagree* (return `False`) rather than agree on broken output — this forces a retry:
+When using LLMs inside `run_nondet_unsafe`, consider how errors affect consensus. If the LLM returns garbage, you generally want the validator to *disagree* (return `False`) rather than agree on broken output — this forces a rotation to a new leader:
 
 ```python
 def leader_fn():

@@ -66,7 +66,12 @@ other.emit(on='accepted').do_something()
 other.emit(on='finalized').do_something()
 ```
 
-Use `on='accepted'` when speed matters and you can tolerate the small risk of the transaction being appealed. Use `on='finalized'` when correctness is critical.
+**`on='accepted'` has important implications.** If the emitting transaction is appealed, two things can happen:
+
+1. The appeal changes the contract state such that the message should not have been emitted — but it was already sent and cannot be recalled.
+2. The transaction is re-executed during the appeal, and the message (or a similar one) is emitted again. This can repeat across multiple appeal rounds — up to ~6 times depending on the validator set size.
+
+The receiving contract must be **idempotent** — it must handle duplicate or unexpected messages gracefully. If the receiving logic cannot tolerate duplicates or messages that "shouldn't have been sent" based on the final state, use `on='finalized'` instead.
 
 ## Factory Pattern
 
