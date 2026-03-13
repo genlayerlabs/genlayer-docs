@@ -1,0 +1,20 @@
+## v0.5.5
+
+### New features
+
+- Add network name to health endpoint
+- Add network label to logger and all metrics
+- Add metrics to rollup RPC transport and WebSocket
+
+### Bug fixes
+
+- Recover from cache miss on late lifecycle events
+- Wait for queue head before finalize with recipient-aware queue management
+- Suppress context canceled errors on shutdown
+- Raise gas bump ceiling and retries
+- Stuck nonce and finalize resilience
+- Patch GenVM dylib references on macOS during download
+
+### Misc
+
+- Downgrade finalized-not-in-cache log to Debug
