@@ -1,6 +1,6 @@
 # GenLayer Documentation
 
-This repo contains technical documentation for the [GenLayer project](https://genlayer.com/).
+This repo contains the technical documentation for the [GenLayer project](https://genlayer.com/), the world's first Intelligent Blockchain.
 
 The live site is available at [https://docs.genlayer.com/](https://docs.genlayer.com/).
 
