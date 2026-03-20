@@ -1,5 +1,7 @@
 # Non-determinism
 
+import { Callout } from 'nextra-theme-docs'
+
 ## When to Use
 
 Non-deterministic operations are needed for:
@@ -8,7 +10,70 @@ Non-deterministic operations are needed for:
 - Random number generation
 - Any operation that might vary between nodes
 
-## Equality Principle
+## What Goes Inside vs Outside
+
+Non-deterministic blocks (`leader_fn`, `validator_fn`, functions passed to `strict_eq`) run in a special execution context. The GenVM enforces strict rules about what can and cannot happen inside these blocks.
+
+### Must be INSIDE nondet blocks
+
+All `gl.nondet.*` calls — web requests, LLM prompts — must be inside a nondet block. They cannot run in regular contract code.
+
+```python
+@gl.public.write
+def fetch_price(self):
+    def leader_fn():
+        response = gl.nondet.web.get(api_url)          # ✓ inside nondet block
+        result = gl.nondet.exec_prompt(prompt)          # ✓ inside nondet block
+        return parse_price(response)
+
+    # gl.nondet.web.get(api_url)                        # ✗ would fail here
+    self.price = gl.vm.run_nondet_unsafe(leader_fn, validator_fn)
+```
+
+### Must be OUTSIDE nondet blocks
+
+Several operations must happen in the deterministic context — after the nondet block returns:
+
+| Operation | Why |
+|-----------|-----|
+| **Storage writes** (`self.x = ...`) | Storage must only change based on consensus-agreed values |
+| **Contract calls** (`gl.get_contract_at()`) | Cross-contract calls must use deterministic state |
+| **Message emission** (`.emit()`) | Messages to other contracts/chains must be deterministic |
+| **Nested nondet blocks** | Nondet blocks cannot contain other nondet blocks |
+
+```python
+@gl.public.write
+def update_price(self, pair: str):
+    def leader_fn():
+        response = gl.nondet.web.get(api_url)
+        return json.loads(response.body.decode("utf-8"))["price"]
+        # self.price = price                            # ✗ no storage writes here
+        # other = gl.get_contract_at(addr)              # ✗ no contract calls here
+        # other.emit().notify(price)                    # ✗ no message emission here
+
+    def validator_fn(leaders_res) -> bool:
+        if not isinstance(leaders_res, gl.vm.Return):
+            return False
+        my_price = leader_fn()
+        return abs(leaders_res.calldata - my_price) / leaders_res.calldata <= 0.02
+
+    price = gl.vm.run_nondet_unsafe(leader_fn, validator_fn)
+
+    # ✓ All side effects happen AFTER consensus, in deterministic context
+    self.prices[pair] = price
+    oracle = gl.get_contract_at(self.oracle_address)
+    oracle.emit().price_updated(pair, price)
+```
+
+<Callout type="info">
+    The [GenVM linter](/developers/intelligent-contracts/tooling-setup) catches all of these violations statically — run `genvm-lint check` before deploying to avoid runtime errors.
+</Callout>
+
+### Why these rules exist
+
+The leader and validators execute nondet blocks **independently** — each node runs its own `leader_fn` or `validator_fn`. If you wrote to storage inside a nondet block, each node would write a different value before consensus decides which one is correct. The same applies to contract calls and message emission: these must happen once, after consensus, using the agreed-upon result.
+
+## Equivalence Principle
 
 GenLayer provides `strict_eq` for exact-match consensus and custom validator functions (`run_nondet_unsafe`) for everything else. Convenience wrappers like `prompt_comparative` and `prompt_non_comparative` exist for common patterns. For detailed information, see [Equivalence Principle](/developers/intelligent-contracts/equivalence-principle).
 
