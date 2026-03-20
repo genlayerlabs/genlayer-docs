@@ -1,46 +1,4 @@
-import { Callout } from "nextra-theme-docs";
-
-# GenVM Configuration
-
-You need to set up an LLM for your node to use to provide answers to natural language prompts. You can use any LLM you wish, however the quality of its answers will affect the performance of your node.
-
-<Callout>
-  GenLayer has partnered with multiple LLM providers to offer free credits for validators:
-
-  **[Heurist](https://www.heurist.ai/)** - A Layer 2 network for AI model hosting and inference, built on the ZK Stack. It offers serverless access to open-source AI models through a decentralized network. GenLayer Validators can obtain free [Heurist API credits](https://dev-api-form.heurist.ai) by using the referral code: _"genlayer"_.
-
-  **[Comput3](https://genlayer.comput3.ai/)** - A decentralized compute network providing access to various AI models. GenLayer Validators can use the Comput3.ai inferencing API with access to llama3, hermes3 and qwen3 models. Validators can obtain free [Comput3 API credits](https://genlayer.comput3.ai/) to get started with their validator setup.
-
-  **[io.net](/partners/ionet)** - A decentralized compute network providing GPU access for AI inference. GenLayer Validators can create an account at [id.io.net](https://id.io.net/login) and obtain free credits by [filling out this form](https://form.typeform.com/to/pDmCCViV).
-
-  **[Chutes](/partners/chutes)** - Serverless inference for open-source AI models running on decentralized GPU infrastructure. GenLayer Validators can create an account at [chutes.ai](https://chutes.ai) and generate an API key from their account settings.
-
-  **[Morpheus](/partners/morpheus)** - A decentralized AI inference network where open-source model providers compete on a peer-to-peer marketplace. GenLayer Validators can obtain a [Morpheus API key](https://mor.org/) to access models like DeepSeek, Llama, Qwen, and others through an OpenAI-compatible API.
-</Callout>
-
-The GenVM configuration files are located at `third_party/genvm/config/`
-
-## genvm-module-llm.yaml
-
-This is the configuration file of the LLM module. In this file you can set up and configure various LLM providers, as well as the system prompts of your validator.
-
-You should not need to modify this in general.
-
-However, from here you can:
-- turn on and off various LLMs by setting the `enabled` field to `false`: By default they all come enabled for you to use. You will get warnings in the logs for each one that's enabled and not configured. Disabling non used LLM providers will hide those warnings
-
-Note environment variable names for LLM API keys (e.g., `HEURISTKEY`, `COMPUT3KEY`, `IOINTELLIGENCE_API_KEY`, `CHUTES_API_KEY`, `MORPHEUS_API_KEY`). You will need to ensure the appropriate key is correctly set before [running the node](/validators/setup-guide#running-the-node).
-
-## genvm-module-web.yaml
-
-This is the configuration of webdriver module that enables the GenVM to access the internet. You should not need to modify this.
-
-## genvm-manager.yaml
-
-This is the configuration of the GenVM manager. You should not need to modify this. However, if you are running the node on
-macos (natively), you may want to set `permits` to some large value, as auto-detection is not supported there yet, such as `32`.
-
-## Greyboxing LLMs
+# Greybox LLM Strategy — Validator Setup Guide
 
 Switch your GenLayer node from random LLM provider selection to deterministic ordered fallback via OpenRouter.
 

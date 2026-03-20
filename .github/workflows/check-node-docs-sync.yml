@@ -30,6 +30,7 @@ jobs:
           npm run node-update-docker-compose
           npm run node-update-monitoring-docker-compose
           npm run node-update-monitoring-alloy-config
+          npm run node-update-greybox
           npm run node-generate-api-docs
 
       - name: Check for uncommitted changes

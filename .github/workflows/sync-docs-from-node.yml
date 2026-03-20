@@ -92,7 +92,7 @@ jobs:
     needs: prepare
     strategy:
       matrix:
-        sync_type: [changelog, config, config_asimov, config_bradbury, docker_compose, docker_compose_monitoring, alloy_config, api_gen, api_debug, api_ops]
+        sync_type: [changelog, config, config_asimov, config_bradbury, docker_compose, docker_compose_monitoring, alloy_config, greybox_setup, api_gen, api_debug, api_ops]
       fail-fast: false
     steps:
       - name: Checkout documentation repository
@@ -119,6 +119,7 @@ jobs:
             configs/node/bradbury.yaml.example
             release/docker-compose.yaml
             release/alloy-config.river
+            release/greybox-setup-guide.md
           sparse-checkout-cone-mode: true
           path: source-repo
           ref: ${{ needs.prepare.outputs.version }}
@@ -167,6 +168,12 @@ jobs:
               echo "title=Alloy Config File" >> $GITHUB_OUTPUT
               echo "source_path=source-repo/release/alloy-config.river" >> $GITHUB_OUTPUT
               echo "target_path=content/validators/alloy-config.river" >> $GITHUB_OUTPUT
+              echo "filter_pattern=.*" >> $GITHUB_OUTPUT
+              ;;
+            "greybox_setup")
+              echo "title=Greybox Setup Guide" >> $GITHUB_OUTPUT
+              echo "source_path=source-repo/release/greybox-setup-guide.md" >> $GITHUB_OUTPUT
+              echo "target_path=content/validators/greybox-setup-guide.md" >> $GITHUB_OUTPUT
               echo "filter_pattern=.*" >> $GITHUB_OUTPUT
               ;;
             "api_gen")
@@ -436,6 +443,7 @@ jobs:
           - \`npm run node-update-docker-compose\`
           - \`npm run node-update-monitoring-docker-compose\`
           - \`npm run node-update-monitoring-alloy-config\`
+          - \`npm run node-update-greybox\`
           - \`npm run node-generate-api-docs\`
 
           Please review the changes and merge if everything looks correct.
@@ -503,7 +511,7 @@ jobs:
           echo "" >> $GITHUB_STEP_SUMMARY
           
           # Process each sync type report
-          for sync_type in changelog config config_asimov config_bradbury docker_compose docker_compose_monitoring alloy_config api_gen api_debug api_ops; do
+          for sync_type in changelog config config_asimov config_bradbury docker_compose docker_compose_monitoring alloy_config greybox_setup api_gen api_debug api_ops; do
             # Get proper title
             case "$sync_type" in
               "changelog") title="📝 Changelog Sync" ;;
@@ -513,6 +521,7 @@ jobs:
               "docker_compose") title="🐳 Docker Compose Sync" ;;
               "docker_compose_monitoring") title="🐳 Docker Compose Sync (Monitoring)" ;;
               "alloy_config") title="📊 Alloy Config Sync" ;;
+              "greybox_setup") title="🔧 Greybox Setup Guide Sync" ;;
               "api_gen") title="🔧 API Gen Methods Sync" ;;
               "api_debug") title="🐛 API Debug Methods Sync" ;;
               "api_ops") title="📊 API Ops Methods Sync" ;;

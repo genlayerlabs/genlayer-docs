@@ -65,6 +65,15 @@ run_doc_generation() {
     fi
     echo "::endgroup::"
 
+    echo "::group::Running node-update-greybox"
+    if npm run node-update-greybox; then
+        echo "✅ Updated greybox section in genvm configuration"
+    else
+        echo "❌ node-update-greybox failed"
+        failed=true
+    fi
+    echo "::endgroup::"
+
     echo "::group::Running node-generate-api-docs"
     if npm run node-generate-api-docs; then
         echo "✅ Generated API documentation"
