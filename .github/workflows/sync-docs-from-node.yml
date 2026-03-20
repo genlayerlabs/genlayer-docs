@@ -92,7 +92,7 @@ jobs:
     needs: prepare
     strategy:
       matrix:
-        sync_type: [changelog, config, config_asimov, config_bradbury, docker_compose, api_gen, api_debug, api_ops]
+        sync_type: [changelog, config, config_asimov, config_bradbury, docker_compose, docker_compose_monitoring, alloy_config, api_gen, api_debug, api_ops]
       fail-fast: false
     steps:
       - name: Checkout documentation repository
@@ -118,6 +118,7 @@ jobs:
             configs/node/asimov.yaml.example
             configs/node/bradbury.yaml.example
             release/docker-compose.yaml
+            release/alloy-config.river
           sparse-checkout-cone-mode: true
           path: source-repo
           ref: ${{ needs.prepare.outputs.version }}
@@ -154,6 +155,18 @@ jobs:
               echo "title=Docker Compose File" >> $GITHUB_OUTPUT
               echo "source_path=source-repo/release/docker-compose.yaml" >> $GITHUB_OUTPUT
               echo "target_path=content/validators/docker-compose.yaml" >> $GITHUB_OUTPUT
+              echo "filter_pattern=.*" >> $GITHUB_OUTPUT
+              ;;
+            "docker_compose_monitoring")
+              echo "title=Docker Compose File (Monitoring)" >> $GITHUB_OUTPUT
+              echo "source_path=source-repo/release/docker-compose.yaml" >> $GITHUB_OUTPUT
+              echo "target_path=content/validators/docker-compose-monitoring.yaml" >> $GITHUB_OUTPUT
+              echo "filter_pattern=.*" >> $GITHUB_OUTPUT
+              ;;
+            "alloy_config")
+              echo "title=Alloy Config File" >> $GITHUB_OUTPUT
+              echo "source_path=source-repo/release/alloy-config.river" >> $GITHUB_OUTPUT
+              echo "target_path=content/validators/alloy-config.river" >> $GITHUB_OUTPUT
               echo "filter_pattern=.*" >> $GITHUB_OUTPUT
               ;;
             "api_gen")
@@ -421,6 +434,8 @@ jobs:
           - \`npm run node-update-setup-guide\`
           - \`npm run node-update-config\`
           - \`npm run node-update-docker-compose\`
+          - \`npm run node-update-monitoring-docker-compose\`
+          - \`npm run node-update-monitoring-alloy-config\`
           - \`npm run node-generate-api-docs\`
 
           Please review the changes and merge if everything looks correct.
@@ -488,7 +503,7 @@ jobs:
           echo "" >> $GITHUB_STEP_SUMMARY
           
           # Process each sync type report
-          for sync_type in changelog config config_asimov config_bradbury docker_compose api_gen api_debug api_ops; do
+          for sync_type in changelog config config_asimov config_bradbury docker_compose docker_compose_monitoring alloy_config api_gen api_debug api_ops; do
             # Get proper title
             case "$sync_type" in
               "changelog") title="📝 Changelog Sync" ;;
@@ -496,6 +511,8 @@ jobs:
               "config_asimov") title="⚙️ Config File Sync (Asimov)" ;;
               "config_bradbury") title="⚙️ Config File Sync (Bradbury)" ;;
               "docker_compose") title="🐳 Docker Compose Sync" ;;
+              "docker_compose_monitoring") title="🐳 Docker Compose Sync (Monitoring)" ;;
+              "alloy_config") title="📊 Alloy Config Sync" ;;
               "api_gen") title="🔧 API Gen Methods Sync" ;;
               "api_debug") title="🐛 API Debug Methods Sync" ;;
               "api_ops") title="📊 API Ops Methods Sync" ;;

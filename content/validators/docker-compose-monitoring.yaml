@@ -1,0 +1,116 @@
+services:
+  webdriver-container:
+    container_name: genlayer-node-webdriver
+    image: yeagerai/genlayer-genvm-webdriver:0.0.10
+    shm_size: 2gb
+    security_opt:
+      - no-new-privileges:true
+    environment:
+      PORT: 4444
+    ports:
+      - "${WEBDRIVER_PORT:-4444}:4444"
+    restart: unless-stopped
+
+  genlayer-node:
+    image: yeagerai/genlayer-node:${NODE_VERSION:-latest}
+    entrypoint: [
+      "sh", "-c", "/app/bin/genlayernode run --password ${NODE_PASSWORD:-12345678}",
+    ]
+    container_name: genlayer-node
+    restart: unless-stopped
+    env_file:
+      - path: ./.env
+        required: false
+    ports:
+      - "${NODE_RPC_PORT:-9151}:9151"
+      - "${NODE_OPS_PORT:-9153}:9153"
+    volumes:
+      - ${NODE_CONFIG_PATH:-./configs/node/config.yaml}:/app/configs/node/config.yaml:ro
+      - ${NODE_DATA_PATH:-./data}:/app/data
+      - ./genvm-module-web-docker.yaml:/app/third_party/genvm/config/genvm-module-web.yaml
+      - /var/run/docker.sock:/var/run/docker.sock:ro # required for webdriver metrics collection
+    security_opt:
+      - no-new-privileges:true
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "100m"
+        max-file: "3"
+        compress: "true"
+    depends_on:
+      - webdriver-container
+    profiles:
+      - node
+
+  # Grafana Alloy for both logs and metrics forwarding
+  # Supports both single node and multi-node configurations
+  #
+  # Single Node Mode:
+  #   Set NODE_ID, VALIDATOR_NAME, NODE_METRICS_ENDPOINT in .env
+  #   docker compose --profile monitoring up -d
+  #
+  # Multi-Node Mode:
+  #   Set SCRAPE_TARGETS_JSON in .env
+  #   docker compose --profile monitoring up -d
+  alloy:
+    image: grafana/alloy:v1.12.0
+    container_name: genlayer-node-alloy
+    command:
+      - run
+      - /etc/alloy/config.river
+      - --server.http.listen-addr=0.0.0.0:12345
+      - --storage.path=/var/lib/alloy/data
+    volumes:
+      - ./alloy-config.river:/etc/alloy/config.river:ro
+      - ./alloy-healthcheck.sh:/etc/alloy/healthcheck.sh:ro
+      - ${NODE_LOGS_PATH:-./data/node/logs}:/var/log/genlayer:ro
+      - alloy_data:/var/lib/alloy
+    healthcheck:
+      test: ["CMD", "sh", "/etc/alloy/healthcheck.sh"]
+      interval: 120s
+      timeout: 15s
+      retries: 1
+      start_period: 120s
+    environment:
+      # Central monitoring endpoints
+      - CENTRAL_LOKI_URL=${CENTRAL_LOKI_URL:-https://logs-prod-042.grafana.net/loki/api/v1/push}
+      - CENTRAL_MONITORING_URL=${CENTRAL_MONITORING_URL:-https://prometheus-prod-66-prod-us-east-3.grafana.net/api/prom/push}
+
+      # Metrics (Prometheus) authentication
+      - CENTRAL_MONITORING_USERNAME=${CENTRAL_MONITORING_USERNAME:-telemetric}
+      - CENTRAL_MONITORING_PASSWORD=${CENTRAL_MONITORING_PASSWORD:-12345678}
+
+      # Logs (Loki) authentication
+      - CENTRAL_LOKI_USERNAME=${CENTRAL_LOKI_USERNAME:-telemetric}
+      - CENTRAL_LOKI_PASSWORD=${CENTRAL_LOKI_PASSWORD:-12345678}
+
+      # Single node configuration
+      - NODE_ID=${NODE_ID:-validator-001}
+      - VALIDATOR_NAME=${VALIDATOR_NAME:-MyValidator}
+      - NODE_METRICS_ENDPOINT=${NODE_METRICS_ENDPOINT:-host.docker.internal:9153}
+
+      # Multi-node configuration
+      # When set, overrides single node config above
+      - SCRAPE_TARGETS_JSON=${SCRAPE_TARGETS_JSON:-}
+
+      # Scraping configuration
+      - METRICS_SCRAPE_INTERVAL=${METRICS_SCRAPE_INTERVAL:-60s}
+      - METRICS_SCRAPE_TIMEOUT=${METRICS_SCRAPE_TIMEOUT:-10s}
+      - ALLOY_SELF_MONITORING_INTERVAL=${ALLOY_SELF_MONITORING_INTERVAL:-60s}
+
+      # Log collection configuration
+      - LOG_FILE_PATTERN=${LOG_FILE_PATTERN:-/var/log/genlayer/node*.log}
+
+      # Log batching configuration
+      - LOKI_BATCH_SIZE=${LOKI_BATCH_SIZE:-1MiB}
+      - LOKI_BATCH_WAIT=${LOKI_BATCH_WAIT:-60s}
+    ports:
+      - "12345:12345"  # Alloy UI for debugging
+    restart: unless-stopped
+    profiles:
+      - monitoring
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+
+volumes:
+  alloy_data:
