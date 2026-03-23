@@ -187,6 +187,8 @@ Possible options:
 - Run an open-source model on a different machine
 - Connect to a hosted inference provider (OpenAI, Anthropic, Heurist, Atoma network etc.)
 
+See the [GenVM Configuration](/validators/genvm-configuration) page for partner credits, provider setup, and the greybox fallback strategy.
+
 #### ZKSync Full Node for the GenLayer Chain
 
 Each validator needs access to a [ZKSync Full Node](https://docs.zksync.io/zksync-era/tooling/external-node) connected to the GenLayer chain. Validators use this node to read the chain state and submit transactions.
@@ -208,18 +210,18 @@ One full node can be shared between multiple validators. The optimal validator-t
    You should see a list like this
 
    ```sh
+   v0.5.7
    v0.5.6
    v0.5.5
    v0.5.4
    v0.5.3
-   v0.5.2
    ```
 
    Typically, you will want to run the latest version
 
 2. Download the packaged application
    ```sh copy
-   export version=v0.5.6 # set your desired version here
+   export version=v0.5.7 # set your desired version here
    wget https://storage.googleapis.com/gh-af/genlayer-node/bin/amd64/${version}/genlayer-node-linux-amd64-${version}.tar.gz
    ```
 3. Extract the node software

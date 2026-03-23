@@ -47,6 +47,33 @@ run_doc_generation() {
     fi
     echo "::endgroup::"
 
+    echo "::group::Running node-update-monitoring-docker-compose"
+    if npm run node-update-monitoring-docker-compose; then
+        echo "✅ Updated alloy service in monitoring page"
+    else
+        echo "❌ node-update-monitoring-docker-compose failed"
+        failed=true
+    fi
+    echo "::endgroup::"
+
+    echo "::group::Running node-update-monitoring-alloy-config"
+    if npm run node-update-monitoring-alloy-config; then
+        echo "✅ Updated alloy config in monitoring page"
+    else
+        echo "❌ node-update-monitoring-alloy-config failed"
+        failed=true
+    fi
+    echo "::endgroup::"
+
+    echo "::group::Running node-update-greybox"
+    if npm run node-update-greybox; then
+        echo "✅ Updated greybox section in genvm configuration"
+    else
+        echo "❌ node-update-greybox failed"
+        failed=true
+    fi
+    echo "::endgroup::"
+
     echo "::group::Running node-generate-api-docs"
     if npm run node-generate-api-docs; then
         echo "✅ Generated API documentation"
