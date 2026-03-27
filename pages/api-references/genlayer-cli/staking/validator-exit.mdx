@@ -1,0 +1,26 @@
+---
+title: staking validator-exit
+---
+
+Exit as a validator by withdrawing shares
+
+### Usage
+
+`$ genlayer staking validator-exit [options] [validator]`
+
+### Arguments
+
+- `[validator]`
+
+### Options
+
+| Short | Long | Description | Required | Default |
+| --- | --- | --- | :---: | --- |
+|  |  | --validator &lt;address&gt;  Validator wallet contract address (deprecated, use | No |  |
+|  |  | positional arg) | No |  |
+|  |  | --shares &lt;shares&gt;      Number of shares to withdraw | No |  |
+|  |  | --account &lt;name&gt;       Account to use (must be validator owner) | No |  |
+|  |  | --password &lt;password&gt;  Password to unlock account (skips interactive prompt) | No |  |
+|  |  | --network &lt;network&gt;    Network to use (localnet, testnet-asimov) | No |  |
+|  |  | --rpc &lt;rpcUrl&gt;         RPC URL for the network | No |  |
+| -h | --help | display help for command | No |  |

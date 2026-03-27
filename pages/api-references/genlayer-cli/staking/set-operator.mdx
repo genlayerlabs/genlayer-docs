@@ -1,0 +1,27 @@
+---
+title: staking set-operator
+---
+
+Change the operator address for a validator wallet
+
+### Usage
+
+`$ genlayer staking set-operator [options] [validator] [operator]`
+
+### Arguments
+
+- `[validator]`
+- `[operator]`
+
+### Options
+
+| Short | Long | Description | Required | Default |
+| --- | --- | --- | :---: | --- |
+|  |  | --validator &lt;address&gt;  Validator wallet address (deprecated, use positional | No |  |
+|  |  | arg) | No |  |
+|  |  | --operator &lt;address&gt;   New operator address (deprecated, use positional arg) | No |  |
+|  |  | --account &lt;name&gt;       Account to use (must be validator owner) | No |  |
+|  |  | --password &lt;password&gt;  Password to unlock account (skips interactive prompt) | No |  |
+|  |  | --network &lt;network&gt;    Network to use (localnet, testnet-asimov) | No |  |
+|  |  | --rpc &lt;rpcUrl&gt;         RPC URL for the network | No |  |
+| -h | --help | display help for command | No |  |
