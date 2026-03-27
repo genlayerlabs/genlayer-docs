@@ -14,11 +14,13 @@ deploy_contract(contract_path: Path, vm: 'VMContext', args: Any, sdk_version: Op
 
 **Parameters:**
 
-- **contract_path** (`Path`) — required
-- **vm** (`'VMContext'`) — required
-- **args** (`Any`) — required
-- **sdk_version** (`Optional[str]`) — optional = None
-- **kwargs** (`Any`) — required
+| Parameter | Type | Required | Default |
+|-----------|------|----------|---------|
+| `contract_path` | `Path` | Yes |  |
+| `vm` | `'VMContext'` | Yes |  |
+| `args` | `Any` | Yes |  |
+| `sdk_version` | `Optional[str]` | No | `None` |
+| `kwargs` | `Any` | Yes |  |
 
 **Returns:** `Any`
 
@@ -35,9 +37,11 @@ load_contract_class(contract_path: Path, vm: 'VMContext', sdk_version: Optional[
 
 **Parameters:**
 
-- **contract_path** (`Path`) — required
-- **vm** (`'VMContext'`) — required
-- **sdk_version** (`Optional[str]`) — optional = None
+| Parameter | Type | Required | Default |
+|-----------|------|----------|---------|
+| `contract_path` | `Path` | Yes |  |
+| `vm` | `'VMContext'` | Yes |  |
+| `sdk_version` | `Optional[str]` | No | `None` |
 
 **Returns:** `Type[Any]`
 
@@ -52,7 +56,9 @@ create_address(seed: str)
 
 **Parameters:**
 
-- **seed** (`str`) — required
+| Parameter | Type | Required | Default |
+|-----------|------|----------|---------|
+| `seed` | `str` | Yes |  |
 
 **Returns:** `Any`
 
@@ -67,7 +73,9 @@ create_test_addresses(count: int = 10)
 
 **Parameters:**
 
-- **count** (`int`) — optional = 10
+| Parameter | Type | Required | Default |
+|-----------|------|----------|---------|
+| `count` | `int` | No | `10` |
 
 **Returns:** `list`
 
@@ -106,7 +114,9 @@ vm.warp(timestamp: str)
 
 **Parameters:**
 
-- **timestamp** (`str`) — required
+| Parameter | Type | Required | Default |
+|-----------|------|----------|---------|
+| `timestamp` | `str` | Yes |  |
 
 **Returns:** `None`
 
@@ -122,8 +132,10 @@ vm.deal(address: Any, amount: int)
 
 **Parameters:**
 
-- **address** (`Any`) — required
-- **amount** (`int`) — required
+| Parameter | Type | Required | Default |
+|-----------|------|----------|---------|
+| `address` | `Any` | Yes |  |
+| `amount` | `int` | Yes |  |
 
 **Returns:** `None`
 
@@ -147,7 +159,9 @@ vm.revert(snapshot_id: int)
 
 **Parameters:**
 
-- **snapshot_id** (`int`) — required
+| Parameter | Type | Required | Default |
+|-----------|------|----------|---------|
+| `snapshot_id` | `int` | Yes |  |
 
 **Returns:** `None`
 
@@ -163,8 +177,10 @@ vm.mock_web(url_pattern: str, response: MockedWebResponseData)
 
 **Parameters:**
 
-- **url_pattern** (`str`) — required
-- **response** (`MockedWebResponseData`) — required
+| Parameter | Type | Required | Default |
+|-----------|------|----------|---------|
+| `url_pattern` | `str` | Yes |  |
+| `response` | `MockedWebResponseData` | Yes |  |
 
 **Returns:** `None`
 
@@ -180,8 +196,10 @@ vm.mock_llm(prompt_pattern: str, response: str)
 
 **Parameters:**
 
-- **prompt_pattern** (`str`) — required
-- **response** (`str`) — required
+| Parameter | Type | Required | Default |
+|-----------|------|----------|---------|
+| `prompt_pattern` | `str` | Yes |  |
+| `response` | `str` | Yes |  |
 
 **Returns:** `None`
 
@@ -205,7 +223,9 @@ vm.prank(address: Any)
 
 **Parameters:**
 
-- **address** (`Any`) — required
+| Parameter | Type | Required | Default |
+|-----------|------|----------|---------|
+| `address` | `Any` | Yes |  |
 
 ---
 
@@ -219,7 +239,9 @@ vm.startPrank(address: Any)
 
 **Parameters:**
 
-- **address** (`Any`) — required
+| Parameter | Type | Required | Default |
+|-----------|------|----------|---------|
+| `address` | `Any` | Yes |  |
 
 **Returns:** `None`
 
@@ -247,7 +269,9 @@ vm.expect_revert(message: Optional[str] = None)
 
 **Parameters:**
 
-- **message** (`Optional[str]`) — optional = None
+| Parameter | Type | Required | Default |
+|-----------|------|----------|---------|
+| `message` | `Optional[str]` | No | `None` |
 
 ---
 
@@ -273,14 +297,16 @@ Returns:
     The bool returned by the validator function.
 
 ```python
-vm.run_validator(leader_result: Any = <object object at 0x7f26a8798ad0>, leader_error: Optional[Exception] = None, index: int = -1)
+vm.run_validator(leader_result: Any = <object object at 0x7f9a3def4ac0>, leader_error: Optional[Exception] = None, index: int = -1)
 ```
 
 **Parameters:**
 
-- **leader_result** (`Any`) — optional = <object object at 0x7f26a8798ad0>
-- **leader_error** (`Optional[Exception]`) — optional = None
-- **index** (`int`) — optional = -1
+| Parameter | Type | Required | Default |
+|-----------|------|----------|---------|
+| `leader_result` | `Any` | No | `<object object at 0x7f9a3def4ac0>` |
+| `leader_error` | `Optional[Exception]` | No | `None` |
+| `index` | `int` | No | `-1` |
 
 **Returns:** `bool`
 

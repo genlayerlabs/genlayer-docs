@@ -1,5 +1,1 @@
-{
-  "integration": "Integration Testing",
-  "direct": "Direct Mode",
-  "glsim": "glsim"
-}
+{"integration": "Integration Testing", "direct": "Direct Mode", "glsim": "glsim"}

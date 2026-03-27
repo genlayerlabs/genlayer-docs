@@ -20,8 +20,10 @@ get_contract_factory(contract_name: Optional = None, contract_file_path: Union =
 
 **Parameters:**
 
-- **contract_name** (`Optional`) — optional = None
-- **contract_file_path** (`Union`) — optional = None
+| Parameter | Type | Required | Default |
+|-----------|------|----------|---------|
+| `contract_name` | `Optional` | No | `None` |
+| `contract_file_path` | `Union` | No | `None` |
 
 **Returns:** `ContractFactory`
 
@@ -50,7 +52,9 @@ create_accounts(n_accounts: int)
 
 **Parameters:**
 
-- **n_accounts** (`int`) — required
+| Parameter | Type | Required | Default |
+|-----------|------|----------|---------|
+| `n_accounts` | `int` | Yes |  |
 
 ---
 ### `get_gl_client`
@@ -82,15 +86,17 @@ factory.deploy(args: Optional = None, account: Optional = None, consensus_max_ro
 
 **Parameters:**
 
-- **args** (`Optional`) — optional = None
-- **account** (`Optional`) — optional = None
-- **consensus_max_rotations** (`Optional`) — optional = None
-- **wait_interval** (`Optional`) — optional = None
-- **wait_retries** (`Optional`) — optional = None
-- **wait_transaction_status** (`TransactionStatus`) — optional = <TransactionStatus.ACCEPTED: 'ACCEPTED'>
-- **wait_triggered_transactions** (`bool`) — optional = False
-- **wait_triggered_transactions_status** (`TransactionStatus`) — optional = <TransactionStatus.ACCEPTED: 'ACCEPTED'>
-- **transaction_context** (`Optional`) — optional = None
+| Parameter | Type | Required | Default |
+|-----------|------|----------|---------|
+| `args` | `Optional` | No | `None` |
+| `account` | `Optional` | No | `None` |
+| `consensus_max_rotations` | `Optional` | No | `None` |
+| `wait_interval` | `Optional` | No | `None` |
+| `wait_retries` | `Optional` | No | `None` |
+| `wait_transaction_status` | `TransactionStatus` | No | `<TransactionStatus.ACCEPTED: 'ACCEPTED'>` |
+| `wait_triggered_transactions` | `bool` | No | `False` |
+| `wait_triggered_transactions_status` | `TransactionStatus` | No | `<TransactionStatus.ACCEPTED: 'ACCEPTED'>` |
+| `transaction_context` | `Optional` | No | `None` |
 
 **Returns:** `Contract`
 
@@ -106,15 +112,17 @@ factory.deploy_contract_tx(args: Optional = None, account: Optional = None, cons
 
 **Parameters:**
 
-- **args** (`Optional`) — optional = None
-- **account** (`Optional`) — optional = None
-- **consensus_max_rotations** (`Optional`) — optional = None
-- **wait_interval** (`Optional`) — optional = None
-- **wait_retries** (`Optional`) — optional = None
-- **wait_transaction_status** (`TransactionStatus`) — optional = <TransactionStatus.ACCEPTED: 'ACCEPTED'>
-- **wait_triggered_transactions** (`bool`) — optional = False
-- **wait_triggered_transactions_status** (`TransactionStatus`) — optional = <TransactionStatus.ACCEPTED: 'ACCEPTED'>
-- **transaction_context** (`Optional`) — optional = None
+| Parameter | Type | Required | Default |
+|-----------|------|----------|---------|
+| `args` | `Optional` | No | `None` |
+| `account` | `Optional` | No | `None` |
+| `consensus_max_rotations` | `Optional` | No | `None` |
+| `wait_interval` | `Optional` | No | `None` |
+| `wait_retries` | `Optional` | No | `None` |
+| `wait_transaction_status` | `TransactionStatus` | No | `<TransactionStatus.ACCEPTED: 'ACCEPTED'>` |
+| `wait_triggered_transactions` | `bool` | No | `False` |
+| `wait_triggered_transactions_status` | `TransactionStatus` | No | `<TransactionStatus.ACCEPTED: 'ACCEPTED'>` |
+| `transaction_context` | `Optional` | No | `None` |
 
 **Returns:** `GenLayerTransaction`
 
@@ -130,8 +138,10 @@ factory.build_contract(contract_address: Union, account: Optional = None)
 
 **Parameters:**
 
-- **contract_address** (`Union`) — required
-- **account** (`Optional`) — optional = None
+| Parameter | Type | Required | Default |
+|-----------|------|----------|---------|
+| `contract_address` | `Union` | Yes |  |
+| `account` | `Optional` | No | `None` |
 
 **Returns:** `Contract`
 
@@ -150,8 +160,10 @@ contract.method_name.call(transaction_hash_variant: TransactionHashVariant = <Tr
 
 **Parameters:**
 
-- **transaction_hash_variant** (`TransactionHashVariant`) — optional = <TransactionHashVariant.LATEST_NONFINAL: 'latest-nonfinal'>
-- **transaction_context** (`Optional`) — optional = None
+| Parameter | Type | Required | Default |
+|-----------|------|----------|---------|
+| `transaction_hash_variant` | `TransactionHashVariant` | No | `<TransactionHashVariant.LATEST_NONFINAL: 'latest-nonfinal'>` |
+| `transaction_context` | `Optional` | No | `None` |
 
 ---
 
@@ -165,14 +177,16 @@ contract.method_name.transact(value: int = 0, consensus_max_rotations: Optional 
 
 **Parameters:**
 
-- **value** (`int`) — optional = 0
-- **consensus_max_rotations** (`Optional`) — optional = None
-- **wait_transaction_status** (`TransactionStatus`) — optional = <TransactionStatus.ACCEPTED: 'ACCEPTED'>
-- **wait_interval** (`Optional`) — optional = None
-- **wait_retries** (`Optional`) — optional = None
-- **wait_triggered_transactions** (`bool`) — optional = False
-- **wait_triggered_transactions_status** (`TransactionStatus`) — optional = <TransactionStatus.ACCEPTED: 'ACCEPTED'>
-- **transaction_context** (`Optional`) — optional = None
+| Parameter | Type | Required | Default |
+|-----------|------|----------|---------|
+| `value` | `int` | No | `0` |
+| `consensus_max_rotations` | `Optional` | No | `None` |
+| `wait_transaction_status` | `TransactionStatus` | No | `<TransactionStatus.ACCEPTED: 'ACCEPTED'>` |
+| `wait_interval` | `Optional` | No | `None` |
+| `wait_retries` | `Optional` | No | `None` |
+| `wait_triggered_transactions` | `bool` | No | `False` |
+| `wait_triggered_transactions_status` | `TransactionStatus` | No | `<TransactionStatus.ACCEPTED: 'ACCEPTED'>` |
+| `transaction_context` | `Optional` | No | `None` |
 
 ---
 
@@ -186,13 +200,15 @@ contract.method_name.analyze(provider: str, model: str, config: Optional = None,
 
 **Parameters:**
 
-- **provider** (`str`) — required
-- **model** (`str`) — required
-- **config** (`Optional`) — optional = None
-- **plugin** (`Optional`) — optional = None
-- **plugin_config** (`Optional`) — optional = None
-- **runs** (`int`) — optional = 100
-- **genvm_datetime** (`Optional`) — optional = None
+| Parameter | Type | Required | Default |
+|-----------|------|----------|---------|
+| `provider` | `str` | Yes |  |
+| `model` | `str` | Yes |  |
+| `config` | `Optional` | No | `None` |
+| `plugin` | `Optional` | No | `None` |
+| `plugin_config` | `Optional` | No | `None` |
+| `runs` | `int` | No | `100` |
+| `genvm_datetime` | `Optional` | No | `None` |
 
 ---
 ## ValidatorFactory
@@ -209,12 +225,14 @@ validator_factory.create_validator(stake: int, provider: str, model: str, config
 
 **Parameters:**
 
-- **stake** (`int`) — required
-- **provider** (`str`) — required
-- **model** (`str`) — required
-- **config** (`Dict`) — required
-- **plugin** (`str`) — required
-- **plugin_config** (`Dict`) — required
+| Parameter | Type | Required | Default |
+|-----------|------|----------|---------|
+| `stake` | `int` | Yes |  |
+| `provider` | `str` | Yes |  |
+| `model` | `str` | Yes |  |
+| `config` | `Dict` | Yes |  |
+| `plugin` | `str` | Yes |  |
+| `plugin_config` | `Dict` | Yes |  |
 
 **Returns:** `Validator`
 
@@ -230,13 +248,15 @@ validator_factory.batch_create_validators(count: int, stake: int, provider: str,
 
 **Parameters:**
 
-- **count** (`int`) — required
-- **stake** (`int`) — required
-- **provider** (`str`) — required
-- **model** (`str`) — required
-- **config** (`Dict`) — required
-- **plugin** (`str`) — required
-- **plugin_config** (`Dict`) — required
+| Parameter | Type | Required | Default |
+|-----------|------|----------|---------|
+| `count` | `int` | Yes |  |
+| `stake` | `int` | Yes |  |
+| `provider` | `str` | Yes |  |
+| `model` | `str` | Yes |  |
+| `config` | `Dict` | Yes |  |
+| `plugin` | `str` | Yes |  |
+| `plugin_config` | `Dict` | Yes |  |
 
 **Returns:** `List`
 
@@ -252,8 +272,10 @@ validator_factory.create_mock_validator(mock_llm_response: Optional = None, mock
 
 **Parameters:**
 
-- **mock_llm_response** (`Optional`) — optional = None
-- **mock_web_response** (`Optional`) — optional = None
+| Parameter | Type | Required | Default |
+|-----------|------|----------|---------|
+| `mock_llm_response` | `Optional` | No | `None` |
+| `mock_web_response` | `Optional` | No | `None` |
 
 **Returns:** `Validator`
 
@@ -269,9 +291,11 @@ validator_factory.batch_create_mock_validators(count: int, mock_llm_response: Op
 
 **Parameters:**
 
-- **count** (`int`) — required
-- **mock_llm_response** (`Optional`) — optional = None
-- **mock_web_response** (`Optional`) — optional = None
+| Parameter | Type | Required | Default |
+|-----------|------|----------|---------|
+| `count` | `int` | Yes |  |
+| `mock_llm_response` | `Optional` | No | `None` |
+| `mock_web_response` | `Optional` | No | `None` |
 
 **Returns:** `List`
 
@@ -306,7 +330,9 @@ validator.batch_clone(count: int)
 
 **Parameters:**
 
-- **count** (`int`) — required
+| Parameter | Type | Required | Default |
+|-----------|------|----------|---------|
+| `count` | `int` | Yes |  |
 
 **Returns:** `List`
 
