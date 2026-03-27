@@ -1,0 +1,24 @@
+# GenLayer
+
+> GenLayer is the first Intelligent Blockchain — a DLT capable of nondeterministic operations through dynamic consensus, enabling smart contracts to natively access the Internet and make subjective decisions.
+
+## Documentation
+
+- [Full Documentation](https://docs.genlayer.com/full-documentation.txt): Complete documentation in a single file
+- [Developers Guide](https://docs.genlayer.com/developers): Build on GenLayer
+- [Validators Guide](https://docs.genlayer.com/validators): Run a validator node
+
+## API References
+
+- [GenLayerJS SDK](https://docs.genlayer.com/api-references/genlayer-js): TypeScript SDK for dApps
+- [GenLayerPY SDK](https://docs.genlayer.com/api-references/genlayer-py): Python SDK for dApps
+- [GenLayer CLI](https://docs.genlayer.com/api-references/genlayer-cli): Command-line interface
+- [GenLayer Node RPC](https://docs.genlayer.com/api-references/genlayer-node): JSON-RPC API
+- [GenLayer Test](https://docs.genlayer.com/api-references/genlayer-test): Testing framework
+- [GenVM SDK](https://sdk.genlayer.com/): SDK for writing intelligent contracts
+
+## Key Concepts
+
+- [Intelligent Contracts](https://docs.genlayer.com/developers/intelligent-contracts): Contracts that can access the web and use LLMs
+- [Equivalence Principle](https://docs.genlayer.com/understand-genlayer-protocol/consensus): How validators reach consensus on nondeterministic outputs
+- [Staking](https://docs.genlayer.com/developers/staking-guide): Validator and delegator staking guide
