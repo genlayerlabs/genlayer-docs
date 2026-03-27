@@ -1,0 +1,27 @@
+---
+title: staking validator-prime
+---
+
+Prime a validator to prepare their stake record for the next epoch
+
+### Usage
+
+`$ genlayer staking validator-prime [options] [validator]`
+
+### Arguments
+
+- `[validator]`
+
+### Options
+
+| Short | Long | Description | Required | Default |
+| --- | --- | --- | :---: | --- |
+|  |  | --validator &lt;address&gt;        Validator address to prime (deprecated, use | No |  |
+|  |  | positional arg) | No |  |
+|  |  | --account &lt;name&gt;             Account to use | No |  |
+|  |  | --password &lt;password&gt;        Password to unlock account (skips interactive | No |  |
+|  |  | prompt) | No |  |
+|  |  | --network &lt;network&gt;          Network to use (localnet, testnet-asimov) | No |  |
+|  |  | --rpc &lt;rpcUrl&gt;               RPC URL for the network | No |  |
+|  |  | --staking-address &lt;address&gt;  Staking contract address (overrides chain config) | No |  |
+| -h | --help | display help for command | No |  |

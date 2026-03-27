@@ -1,0 +1,42 @@
+---
+title: staking
+---
+
+Staking operations for validators and delegators
+
+### Usage
+
+`$ genlayer staking [options] [command]`
+
+### Arguments
+
+- `[command]`
+
+### Options
+
+| Short | Long | Description | Required | Default |
+| --- | --- | --- | :---: | --- |
+| -h | --help | display help for command | No |  |
+
+### Subcommands
+
+- `genlayer wizard` — Interactive wizard to become a validator
+- `genlayer validator-join` — Join as a validator by staking tokens
+- `genlayer validator-deposit` — Make an additional deposit to a validator wallet
+- `genlayer validator-exit` — Exit as a validator by withdrawing shares
+- `genlayer validator-claim` — Claim validator withdrawals after unbonding period
+- `genlayer validator-prime` — Prime a validator to prepare their stake record for the next epoch
+- `genlayer prime-all` — Prime all validators that need priming
+- `genlayer set-operator` — Change the operator address for a validator wallet
+- `genlayer set-identity` — Set validator identity metadata (moniker, website, socials, etc.)
+- `genlayer delegator-join` — Join as a delegator by staking with a validator
+- `genlayer delegator-exit` — Exit as a delegator by withdrawing shares from a validator
+- `genlayer delegator-claim` — Claim delegator withdrawals after unbonding period
+- `genlayer validator-info` — Get information about a validator
+- `genlayer delegation-info` — Get delegation info for a delegator with a validator
+- `genlayer epoch-info` — Get current epoch and staking parameters
+- `genlayer active-validators` — List all active validators
+- `genlayer quarantined-validators` — List all quarantined validators
+- `genlayer banned-validators` — List all banned validators
+- `genlayer validators` — Show validator set with stake, status, and voting power
+- `genlayer validator-history` — Show slash and reward history for a validator (default: last 10 epochs)

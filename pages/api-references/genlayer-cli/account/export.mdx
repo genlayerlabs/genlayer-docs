@@ -1,0 +1,20 @@
+---
+title: account export
+---
+
+Export an account to a keystore file (web3/geth/foundry compatible)
+
+### Usage
+
+`$ genlayer account export [options]`
+
+### Options
+
+| Short | Long | Description | Required | Default |
+| --- | --- | --- | :---: | --- |
+|  |  | --output &lt;path&gt;               Output path for the keystore file | No |  |
+|  |  | --account &lt;name&gt;              Account to export (defaults to active account) | No |  |
+|  |  | --password &lt;password&gt;         Password for exported keystore (skips | No |  |
+|  |  | confirmation) | No |  |
+|  |  | --source-password &lt;password&gt;  Password to decrypt account (if not unlocked) | No |  |
+| -h | --help | display help for command | No |  |
