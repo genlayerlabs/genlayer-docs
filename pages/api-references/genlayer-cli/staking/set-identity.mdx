@@ -1,0 +1,34 @@
+---
+title: staking set-identity
+---
+
+Set validator identity metadata (moniker, website, socials, etc.)
+
+### Usage
+
+`$ genlayer staking set-identity [options] [validator]`
+
+### Arguments
+
+- `[validator]`
+
+### Options
+
+| Short | Long | Description | Required | Default |
+| --- | --- | --- | :---: | --- |
+|  |  | --validator &lt;address&gt;  Validator wallet address (deprecated, use positional | No |  |
+|  |  | arg) | No |  |
+|  |  | --moniker &lt;name&gt;       Validator display name | No |  |
+|  |  | --logo-uri &lt;uri&gt;       Logo URI | No |  |
+|  |  | --website &lt;url&gt;        Website URL | No |  |
+|  |  | --description &lt;text&gt;   Description | No |  |
+|  |  | --email &lt;email&gt;        Contact email | No |  |
+|  |  | --twitter &lt;handle&gt;     Twitter handle | No |  |
+|  |  | --telegram &lt;handle&gt;    Telegram handle | No |  |
+|  |  | --github &lt;handle&gt;      GitHub handle | No |  |
+|  |  | --extra-cid &lt;cid&gt;      Extra data as IPFS CID or hex bytes (0x...) | No |  |
+|  |  | --account &lt;name&gt;       Account to use (must be validator operator) | No |  |
+|  |  | --password &lt;password&gt;  Password to unlock account (skips interactive prompt) | No |  |
+|  |  | --network &lt;network&gt;    Network to use (localnet, testnet-asimov) | No |  |
+|  |  | --rpc &lt;rpcUrl&gt;         RPC URL for the network | No |  |
+| -h | --help | display help for command | No |  |

@@ -1,0 +1,31 @@
+---
+title: receipt
+---
+
+Get transaction receipt by hash
+
+### Usage
+
+`$ genlayer receipt [options] <txId>`
+
+### Arguments
+
+- `<txId>`
+
+### Options
+
+| Short | Long | Description | Required | Default |
+| --- | --- | --- | :---: | --- |
+|  |  | --status &lt;status&gt;      Transaction status to wait for (UNINITIALIZED, PENDING, | No |  |
+|  |  | PROPOSING, COMMITTING, REVEALING, ACCEPTED, | No |  |
+|  |  | UNDETERMINED, FINALIZED, CANCELED, APPEAL_REVEALING, | No |  |
+|  |  | APPEAL_COMMITTING, READY_TO_FINALIZE, | No |  |
+|  |  | VALIDATORS_TIMEOUT, LEADER_TIMEOUT) (default: | No |  |
+|  |  | "FINALIZED") | No |  |
+|  |  | --retries &lt;retries&gt;    Number of retries (default: 100) | No |  |
+|  |  | --interval &lt;interval&gt;  Interval between retries in milliseconds (default: | No |  |
+|  |  | 5000) | No |  |
+|  |  | --rpc &lt;rpcUrl&gt;         RPC URL for the network | No |  |
+|  | --stdout | Print only stdout from the receipt | No |  |
+|  | --stderr | Print only stderr from the receipt | No |  |
+| -h | --help | display help for command | No |  |

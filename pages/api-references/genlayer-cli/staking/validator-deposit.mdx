@@ -1,0 +1,26 @@
+---
+title: staking validator-deposit
+---
+
+Make an additional deposit to a validator wallet
+
+### Usage
+
+`$ genlayer staking validator-deposit [options] [validator]`
+
+### Arguments
+
+- `[validator]`
+
+### Options
+
+| Short | Long | Description | Required | Default |
+| --- | --- | --- | :---: | --- |
+|  |  | --validator &lt;address&gt;  Validator wallet contract address (deprecated, use | No |  |
+|  |  | positional arg) | No |  |
+|  |  | --amount &lt;amount&gt;      Amount to deposit (in wei or with 'eth'/'gen' suffix) | No |  |
+|  |  | --account &lt;name&gt;       Account to use (must be validator owner) | No |  |
+|  |  | --password &lt;password&gt;  Password to unlock account (skips interactive prompt) | No |  |
+|  |  | --network &lt;network&gt;    Network to use (localnet, testnet-asimov) | No |  |
+|  |  | --rpc &lt;rpcUrl&gt;         RPC URL for the network | No |  |
+| -h | --help | display help for command | No |  |
