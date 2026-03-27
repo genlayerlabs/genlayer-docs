@@ -1,8 +1,41 @@
-# GenLayer CLI Reference
+# GenLayer CLI
+
+## Description
+
+The GenLayer CLI is designed to streamline the setup and local execution of the GenLayer simulator. This tool automates the process of downloading and launching the GenLayer simulator, making it easy to start simulating and testing locally with minimal setup.
+
+## Installation
+
+Before installing the GenLayer CLI, ensure you have Node.js installed on your system. You can then install the CLI globally using npm:
+
+```bash
+npm install -g genlayer
+```
+
+### Linux Dependencies
+
+On some Linux distributions with minimal setups (like Debian netinst or Docker images), you may need to manually install libsecret:
+
+```bash
+# Ubuntu/Debian
+sudo apt-get install libsecret-1-0
+
+# CentOS/RHEL/Fedora
+sudo yum install libsecret
+# or for newer versions
+sudo dnf install libsecret
+
+# Arch Linux
+sudo pacman -S libsecret
+```
+
+The GenLayer CLI uses the `keytar` library for secure key storage, which relies on `libsecret` on Linux systems.
+
+## Usage
 
 Each command includes syntax, usage information, and examples to help you effectively use the CLI for interacting with the GenLayer environment.
 
-## Command line syntax
+### Command line syntax
 
 General syntax for using the GenLayer CLI:
 
@@ -10,17 +43,9 @@ General syntax for using the GenLayer CLI:
 genlayer command [command options] [arguments...]
 ```
 
-## Version Compatibility
+### Commands and usage
 
-The GenLayer CLI always uses the latest compatible version of the environment, ensuring that you benefit from the most recent features, bug fixes, and optimizations without requiring manual updates. If a specific version is needed, you can specify it using the --localnet-version option when initializing the environment.
-
-```bash
-genlayer init --localnet-version v0.10.2
-```
-
-## Commands and usage
-
-### Initialize
+#### Initialize
 
 Prepares and verifies your environment to run the GenLayer Studio.
 
@@ -33,13 +58,23 @@ OPTIONS:
    --headless                            Headless mode (default: false)
    --reset-db                            Reset Database (default: false)
    --localnet-version <localnetVersion>  Select a specific localnet version
+   --ollama                              Enable Ollama container (default: false)
 
 EXAMPLES:
    genlayer init
    genlayer init --numValidators 10 --headless --reset-db --localnet-version v0.10.2
+   genlayer init --ollama
 ```
 
-### Start GenLayer environment
+##### Version Compatibility
+
+The GenLayer CLI always uses the latest compatible version of the environment, ensuring that you benefit from the most recent features, bug fixes, and optimizations without requiring manual updates. If a specific version is needed, you can specify it using the --localnet-version option when initializing the environment.
+
+```bash
+genlayer init --localnet-version v0.10.2
+```
+
+#### Start GenLayer environment
 
 Launches the GenLayer environment and the Studio, initializing a fresh set of database and accounts.
 
@@ -52,13 +87,15 @@ OPTIONS:
    --numValidators <numValidators>  Number of validators (default: "5")
    --headless                       Headless mode (default: false)
    --reset-db                       Reset Database (default: false)
+   --ollama                         Enable Ollama container (default: false)
 
 EXAMPLES:
    genlayer up
    genlayer up --reset-validators --numValidators 8 --headless --reset-db
+   genlayer up --ollama
 ```
 
-### Stop GenLayer environment
+#### Stop GenLayer environment
 
 Stops all running GenLayer Localnet services.
 
@@ -67,7 +104,7 @@ USAGE:
    genlayer stop
 ```
 
-### Create a New GenLayer Project
+#### Create a New GenLayer Project
 
 Initialize a new GenLayer project using a local template.
 
@@ -77,7 +114,7 @@ USAGE:
 
 OPTIONS:
    --path <directory>  Specify the directory for the new project (default: ".")
-   --overwrite        Overwrite existing directory if it exists (default: false)
+   --overwrite         Overwrite existing directory if it exists (default: false)
 
 EXAMPLES:
    genlayer new myProject
@@ -85,7 +122,7 @@ EXAMPLES:
    genlayer new myProject --overwrite
 ```
 
-### Manage CLI Configuration
+#### Manage CLI Configuration
 
 Configure the GenLayer CLI settings.
 
@@ -105,7 +142,25 @@ EXAMPLES:
    genlayer config reset keyPairPath
 ```
 
-### Deploy and Call Intelligent Contracts
+#### Network Management
+
+Manage network configuration for contract operations.
+
+```bash
+USAGE:
+   genlayer network set [network]    Set the network to use
+   genlayer network info             Show current network configuration and contract addresses
+   genlayer network list             List available networks
+
+EXAMPLES:
+   genlayer network set
+   genlayer network set testnet
+   genlayer network set mainnet
+   genlayer network info
+   genlayer network list
+```
+
+#### Deploy and Call Intelligent Contracts
 
 Deploy and interact with intelligent contracts.
 
@@ -118,16 +173,16 @@ USAGE:
 
 OPTIONS (deploy):
    --contract <contractPath>  (Optional) Path to the intelligent contract to deploy
-   --args <args...>           Positional arguments for the contract (space-separated, use quotes for multi-word arguments)
    --rpc <rpcUrl>             RPC URL for the network
+   --args <args...>           Contract arguments (see Argument Types below)
 
 OPTIONS (call):
-   --args <args...>           Positional arguments for the method (space-separated, use quotes for multi-word arguments)
    --rpc <rpcUrl>             RPC URL for the network
+   --args <args...>           Method arguments (see Argument Types below)
 
 OPTIONS (write):
-   --args <args...>           Positional arguments for the method (space-separated, use quotes for multi-word arguments)
    --rpc <rpcUrl>             RPC URL for the network
+   --args <args...>           Method arguments (see Argument Types below)
 
 OPTIONS (schema):
    --rpc <rpcUrl>             RPC URL for the network
@@ -135,302 +190,109 @@ OPTIONS (schema):
 EXAMPLES:
    genlayer deploy
    genlayer deploy --contract ./my_contract.gpy
+   genlayer deploy --contract ./my_contract.gpy --args "arg1" "arg2" 123
    genlayer call 0x123456789abcdef greet --args "Hello World!"
-   genlayer write 0x123456789abcdef setValue --args 42 "New Value"
+   genlayer write 0x123456789abcdef updateValue --args 42
+   genlayer write 0x123456789abcdef sendReward --args 0x6857Ed54CbafaA74Fc0357145eC0ee1536ca45A0
+   genlayer write 0x123456789abcdef setScores --args '[1, 2, 3]'
+   genlayer write 0x123456789abcdef setConfig --args '{"timeout": 30, "retries": 5}'
    genlayer schema 0x123456789abcdef
 ```
-#### Deploy Behavior
+
+##### Argument Types
+
+The `--args` option automatically detects and converts values to the correct type:
+
+| Type | Syntax | Example |
+|------|--------|---------|
+| Boolean | `true`, `false` | `--args true false` |
+| Null | `null` | `--args null` |
+| Integer | numeric value | `--args 42 -1` |
+| Hex integer | `0x` prefix | `--args 0x1a` |
+| String | any other value | `--args hello "multi word"` |
+| Address | 40 hex chars with `0x` or `addr#` prefix | `--args 0x6857...a0` or `--args addr#6857...a0` |
+| Bytes | `b#` prefix + hex | `--args b#deadbeef` |
+| Array | JSON array in quotes | `--args '[1, 2, "three"]'` |
+| Dict | JSON object in quotes | `--args '{"key": "value"}'` |
+
+Large numbers that exceed JavaScript's safe integer range are automatically handled as BigInt to preserve precision.
+
+##### Deploy Behavior
 - If `--contract` is specified, the command will **deploy the given contract**.
 - If `--contract` is omitted, the CLI will **search for scripts inside the `deploy` folder**, sort them, and execute them sequentially.
 
-#### Call vs Write
-- **call**: Read-only operations that don't modify contract state.
-- **write**: Operations that modify contract state and require transaction confirmation.
+##### Call vs Write
+- `call` - Calls a contract method without sending a transaction or changing the state (read-only)
+- `write` - Sends a transaction to a contract method that modifies the state
 
-#### Schema Command
-- Retrieve the contract schema showing all available methods and their parameters.
+##### Schema
+- `schema` - Retrieves the contract schema
 
-### Transaction Management
-
-Manage and query transaction receipts and appeals.
+#### Transaction Operations
 
 ```bash
 USAGE:
-   genlayer receipt <txId> [options]
-   genlayer appeal <txId> [options]
+   genlayer receipt <txId>                Get transaction receipt
+   genlayer appeal <txId>                 Appeal a transaction
+   genlayer appeal-bond <txId>            Show minimum appeal bond required
 
 OPTIONS (receipt):
-   --status <status>       Transaction status to wait for (default: "FINALIZED")
-                           Valid values: UNINITIALIZED, PENDING, PROPOSING, COMMITTING, 
-                           REVEALING, ACCEPTED, UNDETERMINED, FINALIZED, CANCELED, 
-                           APPEAL_REVEALING, APPEAL_COMMITTING, READY_TO_FINALIZE, 
-                           VALIDATORS_TIMEOUT, LEADER_TIMEOUT
-   --retries <retries>     Maximum number of retry attempts (default: 100)
-   --interval <interval>   Interval between retries in milliseconds (default: 5000)
-   --rpc <rpcUrl>          RPC URL for the network
+   --status <status>       Status to wait for (default: FINALIZED)
+   --retries <retries>     Number of retries (default: 100)
+   --interval <interval>   Interval between retries in ms (default: 5000)
+   --stdout                Print only stdout from the receipt
+   --stderr                Print only stderr from the receipt
 
 OPTIONS (appeal):
-   --rpc <rpcUrl>          RPC URL for the network
+   --bond <amount>         Appeal bond amount (e.g. 500gen, 0.5gen). Auto-calculated if omitted
+   --rpc <rpcUrl>          RPC URL override
 
 EXAMPLES:
-   genlayer receipt 0x1234567890abcdef
-   genlayer receipt 0x1234567890abcdef --status ACCEPTED
-   genlayer receipt 0x1234567890abcdef --status FINALIZED --retries 50 --interval 3000
-   genlayer receipt 0x1234567890abcdef --rpc http://localhost:8545
-   
-   genlayer appeal 0x1234567890abcdef
-   genlayer appeal 0x1234567890abcdef --rpc http://localhost:8545
+   # Check the minimum bond required to appeal
+   genlayer appeal-bond 0x1234...
+
+   # Appeal with auto-calculated bond
+   genlayer appeal 0x1234...
+
+   # Appeal with explicit bond
+   genlayer appeal 0x1234... --bond 500gen
 ```
 
-### Network Management
+#### Transaction Trace
 
-Configure and view network settings.
+Inspect execution traces for debugging:
 
 ```bash
-USAGE:
-   genlayer network set [network]
-   genlayer network info
-   genlayer network list
-
-COMMANDS:
-   set [network]   Set the network (interactive menu if network not specified)
-   info            Show current network configuration and contract addresses
-   list            List all available networks
-
-EXAMPLES:
-   genlayer network set                 # Interactive selection menu
-   genlayer network set localnet        # Set network to localnet
-   genlayer network set testnet-asimov     # Set network to testnet-asimov
-   genlayer network set testnet-bradbury   # Set network to testnet-bradbury
-   genlayer network info                # Show current network details
-   genlayer network list                # List available networks
+genlayer transactions trace <txId> [--round N] [--rpc URL]
 ```
 
-### Account Management
-
-Create and manage accounts with encrypted keystores.
-
-```bash
-USAGE:
-   genlayer account create [options]
-   genlayer account show [options]
-   genlayer account list
-   genlayer account use <name>
-   genlayer account remove <name>
-   genlayer account lock [options]
-   genlayer account unlock [options]
-   genlayer account export [options]
-   genlayer account import [options]
-   genlayer account send [options]
-
-COMMANDS:
-   create          Create a new account with encrypted keystore
-   show            Show account details and balance
-   list            List all accounts
-   use             Set an account as active
-   remove          Remove an account
-   lock            Lock an account (remove cached private key)
-   unlock          Unlock an account (cache private key in OS keychain)
-   export          Export account to standard web3 keystore format
-   import          Import account from keystore file or private key
-   send            Send GEN tokens to another address
-
-OPTIONS (create):
-   --name <name>   Account name (default: "default")
-   --overwrite     Overwrite existing account
-
-OPTIONS (show):
-   --account <name>   Account to show (default: active account)
-   --rpc <rpcUrl>     RPC URL for balance lookup
-
-OPTIONS (lock/unlock):
-   --account <name>   Account to lock/unlock
-
-OPTIONS (export):
-   --account <name>      Account to export
-   --output <path>       Output file path
-   --password <password> Password for exported keystore
-
-OPTIONS (import):
-   --name <name>         Name for imported account
-   --keystore <path>     Path to keystore file
-   --private-key <key>   Private key to import (alternative to keystore)
-
-OPTIONS (send):
-   --to <address>        Recipient address
-   --amount <amount>     Amount to send (e.g., "1.5" or "1.5gen")
-   --account <name>      Account to send from
-
-EXAMPLES:
-   genlayer account create --name owner
-   genlayer account show
-   genlayer account show --account operator
-   genlayer account list
-   genlayer account use owner
-   genlayer account unlock --account owner
-   genlayer account export --account operator --output ./operator-keystore.json
-   genlayer account import --name backup --keystore ./backup.json
-   genlayer account send --to 0x123... --amount 100gen
-```
-
-### Staking Operations
-
-Staking operations for validators and delegators on testnet.
-
-```bash
-USAGE:
-   genlayer staking wizard [options]
-   genlayer staking validator-join [options]
-   genlayer staking validator-deposit [options]
-   genlayer staking validator-exit [options]
-   genlayer staking validator-claim [options]
-   genlayer staking validator-prime [options]
-   genlayer staking validator-info [options]
-   genlayer staking set-operator [options]
-   genlayer staking set-identity [options]
-   genlayer staking delegator-join [options]
-   genlayer staking delegator-exit [options]
-   genlayer staking delegator-claim [options]
-   genlayer staking delegation-info [options]
-   genlayer staking epoch-info [options]
-   genlayer staking active-validators [options]
-   genlayer staking quarantined-validators [options]
-   genlayer staking banned-validators [options]
-
-COMMANDS:
-   wizard              Interactive wizard to become a validator
-   validator-join      Join as a validator by staking tokens
-   validator-deposit   Make an additional deposit as a validator
-   validator-exit      Exit as a validator by withdrawing shares
-   validator-claim     Claim validator withdrawals after unbonding period
-   validator-prime     Prime a validator to prepare stake for next epoch
-   validator-info      Get information about a validator
-   set-operator        Change the operator address for a validator
-   set-identity        Set validator identity metadata (moniker, website, socials)
-   delegator-join      Join as a delegator by staking with a validator
-   delegator-exit      Exit as a delegator by withdrawing shares
-   delegator-claim     Claim delegator withdrawals after unbonding period
-   delegation-info     Get delegation info for a delegator with a validator
-   epoch-info          Get current epoch and staking parameters
-   active-validators   List all active validators
-   quarantined-validators  List all quarantined validators
-   banned-validators   List all banned validators
-
-OPTIONS (wizard):
-   --account <name>          Account to use (skip selection)
-   --network <network>       Network to use (skip selection)
-   --skip-identity           Skip identity setup step
-
-OPTIONS (validator-join):
-   --amount <amount>         Amount to stake (e.g., "42000gen")
-   --operator <address>      Operator address (defaults to signer)
-   --account <name>          Account to use
-
-OPTIONS (validator-deposit):
-   --validator <address>     Validator wallet address (required)
-   --amount <amount>         Amount to deposit
-
-OPTIONS (validator-exit):
-   --validator <address>     Validator wallet address (required)
-   --shares <shares>         Number of shares to withdraw
-
-OPTIONS (validator-claim):
-   --validator <address>     Validator wallet address (required)
-
-OPTIONS (validator-prime):
-   --validator <address>     Validator address to prime
-
-OPTIONS (set-operator):
-   --validator <address>     Validator wallet address
-   --operator <address>      New operator address
-
-OPTIONS (set-identity):
-   --validator <address>     Validator wallet address
-   --moniker <name>          Validator display name (required)
-   --website <url>           Website URL
-   --description <text>      Description
-   --twitter <handle>        Twitter handle
-   --github <handle>         GitHub handle
-
-OPTIONS (delegator-join):
-   --validator <address>     Validator to delegate to
-   --amount <amount>         Amount to stake
-
-OPTIONS (delegator-exit):
-   --validator <address>     Validator to exit from
-   --shares <shares>         Number of shares to withdraw
-
-OPTIONS (delegation-info):
-   --validator <address>     Validator address
-   --delegator <address>     Delegator address (defaults to signer)
-
-COMMON OPTIONS:
-   --network <network>       Network to use (localnet, testnet-asimov, testnet-bradbury)
-   --rpc <rpcUrl>            RPC URL for the network
-   --staking-address <addr>  Override staking contract address
-
-EXAMPLES:
-   # Become a validator using the interactive wizard
-   genlayer staking wizard
-
-   # Join as validator manually
-   genlayer staking validator-join --amount 42000gen --operator 0x123...
-
-   # Check validator status
-   genlayer staking validator-info
-
-   # Set validator identity
-   genlayer staking set-identity --validator 0x123... --moniker "My Validator" --website "https://example.com"
-
-   # Delegate to a validator
-   genlayer staking delegator-join --validator 0x123... --amount 1000gen
-
-   # Check your delegation info
-   genlayer staking delegation-info --validator 0x123...
-
-   # Check epoch info
-   genlayer staking epoch-info
-
-   # List active validators
-   genlayer staking active-validators
-```
-
-### Account Management
+#### Account Management
 
 View and manage your account.
 
 ```bash
 USAGE:
-   genlayer account                    Show account info (address, balance, network, status)
-   genlayer account create [options]   Create a new account
-   genlayer account import [options]   Import an account from a private key
+   genlayer account                   Show account info (address, balance, network, status)
+   genlayer account create [options]  Create a new account
    genlayer account send <to> <amount> Send GEN to an address
-   genlayer account unlock             Unlock account (cache key in OS keychain)
-   genlayer account lock               Lock account (remove key from OS keychain)
+   genlayer account unlock            Unlock account (cache key in OS keychain)
+   genlayer account lock              Lock account (remove key from OS keychain)
 
 OPTIONS (create):
    --output <path>    Path to save the keystore (default: "./keypair.json")
    --overwrite        Overwrite existing file (default: false)
 
-OPTIONS (import):
-   --private-key <key>  Private key to import (will prompt if not provided)
-   --output <path>      Path to save the keystore (default: "./keypair.json")
-   --overwrite          Overwrite existing file (default: false)
-
 EXAMPLES:
    genlayer account
    genlayer account create
    genlayer account create --output ./my_key.json --overwrite
-   genlayer account import
-   genlayer account import --private-key 0x1234...abcd
-   genlayer account import --private-key 0x1234...abcd --output ./imported.json
    genlayer account send 0x123...abc 10gen
    genlayer account send 0x123...abc 0.5gen
    genlayer account unlock
    genlayer account lock
 ```
 
-### Update Resources
+#### Update Resources
 
 Manage and update models or configurations.
 
@@ -448,7 +310,7 @@ EXAMPLES:
    genlayer update ollama --model deepseek-r1 --remove
 ```
 
-### Localnet Validator Management
+#### Localnet Validator Management
 
 Manage localnet validator operations.
 
@@ -492,102 +354,172 @@ EXAMPLES:
    genlayer localnet validators create
    genlayer localnet validators create --stake 50 --provider openai --model gpt-4
    genlayer localnet validators create-random --count 3 --providers openai --models gpt-4 gpt-4o
-
 ```
 
-### Staking Operations (Testnet)
+#### Staking Operations
 
-Manage staking for validators and delegators on testnet.
+Manage staking for validators and delegators on testnet-bradbury (or testnet-asimov). Staking is not available on localnet/studio.
 
 ```bash
 USAGE:
    genlayer staking <command> [options]
 
-VALIDATOR COMMANDS:
-   validator-join      Join as a validator by staking tokens
-   validator-deposit   Make an additional deposit as a validator
-   validator-exit      Exit as a validator by withdrawing shares
-   validator-claim     Claim validator withdrawals after unbonding period
-   validator-prime     Prime a validator to prepare for next epoch
-   validator-info      Get information about a validator
-   set-operator        Change the operator address for a validator
-   set-identity        Set validator identity metadata
+COMMANDS:
+   validator-join [options]      Join as a validator by staking tokens
+   validator-deposit [options]   Make an additional deposit as a validator
+   validator-exit [options]      Exit as a validator by withdrawing shares
+   validator-claim [options]     Claim validator withdrawals after unbonding period
+   validator-prime [validator]   Prime a validator for the next epoch
+   prime-all [options]           Prime all validators that need priming
+   delegator-join [options]      Join as a delegator by staking with a validator
+   delegator-exit [options]      Exit as a delegator by withdrawing shares
+   delegator-claim [options]     Claim delegator withdrawals after unbonding period
+   validator-info [validator]    Get information about a validator (--debug for raw data)
+   validator-history [validator] Show slash and reward history for a validator
+   delegation-info [validator]   Get delegation info for a delegator with a validator
+   epoch-info [options]          Get current/previous epoch info (--epoch <n> for specific)
+   validators [options]          Show validator set with stake, primed status, and weight
+   active-validators [options]   List all active validators
+   quarantined-validators        List all quarantined validators
+   banned-validators             List all banned validators
 
-DELEGATOR COMMANDS:
-   delegator-join      Join as a delegator by staking with a validator
-   delegator-exit      Exit as a delegator by withdrawing shares
-   delegator-claim     Claim delegator withdrawals after unbonding period
-   stake-info          Get stake info for a delegator with a validator
-
-INFO COMMANDS:
-   epoch-info              Get current epoch and staking parameters
-   active-validators       List all active validators
-   quarantined-validators  List all quarantined validators
-   banned-validators       List all banned validators
+COMMON OPTIONS (all commands):
+   --network <network>           Network to use (localnet, testnet-bradbury, testnet-asimov)
+   --rpc <rpcUrl>                RPC URL override
+   --staking-address <address>   Staking contract address override
 
 OPTIONS (validator-join):
-   --amount <amount>          Stake amount (e.g., "42000gen")
-   --operator <address>       Optional operator address for the validator
-   --staking-address <addr>   Override staking contract address
+   --amount <amount>             Amount to stake (in wei or with 'gen' suffix)
+   --operator <address>          Operator address (defaults to signer)
 
 OPTIONS (delegator-join):
-   --validator <address>      Validator address to delegate to (required)
-   --amount <amount>          Amount to stake (e.g., "100gen")
-   --staking-address <addr>   Override staking contract address
+   --validator <address>         Validator address to delegate to
+   --amount <amount>             Amount to stake (in wei or with 'gen' suffix)
 
-OPTIONS (validator-exit/validator-claim):
-   --validator <address>      Validator wallet address (required)
-   --shares <shares>          Number of shares to withdraw (exit only)
-
-OPTIONS (delegator-exit/delegator-claim):
-   --validator <address>      Validator address (required)
-   --shares <shares>          Number of shares to withdraw (exit only)
-   --staking-address <addr>   Override staking contract address
-
-OPTIONS (set-identity):
-   --validator <address>      Validator address (required)
-   --moniker <name>           Display name (required)
-   --website <url>            Website URL
-   --description <text>       Description
-   --twitter <handle>         Twitter handle
-   --telegram <handle>        Telegram handle
-   --github <handle>          GitHub handle
-   --email <email>            Contact email
-   --logo-uri <uri>           Logo image URL
+OPTIONS (exit commands):
+   --shares <shares>             Number of shares to withdraw
+   --validator <address>         Validator address (for delegator commands)
 
 EXAMPLES:
-   # Join as validator with 42000 GEN stake
+   # Get epoch info (uses --network to specify testnet-bradbury)
+   genlayer staking epoch-info --network testnet-bradbury
+
+   # Or set network globally first
+   genlayer network set testnet-bradbury
+
+   # Join as validator with 42000 GEN
    genlayer staking validator-join --amount 42000gen
 
-   # Join with separate operator address (recommended for security)
-   genlayer staking validator-join --amount 42000gen --operator 0xOperator...
+   # Join as delegator with 42 GEN
+   genlayer staking delegator-join --validator 0x... --amount 42gen
 
-   # Set validator identity
-   genlayer staking set-identity --validator 0x... --moniker "My Validator" --website "https://example.com"
-
-   # Add more stake to validator
-   genlayer staking validator-deposit --validator 0xValidatorWallet... --amount 1000gen
-
-   # Check epoch info (includes inflation data)
-   genlayer staking epoch-info
-
-   # Get validator info
+   # Check validator info
    genlayer staking validator-info --validator 0x...
+   # Output:
+   # {
+   #   validator: '0xa8f1BF1e5e709593b4468d7ac5DC315Ea3CAe130',
+   #   vStake: '0.01 GEN',
+   #   vShares: '10000000000000000',
+   #   dStake: '0 GEN',
+   #   dShares: '0',
+   #   vDeposit: '0 GEN',
+   #   vWithdrawal: '0 GEN',
+   #   epoch: '0',
+   #   live: true,
+   #   banned: 'Not banned'
+   # }
 
-   # Delegate to a validator
-   genlayer staking delegator-join --validator 0x... --amount 100gen
+   # Get current epoch info (shows current + previous epoch)
+   genlayer staking epoch-info
+   # Output:
+   # ✔ Epoch info
+   #
+   #   Current Epoch: 5 (started 9h 30m ago)
+   #   Next Epoch:    in 14h 30m
+   #   Validators:    33
+   #   ...
+   #
+   #   Previous Epoch: 4 (finalized)
+   #   Inflation:      1732904.66 GEN
+   #   Claimed:        0 GEN
+   #   Unclaimed:      1732904.66 GEN
+   #   ...
 
-   # Check stake info (includes projected rewards)
-   genlayer staking stake-info --validator 0x...
-
-   # Validator exit and claim (requires validator wallet address)
-   genlayer staking validator-exit --validator 0xValidatorWallet... --shares 100
-   genlayer staking validator-claim --validator 0xValidatorWallet...
-
-   # Delegator exit and claim (7 epoch unbonding period)
-   genlayer staking delegator-exit --validator 0x... --shares 50
-   genlayer staking delegator-claim --validator 0x...
+   # Query specific epoch data
+   genlayer staking epoch-info --epoch 4
 
    # List active validators
    genlayer staking active-validators
+   # Output:
+   # {
+   #   count: 6,
+   #   validators: [
+   #     '0xa8f1BF1e5e709593b4468d7ac5DC315Ea3CAe130',
+   #     '0xe9246A020cbb4fC6C46e60677981879c9219e8B9',
+   #     ...
+   #   ]
+   # }
+
+   # Show validator set table with stake, status, weight
+   genlayer staking validators
+   genlayer staking validators --all  # Include banned validators
+
+   # Show validator slash/reward history (testnet only, default: last 10 epochs)
+   genlayer staking validator-history 0x...
+   genlayer staking validator-history 0x... --epochs 5   # Last 5 epochs
+   genlayer staking validator-history 0x... --from-epoch 3  # From epoch 3
+   genlayer staking validator-history 0x... --all  # Complete history (slow)
+   genlayer staking validator-history 0x... --limit 20
+   # Output:
+   # ┌─────────────┬───────┬────────┬────────┬────────────────────────────────────┐
+   # │ Time        │ Epoch │ Type   │ Details│ GL TxId / Block                    │
+   # ├─────────────┼───────┼────────┼────────┼────────────────────────────────────┤
+   # │ 12-11 14:20 │ 5     │ REWARD │ Val: …│ block 4725136                      │
+   # │ 12-10 18:39 │ 4     │ SLASH  │ 1.00% │ 0x52db90a9...                       │
+   # └─────────────┴───────┴────────┴────────┴────────────────────────────────────┘
+
+   # Exit and claim (requires validator wallet address)
+   genlayer staking validator-exit --validator 0x... --shares 100
+   genlayer staking validator-claim --validator 0x...
+
+   # Prime a validator for next epoch
+   genlayer staking validator-prime 0x...
+
+   # Prime all validators that need priming (anyone can call)
+   genlayer staking prime-all
 ```
+
+### Running the CLI from the repository
+
+First, install the dependencies and start the build process
+
+```bash
+npm install
+npm run dev
+```
+
+This will continuously rebuild the CLI from the source
+
+Then in another window execute the CLI commands like so:
+
+```bash
+node dist/index.js init
+```
+
+## Guides
+
+- [Validator Guide](docs/validator-guide.md) - How to become a validator on GenLayer testnet
+- [Delegator Guide](docs/delegator-guide.md) - How to delegate GEN to a validator
+
+## Documentation
+
+For detailed information on how to use GenLayer CLI, please refer to our [documentation](https://docs.genlayer.com/).
+
+## Contributing
+
+We welcome contributions to GenLayerJS SDK! Whether it's new features, improved infrastructure, or better documentation, your input is valuable. Please read our [CONTRIBUTING](https://github.com/yeagerai/genlayer-js/blob/main/CONTRIBUTING.md) guide for guidelines on how to submit your contributions.
+
+## License
+
+This project is licensed under the ... License - see the [LICENSE](LICENSE) file for details.
+
