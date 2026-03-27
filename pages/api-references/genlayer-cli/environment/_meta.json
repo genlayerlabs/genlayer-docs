@@ -1,0 +1,7 @@
+{
+  "init": "init",
+  "up": "up",
+  "stop": "stop",
+  "new": "new",
+  "update": "update"
+}

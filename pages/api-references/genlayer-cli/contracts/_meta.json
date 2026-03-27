@@ -1,0 +1,7 @@
+{
+  "deploy": "deploy",
+  "call": "call",
+  "write": "write",
+  "schema": "schema",
+  "code": "code"
+}
