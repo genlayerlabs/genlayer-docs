@@ -1,1 +1,5 @@
-{}
+{
+  "contracts": "Contracts",
+  "transactions": "Transactions",
+  "staking": "Staking"
+}
