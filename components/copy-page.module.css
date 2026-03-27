@@ -127,6 +127,55 @@
   margin-top: 2px;
 }
 
+.dropdownDivider {
+  height: 1px;
+  background-color: #e5e7eb;
+  margin: 4px 0;
+}
+
+/* Dark mode */
+:global(.dark) .mainButton {
+  color: #d1d5db;
+  background-color: #1f2937;
+  border-color: #374151;
+}
+
+:global(.dark) .mainButton:hover {
+  background-color: #374151;
+}
+
+:global(.dark) .arrowButton {
+  color: #d1d5db;
+  background-color: #1f2937;
+  border-color: #374151;
+}
+
+:global(.dark) .arrowButton:hover {
+  background-color: #374151;
+}
+
+:global(.dark) .dropdown {
+  background-color: #1f2937;
+  border-color: #374151;
+  box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.3);
+}
+
+:global(.dark) .dropdownButton {
+  color: #d1d5db;
+}
+
+:global(.dark) .dropdownButton:hover {
+  background-color: #374151;
+}
+
+:global(.dark) .dropdownDescription {
+  color: #9ca3af;
+}
+
+:global(.dark) .dropdownDivider {
+  background-color: #374151;
+}
+
 @media (max-width: 640px) {
   .container {
     display: none;

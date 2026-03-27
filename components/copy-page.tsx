@@ -146,6 +146,21 @@ const CopyPage: React.FC = () => {
                 <span className={styles.dropdownDescription}>Ask questions about this page</span>
               </div>
             </button>
+
+            <div className={styles.dropdownDivider} />
+
+            <a
+              href="/full-documentation.txt"
+              download="genlayer-docs.txt"
+              className={styles.dropdownButton}
+              onClick={() => setIsOpen(false)}
+            >
+              <DocumentIcon className={styles.dropdownIcon} />
+              <div className={styles.dropdownText}>
+                <span className={styles.dropdownTitle}>Download full docs</span>
+                <span className={styles.dropdownDescription}>All documentation in one file (for LLMs)</span>
+              </div>
+            </a>
           </div>
         </div>
       )}
