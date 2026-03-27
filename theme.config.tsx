@@ -21,6 +21,7 @@ const config: DocsThemeConfig = {
   head: (
     <>
       <meta name="description" content="GenLayer the intelligence layer of the Internet" />
+      <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
     </>
   ),
   navbar: {
