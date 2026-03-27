@@ -12,14 +12,11 @@ Import an account from a private key or keystore file
 
 | Short | Long | Description | Required | Default |
 | --- | --- | --- | :---: | --- |
-|  |  | --name &lt;name&gt;                 Name for the account | No |  |
-|  |  | --private-key &lt;key&gt;           Private key to import | No |  |
-|  |  | --keystore &lt;path&gt;             Path to keystore file to import (geth, foundry, | No |  |
-|  |  | etc.) | No |  |
-|  |  | --password &lt;password&gt;         Password for the new keystore (skips | No |  |
-|  |  | confirmation prompt) | No |  |
-|  |  | --source-password &lt;password&gt;  Password to decrypt source keystore (with | No |  |
-|  |  | --keystore) | No |  |
-|  | --overwrite | Overwrite existing account (default: false) | No |  |
+|  | --name &lt;name&gt; | Name for the account | No |  |
+|  | --private-key &lt;key&gt; | Private key to import | No |  |
+|  | --keystore &lt;path&gt; | Path to keystore file to import (geth, foundry, etc.) | No |  |
+|  | --password &lt;password&gt; | Password for the new keystore (skips confirmation prompt) | No |  |
+|  | --source-password &lt;password&gt; | Password to decrypt source keystore (with --keystore) | No |  |
+|  | --overwrite | Overwrite existing account | No | `false` |
 |  | --no-set-active | Do not set as active account | No |  |
 | -h | --help | display help for command | No |  |

@@ -16,15 +16,14 @@ Show slash and reward history for a validator (default: last 10 epochs)
 
 | Short | Long | Description | Required | Default |
 | --- | --- | --- | :---: | --- |
-|  |  | --validator &lt;address&gt;        Validator address (deprecated, use positional | No |  |
-|  |  | arg) | No |  |
-|  |  | --epochs &lt;count&gt;             Number of recent epochs to fetch (default: 10) | No |  |
-|  |  | --from-epoch &lt;epoch&gt;         Start from this epoch number | No |  |
-|  |  | --from-block &lt;block&gt;         Start from this block number (advanced) | No |  |
+|  | --validator &lt;address&gt; | Validator address (deprecated, use positional arg) | No |  |
+|  | --epochs &lt;count&gt; | Number of recent epochs to fetch | No | `10` |
+|  | --from-epoch &lt;epoch&gt; | Start from this epoch number | No |  |
+|  | --from-block &lt;block&gt; | Start from this block number (advanced) | No |  |
 |  | --all | Fetch complete history from genesis (slow) | No |  |
-|  |  | --limit &lt;count&gt;              Maximum number of events to show (default: 50) | No |  |
-|  |  | --account &lt;name&gt;             Account to use (for default validator address) | No |  |
-|  |  | --network &lt;network&gt;          Network to use (localnet, testnet-asimov) | No |  |
-|  |  | --rpc &lt;rpcUrl&gt;               RPC URL for the network | No |  |
-|  |  | --staking-address &lt;address&gt;  Staking contract address (overrides chain config) | No |  |
+|  | --limit &lt;count&gt; | Maximum number of events to show | No | `50` |
+|  | --account &lt;name&gt; | Account to use (for default validator address) | No |  |
+|  | --network &lt;network&gt; | Network to use (localnet, testnet-asimov) | No |  |
+|  | --rpc &lt;rpcUrl&gt; | RPC URL for the network | No |  |
+|  | --staking-address &lt;address&gt; | Staking contract address (overrides chain config) | No |  |
 | -h | --help | display help for command | No |  |
