@@ -1,6 +1,6 @@
 # GenLayerJS SDK API Reference
 
-Version: 0.26.4
+Version: 0.26.5
 
 ## Contracts
 
