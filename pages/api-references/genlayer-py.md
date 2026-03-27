@@ -1,8 +1,5 @@
 # GenLayerPY
 
-[![License: MIT](https://img.shields.io/badge/License-MIT-green.svg)](https://opensource.org/license/mit/)
-[![Discord](https://img.shields.io/badge/Discord-Join%20Us-7289da?logo=discord&logoColor=white)](https://discord.gg/qjCU4AWnKE)
-[![Twitter](https://img.shields.io/twitter/url/https/twitter.com/genlayerlabs.svg?style=social&label=Follow%20%40GenLayer)](https://x.com/GenLayer)
 
 
 ## About
@@ -16,7 +13,7 @@ Before installing GenLayerPY SDK, ensure you have the following prerequisites in
 - Python (>=3.12)
 
 
-## 🛠️ Installation and Usage
+## ️ Installation and Usage
 
 To install the GenLayerPY SDK, use the following command:
 ```bash
@@ -170,7 +167,7 @@ print(trace["stderr"])        # standard error output
 print(trace["genvm_log"])     # detailed GenVM execution logs
 ```
 
-## 🚀 Key Features
+## Key Features
 
 * **Client Creation**: Easily create and configure a client to connect to GenLayer’s network.
 * **Transaction Handling**: Send and manage transactions on the GenLayer network.
@@ -179,7 +176,7 @@ print(trace["genvm_log"])     # detailed GenVM execution logs
 _* under development_
 
 
-## 📖 Documentation
+## Documentation
 
 For detailed information on how to use GenLayerPY SDK, please refer to our [documentation](https://docs.genlayer.com/api-references/genlayer-py).
 
