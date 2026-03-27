@@ -1,337 +1,193 @@
-# GenLayerPY SDK API Reference
+# GenLayerPY
 
-Auto-generated from source docstrings.
+[![License: MIT](https://img.shields.io/badge/License-MIT-green.svg)](https://opensource.org/license/mit/)
+[![Discord](https://img.shields.io/badge/Discord-Join%20Us-7289da?logo=discord&logoColor=white)](https://discord.gg/qjCU4AWnKE)
+[![Twitter](https://img.shields.io/twitter/url/https/twitter.com/genlayerlabs.svg?style=social&label=Follow%20%40GenLayer)](https://x.com/GenLayer)
 
-## Client Methods
 
-Client for interacting with the GenLayer network.
+## About
 
-Provides methods for deploying and calling intelligent contracts,
-managing transactions, and staking operations.
+GenLayerPY SDK is a python library designed for developers building decentralized applications (Dapps) on the GenLayer protocol. This SDK provides a comprehensive set of tools to interact with the GenLayer network, including client creation, transaction handling, event subscriptions, and more, all while leveraging the power of web3.py as the underlying blockchain client.
 
-### fund_account
+## Prerequisites
 
-Funds an account with test tokens. Localnet only.
+Before installing GenLayerPY SDK, ensure you have the following prerequisites installed:
 
-```python
-client.fund_account(address: Union, amount: int)
+- Python (>=3.12)
+
+
+## 🛠️ Installation and Usage
+
+To install the GenLayerPY SDK, use the following command:
+```bash
+$ pip install genlayer-py
 ```
 
-**Parameters:**
+Here’s how to initialize the client and connect to the GenLayer Simulator:
 
-- **address** (`Union`) — required
-- **amount** (`int`) — required
-
-**Returns:** `HexBytes`
-
----
-
-### get_current_nonce
-
-Returns the current nonce (transaction count) for an account.
-
+### Reading a Transaction
 ```python
-client.get_current_nonce(address: Union = None, block_identifier: Union = None)
+from genlayer_py import create_client
+from genlayer_py.chains import localnet
+
+client = create_client(
+    chain=localnet,
+)
+
+transaction_hash = "0x..."
+
+transaction = client.get_transaction(hash=transaction_hash)
+
 ```
 
-**Parameters:**
-
-- **address** (`Union`) — optional = None
-- **block_identifier** (`Union`) — optional = None
-
-**Returns:** `Nonce`
-
----
-
-### initialize_consensus_smart_contract
-
-Initializes the consensus contract configuration from the network.
-
+### Waiting for Transaction Receipt
 ```python
-client.initialize_consensus_smart_contract(force_reset: bool = False)
+from genlayer_py import create_client
+from genlayer_py.chains import localnet
+from genlayer_py.types import TransactionStatus
+
+client = create_client(chain=localnet)
+
+# Get simplified receipt (default - removes binary data, keeps execution results)
+receipt = client.wait_for_transaction_receipt(
+    transaction_hash="0x...",
+    status=TransactionStatus.FINALIZED,
+    full_transaction=False  # Default - simplified for readability
+)
+
+# Get complete receipt with all fields
+full_receipt = client.wait_for_transaction_receipt(
+    transaction_hash="0x...",
+    status=TransactionStatus.FINALIZED,
+    full_transaction=True  # Complete receipt with all internal data
+)
 ```
 
-**Parameters:**
-
-- **force_reset** (`bool`) — optional = False
-
-**Returns:** `None`
-
----
-
-### read_contract
-
-Executes a read-only contract call without modifying state.
-
+### Reading a contract
 ```python
-client.read_contract(address: Union, function_name: str, args: Optional = None, kwargs: Optional = None, account: Optional = None, raw_return: bool = False, transaction_hash_variant: TransactionHashVariant = <TransactionHashVariant.LATEST_NONFINAL: 'latest-nonfinal'>, sim_config: Optional = None)
+from genlayer_py import create_client
+from genlayer_py.chains import localnet
+
+client = create_client(
+    chain=localnet,
+)
+
+result = client.read_contract(
+    address=contract_address,
+    function_name='get_complete_storage',
+    args=[],
+    state_status='accepted'
+)
 ```
 
-**Parameters:**
-
-- **address** (`Union`) — required
-- **function_name** (`str`) — required
-- **args** (`Optional`) — optional = None
-- **kwargs** (`Optional`) — optional = None
-- **account** (`Optional`) — optional = None
-- **raw_return** (`bool`) — optional = False
-- **transaction_hash_variant** (`TransactionHashVariant`) — optional = <TransactionHashVariant.LATEST_NONFINAL: 'latest-nonfinal'>
-- **sim_config** (`Optional`) — optional = None
-
----
-
-### write_contract
-
-Executes a state-modifying function on a contract through consensus. Returns the transaction hash.
-
+### Writing a transaction
 ```python
-client.write_contract(address: Union, function_name: str, account: Optional = None, consensus_max_rotations: Optional = None, value: int = 0, leader_only: bool = False, args: Optional = None, kwargs: Optional = None, sim_config: Optional = None)
+from genlayer_py.chains import localnet
+from genlayer_py import create_client, create_account
+
+client = create_client(
+    chain=localnet,
+)
+
+account = create_account()
+
+transaction_hash = client.write_contract(
+    account=account,
+    transaction=transaction,
+    address=contract_address,
+    function_name='account',
+    args=['new_storage'],
+    value=0, // value is optional, if you want to send some native token to the contract
+)
+receipt = client.wait_for_transaction_receipt(
+    hash=transaction_hash,
+    status=TransactionStatus.FINALIZED, // or ACCEPTED
+    full_transaction=False  // False by default - returns simplified receipt for better readability
+)
 ```
 
-**Parameters:**
+### Checking execution results
 
-- **address** (`Union`) — required
-- **function_name** (`str`) — required
-- **account** (`Optional`) — optional = None
-- **consensus_max_rotations** (`Optional`) — optional = None
-- **value** (`int`) — optional = 0
-- **leader_only** (`bool`) — optional = False
-- **args** (`Optional`) — optional = None
-- **kwargs** (`Optional`) — optional = None
-- **sim_config** (`Optional`) — optional = None
-
----
-
-### simulate_write_contract
-
-Simulates a state-modifying contract call without executing on-chain. Localnet only.
+A transaction can be finalized by consensus but still have a failed execution. Always check `tx_execution_result` before reading contract state:
 
 ```python
-client.simulate_write_contract(address: Union, function_name: str, account: Optional = None, args: Optional = None, kwargs: Optional = None, sim_config: Optional = None, transaction_hash_variant: TransactionHashVariant = <TransactionHashVariant.LATEST_NONFINAL: 'latest-nonfinal'>)
+from genlayer_py import create_client, create_account
+from genlayer_py.chains import testnet_bradbury
+from genlayer_py.types import TransactionStatus, ExecutionResult
+
+client = create_client(chain=testnet_bradbury, account=create_account())
+
+receipt = client.wait_for_transaction_receipt(
+    transaction_hash=tx_hash,
+    status=TransactionStatus.FINALIZED,
+)
+
+if receipt.get("tx_execution_result_name") == ExecutionResult.FINISHED_WITH_RETURN.value:
+    # Execution succeeded — safe to read state
+    result = client.read_contract(
+        address=contract_address,
+        function_name="get_storage",
+        args=[],
+    )
+elif receipt.get("tx_execution_result_name") == ExecutionResult.FINISHED_WITH_ERROR.value:
+    # Execution failed — contract state was not modified
+    raise RuntimeError("Contract execution failed")
+else:
+    # NOT_VOTED — execution hasn't completed
+    print("Execution result not yet available")
 ```
 
-**Parameters:**
+### Fetching emitted messages and triggered transactions
 
-- **address** (`Union`) — required
-- **function_name** (`str`) — required
-- **account** (`Optional`) — optional = None
-- **args** (`Optional`) — optional = None
-- **kwargs** (`Optional`) — optional = None
-- **sim_config** (`Optional`) — optional = None
-- **transaction_hash_variant** (`TransactionHashVariant`) — optional = <TransactionHashVariant.LATEST_NONFINAL: 'latest-nonfinal'>
-
----
-
-### deploy_contract
-
-Deploys a new intelligent contract to GenLayer. Returns the transaction hash.
+Transactions can emit messages to other contracts. These messages create new child transactions when processed:
 
 ```python
-client.deploy_contract(code: Union, account: Optional = None, args: Optional = None, kwargs: Optional = None, consensus_max_rotations: Optional = None, leader_only: bool = False, sim_config: Optional = None)
+tx = client.get_transaction(transaction_hash=tx_hash)
+
+# Messages emitted by the contract during execution
+print(tx["messages"])
+# [{"messageType": 1, "recipient": "0x...", "value": 0, "data": "0x...", "onAcceptance": True, "saltNonce": 0}, ...]
+
+# Child transaction IDs created from those messages (separate call)
+child_tx_ids = client.get_triggered_transaction_ids(transaction_hash=tx_hash)
+print(child_tx_ids)
+# ["0xabc...", "0xdef..."]
 ```
 
-**Parameters:**
+### Debugging transaction execution
 
-- **code** (`Union`) — required
-- **account** (`Optional`) — optional = None
-- **args** (`Optional`) — optional = None
-- **kwargs** (`Optional`) — optional = None
-- **consensus_max_rotations** (`Optional`) — optional = None
-- **leader_only** (`bool`) — optional = False
-- **sim_config** (`Optional`) — optional = None
-
----
-
-### get_contract_schema
-
-Gets the schema (methods and constructor) of a deployed contract. Localnet only.
+Use `debug_trace_transaction` to inspect the full execution trace of a transaction, including return data, errors, and GenVM logs:
 
 ```python
-client.get_contract_schema(address: Union)
+trace = client.debug_trace_transaction(
+    transaction_hash=tx_hash,
+    round=0,  # optional, defaults to 0
+)
+
+print(trace["result_code"])   # 0=success, 1=user error, 2=VM error
+print(trace["return_data"])   # hex-encoded contract return data
+print(trace["stderr"])        # standard error output
+print(trace["genvm_log"])     # detailed GenVM execution logs
 ```
 
-**Parameters:**
+## 🚀 Key Features
 
-- **address** (`Union`) — required
+* **Client Creation**: Easily create and configure a client to connect to GenLayer’s network.
+* **Transaction Handling**: Send and manage transactions on the GenLayer network.
+* **Gas Estimation**: Estimate gas fees for executing transactions on GenLayer.
 
-**Returns:** `ContractSchema`
+_* under development_
 
----
 
-### get_contract_schema_for_code
+## 📖 Documentation
 
-Generates a schema for contract code without deploying it. Localnet only.
+For detailed information on how to use GenLayerPY SDK, please refer to our [documentation](https://docs.genlayer.com/api-references/genlayer-py).
 
-```python
-client.get_contract_schema_for_code(contract_code: AnyStr)
-```
 
-**Parameters:**
+## Contributing
 
-- **contract_code** (`AnyStr`) — required
+We welcome contributions to GenLayerPY SDK! Whether it's new features, improved infrastructure, or better documentation, your input is valuable. Please read our [CONTRIBUTING](https://github.com/genlayerlabs/genlayer-py/blob/main/CONTRIBUTING.md) guide for guidelines on how to submit your contributions.
 
-**Returns:** `ContractSchema`
+## License
 
----
-
-### appeal_transaction
-
-Appeals a consensus transaction to trigger a new round of validation.
-
-```python
-client.appeal_transaction(transaction_id: HexStr, account: Optional = None, value: int = 0)
-```
-
-**Parameters:**
-
-- **transaction_id** (`HexStr`) — required
-- **account** (`Optional`) — optional = None
-- **value** (`int`) — optional = 0
-
----
-
-### wait_for_transaction_receipt
-
-Polls until a transaction reaches the specified status. Returns the transaction receipt.
-
-```python
-client.wait_for_transaction_receipt(transaction_hash: Union, status: TransactionStatus = <TransactionStatus.ACCEPTED: 'ACCEPTED'>, interval: int = 3000, retries: int = 10, full_transaction: bool = False)
-```
-
-**Parameters:**
-
-- **transaction_hash** (`Union`) — required
-- **status** (`TransactionStatus`) — optional = <TransactionStatus.ACCEPTED: 'ACCEPTED'>
-- **interval** (`int`) — optional = 3000
-- **retries** (`int`) — optional = 10
-- **full_transaction** (`bool`) — optional = False
-
-**Returns:** `GenLayerTransaction`
-
----
-
-### get_transaction
-
-Fetches transaction data including status, execution result, and consensus details.
-
-```python
-client.get_transaction(transaction_hash: Union)
-```
-
-**Parameters:**
-
-- **transaction_hash** (`Union`) — required
-
-**Returns:** `GenLayerTransaction`
-
----
-
-### get_triggered_transaction_ids
-
-Returns transaction IDs of child transactions created from emitted messages.
-
-```python
-client.get_triggered_transaction_ids(transaction_hash: Union)
-```
-
-**Parameters:**
-
-- **transaction_hash** (`Union`) — required
-
-**Returns:** `list`
-
----
-
-### debug_trace_transaction
-
-Fetches the full execution trace including return data, stdout, stderr, and GenVM logs.
-
-```python
-client.debug_trace_transaction(transaction_hash: Union, round: int = 0)
-```
-
-**Parameters:**
-
-- **transaction_hash** (`Union`) — required
-- **round** (`int`) — optional = 0
-
-**Returns:** `dict`
-
----
-
-## Types and Enums
-
-### TransactionStatus
-
-Status of a GenLayer transaction in the consensus lifecycle.
-
-```python
-TransactionStatus.UNINITIALIZED = "UNINITIALIZED"
-TransactionStatus.PENDING = "PENDING"
-TransactionStatus.PROPOSING = "PROPOSING"
-TransactionStatus.COMMITTING = "COMMITTING"
-TransactionStatus.REVEALING = "REVEALING"
-TransactionStatus.ACCEPTED = "ACCEPTED"
-TransactionStatus.UNDETERMINED = "UNDETERMINED"
-TransactionStatus.FINALIZED = "FINALIZED"
-TransactionStatus.CANCELED = "CANCELED"
-TransactionStatus.APPEAL_REVEALING = "APPEAL_REVEALING"
-TransactionStatus.APPEAL_COMMITTING = "APPEAL_COMMITTING"
-TransactionStatus.READY_TO_FINALIZE = "READY_TO_FINALIZE"
-TransactionStatus.VALIDATORS_TIMEOUT = "VALIDATORS_TIMEOUT"
-TransactionStatus.LEADER_TIMEOUT = "LEADER_TIMEOUT"
-```
-
----
-
-### TransactionResult
-
-Consensus voting result across validators.
-
-```python
-TransactionResult.IDLE = "IDLE"
-TransactionResult.AGREE = "AGREE"
-TransactionResult.DISAGREE = "DISAGREE"
-TransactionResult.TIMEOUT = "TIMEOUT"
-TransactionResult.DETERMINISTIC_VIOLATION = "DETERMINISTIC_VIOLATION"
-TransactionResult.NO_MAJORITY = "NO_MAJORITY"
-TransactionResult.MAJORITY_AGREE = "MAJORITY_AGREE"
-TransactionResult.MAJORITY_DISAGREE = "MAJORITY_DISAGREE"
-```
-
----
-
-### ExecutionResult
-
-Result of contract execution by the GenVM.
-
-```python
-ExecutionResult.NOT_VOTED = "NOT_VOTED"
-ExecutionResult.FINISHED_WITH_RETURN = "FINISHED_WITH_RETURN"
-ExecutionResult.FINISHED_WITH_ERROR = "FINISHED_WITH_ERROR"
-```
-
----
-
-### VoteType
-
-str(object='') -> str
-str(bytes_or_buffer[, encoding[, errors]]) -> str
-
-Create a new string object from the given object. If encoding or
-errors is specified, then the object must expose a data buffer
-that will be decoded using the given encoding and error handler.
-Otherwise, returns the result of object.__str__() (if defined)
-or repr(object).
-encoding defaults to 'utf-8'.
-errors defaults to 'strict'.
-
-```python
-VoteType.NOT_VOTED = "NOT_VOTED"
-VoteType.AGREE = "AGREE"
-VoteType.DISAGREE = "DISAGREE"
-VoteType.TIMEOUT = "TIMEOUT"
-VoteType.DETERMINISTIC_VIOLATION = "DETERMINISTIC_VIOLATION"
-```
-
----
+This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
