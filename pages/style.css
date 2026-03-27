@@ -43,3 +43,10 @@ img {
 .dark .nx-text-primary-600, .dark .nx-text-primary-800 {
     color: #BCA2FF !important;
 }
+
+/* Prevent long method names from wrapping in sidebar */
+nav.nextra-sidebar-container a span,
+aside a span {
+    font-size: 0.8rem;
+    word-break: break-all;
+}

@@ -1,0 +1,87 @@
+# gen_dbg_traceTransaction
+
+Retrieves the full execution trace for a transaction, including the return data, stdout/stderr, GenVM logs, and the exact error if execution failed.
+
+**Method:** `gen_dbg_traceTransaction`
+
+## Parameters
+
+- `request` (object, required):
+  - `txID` (string, required): Transaction ID (hex-encoded with `0x` prefix)
+  - `round` (integer, optional): Consensus round number (default: 0)
+
+## Response
+
+```json
+\{
+  "transaction_id": "0x...",
+  "result_code": 0,
+  "return_data": "0x...",
+  "stdout": "",
+  "stderr": "",
+  "genvm_log": [],
+  "storage_proof": "0x...",
+  "run_time": "0s",
+  "eq_outputs": []
+\}
+```
+
+### Response Fields
+
+| Field | Type | Description |
+|-------|------|-------------|
+| `transaction_id` | string | Transaction hash |
+| `result_code` | number | 0=success, 1=user error, 2=VM error |
+| `return_data` | string | Hex-encoded contract return data |
+| `stdout` | string | Standard output captured during execution |
+| `stderr` | string | Standard error captured during execution |
+| `genvm_log` | array | Detailed GenVM execution log entries |
+| `storage_proof` | string | Hex-encoded storage proof hash |
+| `run_time` | string | Execution duration |
+| `eq_outputs` | array | Hex-encoded equivalence principle outputs |
+
+## Example
+
+### Request
+
+```json
+\{
+  "jsonrpc": "2.0",
+  "method": "gen_dbg_traceTransaction",
+  "params": [\{"txID": "0x563f046c187d711127c51213ca62e2e4fee52009a98f0989a73a0a0382d21890", "round": 0\}],
+  "id": 1
+\}
+```
+
+### Response
+
+```json
+\{
+  "jsonrpc": "2.0",
+  "result": \{
+    "transaction_id": "0x563f046c187d711127c51213ca62e2e4fee52009a98f0989a73a0a0382d21890",
+    "result_code": 2,
+    "return_data": "0x2e0464617461b402696e76616c69645f636f6e7472616374...",
+    "stdout": "",
+    "stderr": "",
+    "genvm_log": [
+      \{
+        "file": "src/lib.rs:82",
+        "level": "error",
+        "message": "vm error",
+        "error": \{"causes": ["VMError(invalid_contract absent_runner_comment)"]\}
+      \}
+    ],
+    "storage_proof": "0x99ff0d9125e1fc9531a11262e15aeb2c60509a078c4cc4c64cefdfb06ff68647",
+    "run_time": "0s",
+    "eq_outputs": []
+  \},
+  "id": 1
+\}
+```
+
+## Notes
+
+- If the trace isn't stored locally (e.g., the node restarted or data was pruned), the endpoint will replay the transaction automatically.
+- This endpoint is in the `genlayer_debug` group and must be enabled in the node configuration.
+- Use `result_code` to determine execution outcome: 0 = contract returned successfully, 1 = contract raised a user error, 2 = GenVM encountered an error.
