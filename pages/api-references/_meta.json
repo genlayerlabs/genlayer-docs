@@ -4,6 +4,7 @@
   "genlayer-py": "GenLayerPY",
   "genlayer-test": "GenLayer Test",
   "genlayer-node": "GenLayer Node API",
+  "genlayer-linter": "GenVM Linter",
   "genlayer-sdk": {
     "title": "GenVM SDK ↗",
     "href": "https://sdk.genlayer.com/",
