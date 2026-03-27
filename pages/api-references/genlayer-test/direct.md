@@ -273,12 +273,12 @@ Returns:
     The bool returned by the validator function.
 
 ```python
-vm.run_validator(leader_result: Any = <object object at 0x7f98303fcad0>, leader_error: Optional[Exception] = None, index: int = -1)
+vm.run_validator(leader_result: Any = <object object at 0x7f26a8798ad0>, leader_error: Optional[Exception] = None, index: int = -1)
 ```
 
 **Parameters:**
 
-- **leader_result** (`Any`) — optional = <object object at 0x7f98303fcad0>
+- **leader_result** (`Any`) — optional = <object object at 0x7f26a8798ad0>
 - **leader_error** (`Optional[Exception]`) — optional = None
 - **index** (`int`) — optional = -1
 
