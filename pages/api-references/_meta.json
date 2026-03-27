@@ -5,7 +5,8 @@
   "genlayer-test": "GenLayer Test",
   "genlayer-node": "GenLayer Node API",
   "genlayer-sdk": {
-    "title": "GenLayer SDK",
-    "href": "https://sdk.genlayer.com/"
+    "title": "GenVM SDK ↗",
+    "href": "https://sdk.genlayer.com/",
+    "newWindow": true
   }
 }
