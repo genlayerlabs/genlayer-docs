@@ -1,0 +1,253 @@
+import { Callout, Steps, Tabs } from 'nextra/components'
+
+# Quick Start
+
+Deploy your first Intelligent Contract in about 10 minutes.
+
+---
+
+## Before you start: pick your path
+
+<Tabs items={['No Docker (fastest)', 'With Docker (full)']}>
+  <Tabs.Tab>
+    **GLSim** — a lightweight simulator that implements the GenLayer JSON-RPC protocol.
+    Starts in ~1 second, no Docker required. Ideal for getting started quickly.
+
+    You'll need: **Python 3.12+** and **Node.js 18+**
+  </Tabs.Tab>
+  <Tabs.Tab>
+    **GenLayer Studio (local)** — full GenVM execution with real validator consensus,
+    transaction inspection, and a visual UI. Use this before deploying to testnet.
+
+    You'll need: **Python 3.12+**, **Node.js 18+**, and **Docker 26+**
+  </Tabs.Tab>
+</Tabs>
+
+Both paths use the same contracts, the same CLI, and the same tests. You can switch at any time.
+
+---
+
+<Steps>
+
+### Set up your project
+
+Clone the official boilerplate — it includes a contract template, testing infrastructure, and a frontend scaffold.
+
+```bash
+git clone https://github.com/genlayerlabs/genlayer-project-boilerplate.git my-project
+cd my-project
+pip install -r requirements.txt
+```
+
+This installs two tools:
+- `genlayer-test` — testing framework (direct mode, GLSim, integration tests)
+- `genvm-linter` — static analysis that catches contract errors before you deploy
+
+Your project layout:
+
+```
+contracts/          # Your Intelligent Contracts
+tests/
+  direct/           # Fast in-memory tests — no server needed
+  integration/      # Full end-to-end tests against a GenLayer environment
+frontend/           # Next.js frontend with GenLayerJS pre-wired
+deploy/             # Deployment scripts
+gltest.config.yaml  # Network and account configuration
+```
+
+### Start your environment
+
+<Tabs items={['GLSim (no Docker)', 'GenLayer Studio (Docker)']}>
+  <Tabs.Tab>
+    ```bash
+    pip install genlayer-test[sim]
+    glsim --port 4000 --validators 5
+    ```
+
+    GLSim runs the Python runner natively — not inside GenVM — so there can be minor
+    incompatibilities. Always validate against Studio before deploying to testnet.
+  </Tabs.Tab>
+  <Tabs.Tab>
+    ```bash
+    npm install -g genlayer
+    genlayer init
+    genlayer up
+    ```
+
+    Once running, open [http://localhost:8080](http://localhost:8080) to access the Studio UI.
+    Your tests and frontend connect to the JSON-RPC API at `http://localhost:4000/api`.
+  </Tabs.Tab>
+</Tabs>
+
+### Write your first contract
+
+Create `contracts/hello.py`:
+
+```python
+# { "Depends": "py-genlayer:1jb45aa8ynh2a9c9xn3b7qqh8sm5q93hwfp7jqmwsfhh8jpz09h6" }
+
+from genlayer import *
+
+class Hello(gl.Contract):
+    name: str
+
+    def __init__(self, name: str):
+        self.name = name
+
+    @gl.public.view
+    def greet(self) -> str:
+        return f'Hello, {self.name}!'
+
+    @gl.public.write
+    def set_name(self, name: str):
+        self.name = name
+```
+
+A few things every contract needs:
+- **Line 1** — the version comment pins the GenVM version. Required.
+- **`gl.Contract`** — marks this class as an Intelligent Contract.
+- **`@gl.public.view`** — read-only method, no state change.
+- **`@gl.public.write`** — method that modifies on-chain state.
+- **Class-level type annotations** — persistent fields must be declared in the class body. Fields set via `self.field = value` outside the class body are not persisted.
+
+<Callout type="info">
+  The GenLayer Studio auto-detects constructor parameters from your contract code and generates a UI for them — no ABI configuration needed.
+</Callout>
+
+### Lint and test
+
+Catch issues before deploying:
+
+```bash
+# Static analysis — catches forbidden imports, invalid types, missing decorators
+genvm-lint check contracts/hello.py
+
+# Fast in-memory tests — no server, no Docker
+pytest tests/direct/ -v
+```
+
+A minimal direct-mode test looks like this:
+
+```python
+def test_greet(direct_vm, direct_deploy, direct_alice):
+    contract = direct_deploy("contracts/hello.py", args=["World"])
+
+    result = contract.greet()
+    assert result == "Hello, World!"
+
+    direct_vm.sender = direct_alice
+    contract.set_name("GenLayer")
+    assert contract.greet() == "Hello, GenLayer!"
+```
+
+Available fixtures: `direct_vm`, `direct_deploy`, `direct_alice`, `direct_bob`, `direct_charlie`, `direct_owner`.
+
+### Deploy and call
+
+<Tabs items={['Via Studio UI', 'Via CLI']}>
+  <Tabs.Tab>
+    1. Open [http://localhost:8080](http://localhost:8080) (or [studio.genlayer.com](https://studio.genlayer.com) for zero-setup)
+    2. Load `contracts/hello.py`
+    3. Click **Deploy** — Studio detects the `name` parameter and shows an input field
+    4. Call `greet` from the UI to see the output
+
+    You should see `Hello, World!` (or whatever name you passed). That's your first contract running. ✓
+  </Tabs.Tab>
+  <Tabs.Tab>
+    ```bash
+    npm install -g genlayer
+
+    # Deploy — pass constructor args as JSON
+    genlayer deploy contracts/hello.py --args '["World"]'
+    # → Contract deployed at 0xabc...
+
+    # Call a view method (instant, no transaction)
+    genlayer call 0xabc... greet
+    # → "Hello, World!"
+
+    # Call a write method (creates a transaction)
+    genlayer write 0xabc... set_name --args '["GenLayer"]'
+    genlayer call 0xabc... greet
+    # → "Hello, GenLayer!"
+    ```
+  </Tabs.Tab>
+</Tabs>
+
+### Make it intelligent
+
+Now add what no regular smart contract can do — access the web or call an LLM:
+
+```python
+# { "Depends": "py-genlayer:1jb45aa8ynh2a9c9xn3b7qqh8sm5q93hwfp7jqmwsfhh8jpz09h6" }
+
+from genlayer import *
+import json
+
+class PriceFeed(gl.Contract):
+    last_price: str
+
+    def __init__(self):
+        self.last_price = "unknown"
+
+    @gl.public.write
+    def update_price(self, ticker: str) -> None:
+        # Non-deterministic operations must run inside a function
+        # passed to gl.eq_principle.* — this is how GenLayer reaches
+        # consensus across validators that may get slightly different results.
+        def fetch() -> str:
+            data = gl.nondet.web.get(
+                f"https://api.coinbase.com/v2/prices/{ticker}-USD/spot"
+            )
+            parsed = json.loads(data)
+            return json.dumps({"price": parsed["data"]["amount"]}, sort_keys=True)
+
+        result = gl.eq_principle.strict_eq(fetch)
+        self.last_price = json.loads(result)["price"]
+
+    @gl.public.view
+    def get_price(self) -> str:
+        return self.last_price
+```
+
+<Callout type="warning">
+  Always use `json.dumps(..., sort_keys=True)` before returning from a `strict_eq` block.
+  Without it, validators may produce differently-ordered JSON and fail to reach consensus.
+</Callout>
+
+The key concept: `gl.eq_principle.strict_eq` tells GenLayer that all validators must
+return byte-identical results. Use this when output is constrained (JSON with fixed keys,
+booleans). For subjective outputs like summaries or classifications, use `prompt_comparative` instead.
+
+→ Deep dive: [Equivalence Principle](/developers/intelligent-contracts/equivalence-principle)
+
+</Steps>
+
+---
+
+## Zero-setup alternative
+
+Don't want to install anything yet? Open [studio.genlayer.com](https://studio.genlayer.com) and
+load any built-in example. You can write, deploy, and call contracts directly in the browser —
+no local setup needed. You can also import any deployed contract by address to interact with it.
+
+---
+
+## What's next?
+
+**Go deeper on Intelligent Contracts**
+- [Equivalence Principle](/developers/intelligent-contracts/equivalence-principle) — how validators reach consensus on non-deterministic outputs
+- [Calling LLMs](/developers/intelligent-contracts/features/calling-llms) — `exec_prompt`, response formats, and choosing the right eq principle
+- [Web Access](/developers/intelligent-contracts/features/web-access) — `web.get` vs `web.render`, modes, and when to use each
+- [Prompt & Data Techniques](/developers/intelligent-contracts/crafting-prompts) — prompt patterns that maximize validator agreement
+- [Best Practices & Common Patterns](/developers/intelligent-contracts/security-and-best-practices/best-practices) — access control, storage patterns, common mistakes, upgrade patterns
+
+**Write proper tests**
+- [Testing](/developers/intelligent-contracts/testing) — direct mode, mocking web/LLM calls, integration tests
+- [Debugging](/developers/intelligent-contracts/debugging) — reading validator execution logs, tracing failed transactions
+
+**Connect a frontend**
+- [DApp Development Workflow](/developers/decentralized-applications/dapp-development-workflow) — full-stack architecture overview
+- [GenLayerJS SDK](/developers/decentralized-applications/genlayer-js) — reading and writing contracts from JavaScript
+
+**Ship to testnet**
+- [Deploying](/developers/intelligent-contracts/deploying) — deployment methods, Testnet Bradbury, network configuration
