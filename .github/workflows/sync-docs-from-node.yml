@@ -222,7 +222,7 @@ jobs:
         uses: actions/checkout@v4
         
       - name: Download all sync artifacts
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@v8
         continue-on-error: true
         with:
           pattern: synced-*
@@ -289,7 +289,7 @@ jobs:
 
       - name: Download merged synced files
         if: needs.aggregate-results.result == 'success'
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@v8
         with:
           name: synced-merged
           path: temp-merged
@@ -354,7 +354,7 @@ jobs:
 
       - name: Download final documentation
         if: needs.generate-docs.result == 'success'
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@v8
         with:
           name: synced-final
           path: temp-final
@@ -488,7 +488,7 @@ jobs:
         uses: actions/checkout@v4
         
       - name: Download final artifact with sync reports
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@v8
         continue-on-error: true
         with:
           name: synced-final
