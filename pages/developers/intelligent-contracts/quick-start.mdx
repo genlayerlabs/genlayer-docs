@@ -6,7 +6,17 @@ Deploy your first Intelligent Contract in about 10 minutes.
 
 ---
 
-## Before you start: pick your path
+## Option A: Zero setup — try in the browser
+
+The fastest path to a running contract is [studio.genlayer.com](https://studio.genlayer.com) — open it, pick a built-in example, and click **Deploy**. No installation needed. You can also import any deployed contract by address to interact with it directly.
+
+When you're ready to build locally, continue with Option B below.
+
+---
+
+## Option B: Local development
+
+### Before you start: pick your environment
 
 <Tabs items={['No Docker (fastest)', 'With Docker (full)']}>
   <Tabs.Tab>
@@ -41,7 +51,7 @@ pip install -r requirements.txt
 
 This installs two tools:
 - `genlayer-test` — testing framework (direct mode, GLSim, integration tests)
-- `genvm-linter` — static analysis that catches contract errors before you deploy
+- `genvm-lint` (from the `genvm-linter` package) — static analysis that catches contract errors before you deploy
 
 Your project layout:
 
@@ -60,7 +70,7 @@ gltest.config.yaml  # Network and account configuration
 <Tabs items={['GLSim (no Docker)', 'GenLayer Studio (Docker)']}>
   <Tabs.Tab>
     ```bash
-    pip install genlayer-test[sim]
+    pip install 'genlayer-test[sim]'
     glsim --port 4000 --validators 5
     ```
 
@@ -175,7 +185,7 @@ Available fixtures: `direct_vm`, `direct_deploy`, `direct_alice`, `direct_bob`, 
 
 ### Make it intelligent
 
-Now add what no regular smart contract can do — access the web or call an LLM:
+Now add what no regular smart contract can do — call an LLM to make a decision on-chain:
 
 ```python
 # { "Depends": "py-genlayer:1jb45aa8ynh2a9c9xn3b7qqh8sm5q93hwfp7jqmwsfhh8jpz09h6" }
@@ -183,30 +193,32 @@ Now add what no regular smart contract can do — access the web or call an LLM:
 from genlayer import *
 import json
 
-class PriceFeed(gl.Contract):
-    last_price: str
+class SentimentChecker(gl.Contract):
+    last_result: str
 
     def __init__(self):
-        self.last_price = "unknown"
+        self.last_result = ""
 
     @gl.public.write
-    def update_price(self, ticker: str) -> None:
+    def analyze(self, text: str) -> None:
         # Non-deterministic operations must run inside a function
         # passed to gl.eq_principle.* — this is how GenLayer reaches
         # consensus across validators that may get slightly different results.
-        def fetch() -> str:
-            data = gl.nondet.web.get(
-                f"https://api.coinbase.com/v2/prices/{ticker}-USD/spot"
+        def run():
+            result = gl.nondet.exec_prompt(
+                f'Classify the sentiment of this text as POSITIVE, NEGATIVE, or NEUTRAL. '
+                f'Text: "{text}". '
+                f'Respond ONLY with valid JSON: {{"sentiment": "<POSITIVE|NEGATIVE|NEUTRAL>"}}',
+                response_format="json"
             )
-            parsed = json.loads(data)
-            return json.dumps({"price": parsed["data"]["amount"]}, sort_keys=True)
+            return json.dumps(result, sort_keys=True)
 
-        result = gl.eq_principle.strict_eq(fetch)
-        self.last_price = json.loads(result)["price"]
+        raw = gl.eq_principle.strict_eq(run)
+        self.last_result = json.loads(raw)["sentiment"]
 
     @gl.public.view
-    def get_price(self) -> str:
-        return self.last_price
+    def get_result(self) -> str:
+        return self.last_result
 ```
 
 <Callout type="warning">
@@ -214,21 +226,13 @@ class PriceFeed(gl.Contract):
   Without it, validators may produce differently-ordered JSON and fail to reach consensus.
 </Callout>
 
-The key concept: `gl.eq_principle.strict_eq` tells GenLayer that all validators must
-return byte-identical results. Use this when output is constrained (JSON with fixed keys,
-booleans). For subjective outputs like summaries or classifications, use `prompt_comparative` instead.
+The key concept: `gl.eq_principle.strict_eq` tells GenLayer that all validators must return byte-identical results. It works best when output is tightly constrained — like a fixed JSON schema with a small set of possible values.
+
+For web data access (like fetching live prices), validators may get slightly different values depending on timing. See the [Price Oracle example](/developers/intelligent-contracts/equivalence-principle) in the Equivalence Principle docs for the correct pattern.
 
 → Deep dive: [Equivalence Principle](/developers/intelligent-contracts/equivalence-principle)
 
 </Steps>
-
----
-
-## Zero-setup alternative
-
-Don't want to install anything yet? Open [studio.genlayer.com](https://studio.genlayer.com) and
-load any built-in example. You can write, deploy, and call contracts directly in the browser —
-no local setup needed. You can also import any deployed contract by address to interact with it.
 
 ---
 
@@ -239,7 +243,6 @@ no local setup needed. You can also import any deployed contract by address to i
 - [Calling LLMs](/developers/intelligent-contracts/features/calling-llms) — `exec_prompt`, response formats, and choosing the right eq principle
 - [Web Access](/developers/intelligent-contracts/features/web-access) — `web.get` vs `web.render`, modes, and when to use each
 - [Prompt & Data Techniques](/developers/intelligent-contracts/crafting-prompts) — prompt patterns that maximize validator agreement
-- [Best Practices & Common Patterns](/developers/intelligent-contracts/security-and-best-practices/best-practices) — access control, storage patterns, common mistakes, upgrade patterns
 
 **Write proper tests**
 - [Testing](/developers/intelligent-contracts/testing) — direct mode, mocking web/LLM calls, integration tests
