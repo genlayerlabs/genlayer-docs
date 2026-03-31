@@ -67,6 +67,18 @@ Cancels a pending transaction. Studio networks only.
 
 ---
 
+### getTransactionQueuePosition
+
+Returns the queue slot position of a transaction in the pending queue.
+
+| Parameter | Type | Required | Description |
+|-----------|------|----------|-------------|
+| hash | `TransactionHash` | yes |  |
+
+**Returns:** `number`
+
+---
+
 ### estimateTransactionGas
 
 Estimates gas required for a transaction.
