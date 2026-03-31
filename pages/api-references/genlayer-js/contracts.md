@@ -123,6 +123,51 @@ Calculates the minimum bond required to appeal a transaction.
 
 ---
 
+### getRoundNumber
+
+Returns the current consensus round number for a transaction.
+
+| Parameter | Type | Required | Description |
+|-----------|------|----------|-------------|
+| txId | ``0x${string}`` | yes |  |
+
+**Returns:** `bigint`
+
+---
+
+### getRoundData
+
+Returns detailed data for a specific consensus round.
+
+| Parameter | Type | Required | Description |
+|-----------|------|----------|-------------|
+| txId | ``0x${string}`` | yes |  |
+| round | `bigint` | yes |  |
+
+---
+
+### getLastRoundData
+
+Returns the current round number and its data for a transaction.
+
+| Parameter | Type | Required | Description |
+|-----------|------|----------|-------------|
+| txId | ``0x${string}`` | yes |  |
+
+---
+
+### canAppeal
+
+Checks if a transaction can be appealed.
+
+| Parameter | Type | Required | Description |
+|-----------|------|----------|-------------|
+| txId | ``0x${string}`` | yes |  |
+
+**Returns:** `boolean`
+
+---
+
 ### appealTransaction
 
 Appeals a consensus transaction to trigger a new round of validation.
