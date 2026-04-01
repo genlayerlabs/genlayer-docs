@@ -73,6 +73,20 @@ Local development with full control. Requires [GenLayer Studio](/developers/inte
 
 ---
 
+## GenLayer Chain (L2)
+
+The underlying zkSync Elastic Chain that GenLayer runs on. You typically don't need to interact with this directly — the GenLayer RPC passes through all `eth_*` calls. But if you need direct L2 access (e.g., token transfers, contract debugging at the EVM level), you can add this chain to your wallet.
+
+| | |
+|---|---|
+| **RPC** | `https://zksync-os-testnet-genlayer.zksync.dev` |
+| **Chain ID** | 4221 |
+| **Currency** | GEN |
+
+<AddToWallet chain={{chainId: "0x107d", chainName: "GenLayer Chain Testnet", rpcUrls: ["https://zksync-os-testnet-genlayer.zksync.dev"], nativeCurrency: {name: "GEN Token", symbol: "GEN", decimals: 18}}} />
+
+---
+
 ## Network Comparison
 
 | | Bradbury | Asimov | Studionet | Localnet |
