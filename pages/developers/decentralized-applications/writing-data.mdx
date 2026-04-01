@@ -98,6 +98,46 @@ const hash = await client.writeContract({
 });
 ```
 
+## Using a Browser Wallet (MetaMask)
+
+When building a browser dApp, transactions are signed by the user's wallet instead of a local private key. You need to:
+
+1. Create a client with the wallet's address and provider
+2. Switch the wallet to the correct GenLayer network
+3. Send transactions as usual
+
+```typescript
+import { createClient } from "genlayer-js";
+import { studionet } from "genlayer-js/chains";
+import { TransactionStatus } from "genlayer-js/types";
+
+// Create client with wallet address (from your wallet connection flow)
+const client = createClient({
+  chain: studionet,
+  account: walletAddress as `0x${string}`,
+});
+
+// Switch the wallet to the correct network — must be called before writing
+await client.connect("studionet");
+
+// Now write as usual — MetaMask will prompt for signing
+const txHash = await client.writeContract({
+  address: contractAddress,
+  functionName: "create_profile",
+  args: ["alice", "Hello world"],
+  value: BigInt(0),
+});
+
+const receipt = await client.waitForTransactionReceipt({
+  hash: txHash,
+  status: TransactionStatus.ACCEPTED,
+});
+```
+
+Available networks: `"localnet"`, `"studionet"`, `"testnetAsimov"`, `"testnetBradbury"`.
+
+> **Important:** If the wallet is on the wrong chain, the SDK will throw an error telling you which chain the wallet is on vs. which chain the client expects. Always call `client.connect()` before sending transactions.
+
 ## Error Handling
 
 ```typescript
