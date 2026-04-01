@@ -31,8 +31,11 @@ export default function AddToWallet({ chain }: { chain: ChainConfig }) {
     const discovered: WalletProvider[] = [];
 
     const handler = (event: any) => {
-      discovered.push(event.detail);
-      setProviders([...discovered]);
+      const rdns = event.detail?.info?.rdns;
+      if (rdns && !discovered.some(p => p.info.rdns === rdns)) {
+        discovered.push(event.detail);
+        setProviders([...discovered]);
+      }
     };
 
     if (typeof window !== 'undefined') {
