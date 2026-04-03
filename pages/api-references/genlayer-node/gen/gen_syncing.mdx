@@ -1,0 +1,62 @@
+### gen_syncing
+
+Returns the GenVM sync status, indicating how far the node's local GenVM state is behind the chain tip.
+
+**Method:** `gen_syncing`
+
+**Parameters:** None
+
+**Returns:** Object with sync status information
+
+**Response Fields:**
+
+| Field | Type | Description |
+|-------|------|-------------|
+| `syncedBlock` | string | Hex-encoded block number that GenVM has synced to |
+| `latestBlock` | string | Hex-encoded latest block number on the chain |
+| `blocksBehind` | number | Number of blocks GenVM is behind the chain tip (0 = fully synced) |
+
+**Example Request:**
+
+```json
+{
+  "jsonrpc": "2.0",
+  "method": "gen_syncing",
+  "params": [],
+  "id": 1
+}
+```
+
+**Example Response (Synced):**
+
+```json
+{
+  "jsonrpc": "2.0",
+  "result": {
+    "syncedBlock": "0x151ec5",
+    "latestBlock": "0x151ec5",
+    "blocksBehind": 0
+  },
+  "id": 1
+}
+```
+
+**Example Response (Behind):**
+
+```json
+{
+  "jsonrpc": "2.0",
+  "result": {
+    "syncedBlock": "0x151e00",
+    "latestBlock": "0x151ec5",
+    "blocksBehind": 197
+  },
+  "id": 1
+}
+```
+
+**Notes:**
+
+- This endpoint always returns an object (never `false` like `eth_syncing`)
+- Use `blocksBehind == 0` to determine if the node is fully synced
+- When the node is catching up, `gen_call` requests without an explicit `blockNumber` will serve data at the `syncedBlock` rather than waiting for full sync
