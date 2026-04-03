@@ -4,5 +4,6 @@
   "gen_getContractState": "gen_getContractState",
   "gen_getContractCode": "gen_getContractCode",
   "gen_getTransactionReceipt": "gen_getTransactionReceipt",
-  "gen_getTransactionStatus": "gen_getTransactionStatus"
+  "gen_getTransactionStatus": "gen_getTransactionStatus",
+  "gen_syncing": "gen_syncing"
 }

@@ -47,26 +47,63 @@ node:
     port: 9155
   rpc:
     port: 9151 # RPC server port
+    # ratelimit_whitelist: IPs or CIDRs that bypass rate limiting entirely
+    # ratelimit_whitelist:
+    #   - "127.0.0.1"
+    #   - "::1"              # IPv6 loopback (localhost on macOS)
+    #   - "10.0.0.0/8"
     endpoints:
-      # Group-level configuration (enables/disables all methods in a group)
+      # Group-level configuration (enables/disables all methods in a group).
+      # When a group is enabled, ALL methods in that group are available.
+      # Rate limits (req/s per IP) apply by default even without config:
+      #   genlayer: 20, genlayer_debug: 2, ethereum: 50, zksync: 50
+      #   gen_call: 2, gen_getContractSchema: 2 (method-level overrides)
       groups:
-        genlayer: true # gen_* methods (call, getContractSchema, etc.)
-        genlayer_debug: true # gen_dbg_* methods (ping, load_test, trie)
-        ethereum: true # eth_* proxy methods
-        zksync: true # zks_* proxy methods
-      # Method-level configuration (overrides group settings for specific methods)
-      methods:
-        gen_call: true
-        gen_getContractSchema: true
-        gen_getTransactionStatus: true
-        gen_getTransactionReceipt: true
-        gen_dbg_ping: true
-        gen_dbg_load_test: true
-        eth_blockNumber: true
-        eth_getBlockByNumber: true
-        eth_getBlockByHash: true
-        eth_sendRawTransaction: true
-        zks_getTransaction: true
+        genlayer: true # gen_* methods (default ratelimit: 20 req/s per IP)
+        genlayer_debug: true # gen_dbg_* methods (default ratelimit: 2 req/s per IP)
+        ethereum: true # eth_* proxy methods (default ratelimit: 50 req/s per IP)
+        # includes: eth_blockNumber, eth_getBlockByNumber, eth_getBlockByHash,
+        #   eth_sendRawTransaction, eth_getTransactionReceipt, etc.
+        zksync: true # zks_* proxy methods (default ratelimit: 50 req/s per IP)
+        # includes: zks_getTransaction, zks_getBlockDetails, etc.
+      # Object format with custom rate limit (overrides defaults):
+      # groups:
+      #   genlayer:
+      #     enabled: true
+      #     ratelimit: 100       # custom: 100 req/s per IP instead of default 20
+      #
+      # Method-level configuration (optional, overrides group settings).
+      # Methods inherit their group's enabled state by default.
+      # Use this section to:
+      #   - Disable specific methods in an enabled group
+      #   - Enable specific methods in a disabled group
+      #   - Set per-method rate limits
+      #
+      # Example: enable all eth_* except eth_sendRawTransaction:
+      #   groups:
+      #     ethereum: true
+      #   methods:
+      #     eth_sendRawTransaction: false
+      #
+      # Example: disable all eth_* except eth_sendRawTransaction:
+      #   groups:
+      #     ethereum: false
+      #   methods:
+      #     eth_sendRawTransaction: true
+      # methods:
+      #   gen_call: true                   # default ratelimit: 2 req/s per IP (GenVM-bound)
+      #   gen_getContractSchema: true      # default ratelimit: 2 req/s per IP (GenVM-bound)
+      #   eth_blockNumber: true
+      #   eth_sendRawTransaction: true
+      #   zks_getTransaction: true
+      # Object format with custom rate limit:
+      # methods:
+      #   gen_call:
+      #     enabled: true
+      #     ratelimit: 5         # custom: 5 req/s per IP instead of default 2
+      #   gen_getContractSchema:
+      #     enabled: true
+      #     ratelimit: 0         # explicitly disable rate limiting for this method
   ops:
     port: 9153 # Metrics port
     endpoints:
@@ -79,6 +116,7 @@ genvm:
   start_manager: true # if true node will start genvm manager itself
   manager_url: http://127.0.0.1:3999
   permits: 8 # Leave empty for autodiscovery, put a number for updating genvm permits on startup
+  sync_wait_timeout: "20s" # Max time to wait for GenVM to sync to a requested block before returning an error
 # Advanced configuration
 merkleforest:
   maxdepth: 16

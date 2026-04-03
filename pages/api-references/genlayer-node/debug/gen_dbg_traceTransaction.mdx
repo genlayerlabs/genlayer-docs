@@ -1,32 +1,18 @@
-# gen_dbg_traceTransaction
+### gen_dbg_traceTransaction
 
 Retrieves the full execution trace for a transaction, including the return data, stdout/stderr, GenVM logs, and the exact error if execution failed.
 
 **Method:** `gen_dbg_traceTransaction`
 
-## Parameters
+**Parameters:**
 
 - `request` (object, required):
   - `txID` (string, required): Transaction ID (hex-encoded with `0x` prefix)
   - `round` (integer, optional): Consensus round number (default: 0)
 
-## Response
+**Returns:** Transaction execution trace object
 
-```json
-\{
-  "transaction_id": "0x...",
-  "result_code": 0,
-  "return_data": "0x...",
-  "stdout": "",
-  "stderr": "",
-  "genvm_log": [],
-  "storage_proof": "0x...",
-  "run_time": "0s",
-  "eq_outputs": []
-\}
-```
-
-### Response Fields
+**Response Fields:**
 
 | Field | Type | Description |
 |-------|------|-------------|
@@ -40,47 +26,45 @@ Retrieves the full execution trace for a transaction, including the return data,
 | `run_time` | string | Execution duration |
 | `eq_outputs` | array | Hex-encoded equivalence principle outputs |
 
-## Example
-
-### Request
+**Example:**
 
 ```json
-\{
+{
   "jsonrpc": "2.0",
   "method": "gen_dbg_traceTransaction",
-  "params": [\{"txID": "0x563f046c187d711127c51213ca62e2e4fee52009a98f0989a73a0a0382d21890", "round": 0\}],
+  "params": [{"txID": "0x563f046c187d711127c51213ca62e2e4fee52009a98f0989a73a0a0382d21890", "round": 0}],
   "id": 1
-\}
+}
 ```
 
-### Response
+**Response:**
 
 ```json
-\{
+{
   "jsonrpc": "2.0",
-  "result": \{
+  "result": {
     "transaction_id": "0x563f046c187d711127c51213ca62e2e4fee52009a98f0989a73a0a0382d21890",
     "result_code": 2,
     "return_data": "0x2e0464617461b402696e76616c69645f636f6e7472616374...",
     "stdout": "",
     "stderr": "",
     "genvm_log": [
-      \{
+      {
         "file": "src/lib.rs:82",
         "level": "error",
         "message": "vm error",
-        "error": \{"causes": ["VMError(invalid_contract absent_runner_comment)"]\}
-      \}
+        "error": {"causes": ["VMError(invalid_contract absent_runner_comment)"]}
+      }
     ],
     "storage_proof": "0x99ff0d9125e1fc9531a11262e15aeb2c60509a078c4cc4c64cefdfb06ff68647",
     "run_time": "0s",
     "eq_outputs": []
-  \},
+  },
   "id": 1
-\}
+}
 ```
 
-## Notes
+**Notes:**
 
 - If the trace isn't stored locally (e.g., the node restarted or data was pruned), the endpoint will replay the transaction automatically.
 - This endpoint is in the `genlayer_debug` group and must be enabled in the node configuration.
