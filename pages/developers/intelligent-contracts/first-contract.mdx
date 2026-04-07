@@ -9,7 +9,7 @@ First of all, you need to place a magic comment with the version of GenVM you wi
 ```py
 # { "Depends": "py-genlayer:1jb45aa8ynh2a9c9xn3b7qqh8sm5q93hwfp7jqmwsfhh8jpz09h6" }
 ```
-It is similar to Solidity's `pragma solidity`, and `test` after a colon is a version. When GenLayer releases, it will be changed to some exact hash of a version, which will be frozen forever.
+It is similar to Solidity's `pragma solidity`. The hash after the colon identifies the exact version of the Python runtime to use, ensuring your contract always runs against the same environment.
 
 ### Importing the Standard Library
 After the version comment, you can import the GenLayer standard library:

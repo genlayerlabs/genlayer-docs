@@ -1,5 +1,4 @@
 {
-    "features": "Features",
     "storage": "Storage",
     "error-handling": "Error Handling",
     "upgradability": "Upgradability",
@@ -13,5 +12,6 @@
     "random": "Random",
     "non-determinism": "Non-determinism",
     "calling-llms": "Calling LLMs",
+    "image-processing": "Image Processing",
     "web-access": "Web Access"
 }
