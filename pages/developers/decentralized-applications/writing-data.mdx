@@ -78,6 +78,22 @@ const receipt = await client.waitForTransactionReceipt({
 
 ## Common Write Operations
 
+### Calling Payable Methods
+
+Send GEN with a write call using the `value` parameter:
+
+```typescript
+// Send 5 GEN to a payable method
+const hash = await client.writeContract({
+  address: contractAddress,
+  functionName: 'tip',
+  args: [],
+  value: BigInt(5) * BigInt(10 ** 18), // 5 GEN in wei
+});
+```
+
+The `value` is specified in wei (1 GEN = 10¹⁸ wei). The receiving contract method must be decorated with `@gl.public.write.payable`.
+
 ### Token Transfers
 ```typescript
 // Sending tokens
