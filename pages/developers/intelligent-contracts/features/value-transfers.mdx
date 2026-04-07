@@ -45,6 +45,14 @@ other.emit_transfer(value=u256(amount), on='finalized')
 other.emit(value=u256(amount), on='finalized').deposit()
 ```
 
+### How Value Flows
+
+When a message with value is emitted, the value is **immediately deducted** from the sending contract's balance and held in the message. It is only credited to the recipient when the message's child transaction is activated. The flow is:
+
+**Sender balance → message → recipient balance**
+
+If the child transaction fails, the value is not automatically returned to the sender.
+
 See [Messages](/developers/intelligent-contracts/features/messages) for details on timing (`on='accepted'` vs `on='finalized'`).
 
 ## Sending Value to an EOA or EVM Contract
@@ -69,7 +77,7 @@ class Faucet(gl.Contract):
 ```
 
 <Callout type="info">
-  The syntax for sending to an EOA uses the EVM contract interface even though the recipient is not a contract. This will be simplified in a future version.
+  The syntax for sending to an EOA uses the EVM contract interface even though the recipient is not a contract. This is because EOAs live on the chain layer, making this an external message — the same mechanism used for calling EVM contracts. This will be simplified in a future version.
 </Callout>
 
 ## Reading Balances

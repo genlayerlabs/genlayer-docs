@@ -6,7 +6,7 @@ GenLayer has three types of interaction, each operating at a different layer of 
 
 ## Transactions (→ Intelligent Contract)
 
-A transaction is the entry point for all IC execution. The caller invokes `addTransaction()` on ConsensusMain or on the IC's ghost contract, which relays to ConsensusMain.
+A transaction is the entry point for all IC execution. The caller signs an EVM transaction that calls `addTransaction()` on ConsensusMain or on the IC's ghost contract (which relays to ConsensusMain). This is submitted via `eth_sendRawTransaction`.
 
 The caller can be an EOA or an EVM contract on GenLayer Chain.
 
@@ -16,12 +16,12 @@ The caller can be an EOA or an EVM contract on GenLayer Chain.
 The transaction enters the consensus pipeline: activation → proposal → commit → reveal → finalization.
 
 <Callout type="warning">
-  **Studio:** Transactions are submitted via JSON-RPC, not as EVM calls to a ghost contract. The consensus pipeline is simulated in Python.
+  **Studio:** The SDK sends the same signed `addTransaction` EVM transaction via `eth_sendRawTransaction`, but Studio intercepts and simulates the consensus pipeline rather than executing on a real EVM layer.
 </Callout>
 
 ## Internal Messages (IC → IC)
 
-An internal message is an asynchronous call from one Intelligent Contract to another. It stays within the GenVM layer and creates a child transaction that goes through consensus independently.
+An internal message is an **asynchronous** call from one Intelligent Contract to another. It stays within the GenVM layer and creates a child transaction that goes through consensus independently. The calling contract does not wait for the message to be processed — execution continues immediately after emitting.
 
 ```python
 other = gl.get_contract_at(addr)
@@ -64,11 +64,11 @@ class ERC20:
     class Write:
         def transfer(self, to: Address, amount: u256) -> None: ...
 
-# Read from an EVM contract
-balance = ERC20(token_address).view().balance_of(my_address)
+# Read from an EVM contract (gl.message.contract_address is your own address)
+balance = ERC20(token_address).view().balance_of(gl.message.contract_address)
 
-# Write to an EVM contract
-ERC20(token_address).emit(value=u256(0)).transfer(recipient, amount)
+# Write to an EVM contract (value is optional, defaults to 0)
+ERC20(token_address).emit().transfer(recipient, amount)
 
 # Send value to an EOA
 @gl.evm.contract_interface
@@ -141,7 +141,11 @@ The message executes after the parent transaction is fully finalized (appeal win
 The message executes as soon as the parent transaction is accepted by initial consensus, before the appeal window closes.
 
 <Callout type="warning">
-  If the parent transaction is appealed, the re-execution may emit the message again — potentially multiple times across appeal rounds. The receiving contract must be **idempotent**: it must handle duplicate or unexpected messages gracefully.
+  **Appeal risks with `on='accepted'`:**
+  - The re-execution may emit the message again — potentially multiple times across appeal rounds.
+  - If the appeal changes the outcome, the message may be "invalid" (would not have been emitted with the final outcome), but **it cannot be taken back** — it was already sent and executed.
+  - The receiving contract must be **idempotent** and must handle duplicate or unexpected messages gracefully.
+  - Contract design must account for the possibility that accepted messages may not reflect the final state.
 </Callout>
 
 External messages always use `on='finalized'` and cannot be emitted on acceptance.
