@@ -67,5 +67,5 @@ result = gl.eq_principle.strict_eq(check_website_status)
 - **UI verification** — screenshot an app and verify it renders correctly
 
 <Callout type="info">
-  Image processing requires a vision-capable LLM model (e.g., GPT-4o, Claude Sonnet). Ensure your validator configuration includes a model that supports image inputs.
+  Image processing requires vision-capable LLM models. On the GenLayer network, validators handle model selection — your contract just sends images. In Studio running locally, ensure your configured validators use a model that supports image inputs (e.g., GPT-4o, Claude Sonnet).
 </Callout>
