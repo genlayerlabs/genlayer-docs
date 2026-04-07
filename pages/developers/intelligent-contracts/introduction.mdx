@@ -74,32 +74,10 @@ Development of Intelligent Contracts leverages Python's robust ecosystem, provid
 
 The platform supports the data structures needed to handle complex business logic and requirements.
 
-## Challenges and Mitigations
+## Trade-offs
 
-### Non-Deterministic Operations
-**Challenge**
+Intelligent Contracts introduce non-determinism and external dependencies that traditional smart contracts avoid. Key considerations:
 
-The primary challenge in handling non-deterministic operations is maintaining consistency across multiple validators when operations may naturally produce varying results. This is particularly evident when dealing with LLM outputs or real-time data processing.
-
-**Mitigation**
-
-To address this, GenLayer provides the Equivalence Principle as a flexible framework for developers to decide how the validators will try to reach consensus. This system allows for both strict output matching and more nuanced validation approaches where validators can assess results within acceptable parameters, ensuring reliable contract execution even with non-deterministic elements.
-
-### External Data Reliability
-**Challenge**
-
-Integrating external data sources introduces potential points of failure and data inconsistency risks that must be carefully managed. External APIs may experience downtime, return inconsistent results, or become deprecated over time.
-
-**Mitigation**
-
-To combat these challenges, Intelligent Contracts employ a robust multi-validator verification system where multiple independent validators must confirm external data integrity.
-
-### Performance Considerations
-
-**Challenge**
-
-The integration of LLM operations and complex data processing can introduce significant computational overhead, potentially impacting contract execution speed and cost efficiency.
-
-**Mitigation**
-
-To tackle these performance challenges, GenLayer implements optimized validation processes that balance thoroughness with efficiency. The platform provides configurable consensus mechanisms that allow developers to fine-tune the validation process based on their specific needs, whether prioritizing speed or verification thoroughness.
+- **Non-deterministic outputs** — LLM responses and web data vary across validators. The [Equivalence Principle](/developers/intelligent-contracts/features/non-determinism) lets you define how validators compare results to reach consensus.
+- **External data reliability** — Web sources can be inconsistent or unavailable. Multiple validators independently fetch and cross-validate data as part of [Optimistic Democracy](/understand-genlayer-protocol/optimistic-democracy-how-genlayer-works).
+- **Compute cost** — LLM calls and web requests add latency and cost compared to purely deterministic contracts. Design contracts to minimize non-deterministic calls where possible.
