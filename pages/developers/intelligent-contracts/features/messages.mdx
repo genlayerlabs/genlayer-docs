@@ -21,7 +21,7 @@ The transaction enters the consensus pipeline: activation → proposal → commi
 
 ## Internal Messages (IC → IC)
 
-An internal message is an **asynchronous** call from one Intelligent Contract to another. It stays within the GenVM layer and creates a child transaction that goes through consensus independently. The calling contract does not wait for the message to be processed — execution continues immediately after emitting.
+An internal message is an **asynchronous** call from one Intelligent Contract to another. It stays within the GenVM layer. During execution, `emit()` records the message as part of the execution result — the message is not sent immediately. The actual child transaction is only created when the parent transaction reaches the specified state (`on='accepted'` or `on='finalized'`). The child transaction then goes through consensus independently.
 
 ```python
 other = gl.get_contract_at(addr)
