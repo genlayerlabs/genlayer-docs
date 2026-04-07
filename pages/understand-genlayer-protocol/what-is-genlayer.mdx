@@ -30,7 +30,7 @@ Process text, images, and qualitative evidence. Handle real-world complexity tha
 
 | Feature | Traditional Smart Contracts | Intelligent Contracts |
 |---|---|---|
-| **Language** | Solidity, Vyper | Python |
+| **Language** | Solidity, Rust | Python |
 | **Data sources** | On-chain only (or oracles) | On-chain + live web data |
 | **Decision logic** | Deterministic only | Deterministic + subjective |
 | **AI integration** | Not possible | Native LLM access |
@@ -42,7 +42,7 @@ GenLayer operates as two integrated layers:
 
 **GenLayer Chain** — an EVM-compatible L2 (zkSync Elastic Chain). Holds account balances via ghost contracts, handles standard Ethereum operations (`eth_*` methods), and anchors to Ethereum's security model.
 
-**GenVM** — the execution environment for Intelligent Contracts. A Python runtime with native access to LLMs, web data, and non-deterministic operations.
+**GenVM** — the execution environment for Intelligent Contracts. A WebAssembly-based VM (built on [Wasmtime](https://wasmtime.dev)) that runs a Python interpreter with native access to LLMs, web data, and non-deterministic operations. Can also execute compiled native code.
 
 Every Intelligent Contract has a corresponding **ghost contract** on the chain layer at the same address. Ghost contracts hold the contract's GEN balance, relay transactions to consensus, and execute external messages. See [Messages](/developers/intelligent-contracts/features/messages#ghost-contracts) for details.
 
@@ -53,25 +53,44 @@ Transactions enter via `addTransaction` on the chain layer. GenVM executes the c
 Intelligent Contracts are Python classes extending `gl.Contract`:
 
 ```python
+# { "Depends": "py-genlayer:1jb45aa8ynh2a9c9xn3b7qqh8sm5q93hwfp7jqmwsfhh8jpz09h6" }
 from genlayer import *
+import json
 
-class PredictionMarket(gl.Contract):
-    resolution: str
+class WizardOfCoin(gl.Contract):
+    has_coin: bool
 
-    def __init__(self, question: str):
-        self.question = question
-        self.resolution = ""
+    def __init__(self):
+        self.has_coin = True
 
     @gl.public.write
-    def resolve(self) -> None:
-        result = gl.eq_principle.call_llm(
-            prompt=f"Has this event occurred? {self.question}",
-        )
-        self.resolution = result
+    def ask_for_coin(self, request: str) -> None:
+        if not self.has_coin:
+            raise gl.vm.UserError("I don't have a coin!")
+
+        prompt = f"""
+        You are a wizard guarding a gold coin.
+        An adventurer says: {request}
+        Should you give them the coin?
+        Respond as JSON: {{"give_coin": true/false}}
+        """
+
+        def leader_fn():
+            return gl.nondet.exec_prompt(prompt, response_format="json")
+
+        def validator_fn(leaders_res) -> bool:
+            if not isinstance(leaders_res, gl.vm.Return):
+                return False
+            my_result = leader_fn()
+            return my_result["give_coin"] == leaders_res.calldata["give_coin"]
+
+        result = gl.vm.run_nondet_unsafe(leader_fn, validator_fn)
+        if result["give_coin"]:
+            self.has_coin = False
 
     @gl.public.view
-    def get_resolution(self) -> str:
-        return self.resolution
+    def get_has_coin(self) -> bool:
+        return self.has_coin
 ```
 
 Full SDK available: [genlayer-js](/api-references/genlayer-js) (TypeScript), [genlayer-py](/api-references/genlayer-py) (Python), [CLI](/api-references/genlayer-cli).
