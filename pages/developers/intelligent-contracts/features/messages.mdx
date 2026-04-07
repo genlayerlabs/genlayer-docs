@@ -1,0 +1,194 @@
+import { Callout } from "nextra-theme-docs";
+
+# Messages
+
+GenLayer has three types of interaction, each operating at a different layer of the architecture.
+
+## Transactions (→ Intelligent Contract)
+
+A transaction is the entry point for all IC execution. The caller invokes `addTransaction()` on ConsensusMain or on the IC's ghost contract, which relays to ConsensusMain.
+
+The caller can be an EOA or an EVM contract on GenLayer Chain.
+
+- `gl.message.sender_address` = caller address
+- `gl.message.origin_address` = caller address
+
+The transaction enters the consensus pipeline: activation → proposal → commit → reveal → finalization.
+
+<Callout type="warning">
+  **Studio:** Transactions are submitted via JSON-RPC, not as EVM calls to a ghost contract. The consensus pipeline is simulated in Python.
+</Callout>
+
+## Internal Messages (IC → IC)
+
+An internal message is an asynchronous call from one Intelligent Contract to another. It stays within the GenVM layer and creates a child transaction that goes through consensus independently.
+
+```python
+other = gl.get_contract_at(addr)
+
+# Call a write method on another IC
+other.emit(on='finalized').update_status("active")
+
+# Call with value (recipient must be payable)
+other.emit(value=u256(100), on='finalized').deposit()
+
+# Pure value transfer (triggers __receive__ on recipient)
+other.emit_transfer(value=u256(100), on='finalized')
+
+# Deploy a child contract
+addr = gl.deploy_contract(
+    code=contract_code,
+    args=[],
+    salt_nonce=u256(1),
+    on='finalized',
+)
+```
+
+In the child transaction's execution context:
+- `gl.message.sender_address` = calling contract's address
+- `gl.message.origin_address` = original caller (preserved through the chain)
+
+See [Interacting with Intelligent Contracts](/developers/intelligent-contracts/features/interacting-with-intelligent-contracts) for full syntax reference.
+
+## External Messages (IC → Chain Layer)
+
+An external message crosses from the GenVM layer back to the GenLayer Chain (EVM layer). This is how an IC sends value or calls an EOA or EVM contract.
+
+External messages are executed by the IC's ghost contract via `handleOp()`, so the `msg.sender` seen by the recipient is the ghost contract address (which is the same as the IC's address).
+
+```python
+@gl.evm.contract_interface
+class ERC20:
+    class View:
+        def balance_of(self, owner: Address) -> u256: ...
+    class Write:
+        def transfer(self, to: Address, amount: u256) -> None: ...
+
+# Read from an EVM contract
+balance = ERC20(token_address).view().balance_of(my_address)
+
+# Write to an EVM contract
+ERC20(token_address).emit(value=u256(0)).transfer(recipient, amount)
+
+# Send value to an EOA
+@gl.evm.contract_interface
+class _Recipient:
+    class View:
+        pass
+    class Write:
+        pass
+
+_Recipient(Address(eoa_address)).emit_transfer(value=u256(amount))
+```
+
+<Callout type="info">
+  External messages can only be emitted `on='finalized'`. Using `on='accepted'` for external messages is not supported.
+</Callout>
+
+<Callout type="warning">
+  **Studio:** EVM contract interaction beyond value transfers to EOAs is not implemented. The `@gl.evm.contract_interface` calls are not functional in Studio.
+</Callout>
+
+## Ghost Contracts
+
+Every Intelligent Contract has a corresponding **ghost contract** on GenLayer Chain (the EVM layer). The ghost and IC share the same address.
+
+### What Ghost Contracts Do
+
+- **Hold the IC's GEN balance** — the native balance on the ghost contract on-chain is the source of truth for `self.balance`
+- **Relay transactions** — `addTransaction()` on the ghost forwards to ConsensusMain
+- **Execute external messages** — on finalization, `handleOp()` forwards calls to recipients so `msg.sender` is the IC's address
+- **Bridge the two layers** — ghost on EVM ↔ IC on GenVM, same address
+
+### Lifecycle
+
+1. A deploy transaction is submitted
+2. GhostFactory deploys a ghost contract at address `0xABC` on GenLayer Chain
+3. Consensus processes the deployment
+4. If successful: IC deploys at the same address `0xABC` on GenVM
+5. If deployment is appealed and reverted: the ghost remains but has no IC behind it — it has no purpose or effect, but may be reused by consensus if deployment succeeds later
+
+<Callout type="info">
+  Ghost contract existence does **not** guarantee the IC is deployed. A reverted deployment leaves an empty ghost.
+</Callout>
+
+<Callout type="warning">
+  **Studio:** Ghost contracts are not implemented. The IC address is used directly, and balance is stored in a database table.
+</Callout>
+
+## Message Context (gl.message)
+
+Every contract execution has access to `gl.message`:
+
+| Field | Type | Description |
+|---|---|---|
+| `sender_address` | `Address` | Immediate caller — EOA, EVM contract, or IC depending on how the call was initiated |
+| `origin_address` | `Address` | Original transaction submitter — preserved through internal message chains |
+| `contract_address` | `Address` | The current contract's own address |
+| `value` | `u256` | GEN sent with the call (only in `@gl.public.write.payable` methods) |
+| `chain_id` | `u256` | Current chain ID |
+
+## Timing: Accepted vs Finalized
+
+Internal messages and contract deployments can execute at two different points:
+
+### `on='finalized'` (default)
+
+The message executes after the parent transaction is fully finalized (appeal window has closed). This is the safe default.
+
+### `on='accepted'`
+
+The message executes as soon as the parent transaction is accepted by initial consensus, before the appeal window closes.
+
+<Callout type="warning">
+  If the parent transaction is appealed, the re-execution may emit the message again — potentially multiple times across appeal rounds. The receiving contract must be **idempotent**: it must handle duplicate or unexpected messages gracefully.
+</Callout>
+
+External messages always use `on='finalized'` and cannot be emitted on acceptance.
+
+## Interfaces
+
+### IC Interfaces (`@gl.contract_interface`)
+
+Define typed stubs for calling other Intelligent Contracts:
+
+```python
+@gl.contract_interface
+class Token:
+    class View:
+        def balance_of(self, owner: Address) -> u256: ...
+    class Write:
+        def transfer(self, to: Address, amount: u256) -> None: ...
+
+token = Token(token_address)
+balance = token.view().balance_of(user)          # typed view call
+token.emit(on='finalized').transfer(to, amount)  # typed write call
+```
+
+This is purely for type safety and IDE autocompletion — at runtime it behaves identically to `gl.get_contract_at()`. No overhead.
+
+### EVM Interfaces (`@gl.evm.contract_interface`)
+
+Define typed stubs matching Solidity function signatures:
+
+```python
+@gl.evm.contract_interface
+class IERC20:
+    class View:
+        def balance_of(self, owner: Address) -> u256: ...
+        def total_supply(self) -> u256: ...
+    class Write:
+        def transfer(self, to: Address, amount: u256) -> bool: ...
+        def approve(self, spender: Address, amount: u256) -> bool: ...
+```
+
+Parameters are automatically ABI-encoded. Type mapping:
+
+| GenLayer | Solidity |
+|---|---|
+| `u256`, `u128`, `u64`, ... | `uint256`, `uint128`, `uint64`, ... |
+| `i256`, `i128`, `i64`, ... | `int256`, `int128`, `int64`, ... |
+| `Address` | `address` |
+| `bool` | `bool` |
+| `str` | `string` |
+| `bytes` | `bytes` |
