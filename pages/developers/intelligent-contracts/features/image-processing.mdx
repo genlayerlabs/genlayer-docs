@@ -20,11 +20,10 @@ class ReceiptVerifier(gl.Contract):
     @gl.public.write
     def verify_receipt(self, image_data: bytes, expected_amount: str) -> None:
         def leader_fn():
-            image = gl.nondet.Image(raw=image_data, pil=None)
             return gl.nondet.exec_prompt(
                 f"Does this receipt show a payment of {expected_amount}? "
                 "Respond as JSON: {{\"matches\": true/false, \"actual_amount\": \"...\"}}",
-                images=[image],
+                images=[image_data],  # accepts raw bytes directly
                 response_format="json",
             )
 
@@ -38,7 +37,7 @@ class ReceiptVerifier(gl.Contract):
         self.verified = result["matches"]
 ```
 
-The `images` parameter accepts a sequence of `bytes` or `gl.nondet.Image` objects.
+The `images` parameter accepts a sequence of raw `bytes` (e.g., PNG/JPEG data) or `gl.nondet.Image` objects.
 
 ## Capturing Screenshots from the Web
 
