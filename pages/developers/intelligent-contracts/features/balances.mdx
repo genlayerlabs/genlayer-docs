@@ -1,45 +1,185 @@
 import { Callout } from "nextra-theme-docs";
 
-# Balances
+# Balances & Value Transfers
 
-## Getting Contract Balance
+Every account and contract on GenLayer has a native GEN balance. Value moves between accounts through two kinds of messages: **external messages** (EOA → contract) and **internal messages** (contract → contract or contract → EOA).
 
-Access your contract's balance using `self.balance` within contract methods:
+## Reading Balances
+
+### Your Contract's Balance
 
 ```python
 class Contract(gl.Contract):
     @gl.public.view
     def get_balance(self):
-        return self.balance  # Shows contract's current balance
+        return self.balance
 ```
 
-## Getting Another Contract's Balance
-
-Get any contract's balance by address:
+### Another Contract's Balance
 
 ```python
-other_contract = gl.get_contract_at(contract_address)
-print(other_contract.balance)
+other = gl.get_contract_at(Address("0x03FB..."))
+print(other.balance)
 ```
 
-## Transferring Funds
+## External Messages: Receiving Value from Users
 
-Transfer funds from sender to current contract:
+When a user (EOA) sends a transaction with value attached, the contract receives it through a **payable method**. The value is available immediately via `gl.message.value`.
+
+### Payable Methods
+
+Mark a write method as payable with `@gl.public.write.payable`:
 
 ```python
-other_contract = gl.get_contract_at(gl.message.sender_address)
-other_contract.emit_transfer(value=u256(5))
-other_contract.emit(value=u256(5), on='finalized').transfer(Address("0x..."))
+class TipJar(gl.Contract):
+    def __init__(self):
+        self.total_tips: u256 = u256(0)
+
+    @gl.public.write.payable
+    def tip(self) -> None:
+        amount = gl.message.value
+        if amount == u256(0):
+            raise gl.vm.UserError("send some value")
+        self.total_tips += amount
+        # self.balance is automatically credited with the value
 ```
+
+Key points:
+- `gl.message.value` contains the value sent with the transaction (in wei)
+- `gl.message.sender_address` is the EOA that sent the transaction
+- The contract's `self.balance` is automatically increased — you don't need to update it manually
+- Only methods decorated with `@gl.public.write.payable` can receive value; calling a non-payable method with value will fail
+
+### The `__receive__` Special Method
+
+If a user sends value without specifying a method name, the `__receive__` method is called:
+
+```python
+class Vault(gl.Contract):
+    @gl.public.write.payable
+    def __receive__(self):
+        # Called when value is sent with no method name
+        pass
+```
+
+See [Special Methods](/developers/intelligent-contracts/features/special-methods) for the full dispatch logic.
+
+### Calling Payable Methods from JavaScript
+
+```typescript
+const txHash = await client.writeContract({
+  address: contractAddress,
+  functionName: "tip",
+  args: [],
+  value: BigInt(5) * BigInt(10 ** 18), // 5 GEN in wei
+});
+```
+
+## Internal Messages: Transferring Value Between Contracts
+
+Contracts send value to other contracts or EOAs using `emit_transfer`. This creates an **internal message** — a deferred transaction that executes after the current one completes.
+
+### Sending Value to a Contract
+
+Use `emit_transfer` with a contract interface:
+
+```python
+@gl.evm.contract_interface
+class _Target:
+    class View:
+        pass
+    class Write:
+        pass
+
+class Faucet(gl.Contract):
+    @gl.public.write.payable
+    def send(self, recipient: str) -> None:
+        amount = gl.message.value
+        if amount == u256(0):
+            raise gl.vm.UserError("send some value")
+        _Target(Address(recipient)).emit_transfer(value=amount)
+```
+
+<Callout type="info">
+  `emit_transfer` does **not** execute immediately. It creates a pending transaction that runs after the current transaction is finalized. This is different from Solidity's `.transfer()` which is synchronous.
+</Callout>
+
+### Sending Value to an EOA
+
+The same pattern works for EOA addresses — `emit_transfer` sends value regardless of whether the target is a contract or an EOA:
+
+```python
+_Target(Address(user_address)).emit_transfer(value=payout_amount)
+```
+
+### Calling a Method with Value
+
+To call a method on another contract and send value at the same time:
+
+```python
+other = gl.get_contract_at(Address("0x..."))
+other.emit(value=u256(100), on='finalized').deposit()
+```
+
+### Timing: Accepted vs Finalized
+
+Internal messages execute at different times depending on the `on` parameter:
+
+```python
+# Executes after initial consensus acceptance (faster, but can be affected by appeals)
+other.emit(value=u256(100), on='accepted').process_payment()
+
+# Executes after full finalization (safer, waits for appeal window)
+_Target(Address(recipient)).emit_transfer(value=amount)  # defaults to finalized
+```
+
+<Callout type="warning">
+  Messages emitted `on='accepted'` can execute even if the emitting transaction is later overturned by an appeal. The receiving contract should be idempotent. Use `on='finalized'` for value transfers unless you have a specific reason not to.
+</Callout>
 
 ## Balance Context
 
-Balance behavior depends on execution context:
-- In `write` methods: `self.balance` reflects actual contract balance after state changes
-- In `view` methods: Balance shows current state without modifications
-- Transfers can only occur in write context
+- In **write** methods: `self.balance` reflects the contract's balance after the current transaction's value has been credited
+- In **view** methods: `self.balance` shows the current on-chain balance without modifications
+- Value transfers (`emit_transfer`) only work in write context
 
-<Callout type="warning">
-  If message is emitted on acceptance and previous transaction gets successfully appealed after the emit,
-  the balance will be decremented nonetheless
-</Callout>
+## Complete Example: Escrow Contract
+
+```python
+@gl.evm.contract_interface
+class _Payee:
+    class View:
+        pass
+    class Write:
+        pass
+
+class Escrow(gl.Contract):
+    def __init__(self):
+        self.depositor: Address = Address("")
+        self.payee: Address = Address("")
+        self.amount: u256 = u256(0)
+
+    @gl.public.write.payable
+    def deposit(self, payee: str) -> None:
+        if self.amount != u256(0):
+            raise gl.vm.UserError("already funded")
+        self.depositor = gl.message.sender_address
+        self.payee = Address(payee)
+        self.amount = gl.message.value
+
+    @gl.public.write
+    def release(self) -> None:
+        if gl.message.sender_address != self.depositor:
+            raise gl.vm.UserError("only depositor can release")
+        amount = self.amount
+        self.amount = u256(0)
+        _Payee(self.payee).emit_transfer(value=amount)
+```
+
+## Getting GEN Tokens
+
+| Environment | How to fund |
+|---|---|
+| **Studio (local)** | Use the faucet button (droplet icon) in the account selector |
+| **Studionet** | Accounts are auto-funded |
+| **Testnet** | Use the [testnet faucet](https://testnet-faucet.genlayer.foundation) |
