@@ -1,20 +1,62 @@
-# Typical Use Cases
+# Use Cases
 
-- **Prediction Markets**: Power decentralized trading on future events. Applications include financial market forecasting, sports betting, and entertainment predictions.
+GenLayer enables applications that require subjective judgment — decisions that traditional smart contracts can't make because they need to interpret language, evaluate evidence, or assess quality.
 
-- **Performance-Based Contracting**: Automate escrows and payments contingent on verified performance metrics. Intelligent Contracts can track deliverables in real-time and instantly release funds.
+## Dispute Resolution
 
-- **Network States**: Launch decentralized governance frameworks for Network States, opening new horizons in collaborative decision-making and self-regulation.
+AI validators evaluate evidence and deliver verdicts in minutes. Applies to:
 
-- **Dispute Resolution**: It will serve as a decentralized, AI-driven arbitration system. Compared to conventional legal routes, it will reduce costs and expedite case handling.
+- **Agentic commerce** — AI agents transacting autonomously ([ERC-8183](https://eips.ethereum.org/EIPS/eip-8183)) need trustless arbitration for SLA compliance, delivery verification, service quality
+- **Chargebacks** — buyer/seller disputes resolved by analyzing shipping records, communication logs, and transaction history
+- **Freelance & gig work** — was the deliverable satisfactory? AI consensus replaces subjective back-and-forth
 
-- **AI-Driven DAOs**: Form next-gen decentralized autonomous organizations managed by AI algorithms. Empower real-time governance and data-informed investments.
+## Rule & Constitution Verification
 
-For more potential applications, see **Build with GenLayer**.
+Check whether something meets a set of criteria defined in natural language:
 
-### Autonomous Agents
-AI-powered agents that transact, govern, and settle decisions at machine speed — operating autonomously within enforceable on-chain rules.
+- Does a new prediction market meet listing guidelines?
+- Does a DAO proposal comply with the organization's charter?
+- Does a content submission follow community standards?
+- Does a transaction comply with regulatory requirements?
 
----
+This is a foundational primitive — many applications are instances of "evaluate X against rules Y."
 
-Ready to build? Start with the [developer guide](/developers/intelligent-contracts/first-contract).
+## Prediction Markets
+
+Markets that resolve automatically by fetching outcomes from primary sources. No centralized oracle or authority needed.
+
+→ [Example contract](/developers/intelligent-contracts/examples/prediction)
+
+## Social Content Verification
+
+AI validators assess content quality, detect plagiarism, and distribute rewards based on originality and engagement. Replaces centralized content moderation with consensus-driven evaluation.
+
+## Code & Work Quality Assurance
+
+Staked submissions where reviewers are economically incentivized to find issues. AI validators assess code quality, deliverable completeness, or compliance with specifications.
+
+## AI-Governed Organizations
+
+DAOs where proposals are written in natural language, evaluated against real-time data, and executed automatically when conditions align.
+
+## Compliance Automation
+
+Real-time screening against sanctions lists, KYC/AML requirements, and changing regulations. Contracts read authoritative sources directly — no manual updates needed.
+
+## Argumentation & Debate Markets
+
+Structured debates where participants stake positions and AI consensus determines outcomes — a new primitive for information markets.
+
+## What Makes These Possible
+
+All of these share a common pattern: they require **subjective judgment** that traditional smart contracts can't perform.
+
+GenLayer's Intelligent Contracts can:
+- Fetch and interpret live web data
+- Process natural language and unstructured inputs
+- Make subjective decisions through multi-validator AI consensus
+- Execute outcomes on-chain with full finality
+
+See [projects building on GenLayer](https://portal.genlayer.foundation/#/) for live examples.
+
+[Start building →](/developers/intelligent-contracts/first-contract)
