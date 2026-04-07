@@ -23,8 +23,11 @@ Fetch live web data directly on-chain. Contracts can read websites, call APIs, a
 ### Natural Language Processing
 Interpret human-readable inputs via LLMs. Contracts can analyze text, extract meaning, and make decisions based on qualitative criteria.
 
+### Image & Visual Processing
+Pass images to LLMs for analysis — screenshot a webpage and verify its content, check visual evidence for claims, analyze receipts or documents. Contracts can capture screenshots via `gl.nondet.web.render()` and send them to LLMs via `gl.nondet.exec_prompt(images=[...])`.
+
 ### Unstructured Data
-Process text, images, and qualitative evidence. Handle real-world complexity that traditional smart contracts cannot.
+Process text, images, audio transcripts, and qualitative evidence. Handle real-world complexity that traditional smart contracts cannot.
 
 ## How It Compares
 
@@ -33,7 +36,7 @@ Process text, images, and qualitative evidence. Handle real-world complexity tha
 | **Language** | Solidity, Rust | Python |
 | **Data sources** | On-chain only (or oracles) | On-chain + live web data |
 | **Decision logic** | Deterministic only | Deterministic + subjective |
-| **AI integration** | Not possible | Native LLM access |
+| **AI integration** | Not possible | Native LLM access (text + images) |
 | **Consensus** | All nodes must agree on exact output | Validators assess equivalence of results |
 
 ## Architecture: Two Layers
