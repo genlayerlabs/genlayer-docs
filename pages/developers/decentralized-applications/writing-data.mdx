@@ -76,6 +76,35 @@ const receipt = await client.waitForTransactionReceipt({
 });
 ```
 
+## Sending Value (Payable Methods)
+
+To send GEN tokens to a payable contract method, pass `value` in wei (1 GEN = 10^18 wei):
+
+```typescript
+// Send 5 GEN to a payable method
+const hash = await client.writeContract({
+  address: contractAddress,
+  functionName: 'tip',
+  args: [],
+  value: BigInt(5) * BigInt(10 ** 18),
+});
+```
+
+The contract must have the method decorated with `@gl.public.write.payable` — otherwise the transaction will fail.
+
+To send value without calling a specific method (triggers `__receive__` on the contract):
+
+```typescript
+const hash = await client.writeContract({
+  address: contractAddress,
+  functionName: '',
+  args: [],
+  value: BigInt(10) * BigInt(10 ** 18), // 10 GEN
+});
+```
+
+See [Balances & Value Transfers](/developers/intelligent-contracts/features/balances) for the contract-side documentation.
+
 ## Common Write Operations
 
 ### Token Transfers

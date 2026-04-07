@@ -3,7 +3,7 @@
     "storage": "Storage",
     "error-handling": "Error Handling",
     "upgradability": "Upgradability",
-    "balances": "Balances",
+    "balances": "Balances & Value Transfers",
     "interacting-with-intelligent-contracts": "Interacting with Intelligent Contracts",
     "interacting-with-evm-contracts": "Interacting with EVM Contracts",
     "vector-storage": "Vector Storage",
