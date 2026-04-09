@@ -2,87 +2,227 @@ import { Callout } from "nextra-theme-docs";
 
 # GenVM Configuration
 
-You need to set up an LLM for your node to use to provide answers to natural language prompts. You can use any LLM you wish, however the quality of its answers will affect the performance of your node.
+GenVM uses a layered configuration system: **YAML files** define providers, models, and module settings, while **Lua scripts** implement execution logic (provider selection, fallback strategies, text processing). You can customize both without rebuilding GenVM.
+
+Configuration files live at `third_party/genvm/config/`.
+
+## LLM Provider Credits
 
 <Callout>
   GenLayer has partnered with multiple LLM providers to offer free credits for validators:
 
-  **[Heurist](https://www.heurist.ai/)** - A Layer 2 network for AI model hosting and inference, built on the ZK Stack. It offers serverless access to open-source AI models through a decentralized network. GenLayer Validators can obtain free [Heurist API credits](https://dev-api-form.heurist.ai) by using the referral code: _"genlayer"_.
+  **[Heurist](https://www.heurist.ai/)** - A Layer 2 network for AI model hosting and inference. GenLayer Validators can obtain free [Heurist API credits](https://dev-api-form.heurist.ai) by using the referral code: _"genlayer"_.
 
-  **[Comput3](https://genlayer.comput3.ai/)** - A decentralized compute network providing access to various AI models. GenLayer Validators can use the Comput3.ai inferencing API with access to llama3, hermes3 and qwen3 models. Validators can obtain free [Comput3 API credits](https://genlayer.comput3.ai/) to get started with their validator setup.
+  **[Comput3](https://genlayer.comput3.ai/)** - A decentralized compute network providing access to various AI models. Validators can obtain free [Comput3 API credits](https://genlayer.comput3.ai/).
 
-  **[io.net](/partners/ionet)** - A decentralized compute network providing GPU access for AI inference. GenLayer Validators can create an account at [id.io.net](https://id.io.net/login) and obtain free credits by [filling out this form](https://form.typeform.com/to/pDmCCViV).
+  **[io.net](/partners/ionet)** - A decentralized compute network providing GPU access for AI inference. Create an account at [id.io.net](https://id.io.net/login) and obtain free credits by [filling out this form](https://form.typeform.com/to/pDmCCViV).
 
-  **[Chutes](/partners/chutes)** - Serverless inference for open-source AI models running on decentralized GPU infrastructure. GenLayer Validators can create an account at [chutes.ai](https://chutes.ai) and generate an API key from their account settings.
+  **[Chutes](/partners/chutes)** - Serverless inference for open-source AI models on decentralized GPU infrastructure. Create an account at [chutes.ai](https://chutes.ai) and generate an API key from your account settings.
 
-  **[Morpheus](/partners/morpheus)** - A decentralized AI inference network where open-source model providers compete on a peer-to-peer marketplace. GenLayer Validators can obtain a [Morpheus API key](https://mor.org/) to access models like DeepSeek, Llama, Qwen, and others through an OpenAI-compatible API.
+  **[Morpheus](/partners/morpheus)** - A decentralized AI inference network. Obtain a [Morpheus API key](https://mor.org/) to access models like DeepSeek, Llama, Qwen, and others through an OpenAI-compatible API.
 </Callout>
 
-The GenVM configuration files are located at `third_party/genvm/config/`
+## Configuration Files
 
-## genvm-module-llm.yaml
+### genvm-module-llm.yaml — LLM Providers & Models
 
-This is the configuration file of the LLM module. In this file you can set up and configure various LLM providers, as well as the system prompts of your validator.
+Controls which LLM backends are available, what models each offers, and which Lua script runs the execution logic.
 
-You should not need to modify this in general.
+```yaml
+# Which Lua script handles provider selection and execution
+lua_script_path: ${exeDir}/../config/genvm-llm-default.lua
 
-However, from here you can:
-- turn on and off various LLMs by setting the `enabled` field to `false`: By default they all come enabled for you to use. You will get warnings in the logs for each one that's enabled and not configured. Disabling non used LLM providers will hide those warnings
+# Lua library path
+lua_path: ${exeDir}/../lib/genvm-lua/?.lua
 
-Note environment variable names for LLM API keys (e.g., `HEURISTKEY`, `COMPUT3KEY`, `IOINTELLIGENCE_API_KEY`, `CHUTES_API_KEY`, `MORPHEUS_API_KEY`). You will need to ensure the appropriate key is correctly set before [running the node](/validators/setup-guide#running-the-node).
+# Module binding and performance
+bind_address: 127.0.0.1:3031
+vm_count: 6          # Number of Lua VMs in the pool
+threads: 4           # Async runtime threads
+blocking_threads: 16 # Blocking task threads
 
-## genvm-module-web.yaml
+# LLM backends — add as many as you need
+backends:
+  my-provider:
+    enabled: true                        # Set false to disable without removing
+    host: https://api.example.com        # API endpoint
+    provider: openai-compatible          # Provider type (see below)
+    key: ${ENV[MY_API_KEY]}              # API key via environment variable
+    models:
+      model-name:
+        enabled: true
+        supports_json: true              # Can return structured JSON
+        supports_image: false            # Can process image inputs
+        use_max_completion_tokens: false  # Use max_completion_tokens instead of max_tokens
+        meta: {}                         # Custom metadata (used by greybox, etc.)
 
-This is the configuration of webdriver module that enables the GenVM to access the internet. You should not need to modify this.
+# Equivalence Principle prompt templates
+prompt_templates:
+  eq_comparative:
+    system: "..."
+    user: "..."
+  eq_non_comparative_leader:
+    system: "..."
+    user: "..."
+  eq_non_comparative_validator:
+    system: "..."
+    user: "..."
+```
 
-## genvm-manager.yaml
+### genvm-module-web.yaml — Web Access
 
-This is the configuration of the GenVM manager. You should not need to modify this. However, if you are running the node on
-macos (natively), you may want to set `permits` to some large value, as auto-detection is not supported there yet, such as `32`.
+Controls how contracts access the internet — webdriver for page rendering, URL restrictions.
 
-## Greyboxing LLMs
+```yaml
+bind_address: 127.0.0.1:3032
+lua_script_path: ${exeDir}/../config/genvm-web-default.lua
 
-Switch your GenLayer node from random LLM provider selection to deterministic ordered fallback via OpenRouter.
+# Selenium webdriver endpoint for rendering pages
+webdriver_host: http://127.0.0.1:4444
 
-## What is Greybox?
+# Browser session configuration (Firefox headless)
+session_create_request: '{"capabilities":{"alwaysMatch":{"moz:firefoxOptions":{"args":["-headless"]}}}}'
 
-By default, the node picks a random LLM provider for each call. With **greybox**, the node uses a fixed priority chain configured via `meta.greybox` fields in the YAML config.
+# URL access control
+extra_tld: []              # Additional TLDs to allow beyond defaults
+always_allow_hosts: []     # Hosts that bypass all URL restrictions
+```
+
+### genvm-manager.yaml — Execution Manager
+
+Controls the GenVM manager process that coordinates LLM and web modules.
+
+```yaml
+permits: 8    # Max concurrent GenVM executions (set higher on powerful machines)
+```
+
+<Callout type="info">
+  On macOS (native), auto-detection of permits is not supported. Set `permits` to a value like `32` manually.
+</Callout>
+
+## Supported Provider Types
+
+GenVM has built-in support for four provider types, each handling API communication differently:
+
+| Type | Description | Example Services |
+|---|---|---|
+| `openai-compatible` | OpenAI-compatible chat/completions API | OpenAI, OpenRouter, Heurist, X.ai, Comput3, Chutes, Morpheus |
+| `ollama` | Ollama's native `/api/generate` endpoint | Local Ollama instance |
+| `anthropic` | Anthropic's Messages API | Claude models |
+| `google` | Google's Generative Language API | Gemini models |
+
+## Setting Up LLM Providers
+
+### Example: Local Ollama
+
+Run your own LLM locally and point GenVM to it:
+
+**1. Install Ollama and pull a model:**
+```bash
+# Install Ollama (https://ollama.com)
+curl -fsSL https://ollama.com/install.sh | sh
+
+# Pull a model
+ollama pull llama3.3
+```
+
+**2. Add a backend entry** to `genvm-module-llm.yaml`:
+```yaml
+backends:
+  # ... existing backends ...
+
+  my-ollama:
+    host: http://localhost:11434
+    provider: ollama
+    models:
+      llama3.3:
+        supports_json: true
+        supports_image: false
+```
+
+No API key needed — Ollama runs locally.
+
+**3. Restart the LLM module** (see [Updating Configuration](#updating-configuration) below).
+
+**4. Verify** in the logs:
+```bash
+sudo journalctl -u genlayer-node --no-hostname | grep "my-ollama"
+```
+
+### Example: OpenRouter (Aggregator)
+
+OpenRouter provides access to many models through a single API key:
+
+```yaml
+backends:
+  openrouter:
+    host: https://openrouter.ai/api
+    provider: openai-compatible
+    key: ${ENV[OPENROUTERKEY]}
+    models:
+      deepseek/deepseek-v3.2:
+        supports_json: true
+      anthropic/claude-haiku-4.5:
+        supports_json: true
+        supports_image: true
+      openai/gpt-5.1-mini:
+        supports_json: true
+        supports_image: true
+```
+
+### Environment Variables for API Keys
+
+Set these in your `.env` file or environment before starting the node:
+
+| Variable | Provider |
+|---|---|
+| `OPENROUTERKEY` | OpenRouter |
+| `OPENAIKEY` | OpenAI |
+| `ANTHROPICKEY` | Anthropic |
+| `GEMINIKEY` | Google Gemini |
+| `HEURISTKEY` | Heurist |
+| `XAIKEY` | X.ai (Grok) |
+| `COMPUT3KEY` | Comput3 |
+| `IOINTELLIGENCE_API_KEY` | io.net |
+| `CHUTES_API_KEY` | Chutes |
+| `MORPHEUS_API_KEY` | Morpheus |
+| `ATOMAKEY` | Atoma |
+
+Keys use the `${ENV[VARIABLE_NAME]}` syntax in the YAML config.
+
+<Callout type="info">
+  Enabled backends without a configured API key will show warnings in the logs. Either set the key or disable the backend with `enabled: false`.
+</Callout>
+
+## Provider Selection Strategies
+
+The Lua script referenced by `lua_script_path` controls how GenVM selects which provider to use for each LLM call.
+
+### Default (Random Selection)
+
+The default script (`genvm-llm-default.lua`) iterates through all enabled providers that match the required capabilities (JSON support, image support) and tries them in arbitrary order. If a provider returns an overload error (429, 503, 408, 504, 529), it falls back to the next one.
+
+### Greybox (Ordered Fallback via OpenRouter)
+
+Switch from random selection to a deterministic priority chain. Models are tried in order based on `meta.greybox` priority numbers in the YAML config.
 
 **Default text chain:** deepseek-v3.2 → qwen3-235b → claude-haiku-4.5 → kimi-k2 → glm-5 → llama-3.3 (heurist) → llama-3.3 (ionet)
 
 **Default image chain:** gpt-5.1-mini → gemini-3-flash → claude-haiku-4.5
 
-Chain order is determined by the `meta.greybox` priority numbers on each model in the YAML. Lower number = higher priority. You can change the order by editing these numbers — no Lua changes needed.
+#### Setup
 
-OpenRouter is the primary aggregator. If it fails, the node falls back to direct provider APIs (heurist, ionet).
-
-## Prerequisites
-
-- GenLayer node **v0.5.7+** (tarball must include `genvm-modules-llm-release.yaml` and `genvm-llm-greybox.lua`)
-- An **OpenRouter API key** — get one at https://openrouter.ai/keys
-
-## Step-by-Step Setup
-
-### 1. Stop the node
-
+**1. Stop the node:**
 ```bash
 sudo systemctl stop genlayer-node
 ```
 
-### 2. Add OpenRouter API key to .env
-
+**2. Add OpenRouter API key:**
 ```bash
-# Find your active .env
-ENV_FILE="/opt/genlayer-node/.env"
-
-# Add the key (or edit the file manually)
-echo "OPENROUTERKEY=sk-or-v1-your-key-here" >> ${ENV_FILE}
+echo "OPENROUTERKEY=sk-or-v1-your-key-here" >> /opt/genlayer-node/.env
 ```
 
-### 3. Apply the release LLM config
-
-The tarball ships with a unified config that includes all backends (openrouter, morpheus, heurist, ionet, etc.).
-
+**3. Apply the release LLM config:**
 ```bash
 VERSION=$(readlink /opt/genlayer-node/bin | sed 's|/bin||; s|.*/||')
 
@@ -90,94 +230,33 @@ cp /opt/genlayer-node/${VERSION}/third_party/genvm/config/genvm-modules-llm-rele
    /opt/genlayer-node/${VERSION}/third_party/genvm/config/genvm-module-llm.yaml
 ```
 
-### 4. Switch to greybox strategy
-
+**4. Switch to greybox strategy:**
 ```bash
 sed -i 's/genvm-llm-default\.lua/genvm-llm-greybox.lua/' \
   /opt/genlayer-node/${VERSION}/third_party/genvm/config/genvm-module-llm.yaml
 ```
 
-### 5. Verify the config
-
-```bash
-# Check lua script path
-grep lua_script_path /opt/genlayer-node/${VERSION}/third_party/genvm/config/genvm-module-llm.yaml
-# Expected: lua_script_path: ${exeDir}/../config/genvm-llm-greybox.lua
-
-# Check openrouter is present
-grep -A2 'openrouter:' /opt/genlayer-node/${VERSION}/third_party/genvm/config/genvm-module-llm.yaml
-# Expected: enabled: true
-
-# Check the greybox Lua file exists
-ls -la /opt/genlayer-node/${VERSION}/third_party/genvm/config/genvm-llm-greybox.lua
-```
-
-### 6. Start the node
-
+**5. Start the node:**
 ```bash
 sudo systemctl start genlayer-node
 ```
 
-### 7. Verify greybox is active
-
-Wait for an LLM transaction to be processed, then check the logs:
-
+**6. Verify:**
 ```bash
 sudo journalctl -u genlayer-node --no-hostname | grep "greybox"
+# Expected: greybox: success    provider: openrouter    model: deepseek/deepseek-v3.2
 ```
 
-You should see entries like:
-```
-greybox: using text chain    count: 5
-greybox: success    provider: openrouter    model: deepseek/deepseek-v3.2    is_primary: true
-```
+#### Customizing Chain Order
 
-## Switching Back to Default
-
-To revert to random provider selection:
-
-```bash
-sudo systemctl stop genlayer-node
-
-sed -i 's/genvm-llm-greybox\.lua/genvm-llm-default.lua/' \
-  /opt/genlayer-node/${VERSION}/third_party/genvm/config/genvm-module-llm.yaml
-
-sudo systemctl start genlayer-node
-```
-
-## Updating Greybox on a Running Node (No Full Restart)
-
-If you need to update the Lua script or model config without stopping the whole node,
-you can restart just the LLM module on each GenVM instance:
-
-```bash
-# Find the GenVM manager port (check your config or active ports)
-PORT=3999
-
-# Stop the LLM module
-curl -X POST "http://127.0.0.1:${PORT}/module/stop" \
-  -H 'Content-Type: application/json' \
-  -d '{"module_type": "Llm"}'
-
-# Start the LLM module (reloads Lua script and config)
-curl -X POST "http://127.0.0.1:${PORT}/module/start" \
-  -H 'Content-Type: application/json' \
-  -d '{"module_type": "Llm", "config": null}'
-```
-
-Repeat for each GenVM instance port. There is no atomic restart — each instance
-restarts independently.
-
-## Customizing the Chain Order
-
-The greybox Lua script reads chain membership and priority from `meta.greybox` on each model in the YAML config. Example:
+Priority is controlled by `meta.greybox` on each model:
 
 ```yaml
 models:
   deepseek/deepseek-v3.2:
     supports_json: true
     meta:
-      greybox: { text: 1 }        # text chain, priority 1 (primary)
+      greybox: { text: 1 }        # text chain, priority 1 (tried first)
   openai/gpt-5.1-mini:
     supports_json: true
     supports_image: true
@@ -187,33 +266,189 @@ models:
     supports_json: true
     supports_image: true
     meta:
-      greybox: { text: 3, image: 3 }  # both chains
+      greybox: { text: 3, image: 3 }  # both chains, priority 3
 ```
 
-**Change model order:** Edit the priority numbers. Lower number = tried first.
+Lower number = tried first. Remove `meta.greybox` to exclude a model from the chain.
 
-**Add a model to the chain:** Add `meta: { greybox: { text: N } }` to any model in any enabled backend.
+#### Reverting to Default
 
-**Remove a model from the chain:** Remove its `meta.greybox` field.
+```bash
+sudo systemctl stop genlayer-node
+sed -i 's/genvm-llm-greybox\.lua/genvm-llm-default.lua/' \
+  /opt/genlayer-node/${VERSION}/third_party/genvm/config/genvm-module-llm.yaml
+sudo systemctl start genlayer-node
+```
 
-**Disable an entire provider:** Remove its API key from `.env` — all its models drop out automatically.
+### Writing a Custom Strategy
 
-The YAML config **must** have `meta.greybox` fields on at least some models. If none are found, the LLM module will fail to start with an error.
+You can write your own Lua script for provider selection. Create a new `.lua` file in the config directory and point `lua_script_path` to it.
 
-After editing the YAML, restart the LLM module (see "Updating Greybox on a Running Node" above) or restart the node.
+Your script must export two global functions:
+
+```lua
+-- Called for direct prompts (gl.nondet.exec_prompt)
+function ExecPrompt(ctx, args, remaining_gen)
+    -- args.prompt: string
+    -- args.response_format: "text" | "json"
+    -- args.images: table of image bytes (optional)
+    -- remaining_gen: number (remaining gas)
+    --
+    -- Must return: {data: string, consumed_gen: number, input_tokens: number, output_tokens: number}
+end
+
+-- Called for template prompts (Equivalence Principle)
+function ExecPromptTemplate(ctx, args, remaining_gen)
+    -- args.template: "EqComparative" | "EqNonComparativeValidator" | "EqNonComparativeLeader"
+    -- args.vars: table of template variable substitutions
+    --
+    -- Must return: same as ExecPrompt
+end
+```
+
+Use the helper libraries:
+```lua
+local lib = require("lib-genvm")   -- logging, error handling, utilities
+local llm = require("lib-llm")     -- provider selection, prompt transforms
+
+-- Select providers matching required capabilities
+local providers = llm.select_providers_for(prompt, format)
+
+-- Execute on a specific provider
+local result = llm.rs.exec_prompt_in_provider(ctx, {
+    provider = "my-provider",
+    model = "model-name",
+    prompt = mapped_prompt,
+    format = "text",  -- or "json" or "bool"
+})
+```
+
+## Lua Scripting API
+
+### Core Functions (`lib.rs` / `__dflt`)
+
+Available in all Lua scripts:
+
+| Function | Description |
+|---|---|
+| `lib.rs.request(ctx, {method, url, headers, body, json, sign})` | Make HTTP request. `json: true` returns parsed response. |
+| `lib.rs.json_parse(str)` | Parse JSON string to table |
+| `lib.rs.json_stringify(value)` | Serialize table to JSON string |
+| `lib.rs.base64_encode(data)` | Base64 encode |
+| `lib.rs.base64_decode(data)` | Base64 decode |
+| `lib.rs.filter_text(text, filters)` | Apply text filters: `"NFC"`, `"NFKC"`, `"NormalizeWS"`, `"RmZeroWidth"` |
+| `lib.rs.filter_image(bytes, filters)` | Apply image filters: `{Denoise=0.5}`, `{JPEG=0.9}`, `{GuassianNoise=0.1}` |
+| `lib.rs.split_url(url)` | Parse URL → `{schema, host, port}` |
+| `lib.rs.url_encode(text)` | URL-encode text |
+| `lib.rs.sleep_seconds(n)` | Async sleep |
+| `lib.rs.random_bytes(n)` | Generate n random bytes |
+| `lib.rs.random_float()` | Random float in [0, 1) |
+| `lib.rs.user_error({causes, fatal, ctx})` | Raise a user error |
+| `lib.rs.as_user_error(err)` | Try to convert error to user error (returns nil if not) |
+| `lib.log({level, message, ...})` | Structured logging (levels: trace, debug, info, warn, error) |
+
+### LLM Functions (`llm.rs` / `__llm`)
+
+Available in LLM module scripts:
+
+| Function | Description |
+|---|---|
+| `llm.rs.exec_prompt_in_provider(ctx, request)` | Execute prompt on a specific provider/model |
+| `llm.providers` | Table of all configured providers and their models |
+| `llm.templates` | Equivalence Principle prompt templates |
+| `llm.select_providers_for(prompt, format)` | Filter providers by capability (JSON, images) |
+| `llm.exec_prompt_transform(args)` | Transform raw prompt args to internal format |
+| `llm.exec_prompt_template_transform(args)` | Transform template args with variable substitution |
+| `llm.overloaded_statuses` | Set of HTTP status codes indicating overload: `{408, 429, 503, 504, 529}` |
+
+### Web Functions (`web.rs` / `__web`)
+
+Available in web module scripts:
+
+| Function | Description |
+|---|---|
+| `web.config` | Web module configuration (webdriver_host, etc.) |
+| `web.allowed_tld` | Set of allowed top-level domains |
+| `web.check_url(url)` | Validate URL against schema, port, and TLD restrictions |
+
+## Prompt Templates
+
+The Equivalence Principle uses three prompt templates, configured in `genvm-module-llm.yaml` under `prompt_templates`:
+
+| Template | Used By | Input Variables | Returns |
+|---|---|---|---|
+| `eq_comparative` | Comparative validation | `#{task}`, `#{criteria}`, `#{output1}`, `#{output2}` | Boolean (are outputs equivalent?) |
+| `eq_non_comparative_leader` | Leader execution | `#{task}`, `#{criteria}` | Text result |
+| `eq_non_comparative_validator` | Validator checking | `#{task}`, `#{criteria}`, `#{output}` | Boolean + reason |
+
+Templates use `#{variable_name}` syntax for substitution. You can customize the system and user prompts to change how validators evaluate results.
+
+## Web Module Configuration
+
+The web module enables contracts to fetch web pages, make HTTP requests, and capture screenshots.
+
+### URL Restrictions
+
+By default, contracts can only access URLs with standard TLDs (com, org, net, etc.) on ports 80 and 443. Customize with:
+
+- `extra_tld: ["local", "internal"]` — allow additional TLDs
+- `always_allow_hosts: ["my-api.internal"]` — bypass all URL checks for specific hosts
+
+### Webdriver
+
+The webdriver (Selenium with headless Firefox) handles page rendering and screenshots. The web module scripts implement two functions:
+
+- `Render(ctx, payload)` — render a page as text, HTML, or screenshot
+- `Request(ctx, payload)` — make HTTP requests (GET, POST, etc.)
+
+## Updating Configuration
+
+### Hot-Reload (No Full Restart)
+
+Restart individual modules without stopping the node:
+
+```bash
+PORT=3999  # GenVM manager port
+
+# Restart LLM module (reloads Lua script + YAML config)
+curl -X POST "http://127.0.0.1:${PORT}/module/stop" \
+  -H 'Content-Type: application/json' \
+  -d '{"module_type": "Llm"}'
+
+curl -X POST "http://127.0.0.1:${PORT}/module/start" \
+  -H 'Content-Type: application/json' \
+  -d '{"module_type": "Llm", "config": null}'
+
+# Restart Web module
+curl -X POST "http://127.0.0.1:${PORT}/module/stop" \
+  -H 'Content-Type: application/json' \
+  -d '{"module_type": "Web"}'
+
+curl -X POST "http://127.0.0.1:${PORT}/module/start" \
+  -H 'Content-Type: application/json' \
+  -d '{"module_type": "Web", "config": null}'
+```
+
+### Full Restart
+
+```bash
+sudo systemctl stop genlayer-node
+# ... edit config files ...
+sudo systemctl start genlayer-node
+```
 
 ## Troubleshooting
 
+**Warnings for unconfigured providers:**
+Enabled backends without API keys log warnings. Either set the key in `.env` or disable the backend with `enabled: false`.
+
 **"module_failed_to_start" error:**
-- Check that `genvm-llm-greybox.lua` exists in the config directory
-- Check that `OPENROUTERKEY` is set in `.env` and not empty
-- Check that the openrouter backend shows `enabled: true` in the YAML
+- Check that the Lua script file exists at the path in `lua_script_path`
+- Check that required API keys are set in `.env`
+- Check YAML syntax (indentation, colons)
 
-**No "greybox:" entries in logs:**
-- The greybox Lua only logs when an LLM call happens. Run a transaction that uses an intelligent contract with LLM calls.
-- Verify `lua_script_path` points to `genvm-llm-greybox.lua` (not `default`)
+**"NO_PROVIDER_FOR_PROMPT" error:**
+No enabled provider matches the required capabilities. Ensure at least one backend has `supports_json: true` (and `supports_image: true` if the contract sends images).
 
-**All models exhausted error:**
-- OpenRouter may be down or your key is invalid
-- Check your key at https://openrouter.ai/settings/keys
-- Fallback providers (heurist, ionet) also need valid keys if you want fallback to work
+**All models exhausted / overload errors:**
+All providers returned overload status codes (429, 503, etc.). Check API key validity, provider status pages, and consider adding more backends as fallback.
