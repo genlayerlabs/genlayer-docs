@@ -158,11 +158,9 @@ Set these in your `.env` file before starting the node. You only need to set the
 
 ## Greyboxing: Optimizing Your Validator
 
-Greyboxing is how you configure and optimize your validator's LLM execution. The term comes from the idea that each validator operates as a semi-transparent box — you control what goes in, which model processes it, and how outputs are handled, but the contract's logic remains a black box.
+Greyboxing is how you configure and optimize your validator's LLM execution. From the network's point of view, each validator is a **grey box** — an attacker can see that LLMs are being used, but cannot know which model will process a given request, how it's configured, or what filters are applied. This per-validator opacity is a security property: it makes prompt injection and manipulation attacks much harder because there's no single configuration to target.
 
-Every validator's greybox is unique. This has two benefits:
-- **Security** — attackers cannot predict your validator's specific configuration, making universal attacks harder
-- **Economics** — you can optimize for cost, speed, and quality to maximize your rewards
+As a validator operator, greyboxing is also your primary lever for **economics** — by choosing the right models, configuring fallback chains, and applying filters, you control your operating costs and consensus quality.
 
 ### What you can control
 
