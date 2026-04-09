@@ -2,6 +2,10 @@ import { Callout } from "nextra-theme-docs";
 
 # GenVM Configuration
 
+Your validator's GenVM needs two things to function: **LLM providers** to process AI-powered contract logic, and a **web module** to fetch live internet data. This page covers how to configure both.
+
+**Why this matters:** The LLM providers you choose directly affect your validator's operating costs and performance. Faster, cheaper models reduce your costs per transaction. Higher-quality models improve your consensus accuracy, which affects your rewards and avoids slashing. By tuning your provider setup — choosing the right models, configuring fallback chains, or running local inference — you can optimize the economics of running your validator.
+
 GenVM uses a layered configuration system: **YAML files** define providers, models, and module settings, while **Lua scripts** implement execution logic (provider selection, fallback strategies, text processing). You can customize both without rebuilding GenVM.
 
 Configuration files live at `third_party/genvm/config/`.
