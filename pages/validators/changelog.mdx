@@ -1,5 +1,32 @@
 # Changelog
 
+## v0.5.8
+
+### New features
+
+- Add `gen_syncing` endpoint for sync status visibility
+- Add bounded sync wait for RPC readiness
+- Add per-IP per-method RPC rate limiting
+
+### Bug fixes
+
+- Defer GenVM precompile to container startup to avoid AVX-512 incompatibility
+- Replace stuck transactions with gas bump
+- Skip duty recovery when behind and handle chained missing tx data dependencies
+- Add hiccup retry to sync pipeline
+- Recover prime after reorg
+- Fix RPC max block range exceeded in event router
+- Return -32001 for missing contract errors
+- Pass transaction value to GenVM
+- Standardize RPC error codes per EIP-1474
+- Retry tx lookup for RPC indexing lag
+
+### Misc
+
+- Consolidate genvm configs
+- Add `gen_getTransactionStatus` docs
+- Add `gen_syncing` API docs and clarify RPC config group vs method precedence
+
 ## v0.5.7
 
 ### New features

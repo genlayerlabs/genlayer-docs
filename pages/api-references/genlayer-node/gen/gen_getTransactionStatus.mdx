@@ -1,0 +1,73 @@
+### gen_getTransactionStatus
+
+Returns the current consensus status of a transaction. This is a lightweight endpoint that returns only the status without full receipt data — use it for polling transaction progress.
+
+**Method:** `gen_getTransactionStatus`
+
+**Parameters:**
+
+- `request` (object, required):
+  - `txId` (string, required): The transaction hash (hex-encoded with `0x` prefix)
+  - `timestamp` (integer, optional): Unix timestamp for the query. If not provided, uses current time
+
+**Returns:** Object with status string and numeric code
+
+**Response Fields:**
+
+| Field | Type | Description |
+|-------|------|-------------|
+| `status` | string | Human-readable status name (e.g., "FINALIZED", "ACCEPTED", "PENDING") |
+| `statusCode` | uint8 | Numeric status code |
+
+**Status Codes:**
+
+| Code | Status |
+|------|--------|
+| 0 | UNINITIALIZED |
+| 1 | PENDING |
+| 2 | PROPOSING |
+| 3 | COMMITTING |
+| 4 | REVEALING |
+| 5 | ACCEPTED |
+| 6 | UNDETERMINED |
+| 7 | FINALIZED |
+| 8 | CANCELED |
+| 9 | APPEAL_REVEALING |
+| 10 | APPEAL_COMMITTING |
+| 11 | READY_TO_FINALIZE |
+| 12 | VALIDATORS_TIMEOUT |
+| 13 | LEADER_TIMEOUT |
+
+**Example Request:**
+
+```json
+{
+  "jsonrpc": "2.0",
+  "method": "gen_getTransactionStatus",
+  "params": [
+    {
+      "txId": "0x563f046c187d711127c51213ca62e2e4fee52009a98f0989a73a0a0382d21890"
+    }
+  ],
+  "id": 1
+}
+```
+
+**Example Response:**
+
+```json
+{
+  "jsonrpc": "2.0",
+  "result": {
+    "status": "FINALIZED",
+    "statusCode": 7
+  },
+  "id": 1
+}
+```
+
+**Notes:**
+
+- This endpoint queries the consensus contract on-chain via `getTransactionData`
+- Use this for polling — it's cheaper than `gen_getTransactionReceipt` which returns the full receipt
+- The `timestamp` parameter is passed to the on-chain call and affects how the contract reports the status

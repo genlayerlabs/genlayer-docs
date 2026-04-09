@@ -1,19 +1,47 @@
-# Optimistic Democracy: How GenLayer Works
+import { Callout } from "nextra-theme-docs";
 
-<img src="/studio/diagram main.jpg" alt="GenLayer Optimistic Democracy Diagram" />
+# How GenLayer Works
 
-Optimistic Democracy is GenLayer's consensus mechanism, rooted in [Condorcet's Jury Theorem](https://jury-theorem.genlayer.com/) (click the link to check out our interactive model), which affirms that collective decision-making becomes more accurate as independent validators vote. The process unfolds in distinct phases:
+## Optimistic Democracy
 
-1. **Transaction Submission**: A user sends a transaction to the GenLayer network.
+GenLayer uses **Optimistic Democracy** for consensus — a mechanism where validators running diverse AI models independently evaluate transactions and vote on outcomes. It applies [Condorcet's Jury Theorem](https://en.wikipedia.org/wiki/Condorcet%27s_jury_theorem): a group of independent reasoners is more likely to reach the correct answer than any individual.
 
-2. **Leader Proposes Result**: A validator is randomly chosen as the Leader validator. It processes the transaction and proposes a result.
+Transactions are accepted if a majority of validators agree. Anyone can appeal an accepted result, triggering re-evaluation by a new, larger validator set. This process can escalate through multiple rounds until a final decision is reached.
 
-3. **Validators Recompute**: A committee of validators re-compute the transaction. They either approve or deny based on whether the output aligns with the Leader's result (i.e. is <b>equivalent</b>).
+## Transaction Lifecycle
 
-4. **Result Accepted**: Once a majority approves, the result is provisionally accepted.
+Every transaction moves through these stages:
 
-5. **Appeal**: If any participant disputes the outcome, they can appeal within the Finality Window by posting a bond.
+1. **Pending** — queued, waiting to be picked up
+2. **Proposing** — a leader validator executes the contract and proposes a result
+3. **Committing** — other validators execute independently and submit encrypted votes
+4. **Leader Revealing** — the leader reveals execution data and decryption keys
+5. **Revealing** — validators reveal their votes
+6. **Accepted** — majority consensus reached; transaction enters the appeal window
+7. **Finalized** — appeal window closed, result is permanent and irreversible
 
-6. **Additional Validation (If Appealed)**: A new set of validators may be chosen to re-evaluate the transaction. If the appeal is valid, they reward the appellant. Otherwise, the bond is forfeited.
+If consensus is not reached, the transaction may be marked **Undetermined** or rotate to a new leader.
 
-7. **Final Decision**: After all appeals are resolved, the outcome becomes final.
+See [Transaction Execution](/understand-genlayer-protocol/core-concepts/transactions/transaction-execution) for the full state machine.
+
+## Non-Determinism and Consensus
+
+Because Intelligent Contracts use LLMs and web data, validators may produce different outputs for the same input. GenLayer provides several strategies for reaching consensus on non-deterministic results:
+
+- **Strict equality** — all validators must produce the exact same output (for deterministic operations)
+- **LLM-based comparison** — an LLM compares validator outputs against developer-defined criteria
+- **Custom validation** — developers write explicit leader/validator function pairs with full control over consensus logic
+
+See [Non-determinism](/developers/intelligent-contracts/features/non-determinism) for implementation details.
+
+## Appeals and Finality
+
+After a transaction is accepted, it enters a **finality window** during which anyone can appeal the result.
+
+- An appeal triggers a new round with a fresh, larger validator set
+- Appeals can escalate through multiple rounds
+- The final round's decision is binding
+
+Once the finality window closes without appeal (or after the final appeal round), the transaction is **finalized** — permanent and irreversible.
+
+See [Appeal Process](/understand-genlayer-protocol/core-concepts/optimistic-democracy/appeal-process) and [Finality](/understand-genlayer-protocol/core-concepts/optimistic-democracy/finality) for details.

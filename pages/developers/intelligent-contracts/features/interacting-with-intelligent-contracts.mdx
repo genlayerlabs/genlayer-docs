@@ -1,5 +1,7 @@
 # Interacting with Intelligent Contracts
 
+> This page covers syntax for internal messages (IC → IC). See [Messages](/developers/intelligent-contracts/features/messages) for the conceptual model and [Value Transfers](/developers/intelligent-contracts/features/value-transfers) for sending GEN.
+
 ## Getting Contract References
 
 Access other contracts by their address:
@@ -41,6 +43,9 @@ Send asynchronous messages to other contracts:
 other = gl.get_contract_at(addr)
 other.emit(on='accepted').update_status("active")
 other.emit(on='finalized').update_status("active")
+
+# With value (recipient method must be @gl.public.write.payable)
+other.emit(value=u256(100), on='finalized').deposit()
 ```
 
 ## Deploying New Contracts

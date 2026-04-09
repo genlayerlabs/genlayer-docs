@@ -1,16 +1,17 @@
 {
-    "features": "Features",
     "storage": "Storage",
     "error-handling": "Error Handling",
     "upgradability": "Upgradability",
-    "balances": "Balances",
+    "value-transfers": "Value Transfers",
+    "messages": "Messages",
     "interacting-with-intelligent-contracts": "Interacting with Intelligent Contracts",
     "interacting-with-evm-contracts": "Interacting with EVM Contracts",
+    "special-methods": "Special Methods",
     "vector-storage": "Vector Storage",
     "debugging": "Debugging",
-    "special-methods": "Special Methods",
     "random": "Random",
     "non-determinism": "Non-determinism",
     "calling-llms": "Calling LLMs",
+    "image-processing": "Image Processing",
     "web-access": "Web Access"
 }

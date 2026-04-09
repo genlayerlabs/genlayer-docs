@@ -1,0 +1,71 @@
+import { Callout } from "nextra-theme-docs";
+
+# Image Processing
+
+Intelligent Contracts can process images through LLMs — pass screenshots, photos, or any visual data alongside a prompt for analysis.
+
+## Sending Images to LLMs
+
+Use the `images` parameter in `gl.nondet.exec_prompt()`:
+
+```python
+from genlayer import *
+
+class ReceiptVerifier(gl.Contract):
+    verified: bool
+
+    def __init__(self):
+        self.verified = False
+
+    @gl.public.write
+    def verify_receipt(self, image_data: bytes, expected_amount: str) -> None:
+        def leader_fn():
+            return gl.nondet.exec_prompt(
+                f"Does this receipt show a payment of {expected_amount}? "
+                "Respond as JSON: {{\"matches\": true/false, \"actual_amount\": \"...\"}}",
+                images=[image_data],  # accepts raw bytes directly
+                response_format="json",
+            )
+
+        def validator_fn(leaders_res) -> bool:
+            if not isinstance(leaders_res, gl.vm.Return):
+                return False
+            my_result = leader_fn()
+            return my_result["matches"] == leaders_res.calldata["matches"]
+
+        result = gl.vm.run_nondet_unsafe(leader_fn, validator_fn)
+        self.verified = result["matches"]
+```
+
+The `images` parameter accepts a sequence of raw `bytes` (e.g., PNG/JPEG data) or `gl.nondet.Image` objects.
+
+## Capturing Screenshots from the Web
+
+Combine [web access](/developers/intelligent-contracts/features/web-access) with image processing to screenshot a webpage and analyze it:
+
+```python
+def check_website_status():
+    url = "https://example.com/status-page"
+    screenshot = gl.nondet.web.render(url, mode='screenshot')
+    
+    return gl.nondet.exec_prompt(
+        "Is this status page showing all systems operational? "
+        "Respond as JSON: {{\"all_operational\": true/false}}",
+        images=[screenshot],
+        response_format="json",
+    )
+
+result = gl.eq_principle.strict_eq(check_website_status)
+```
+
+## Use Cases
+
+- **Visual evidence verification** — insurance claims with photo proof, damage assessment
+- **Document analysis** — receipts, invoices, certificates
+- **Web monitoring** — screenshot a page and verify its content matches expectations
+- **Brand & content compliance** — check if visual content meets guidelines
+- **UI verification** — screenshot an app and verify it renders correctly
+
+<Callout type="info">
+  Image processing requires vision-capable LLM models. On the GenLayer network, validators handle model selection — your contract just sends images. In Studio running locally, ensure your configured validators use a model that supports image inputs (e.g., GPT-5, Claude Sonnet).
+</Callout>

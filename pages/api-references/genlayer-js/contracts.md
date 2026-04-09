@@ -4,7 +4,7 @@ Methods for deploying, reading, writing, and simulating GenLayer intelligent con
 
 ### getContractCode
 
-Retrieves the source code of a deployed contract. Localnet only.
+Retrieves the source code of a deployed contract. Studio only.
 
 | Parameter | Type | Required | Description |
 |-----------|------|----------|-------------|
@@ -16,7 +16,7 @@ Retrieves the source code of a deployed contract. Localnet only.
 
 ### getContractSchema
 
-Gets the schema (methods and constructor) of a deployed contract. Localnet only.
+Gets the schema (methods and constructor) of a deployed contract. Studio only.
 
 | Parameter | Type | Required | Description |
 |-----------|------|----------|-------------|
@@ -28,7 +28,7 @@ Gets the schema (methods and constructor) of a deployed contract. Localnet only.
 
 ### getContractSchemaForCode
 
-Generates a schema for contract code without deploying it. Localnet only.
+Generates a schema for contract code without deploying it. Studio only.
 
 | Parameter | Type | Required | Description |
 |-----------|------|----------|-------------|
@@ -120,6 +120,51 @@ Calculates the minimum bond required to appeal a transaction.
 | txId | ``0x${string}`` | yes |  |
 
 **Returns:** `bigint`
+
+---
+
+### getRoundNumber
+
+Returns the current consensus round number for a transaction.
+
+| Parameter | Type | Required | Description |
+|-----------|------|----------|-------------|
+| txId | ``0x${string}`` | yes |  |
+
+**Returns:** `bigint`
+
+---
+
+### getRoundData
+
+Returns detailed data for a specific consensus round.
+
+| Parameter | Type | Required | Description |
+|-----------|------|----------|-------------|
+| txId | ``0x${string}`` | yes |  |
+| round | `bigint` | yes |  |
+
+---
+
+### getLastRoundData
+
+Returns the current round number and its data for a transaction.
+
+| Parameter | Type | Required | Description |
+|-----------|------|----------|-------------|
+| txId | ``0x${string}`` | yes |  |
+
+---
+
+### canAppeal
+
+Checks if a transaction can be appealed.
+
+| Parameter | Type | Required | Description |
+|-----------|------|----------|-------------|
+| txId | ``0x${string}`` | yes |  |
+
+**Returns:** `boolean`
 
 ---
 

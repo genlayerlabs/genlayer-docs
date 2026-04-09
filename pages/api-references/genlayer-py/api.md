@@ -177,6 +177,7 @@ client.get_contract_schema_for_code(contract_code: AnyStr)
 ### appeal_transaction
 
 Appeals a consensus transaction to trigger a new round of validation.
+Returns the original transaction_id (appeals operate on the same tx).
 
 ```python
 client.appeal_transaction(transaction_id: HexStr, account: Optional = None, value: int = 0)

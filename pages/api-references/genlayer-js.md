@@ -164,6 +164,80 @@ console.log(trace.stderr);       // standard error output
 console.log(trace.genvm_log);    // detailed GenVM execution logs
 ```
 
+### Using with a wallet provider (MetaMask)
+
+When building a browser dApp, create two clients: one for reads (no wallet needed) and one for writes (signed by the wallet). This follows the standard viem pattern and keeps concerns separated.
+
+```typescript
+import { createClient } from "genlayer-js";
+import { testnetBradbury } from "genlayer-js/chains";
+import { TransactionStatus } from "genlayer-js/types";
+
+// Read client — talks directly to GenLayer RPC, no wallet needed
+const readClient = createClient({
+  chain: testnetBradbury,
+});
+
+// Write client — signs transactions through the wallet
+const writeClient = createClient({
+  chain: testnetBradbury,
+  account: address as `0x${string}`, // from wallet connection
+  provider: window.ethereum,          // or from a wallet SDK
+});
+
+// Use readClient for all reads
+const result = await readClient.readContract({
+  address: contractAddress,
+  functionName: "get_storage",
+  args: [],
+});
+
+const tx = await readClient.getTransaction({ hash: txHash });
+
+// Use writeClient for transactions (MetaMask popup)
+const txHash = await writeClient.writeContract({
+  address: contractAddress,
+  functionName: "update_storage",
+  args: ["new_value"],
+  value: BigInt(0),
+});
+
+// Either client can wait for receipts
+const receipt = await readClient.waitForTransactionReceipt({
+  hash: txHash,
+  status: TransactionStatus.ACCEPTED,
+});
+```
+
+### Switching the wallet to the correct network
+
+When using MetaMask or another browser wallet, the wallet may be connected to a different chain than what your client is configured for. Use `client.connect()` to switch the wallet to the correct GenLayer network before sending transactions:
+
+```typescript
+import { createClient } from "genlayer-js";
+import { studionet } from "genlayer-js/chains";
+
+const client = createClient({
+  chain: studionet,
+  account: address as `0x${string}`,
+});
+
+// Switch MetaMask to the correct chain (adds the network if not present)
+await client.connect("studionet");
+
+// Now transactions will go to the right network
+const txHash = await client.writeContract({
+  address: contractAddress,
+  functionName: "create_profile",
+  args: ["alice", "Hello world"],
+  value: BigInt(0),
+});
+```
+
+Available networks: `"localnet"`, `"studionet"`, `"testnetAsimov"`, `"testnetBradbury"`.
+
+> **Note:** If the wallet is on the wrong chain when you call `writeContract`, the SDK will throw a clear error telling you which chain the wallet is on vs. which chain the client expects. Call `client.connect()` to resolve this.
+
 ### Staking Operations
 
 The SDK provides staking functionality for validators and delegators on testnet-bradbury (and testnet-asimov).
