@@ -162,6 +162,19 @@ Greyboxing is how you configure and optimize your validator's LLM execution. Fro
 
 As a validator operator, greyboxing is also your primary lever for **economics** — by choosing the right models, configuring fallback chains, and applying filters, you control your operating costs and consensus quality.
 
+### Choosing models
+
+Start with a capable model and optimize down over time. Your validator needs to produce correct consensus results — using a model that's too weak will hurt your accuracy, leading to missed rewards or slashing. Once you're confident in your setup, you can experiment with cheaper alternatives.
+
+**Recommended starting points:**
+- **Frontier tier:** Claude Sonnet 4.6, GPT-5, Gemini 2.5 Flash — high accuracy, higher cost
+- **Strong open-source:** DeepSeek V3.2, Qwen3-235B, Llama 4 Maverick — good accuracy, lower cost
+- **Budget tier:** Nemotron, smaller Llama variants — lowest cost, test carefully before relying on these
+
+For image-capable requests, you need at least one vision model (e.g., GPT-5, Gemini Flash, Claude Sonnet).
+
+A practical approach: use a frontier model as your primary, with cheaper models as fallback. The greyboxing ordered fallback strategy (below) makes this easy.
+
 ### What you can control
 
 Greyboxing encompasses several layers of configuration, all implemented in the Lua script that `lua_script_path` points to:
