@@ -6,6 +6,22 @@ Your validator's GenVM needs two things to function: **LLM providers** to proces
 
 **Why this matters:** The LLM providers you choose directly affect your validator's operating costs and performance. Faster, cheaper models reduce your costs per transaction. Higher-quality models improve your consensus accuracy, which affects your rewards and avoids slashing. By tuning your provider setup — choosing the right models, configuring fallback chains, running local inference, or applying input filters — you can optimize the economics of running your validator.
 
+## LLM Provider Credits
+
+<Callout>
+  GenLayer has partnered with multiple LLM providers to offer free credits for validators:
+
+  **[Heurist](https://www.heurist.ai/)** — free [API credits](https://dev-api-form.heurist.ai) with referral code _"genlayer"_.
+
+  **[Comput3](https://genlayer.comput3.ai/)** — free [API credits](https://genlayer.comput3.ai/) for llama3, hermes3, and qwen3 models.
+
+  **[io.net](/partners/ionet)** — create an account at [id.io.net](https://id.io.net/login) and [request free credits](https://form.typeform.com/to/pDmCCViV).
+
+  **[Chutes](/partners/chutes)** — create an account at [chutes.ai](https://chutes.ai) and generate an API key from settings.
+
+  **[Morpheus](/partners/morpheus)** — obtain a [Morpheus API key](https://mor.org/) for DeepSeek, Llama, Qwen, and more via OpenAI-compatible API.
+</Callout>
+
 ## Hot-Reload
 
 You can modify configuration files on the fly and reload without stopping your node. This is important when experimenting with providers or tuning your setup.
@@ -57,6 +73,22 @@ backends:
         meta: {}                  # Custom metadata (used by greyboxing strategies)
 ```
 
+### Model capabilities
+
+Intelligent Contract LLM requests have two axes:
+
+- **Input:** text only, or text + one or more images
+- **Output:** free-form text, or structured JSON
+
+This gives four combinations: text→text, text→JSON, images+text→text, images+text→JSON. The capability flags control which models are eligible:
+
+- `supports_json: true` — model can produce structured JSON output
+- `supports_image: true` — model can accept image inputs
+
+**Your validator must support all combinations across your model set.** Not every model needs to support everything — that's where routing comes in. You can use a cheap text model for simple prompts and a vision-capable model for image requests. But if a contract sends an image prompt and none of your enabled models support images, the request will fail.
+
+The `supports_json` and `supports_image` flags tell the Lua script which models are eligible for each request type. Set them accurately for each model.
+
 ### Supported provider types
 
 | Type | Description | Example services |
@@ -104,7 +136,7 @@ backends:
 
 ### API key environment variables
 
-Set these in your `.env` file before starting the node. Keys use `${ENV[VARIABLE_NAME]}` syntax in the YAML.
+Set these in your `.env` file before starting the node. You only need to set the keys for providers you're actually using. Keys use `${ENV[VARIABLE_NAME]}` syntax in the YAML.
 
 | Variable | Provider |
 |---|---|
@@ -123,21 +155,6 @@ Set these in your `.env` file before starting the node. Keys use `${ENV[VARIABLE
   Enabled backends without a configured API key will log warnings. Either set the key or disable the backend with `enabled: false`.
 </Callout>
 
-### LLM provider credits
-
-<Callout>
-  GenLayer has partnered with multiple LLM providers to offer free credits for validators:
-
-  **[Heurist](https://www.heurist.ai/)** — free [API credits](https://dev-api-form.heurist.ai) with referral code _"genlayer"_.
-
-  **[Comput3](https://genlayer.comput3.ai/)** — free [API credits](https://genlayer.comput3.ai/) for llama3, hermes3, and qwen3 models.
-
-  **[io.net](/partners/ionet)** — create an account at [id.io.net](https://id.io.net/login) and [request free credits](https://form.typeform.com/to/pDmCCViV).
-
-  **[Chutes](/partners/chutes)** — create an account at [chutes.ai](https://chutes.ai) and generate an API key from settings.
-
-  **[Morpheus](/partners/morpheus)** — obtain a [Morpheus API key](https://mor.org/) for DeepSeek, Llama, Qwen, and more via OpenAI-compatible API.
-</Callout>
 
 ## Greyboxing: Optimizing Your Validator
 
