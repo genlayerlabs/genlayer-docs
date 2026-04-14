@@ -180,3 +180,29 @@ Appeals a consensus transaction to trigger a new round of validation.
 
 ---
 
+### finalizeTransaction
+
+Finalizes a single GenLayer transaction that is ready to be finalized. Returns the EVM transaction hash.
+
+| Parameter | Type | Required | Description |
+|-----------|------|----------|-------------|
+| account | `Account` | no |  |
+| txId | ``0x${string}`` | yes |  |
+
+**Returns:** `0x${string}`
+
+---
+
+### finalizeIdlenessTxs
+
+Batch-finalizes idle GenLayer transactions (those stuck without progressing). Returns the EVM transaction hash.
+
+| Parameter | Type | Required | Description |
+|-----------|------|----------|-------------|
+| account | `Account` | no |  |
+| txIds | `readonly `0x${string}`[]` | yes |  |
+
+**Returns:** `0x${string}`
+
+---
+
