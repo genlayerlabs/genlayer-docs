@@ -1,0 +1,239 @@
+import { Callout } from 'nextra-theme-docs'
+import { RustSdkExperimental } from '../../../components/RustSdkExperimental'
+
+# Storage
+
+<RustSdkExperimental />
+
+Intelligent contracts store data on chain in persistent storage. The Rust SDK provides a type-safe storage system where each type maps to a **handle** that reads and writes directly from blockchain storage slots. Storage starts zero-initialized.
+
+### Storage Concepts
+
+Storage is organized around two core traits:
+
+- **`StorageType`** -- maps a value type to its storage handle and size
+- **`StorageValue`** -- provides `get()` and `set()` on scalar handles
+
+A **`Slot`** is a 32-byte storage region. Complex types derive child slots via SHA3-256 hashing.
+
+### Defining Contract State with `record!`
+
+The `record!` macro defines a struct whose fields are laid out in storage:
+
+```rust
+use genlayer_sdk::storage::{Root, DynArray};
+use genlayer_sdk::calldata::Address;
+
+genlayer_sdk::record!(MyState {
+    owner: Address,
+    counter: u32,
+    items: DynArray<u64>,
+});
+```
+
+Each field becomes a method that returns the field's storage handle. You use `.get()` and `.set()` on scalar handles:
+
+```rust
+let root = Root::<MyState>::get();
+let state = root.contract_instance().get();
+
+// Read
+let owner = state.owner().get();
+let count = state.counter().get();
+
+// Write
+state.counter().set(count + 1);
+```
+
+<Callout emoji="⚠️">
+  `Root::<T>::get()` returns the contract root, which wraps your state type `T` along with internal fields (contract code, locked slots, upgraders). Always access your state via `root.contract_instance().get()`.
+</Callout>
+
+### Scalar Types
+
+| Rust Type  | Storage Handle   | Size    |
+|------------|------------------|---------|
+| `u8`..`u128` | `StorageU8`..`StorageU128` | 1..16 bytes |
+| `i8`..`i128` | `StorageI8`..`StorageI128` | 1..16 bytes |
+| `f32`, `f64` | `StorageF32`, `StorageF64` | 4, 8 bytes |
+| `bool`     | `StorageBool`    | 1 byte  |
+| `Address`  | `StorageAddress` | 20 bytes |
+| `U256`     | `StorageU256`    | 32 bytes |
+| `String`   | `StorageStr`     | indirect |
+| `Vec<u8>`  | `StorageBytes`   | indirect |
+| `()`       | --               | 0 bytes |
+
+Scalar handles have `.get()` and `.set()` methods:
+
+```rust
+state.counter().set(42);
+let val = state.counter().get(); // 42
+```
+
+`StorageStr` and `StorageBytes` have additional methods:
+
+```rust
+state.name().store("Alice");
+let name = state.name().load(); // "Alice"
+let len = state.name().len();
+```
+
+### Fixed-Size Arrays
+
+Use `[T; N]` for fixed-size arrays. The handle is `StorageArray<T, N>`:
+
+```rust
+genlayer_sdk::record!(Board {
+    cells: [u8; 9],
+});
+
+let board = /* ... */;
+board.cells().index(0).set(1);
+let val = board.cells().index(4).get();
+```
+
+### Dynamic Arrays (`DynArray`)
+
+`DynArray<T>` is a variable-length array stored indirectly (like Python's `DynArray`):
+
+```rust
+use genlayer_sdk::storage::{DynArray, Slot, StorageType};
+
+let arr = <DynArray<u32>>::handle_at(slot, 0);
+
+// Append elements
+arr.append_slot().set(10);
+arr.append_slot().set(20);
+
+// Read
+let len = arr.len();          // 2
+let val = arr.index(0).get(); // 10
+
+// Remove
+arr.pop();
+arr.clear();
+```
+
+### Tree Maps (`TreeMap`)
+
+`TreeMap<K, V>` is a sorted key-value map backed by an AVL tree (like Python's `TreeMap`):
+
+```rust
+use genlayer_sdk::storage::TreeMap;
+
+genlayer_sdk::record!(Balances {
+    balances: TreeMap<Address, U256>,
+});
+
+let state = /* ... */;
+let balances = state.balances();
+
+// Insert / update (returns the value handle)
+if let Some(handle) = balances.get(&addr) {
+    let cur = handle.get();
+    handle.set(cur + amount);
+} else {
+    balances.insert(&addr).set(amount);
+}
+
+// Remove
+balances.remove(&addr);
+```
+
+### Nested Records
+
+Records can be nested and generic:
+
+```rust
+genlayer_sdk::record!(Pair[K, V] {
+    first: K,
+    second: V,
+});
+
+genlayer_sdk::record!(MyState {
+    pair: Pair[u32, u64],
+});
+```
+
+### Indirection
+
+`Indirection<T>` stores the data at a derived slot rather than inline. This is used internally by `Root` and can be used for large nested structures:
+
+```rust
+use genlayer_sdk::storage::Indirection;
+
+genlayer_sdk::record!(MyState {
+    big_data: Indirection<DynArray<u8>>,
+});
+```
+
+### Default Values
+
+Storage is zero-initialized:
+
+| Type       | Default value |
+|------------|---------------|
+| `u*`, `i*` | `0`           |
+| `f32/f64`  | `0.0`         |
+| `bool`     | `false`       |
+| `Address`  | `[0; 20]`     |
+| `U256`     | `0`           |
+| `String`   | `""`          |
+| `DynArray` | empty (len 0) |
+| `TreeMap`  | empty         |
+
+Records are zero-initialized recursively.
+
+### Full Example
+
+```rust
+use genlayer_sdk::abi::entry::MessageData;
+use genlayer_sdk::abi::entry::contract_def::Contract;
+use genlayer_sdk::calldata::Value;
+use genlayer_sdk::storage::Root;
+
+genlayer_sdk::record!(CounterState {
+    counter: u32,
+});
+
+#[derive(Default)]
+pub struct CounterContract;
+
+impl Contract for CounterContract {
+    fn handle_main(
+        &mut self,
+        _message: MessageData,
+        _data: bytes::Bytes,
+    ) -> Result<Value, String> {
+        let root = Root::<CounterState>::get();
+        let state = root.contract_instance().get();
+
+        let current = state.counter().get();
+        state.counter().set(current + 1);
+
+        Ok(Value::Map(std::collections::BTreeMap::from([(
+            "counter".to_owned(),
+            Value::Int(num_bigint::BigInt::from(current + 1)),
+        )])))
+    }
+
+    fn handle_sandbox(
+        &mut self,
+        _message: MessageData,
+        _data: bytes::Bytes,
+    ) -> Result<Vec<u8>, String> {
+        unimplemented!()
+    }
+
+    fn handle_consensus_stage(
+        &mut self,
+        _message: MessageData,
+        _data: bytes::Bytes,
+        _stage_data: genlayer_sdk::abi::entry::contract_def::ConsensusStageData,
+    ) -> Result<Value, String> {
+        unimplemented!()
+    }
+}
+
+genlayer_sdk::contract_main!(CounterContract);
+```

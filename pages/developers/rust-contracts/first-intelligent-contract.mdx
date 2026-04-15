@@ -1,0 +1,258 @@
+import { Callout } from 'nextra-theme-docs'
+import { RustSdkExperimental } from '../../../components/RustSdkExperimental'
+
+# Your First **Intelligent** Contract
+
+<RustSdkExperimental />
+
+Non-deterministic operations (web requests, LLM prompts) require the **leader/validator consensus pattern**. The leader executes the operation first, then validators independently verify the result.
+
+This is done through GenVM's `RunNondet` GL call, which triggers the `handle_consensus_stage` entry point on both leader and validator nodes.
+
+### How Consensus Works
+
+1. Your `handle_main` sends a `RunNondet` GL call with payload data
+2. GenVM calls `handle_consensus_stage` on the **leader** node with `ConsensusStageData::Leader`
+3. The leader performs the non-deterministic operation and returns a result
+4. GenVM calls `handle_consensus_stage` on each **validator** with `ConsensusStageData::Validator { leaders_result }`, containing the leader's result
+5. Validators perform their own operation, compare with the leader's result, and vote `true` (agree) or `false` (disagree)
+
+### GL Calls
+
+All interactions with the GenVM host go through `gl_call`. You encode a request as calldata, call `wasi::gl_call`, and read the response from the returned file descriptor:
+
+```rust
+use genlayer_sdk::abi::wasi;
+use genlayer_sdk::calldata::{self, Value};
+use std::collections::BTreeMap;
+use std::io::Read;
+use std::os::fd::FromRawFd;
+
+fn gl_call_with_response(message: &Value) -> Result<Value, String> {
+    let encoded = calldata::encode(message);
+    let fd = wasi::gl_call(&encoded).map_err(|e| e.to_string())?;
+
+    if fd == u32::MAX {
+        return Ok(Value::Null); // no response data
+    }
+
+    let mut file = unsafe { std::fs::File::from_raw_fd(fd as i32) };
+    let mut buffer = Vec::new();
+    file.read_to_end(&mut buffer).map_err(|e| e.to_string())?;
+
+    let value = calldata::decode(&buffer).map_err(|e| format!("{e:?}"))?;
+
+    // GL calls wrap responses in {"ok": ...} or {"error": ...}
+    if let Value::Map(ref map) = value {
+        if let Some(ok_value) = map.get("ok") {
+            return Ok(ok_value.clone());
+        }
+        if let Some(err_value) = map.get("error") {
+            return Err(format!("{err_value:?}"));
+        }
+    }
+
+    Ok(value)
+}
+```
+
+### Fetching a Webpage
+
+To fetch a webpage from a consensus stage handler, use the `WebRender` GL call:
+
+```rust
+fn fetch_webpage(url: &str) -> Result<String, String> {
+    let message = Value::Map(BTreeMap::from([(
+        "WebRender".to_owned(),
+        Value::Map(BTreeMap::from([
+            ("mode".to_owned(), Value::Str("text".to_owned())),
+            ("url".to_owned(), Value::Str(url.to_owned())),
+            ("wait_after_loaded".to_owned(), Value::Str("0ms".to_owned())),
+        ])),
+    )]));
+
+    let response = gl_call_with_response(&message)?;
+
+    #[derive(serde::Deserialize)]
+    struct WebRenderResponse { text: String }
+
+    let parsed: WebRenderResponse = calldata::from_value(response)
+        .map_err(|e| e.to_string())?;
+    Ok(parsed.text)
+}
+```
+
+<Callout emoji="⚠️">
+  `WebRender` (and other non-deterministic operations) can only be called from within `handle_consensus_stage`. Calling them from `handle_main` directly will result in an error.
+</Callout>
+
+### Running a Non-Deterministic Operation
+
+From `handle_main`, you trigger the consensus flow using `RunNondet`. The `data_leader` and `data_validator` payloads are passed back to `handle_consensus_stage`:
+
+```rust
+use genlayer_sdk::abi::entry::contract_def::LeaderResult;
+
+fn run_nondet(entry_data: &[u8]) -> Result<Value, String> {
+    #[derive(serde::Serialize)]
+    struct RunNondet {
+        #[serde(with = "serde_bytes")]
+        data_leader: Vec<u8>,
+        #[serde(with = "serde_bytes")]
+        data_validator: Vec<u8>,
+    }
+
+    let request = RunNondet {
+        data_leader: entry_data.to_vec(),
+        data_validator: entry_data.to_vec(),
+    };
+
+    let message = calldata::to_value(&request).map_err(|e| e.to_string())?;
+    let wrapped = Value::Map(BTreeMap::from([
+        ("RunNondet".to_owned(), message),
+    ]));
+
+    let encoded = calldata::encode(&wrapped);
+    let fd = wasi::gl_call(&encoded).map_err(|e| e.to_string())?;
+
+    if fd == u32::MAX {
+        return Err("no response from RunNondet".to_owned());
+    }
+
+    let mut file = unsafe { std::fs::File::from_raw_fd(fd as i32) };
+    let mut buffer = Vec::new();
+    file.read_to_end(&mut buffer).map_err(|e| e.to_string())?;
+
+    let result = LeaderResult::parse(&buffer).map_err(|e| e.to_string())?;
+
+    match result {
+        LeaderResult::Return(value) => Ok(value),
+        LeaderResult::UserError(msg) => Err(msg),
+        LeaderResult::VmError(msg) => Err(format!("vm error: {msg}")),
+    }
+}
+```
+
+### Full Example: Fetch and Verify a Webpage
+
+This contract fetches a webpage and uses leader/validator consensus to verify the content:
+
+```rust
+use std::collections::BTreeMap;
+use std::io::Read;
+use std::os::fd::FromRawFd;
+
+use genlayer_sdk::abi::entry::MessageData;
+use genlayer_sdk::abi::entry::contract_def::{
+    ConsensusStageData, Contract, LeaderResult,
+};
+use genlayer_sdk::abi::wasi;
+use genlayer_sdk::calldata::{self, Value};
+
+const TARGET_URL: &str = "https://example.org";
+
+// -- gl_call_with_response and fetch_webpage as shown above --
+# fn gl_call_with_response(message: &Value) -> Result<Value, String> {
+#     let encoded = calldata::encode(message);
+#     let fd = wasi::gl_call(&encoded).map_err(|e| e.to_string())?;
+#     if fd == u32::MAX { return Ok(Value::Null); }
+#     let mut file = unsafe { std::fs::File::from_raw_fd(fd as i32) };
+#     let mut buffer = Vec::new();
+#     file.read_to_end(&mut buffer).map_err(|e| e.to_string())?;
+#     let value = calldata::decode(&buffer).map_err(|e| format!("{e:?}"))?;
+#     if let Value::Map(ref map) = value {
+#         if let Some(ok) = map.get("ok") { return Ok(ok.clone()); }
+#         if let Some(err) = map.get("error") { return Err(format!("{err:?}")); }
+#     }
+#     Ok(value)
+# }
+# fn fetch_webpage(url: &str) -> Result<String, String> {
+#     let message = Value::Map(BTreeMap::from([(
+#         "WebRender".to_owned(),
+#         Value::Map(BTreeMap::from([
+#             ("mode".to_owned(), Value::Str("text".to_owned())),
+#             ("url".to_owned(), Value::Str(url.to_owned())),
+#             ("wait_after_loaded".to_owned(), Value::Str("0ms".to_owned())),
+#         ])),
+#     )]));
+#     let response = gl_call_with_response(&message)?;
+#     #[derive(serde::Deserialize)]
+#     struct R { text: String }
+#     let parsed: R = calldata::from_value(response).map_err(|e| e.to_string())?;
+#     Ok(parsed.text)
+# }
+
+#[derive(Default)]
+pub struct FetchContract;
+
+impl Contract for FetchContract {
+    fn handle_main(
+        &mut self,
+        _message: MessageData,
+        _data: bytes::Bytes,
+    ) -> Result<Value, String> {
+        // Trigger consensus -- both leader and validator will run
+        // handle_consensus_stage with this data
+        let entry_data = calldata::encode(&Value::Null);
+        run_nondet(&entry_data)
+    }
+
+    fn handle_sandbox(
+        &mut self,
+        _message: MessageData,
+        _data: bytes::Bytes,
+    ) -> Result<Vec<u8>, String> {
+        unimplemented!()
+    }
+
+    fn handle_consensus_stage(
+        &mut self,
+        _message: MessageData,
+        _data: bytes::Bytes,
+        stage_data: ConsensusStageData,
+    ) -> Result<Value, String> {
+        match stage_data {
+            ConsensusStageData::Leader => {
+                // Leader fetches the page and returns the content
+                let content = fetch_webpage(TARGET_URL)?;
+                Ok(Value::Str(content))
+            }
+            ConsensusStageData::Validator { leaders_result } => {
+                let LeaderResult::Return(Value::Str(leader_content)) = leaders_result
+                else {
+                    return Ok(Value::Bool(false)); // disagree
+                };
+
+                // Validator fetches independently and compares
+                let our_content = fetch_webpage(TARGET_URL)?;
+                Ok(Value::Bool(leader_content == our_content))
+            }
+        }
+    }
+}
+
+# fn run_nondet(entry_data: &[u8]) -> Result<Value, String> {
+#     // ... as shown above
+#     todo!()
+# }
+
+genlayer_sdk::contract_main!(FetchContract);
+```
+
+### Other GL Call Operations
+
+Beyond `WebRender`, the GL call interface supports:
+
+| GL Call | Description |
+|---------|-------------|
+| `WebRender` | Render a webpage (text, HTML, or screenshot) |
+| `WebRequest` | Make an HTTP request (GET, POST, etc.) |
+| `ExecPrompt` | Run an LLM prompt |
+| `ExecPromptTemplate` | Run a templated LLM prompt (comparative, non-comparative) |
+| `CallContract` | Call another contract |
+| `PostMessage` | Send a message to another contract |
+| `DeployContract` | Deploy a new contract |
+| `EthCall` / `EthSend` | EVM interoperability |
+| `EmitEvent` | Emit a blockchain event |
+
+All follow the same pattern: construct a `Value::Map` with the operation name as key, encode with `calldata::encode`, and call `wasi::gl_call`.
