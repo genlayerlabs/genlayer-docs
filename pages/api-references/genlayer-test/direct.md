@@ -297,14 +297,14 @@ Returns:
     The bool returned by the validator function.
 
 ```python
-vm.run_validator(leader_result: Any = <object object at 0x7efc3d994ac0>, leader_error: Optional[Exception] = None, index: int = -1)
+vm.run_validator(leader_result: Any = <object object at 0x7f4343c40ac0>, leader_error: Optional[Exception] = None, index: int = -1)
 ```
 
 **Parameters:**
 
 | Parameter | Type | Required | Default |
 |-----------|------|----------|---------|
-| `leader_result` | `Any` | No | `<object object at 0x7efc3d994ac0>` |
+| `leader_result` | `Any` | No | `<object object at 0x7f4343c40ac0>` |
 | `leader_error` | `Optional[Exception]` | No | `None` |
 | `index` | `int` | No | `-1` |
 
