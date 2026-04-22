@@ -4,7 +4,7 @@ Methods for deploying, reading, writing, and simulating GenLayer intelligent con
 
 ### getContractCode
 
-Retrieves the source code of a deployed contract. Studio only.
+Retrieves the source code of a deployed contract.
 
 | Parameter | Type | Required | Description |
 |-----------|------|----------|-------------|
@@ -16,7 +16,7 @@ Retrieves the source code of a deployed contract. Studio only.
 
 ### getContractSchema
 
-Gets the schema (methods and constructor) of a deployed contract. Studio only.
+Gets the schema (methods and constructor) of a deployed contract.
 
 | Parameter | Type | Required | Description |
 |-----------|------|----------|-------------|
@@ -28,7 +28,7 @@ Gets the schema (methods and constructor) of a deployed contract. Studio only.
 
 ### getContractSchemaForCode
 
-Generates a schema for contract code without deploying it. Studio only.
+Generates a schema for contract code without deploying it.
 
 | Parameter | Type | Required | Description |
 |-----------|------|----------|-------------|
