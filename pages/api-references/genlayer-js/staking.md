@@ -17,11 +17,15 @@ Joins as a validator with the specified stake amount.
 
 ### validatorDeposit
 
-Adds additional self-stake to an active validator position.
+Adds additional self-stake to an active validator position. The
+underlying Staking contract requires msg.sender == ValidatorWallet,
+so the call is routed through the wallet's own validatorDeposit
+forwarder (which re-enters Staking with the correct sender).
 
 | Parameter | Type | Required | Description |
 |-----------|------|----------|-------------|
 | amount | `bigint \| string` | yes |  |
+| validator | `Address` | yes |  |
 
 **Returns:** `StakingTransactionResult`
 
@@ -29,11 +33,13 @@ Adds additional self-stake to an active validator position.
 
 ### validatorExit
 
-Exits a validator position by burning the specified shares.
+Exits a validator position by burning the specified shares. Same
+msg.sender constraint as validatorDeposit — routed via the wallet.
 
 | Parameter | Type | Required | Description |
 |-----------|------|----------|-------------|
 | shares | `bigint \| string` | yes |  |
+| validator | `Address` | yes |  |
 
 **Returns:** `StakingTransactionResult`
 
