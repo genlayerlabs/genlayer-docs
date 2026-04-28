@@ -69,7 +69,7 @@ Add this to a workflow in the genlayer-node repository:
 
 #### GitHub App (User-Managed)
 
-Access to the private `genlayerlabs/genlayer-node` repository is provided by a GitHub App installed on that repository. The workflow mints a short-lived installation token via `actions/create-github-app-token@v1`.
+Access to the private `genlayerlabs/genlayer-node` repository is provided by a GitHub App installed on that repository. The workflow mints a short-lived installation token via `actions/create-github-app-token@v3`.
 
 Required repository secrets:
 
