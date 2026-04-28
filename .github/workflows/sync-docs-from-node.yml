@@ -67,9 +67,9 @@ jobs:
       - name: Generate GitHub App token
         id: app-token
         if: steps.extract.outputs.version == 'latest'
-        uses: actions/create-github-app-token@v1
+        uses: actions/create-github-app-token@v3
         with:
-          app-id: ${{ secrets.NODE_SYNC_APP_CLIENT_ID }}
+          client-id: ${{ secrets.NODE_SYNC_APP_CLIENT_ID }}
           private-key: ${{ secrets.NODE_SYNC_APP_KEY }}
           owner: genlayerlabs
           repositories: genlayer-node
@@ -118,9 +118,9 @@ jobs:
 
       - name: Generate GitHub App token
         id: app-token
-        uses: actions/create-github-app-token@v1
+        uses: actions/create-github-app-token@v3
         with:
-          app-id: ${{ secrets.NODE_SYNC_APP_CLIENT_ID }}
+          client-id: ${{ secrets.NODE_SYNC_APP_CLIENT_ID }}
           private-key: ${{ secrets.NODE_SYNC_APP_KEY }}
           owner: genlayerlabs
           repositories: genlayer-node
