@@ -278,7 +278,7 @@ jobs:
           echo "✅ Merged artifact created"
 
       - name: Upload merged synced files
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: synced-merged
           path: synced-merged/
@@ -338,7 +338,7 @@ jobs:
           fi
 
       - name: Upload final documentation
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         if: steps.generate.outputs.success == 'true'
         with:
           name: synced-final
