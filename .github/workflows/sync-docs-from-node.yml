@@ -52,7 +52,7 @@ jobs:
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
-        
+
       - name: Extract version parameter
         id: extract
         run: |
@@ -64,11 +64,21 @@ jobs:
           echo "version=$VERSION" >> $GITHUB_OUTPUT
           echo "Requested version: $VERSION"
 
+      - name: Generate GitHub App token
+        id: app-token
+        if: steps.extract.outputs.version == 'latest'
+        uses: actions/create-github-app-token@v3
+        with:
+          client-id: ${{ secrets.NODE_SYNC_APP_CLIENT_ID }}
+          private-key: ${{ secrets.NODE_SYNC_APP_KEY }}
+          owner: genlayerlabs
+          repositories: genlayer-node
+
       - name: Detect latest version
         id: detect
         if: steps.extract.outputs.version == 'latest'
         env:
-          GITHUB_TOKEN: ${{ secrets.NODE_REPO_TOKEN || secrets.GITHUB_TOKEN }}
+          GITHUB_TOKEN: ${{ steps.app-token.outputs.token }}
         run: |
           source .github/scripts/version-utils.sh
           LATEST_TAG=$(detect_latest_version "$GITHUB_TOKEN")
@@ -106,11 +116,20 @@ jobs:
           sudo wget -qO /usr/local/bin/yq https://github.com/mikefarah/yq/releases/latest/download/yq_linux_amd64
           sudo chmod +x /usr/local/bin/yq
 
+      - name: Generate GitHub App token
+        id: app-token
+        uses: actions/create-github-app-token@v3
+        with:
+          client-id: ${{ secrets.NODE_SYNC_APP_CLIENT_ID }}
+          private-key: ${{ secrets.NODE_SYNC_APP_KEY }}
+          owner: genlayerlabs
+          repositories: genlayer-node
+
       - name: Clone source repository
         uses: actions/checkout@v4
         with:
           repository: genlayerlabs/genlayer-node
-          token: ${{ secrets.NODE_REPO_TOKEN || secrets.GITHUB_TOKEN }}
+          token: ${{ steps.app-token.outputs.token }}
           fetch-depth: 1
           sparse-checkout: |
             docs

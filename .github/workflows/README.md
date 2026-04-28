@@ -67,12 +67,19 @@ Add this to a workflow in the genlayer-node repository:
   - Creating pull requests via GitHub CLI (automatically detected by `gh`)
   - General workflow authentication
 
+#### GitHub App (User-Managed)
+
+Access to the private `genlayerlabs/genlayer-node` repository is provided by a GitHub App installed on that repository. The workflow mints a short-lived installation token via `actions/create-github-app-token@v3`.
+
+Required repository secrets:
+
+- `NODE_SYNC_APP_CLIENT_ID`: Client ID of the GitHub App
+- `NODE_SYNC_APP_KEY`: PEM-encoded private key of the GitHub App
+
+The App must be installed on `genlayerlabs/genlayer-node` with at least `Contents: Read` permission. Tokens are scoped to that single repository at mint time.
+
 #### Personal Access Tokens (User-Managed)
 
-- `NODE_REPO_TOKEN` (optional): Personal Access Token for accessing private genlayer-node repository. Used for:
-  - Cloning private genlayer-node repository
-  - Falls back to `GITHUB_TOKEN` if not provided
-  
 - `DOCS_REPO_TOKEN` (in genlayer-node): Token with `repo` scope for triggering this workflow. Used for:
   - Triggering repository dispatch events from genlayer-node
   - Must have `repo` scope to trigger workflows
