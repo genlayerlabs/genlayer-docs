@@ -1,0 +1,31 @@
+import { RustSdkExperimental } from '../../../components/RustSdkExperimental'
+
+# Rust Contracts
+
+<RustSdkExperimental />
+
+GenLayer supports writing intelligent contracts in Rust via the [`genlayer_sdk`](https://crates.io/crates/genlayer_sdk) crate. Rust contracts compile to WebAssembly (`wasm32-wasip1`) and run inside GenVM just like Python contracts.
+
+### Why Rust?
+
+- **Performance** -- Rust compiles to efficient WebAssembly with no runtime overhead.
+- **Type safety** -- The storage system leverages Rust's type system to catch errors at compile time.
+- **Low-level control** -- Direct access to GenVM host functions when needed.
+
+### How It Works
+
+Rust contracts implement the `Contract` trait (or the higher-level `ContractExt` trait), which defines handlers for GenVM's three entry points:
+
+- **Main** -- regular contract method calls and deployment
+- **Sandbox** -- isolated execution context
+- **ConsensusStage** -- leader/validator consensus for non-deterministic operations
+
+The `contract_main!` macro generates the `main` function that bridges GenVM's WASI interface to your trait implementation.
+
+### Prerequisites
+
+- Rust toolchain (stable)
+- The `wasm32-wasip1` target:
+  ```bash
+  rustup target add wasm32-wasip1
+  ```

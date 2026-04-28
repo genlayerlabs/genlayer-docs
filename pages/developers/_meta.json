@@ -1,6 +1,7 @@
 {
   "networks": "Networks & RPCs",
   "intelligent-contracts": "Intelligent Contracts",
+  "rust-contracts": "Rust Contracts",
   "decentralized-applications": "Frontend & SDK Integration",
   "staking-guide": "Staking Contract Guide"
 }
