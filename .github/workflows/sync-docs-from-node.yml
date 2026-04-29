@@ -50,6 +50,7 @@ jobs:
     environment: Node Sync
     outputs:
       version: ${{ steps.final_version.outputs.version }}
+      token: ${{ steps.app-token.outputs.token }}
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
@@ -67,7 +68,6 @@ jobs:
 
       - name: Generate GitHub App token
         id: app-token
-        if: steps.extract.outputs.version == 'latest'
         uses: actions/create-github-app-token@v3
         with:
           client-id: ${{ secrets.NODE_SYNC_APP_CLIENT_ID }}
@@ -100,7 +100,6 @@ jobs:
     name: 'Sync Files'
     runs-on: ubuntu-latest
     needs: prepare
-    environment: Node Sync
     strategy:
       matrix:
         sync_type: [changelog, config, config_asimov, config_bradbury, docker_compose, docker_compose_monitoring, alloy_config, greybox_setup, api_gen, api_debug, api_ops]
@@ -117,19 +116,11 @@ jobs:
           sudo wget -qO /usr/local/bin/yq https://github.com/mikefarah/yq/releases/latest/download/yq_linux_amd64
           sudo chmod +x /usr/local/bin/yq
 
-      - name: Generate GitHub App token
-        id: app-token
-        uses: actions/create-github-app-token@v3
-        with:
-          client-id: ${{ secrets.NODE_SYNC_APP_CLIENT_ID }}
-          private-key: ${{ secrets.NODE_SYNC_APP_KEY }}
-          repositories: genlayer-node
-
       - name: Clone source repository
         uses: actions/checkout@v4
         with:
           repository: genlayerlabs/genlayer-node
-          token: ${{ steps.app-token.outputs.token }}
+          token: ${{ needs.prepare.outputs.token }}
           fetch-depth: 1
           sparse-checkout: |
             docs

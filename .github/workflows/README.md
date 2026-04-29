@@ -71,7 +71,7 @@ Add this to a workflow in the genlayer-node repository:
 
 Access to the private `genlayerlabs/genlayer-node` repository is provided by a GitHub App installed on that repository. The workflow mints a short-lived installation token via `actions/create-github-app-token@v3`.
 
-Credentials live in the **`Node Sync`** GitHub Environment (Settings → Environments → Node Sync). Any job that needs the App token must declare `environment: Node Sync` at the job level — without it, `secrets.NODE_SYNC_APP_*` resolves to empty.
+Credentials live in the **`Node Sync`** GitHub Environment (Settings → Environments → Node Sync), which has a Required-reviewers protection rule. To keep the gate to a **single approval per workflow run**, only the `prepare` job declares `environment: Node Sync`; it mints the App token once and exposes it as a job output (`needs.prepare.outputs.token`) for downstream jobs to consume. Adding a second job that declares the same environment would trigger a second approval — avoid that.
 
 Required environment secrets:
 
