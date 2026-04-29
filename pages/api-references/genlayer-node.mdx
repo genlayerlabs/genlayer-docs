@@ -15,8 +15,8 @@ Executes a new message call immediately without creating a transaction on the bl
 - `request` (object, required): The contract call request parameters
   - `from` (string, required): The address making the call
   - `to` (string, required): The contract address to call
-  - `Data` (string, required): The encoded function call data
-  - `Type` (string, required): The type of call (`"read"`, `"write"`, or `"deploy"`)
+  - `data` (string, required): The encoded function call data
+  - `type` (string, required): The type of call (`"read"`, `"write"`, or `"deploy"`)
   - `blockNumber` (string, optional): The block number to query at (hex-encoded). If not provided, uses latest block
   - `status` (string, optional): The transaction status filter (`"finalized"` or `"accepted"`). If not provided, uses accepted state
   - `value` (string, optional): The value to send with the call (hex-encoded)
@@ -54,8 +54,8 @@ Executes a new message call immediately without creating a transaction on the bl
   "method": "gen_call",
   "params": [
     {
-      "Type": "deploy",
-      "Data": "0xf9023db90223232076302e312e300a23207b2022446570656e6473223a202270792d67656e6c617965723a3135716669766a7679383038303072683939387063786d64326d38766131777132717a71687a3835306e3867676372346939713022207d0a0a66726f6d2067656e6c6179657220696d706f7274202a0a0a0a2320636f6e747261637420636c6173730a636c6173732053746f7261676528676c2e436f6e7472616374293a0a2020202073746f726167653a207374720a0a202020202320636f6e7374727563746f720a20202020646566205f5f696e69745f5f2873656c662c20696e697469616c5f73746f726167653a20737472293a0a202020202020202073656c662e73746f72616765203d20696e697469616c5f73746f726167650a0a20202020232072656164206d6574686f6473206d75737420626520616e6e6f7461746564207769746820766965770a2020202040676c2e7075626c69632e766965770a20202020646566206765745f73746f726167652873656c6629202d3e207374723a0a202020202020202072657475726e2073656c662e73746f726167650a0a2020202023207772697465206d6574686f640a2020202040676c2e7075626c69632e77726974650a20202020646566207570646174655f73746f726167652873656c662c206e65775f73746f726167653a2073747229202d3e204e6f6e653a0a202020202020202073656c662e73746f72616765203d206e65775f73746f726167650a950e04617267730d6c696e697469616c2076616c756500",
+      "type": "deploy",
+      "data": "0xf9023db90223232076302e312e300a23207b2022446570656e6473223a202270792d67656e6c617965723a3135716669766a7679383038303072683939387063786d64326d38766131777132717a71687a3835306e3867676372346939713022207d0a0a66726f6d2067656e6c6179657220696d706f7274202a0a0a0a2320636f6e747261637420636c6173730a636c6173732053746f7261676528676c2e436f6e7472616374293a0a2020202073746f726167653a207374720a0a202020202320636f6e7374727563746f720a20202020646566205f5f696e69745f5f2873656c662c20696e697469616c5f73746f726167653a20737472293a0a202020202020202073656c662e73746f72616765203d20696e697469616c5f73746f726167650a0a20202020232072656164206d6574686f6473206d75737420626520616e6e6f7461746564207769746820766965770a2020202040676c2e7075626c69632e766965770a20202020646566206765745f73746f726167652873656c6629202d3e207374723a0a202020202020202072657475726e2073656c662e73746f726167650a0a2020202023207772697465206d6574686f640a2020202040676c2e7075626c69632e77726974650a20202020646566207570646174655f73746f726167652873656c662c206e65775f73746f726167653a2073747229202d3e204e6f6e653a0a202020202020202073656c662e73746f72616765203d206e65775f73746f726167650a950e04617267730d6c696e697469616c2076616c756500",
       "from": "0xf6A60752C24Cd3BFcAf8d387a5EB62d3746F44EE",
       "to": "0x0000000000000000000000000000000000000000",
       "status": "finalized"
@@ -130,8 +130,8 @@ Executes a new message call immediately without creating a transaction on the bl
   "method": "gen_call",
   "params": [
     {
-      "Type": "read",
-      "Data": "0xd8960e066d6574686f646c6765745f686176655f636f696e00",
+      "type": "read",
+      "data": "0xd8960e066d6574686f646c6765745f686176655f636f696e00",
       "from": "0xf6A60752C24Cd3BFcAf8d387a5EB62d3746F44EE",
       "to": "0xCe5712E63fd5475288aB1B7c0a368B9417357b81",
       "gas": "0x5208",
@@ -150,8 +150,8 @@ Executes a new message call immediately without creating a transaction on the bl
   "method": "gen_call",
   "params": [
     {
-      "Type": "read",
-      "Data": "0xd8960e066d6574686f646c6765745f686176655f636f696e00",
+      "type": "read",
+      "data": "0xd8960e066d6574686f646c6765745f686176655f636f696e00",
       "from": "0xf6A60752C24Cd3BFcAf8d387a5EB62d3746F44EE",
       "to": "0xCe5712E63fd5475288aB1B7c0a368B9417357b81",
       "blockNumber": "0x151ec5",
@@ -533,8 +533,7 @@ A `Transaction` object which contains the details of the transaction. The struct
 - `numOfInitialValidators` (`uint256`): The number of initial validators.
 - `randomSeed` (`string`): The random seed used for the transaction as a hex string.
 - `txExecutionHash` (`string`): The execution hash of the transaction as a hex string.
-- `otherExecutionFieldsHash` (`string`): Hash of other execution fields as a hex string.
-- `txData` (`string`): The transaction data as a hex string.
+- `txCallData` (`string`): The transaction call data as a hex string.
 - `eqBlocksOutputs` (`string`): The equivalent blocks outputs as a hex string.
 - `timestamps` (`object`): Object containing various timestamps:
   - `Created` (`uint256`): When the transaction was created.
@@ -546,11 +545,10 @@ A `Transaction` object which contains the details of the transaction. The struct
   - `AppealSubmitted` (`uint256`): When an appeal was submitted.
   - `LeaderRevealed` (`uint256`): When the leader was revealed.
 - `result` (`uint256`): The result of the transaction execution.
-- `readStateBlockRange` (`object`): Block range information:
+- `readStateBlockRanges` (`array`): Array of block range objects, each containing:
   - `ActivationBlock` (`uint256`): The activation block number.
   - `ProcessingBlock` (`uint256`): The processing block number.
   - `ProposalBlock` (`uint256`): The proposal block number.
-- `consumedValidators` (`array`): Array of validator addresses that participated.
 - `roundData` (`array`): Array of round data objects containing:
   - `round` (`uint256`): The round number.
   - `leaderIndex` (`uint256`): Index of the round leader.
@@ -598,8 +596,7 @@ A `Transaction` object which contains the details of the transaction. The struct
     "numOfInitialValidators": 5,
     "randomSeed": "0x3d0bdff63bce1cf84b155f1557bb15e303b903b1b559325b6492794a5e498954",
     "txExecutionHash": "0x76744dc491b1725eb2ba08cf516855c14aac310e36711368c04442fd39d61853",
-    "otherExecutionFieldsHash": "0x0000000000000000000000000000000000000000000000000000000000000000",
-    "txData": "f5b31604617267730da4017570646174656420746573742073746f72616765066d6574686f64747570646174655f73746f7261676500",
+    "txCallData": "f5b31604617267730da4017570646174656420746573742073746f72616765066d6574686f64747570646174655f73746f7261676500",
     "eqBlocksOutputs": "c0",
     "timestamps": {
       "Created": 1750774777,
@@ -612,17 +609,12 @@ A `Transaction` object which contains the details of the transaction. The struct
       "LeaderRevealed": 0
     },
     "result": 0,
-    "readStateBlockRange": {
-      "ActivationBlock": 1377797,
-      "ProcessingBlock": 1377797,
-      "ProposalBlock": 1377798
-    },
-    "consumedValidators": [
-      "0xa707a1d9dd946242f921f0ad62f61e1b7df30c85",
-      "0xf27b07d36ff5b9dcd37fd3a09811d6456dd4483a",
-      "0xf3738216c3208d77a9db79a1d31824e5133083c4",
-      "0x56394354538bff1e0ee5021c2b6d3522fce30257",
-      "0xcfdbac032f82f388d9eca76efa6610b98e7f59fe"
+    "readStateBlockRanges": [
+      {
+        "ActivationBlock": 1377797,
+        "ProcessingBlock": 1377797,
+        "ProposalBlock": 1377798
+      }
     ],
     "roundData": [
       {

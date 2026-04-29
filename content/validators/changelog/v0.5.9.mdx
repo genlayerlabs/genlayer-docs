@@ -1,0 +1,18 @@
+## v0.5.9
+
+### Bug fixes
+
+- Count real provider failures on SLA
+- Harden nonce management
+- Check per-block bloom filters for multi-block ranges
+- Pool HTTP transport for chain RPC
+- Self-cancel stuck nonce on mempool replacement exhaustion
+- Prevent sync panic and self-dependency cycle during tx replay
+- Resume sync after WS reconnect
+
+### Misc
+
+- Use RFC3339Nano for zerolog timestamps
+- Extract encoding functions into dedicated encoding package
+- Move consensus entity types to entities package
+- Add gen_dbg_traceTransaction API doc
