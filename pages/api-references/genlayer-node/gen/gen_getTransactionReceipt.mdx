@@ -25,8 +25,7 @@ A `Transaction` object which contains the details of the transaction. The struct
 - `numOfInitialValidators` (`uint256`): The number of initial validators.
 - `randomSeed` (`string`): The random seed used for the transaction as a hex string.
 - `txExecutionHash` (`string`): The execution hash of the transaction as a hex string.
-- `otherExecutionFieldsHash` (`string`): Hash of other execution fields as a hex string.
-- `txData` (`string`): The transaction data as a hex string.
+- `txCallData` (`string`): The transaction call data as a hex string.
 - `eqBlocksOutputs` (`string`): The equivalent blocks outputs as a hex string.
 - `timestamps` (`object`): Object containing various timestamps:
   - `Created` (`uint256`): When the transaction was created.
@@ -38,11 +37,10 @@ A `Transaction` object which contains the details of the transaction. The struct
   - `AppealSubmitted` (`uint256`): When an appeal was submitted.
   - `LeaderRevealed` (`uint256`): When the leader was revealed.
 - `result` (`uint256`): The result of the transaction execution.
-- `readStateBlockRange` (`object`): Block range information:
+- `readStateBlockRanges` (`array`): Array of block range objects, each containing:
   - `ActivationBlock` (`uint256`): The activation block number.
   - `ProcessingBlock` (`uint256`): The processing block number.
   - `ProposalBlock` (`uint256`): The proposal block number.
-- `consumedValidators` (`array`): Array of validator addresses that participated.
 - `roundData` (`array`): Array of round data objects containing:
   - `round` (`uint256`): The round number.
   - `leaderIndex` (`uint256`): Index of the round leader.
@@ -90,8 +88,7 @@ A `Transaction` object which contains the details of the transaction. The struct
     "numOfInitialValidators": 5,
     "randomSeed": "0x3d0bdff63bce1cf84b155f1557bb15e303b903b1b559325b6492794a5e498954",
     "txExecutionHash": "0x76744dc491b1725eb2ba08cf516855c14aac310e36711368c04442fd39d61853",
-    "otherExecutionFieldsHash": "0x0000000000000000000000000000000000000000000000000000000000000000",
-    "txData": "f5b31604617267730da4017570646174656420746573742073746f72616765066d6574686f64747570646174655f73746f7261676500",
+    "txCallData": "f5b31604617267730da4017570646174656420746573742073746f72616765066d6574686f64747570646174655f73746f7261676500",
     "eqBlocksOutputs": "c0",
     "timestamps": {
       "Created": 1750774777,
@@ -104,17 +101,12 @@ A `Transaction` object which contains the details of the transaction. The struct
       "LeaderRevealed": 0
     },
     "result": 0,
-    "readStateBlockRange": {
-      "ActivationBlock": 1377797,
-      "ProcessingBlock": 1377797,
-      "ProposalBlock": 1377798
-    },
-    "consumedValidators": [
-      "0xa707a1d9dd946242f921f0ad62f61e1b7df30c85",
-      "0xf27b07d36ff5b9dcd37fd3a09811d6456dd4483a",
-      "0xf3738216c3208d77a9db79a1d31824e5133083c4",
-      "0x56394354538bff1e0ee5021c2b6d3522fce30257",
-      "0xcfdbac032f82f388d9eca76efa6610b98e7f59fe"
+    "readStateBlockRanges": [
+      {
+        "ActivationBlock": 1377797,
+        "ProcessingBlock": 1377797,
+        "ProposalBlock": 1377798
+      }
     ],
     "roundData": [
       {
