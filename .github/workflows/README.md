@@ -71,10 +71,12 @@ Add this to a workflow in the genlayer-node repository:
 
 Access to the private `genlayerlabs/genlayer-node` repository is provided by a GitHub App installed on that repository. The workflow mints a short-lived installation token via `actions/create-github-app-token@v3`.
 
-Required configuration:
+Credentials live in the **`Node Sync`** GitHub Environment (Settings → Environments → Node Sync). Any job that needs the App token must declare `environment: Node Sync` at the job level — without it, `secrets.NODE_SYNC_APP_*` resolves to empty.
 
-- `NODE_SYNC_APP_CLIENT_ID` (repository variable): Client ID of the GitHub App
-- `NODE_SYNC_APP_KEY` (repository secret): PEM-encoded private key of the GitHub App
+Required environment secrets:
+
+- `NODE_SYNC_APP_CLIENT_ID`: Client ID of the GitHub App
+- `NODE_SYNC_APP_KEY`: PEM-encoded private key of the GitHub App
 
 The App must be installed on `genlayerlabs/genlayer-node` with at least `Contents: Read` permission. Tokens are scoped to that single repository at mint time.
 
