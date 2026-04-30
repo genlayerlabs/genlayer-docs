@@ -1,0 +1,319 @@
+# Developer Onboarding Checklist
+
+Welcome to GenLayer! This checklist will guide you through setting up your development environment and deploying your first Intelligent Contract.
+
+> 💡 **Tip:** Work through this checklist in order. Each section builds on the previous one.
+
+---
+
+## 🛠️ Setup Environment (15-20 minutes)
+
+### Prerequisites
+
+- [ ] **Docker 26+** installed and running
+  - Verify: `docker --version`
+  - Download: [https://www.docker.com/products/docker-desktop](https://www.docker.com/products/docker-desktop)
+
+- [ ] **Node.js 18+** installed
+  - Verify: `node --version`
+  - Download: [https://nodejs.org](https://nodejs.org)
+
+- [ ] **Git** installed
+  - Verify: `git --version`
+
+### Install GenLayer CLI
+
+- [ ] Install the CLI globally:
+```bash
+  npm install -g genlayer
+```
+
+- [ ] Verify installation:
+```bash
+  genlayer --version
+```
+
+### Start GenLayer Studio
+
+- [ ] Start the local development environment:
+```bash
+  genlayer up
+```
+
+- [ ] Wait for Studio to start (this may take 2-3 minutes on first run)
+
+- [ ] Access Studio in your browser:
+  - Open [http://localhost:3000](http://localhost:3000)
+  - You should see the GenLayer Studio interface
+
+---
+
+## 📚 Learn the Basics (30 minutes)
+
+### Core Concepts
+
+- [ ] **Read:** [What are Intelligent Contracts?](/developers/intelligent-contracts/introduction)
+  - Understand the difference between smart contracts and Intelligent Contracts
+
+- [ ] **Read:** [Optimistic Democracy](/concepts/optimistic-democracy)
+  - Learn how GenLayer achieves consensus with AI validators
+
+- [ ] **Read:** [GenVM Overview](/concepts/genvm)
+  - Understand the execution environment
+
+### Key Features
+
+- [ ] **Understand:** Natural language processing in contracts
+- [ ] **Understand:** Web access from contracts
+- [ ] **Understand:** LLM integration for decision-making
+- [ ] **Understand:** Non-deterministic operations
+
+---
+
+## 🚀 Deploy Your First Contract (30 minutes)
+
+### Clone the Boilerplate
+
+- [ ] Clone the project template:
+```bash
+  git clone https://github.com/genlayerlabs/genlayer-project-boilerplate
+  cd genlayer-project-boilerplate
+```
+
+- [ ] Install dependencies:
+```bash
+  npm install
+```
+
+### Configure Network
+
+- [ ] Set your network to local development:
+```bash
+  genlayer network
+```
+  - Select `localnet` (http://localhost:8545)
+
+### Deploy Example Contract
+
+- [ ] Deploy the football prediction contract:
+```bash
+  genlayer deploy
+```
+
+- [ ] Note the contract address from the output
+  - It should look like: `0x03FB09251eC05ee9Ca36c98644070B89111D4b3F`
+
+### Interact with Your Contract
+
+- [ ] Open Studio in your browser: [http://localhost:3000](http://localhost:3000)
+
+- [ ] Find your deployed contract in the contracts list
+
+- [ ] Try calling a read method:
+  - Select a `view()` method
+  - Click "Call Function"
+  - Observe the result
+
+- [ ] Try calling a write method:
+  - Select a method that modifies state
+  - Fill in the parameters
+  - Click "Execute"
+  - Wait for consensus
+
+---
+
+## 🧪 Test Your Contract (20 minutes)
+
+### Run Built-in Tests
+
+- [ ] Run the test suite:
+```bash
+  npm test
+```
+  or
+```bash
+  gltest
+```
+
+- [ ] All tests should pass ✅
+
+### Write Your Own Test
+
+- [ ] Create a new test file: `tests/my-first-test.ts`
+
+- [ ] Add a simple test:
+```typescript
+  import { expect } from 'chai';
+  
+  describe('My First Test', () => {
+    it('should deploy contract', async () => {
+      // Your test code here
+      expect(true).to.be.true;
+    });
+  });
+```
+
+- [ ] Run your test: `npm test`
+
+---
+
+## 💡 Build Your Own Contract (1-2 hours)
+
+### Plan Your Contract
+
+- [ ] **Decide:** What problem will your contract solve?
+  - Examples: voting system, prediction market, content curation
+
+- [ ] **List:** What functions will you need?
+  - Read functions (view data)
+  - Write functions (modify state)
+
+- [ ] **Identify:** Will you need:
+  - [ ] Web access?
+  - [ ] LLM integration?
+  - [ ] Contract-to-contract calls?
+
+### Create Your Contract
+
+- [ ] Create a new file: `contracts/my-contract.py`
+
+- [ ] Start with this template:
+```python
+  from genlayer import *
+  
+  class MyContract(gl.Contract):
+      # State variables
+      owner: Address
+      
+      def __init__(self):
+          self.owner = gl.message.sender_address
+      
+      @gl.public.view
+      def get_owner(self) -> Address:
+          return self.owner
+      
+      @gl.public.write
+      def update_owner(self, new_owner: Address):
+          if gl.message.sender_address != self.owner:
+              raise gl.UserError("Only owner can update")
+          self.owner = new_owner
+```
+
+- [ ] Add your custom logic
+
+- [ ] Test locally with Studio
+
+---
+
+## 🔧 Troubleshooting
+
+### Common Issues
+
+#### "Cannot connect to Docker"
+- **Solution:** Make sure Docker Desktop is running
+```bash
+  # Check Docker status
+  docker ps
+```
+
+#### "Studio won't start"
+- **Solution:** Check if port 3000 is available
+```bash
+  # On macOS/Linux
+  lsof -i :3000
+  
+  # On Windows
+  netstat -ano | findstr :3000
+```
+- Kill any process using port 3000, then restart Studio
+
+#### "Contract deployment failed"
+- **Solution:** Check your contract syntax
+  - Look for Python syntax errors
+  - Verify all imports are correct
+  - Check that type annotations are valid
+
+#### "Transaction stuck in 'pending'"
+- **Solution:** Wait for validator consensus
+  - Default timeout is 60 seconds
+  - Check Studio logs for validator activity
+  - Restart Studio if necessary: `genlayer down && genlayer up`
+
+#### "Module import errors"
+- **Solution:** Verify GenLayer CLI is up to date
+```bash
+  npm install -g genlayer@latest
+```
+
+---
+
+## 📖 Next Steps
+
+Congratulations! You've completed the onboarding checklist. Here's what to explore next:
+
+### Dive Deeper
+
+- [ ] **Tutorial:** [Building Advanced Intelligent Contracts](/developers/intelligent-contracts/first-intelligent-contract)
+- [ ] **Guide:** [Testing Best Practices](/developers/intelligent-contracts/testing)
+- [ ] **Reference:** [genlayer-js API Documentation](/developers/genlayer-js/api-reference)
+
+### Join the Community
+
+- [ ] **Discord:** [https://discord.gg/genlayer](https://discord.gg/genlayer)
+- [ ] **Telegram:** [https://t.me/genlayer](https://t.me/genlayer)
+- [ ] **Twitter:** [@genlayer](https://twitter.com/genlayer)
+
+### Contribute
+
+- [ ] **Report bugs:** [GitHub Issues](https://github.com/genlayerlabs/genlayer-docs/issues)
+- [ ] **Improve docs:** Submit a pull request
+- [ ] **Share your project:** Post in Discord #show-and-tell
+
+---
+
+## 🎯 Quick Reference
+
+### Essential Commands
+
+```bash
+# Start Studio
+genlayer up
+
+# Stop Studio
+genlayer down
+
+# Deploy contract
+genlayer deploy
+
+# Run tests
+npm test
+# or
+gltest
+
+# Switch networks
+genlayer network
+
+# Check CLI version
+genlayer --version
+```
+
+### Key Concepts
+
+| Term | Definition |
+|------|------------|
+| **Intelligent Contract** | Smart contract with AI/LLM capabilities |
+| **GenVM** | Virtual machine that executes Intelligent Contracts |
+| **Optimistic Democracy** | Consensus mechanism using AI validators |
+| **Studio** | Local development environment for testing contracts |
+| **Equivalence Principle** | Method for achieving consensus on non-deterministic outputs |
+
+---
+
+## ✅ Checklist Complete!
+
+You're now ready to build on GenLayer. If you have questions:
+- Check the [full documentation](/developers/intelligent-contracts/introduction)
+- Ask in [Discord](https://discord.gg/genlayer)
+- Review [example contracts](https://github.com/genlayerlabs/genlayer-project-boilerplate)
+
+Happy building! 🚀
