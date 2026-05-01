@@ -26,12 +26,12 @@ Expect every section ending in `All ... checks passed!` with no `✗` lines. If 
 
 ### 2. Confirm your RPC is on the right chain
 
-`doctor` checks that the consensus address belongs to a known network (it prints `network: asimov` etc.) but does **not** verify that the contract bytecode actually exists on the connected RPC. A wrong-chain RPC will pass `doctor` and only fail at startup. Add this manual probe:
+`doctor` checks that the consensus address belongs to a known network (it prints `network: asimov` etc.) but does **not** verify that the contract bytecode actually exists on the connected RPC. A wrong-chain RPC will pass `doctor` and only fail at startup. Add this manual probe — substitute the consensus address and RPC URL from your `config.yaml` (`consensus.consensusaddress` and `rollup.genlayerchainrpcurl`):
 
 ```sh copy
 curl -s -X POST -H "Content-Type: application/json" \
-  --data '{"jsonrpc":"2.0","method":"eth_getCode","params":["'$CONSENSUS_ADDR'","latest"],"id":1}' \
-  "$GENLAYERNODE_ROLLUP_GENLAYERCHAINRPCURL"
+  --data '{"jsonrpc":"2.0","method":"eth_getCode","params":["0xe66B434bc83805f380509642429eC8e43AE9874a","latest"],"id":1}' \
+  "https://your-genlayer-chain-rpc-url"
 ```
 
 A non-`0x` bytecode string means the contract exists at that address on the connected chain. A bare `"0x"` means the address has no code on this RPC — your `genlayerchainrpcurl` is pointing at the wrong network.
