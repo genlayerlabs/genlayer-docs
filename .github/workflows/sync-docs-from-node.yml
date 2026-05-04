@@ -50,7 +50,6 @@ jobs:
     environment: Node Sync
     outputs:
       version: ${{ steps.final_version.outputs.version }}
-      token: ${{ steps.app-token.outputs.token }}
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
@@ -96,6 +95,34 @@ jobs:
           echo "version=$VERSION" >> $GITHUB_OUTPUT
           echo "✅ Will sync version: $VERSION"
 
+      - name: Clone source repository
+        uses: actions/checkout@v4
+        with:
+          repository: genlayerlabs/genlayer-node
+          token: ${{ steps.app-token.outputs.token }}
+          fetch-depth: 1
+          sparse-checkout: |
+            docs/changelog
+            docs/api/rpc
+            docs/api/ops
+            configs/node/config.yaml.example
+            configs/node/asimov.yaml.example
+            configs/node/bradbury.yaml.example
+            release/docker-compose.yaml
+            release/alloy-config.river
+            release/greybox-setup-guide.md
+          sparse-checkout-cone-mode: false
+          path: source-repo
+          ref: ${{ steps.final_version.outputs.version }}
+
+      - name: Upload source snapshot
+        uses: actions/upload-artifact@v4
+        with:
+          name: node-source
+          path: source-repo/
+          include-hidden-files: false
+          retention-days: 1
+
   sync-files:
     name: 'Sync Files'
     runs-on: ubuntu-latest
@@ -116,23 +143,11 @@ jobs:
           sudo wget -qO /usr/local/bin/yq https://github.com/mikefarah/yq/releases/latest/download/yq_linux_amd64
           sudo chmod +x /usr/local/bin/yq
 
-      - name: Clone source repository
-        uses: actions/checkout@v4
+      - name: Download source snapshot
+        uses: actions/download-artifact@v4
         with:
-          repository: genlayerlabs/genlayer-node
-          token: ${{ needs.prepare.outputs.token }}
-          fetch-depth: 1
-          sparse-checkout: |
-            docs
-            configs/node/config.yaml.example
-            configs/node/asimov.yaml.example
-            configs/node/bradbury.yaml.example
-            release/docker-compose.yaml
-            release/alloy-config.river
-            release/greybox-setup-guide.md
-          sparse-checkout-cone-mode: true
+          name: node-source
           path: source-repo
-          ref: ${{ needs.prepare.outputs.version }}
 
       - name: Set sync parameters
         id: set_params
