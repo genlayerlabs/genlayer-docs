@@ -1,0 +1,190 @@
+import { Callout } from "nextra-theme-docs";
+
+# Validator Troubleshooting
+
+A pre-flight checklist to run before submitting your priming transaction, and a symptom-keyed reference for issues that surface during the first hours of operating a GenLayer validator.
+
+This page assumes you have already followed the [Setup Guide](/validators/setup-guide). For upgrade-related issues, see the [Upgrade Guide](/validators/upgrade).
+
+<Callout type="warning" emoji="⚠️">
+  `./bin/genlayernode doctor` currently exits with status code `0` even when it reports validation failures. Don't rely on shell-style `if doctor; then ...` — grep its output for `✗` markers or for `configuration validation failed`.
+</Callout>
+
+---
+
+## Pre-Flight Checklist
+
+Run through these checks before calling `genlayer staking validator-prime`. Once primed, your validator is eligible for consensus duties — and for penalties — so it pays to verify the setup end-to-end first.
+
+### 1. `doctor` returns clean
+
+```sh copy
+./bin/genlayernode doctor
+```
+
+Expect every section ending in `All ... checks passed!` with no `✗` lines. If you see warnings about missing optional LLM provider keys (`GEMINIKEY`, `OPENAIKEY`, etc.), those are non-fatal as long as `At least one LLM provider is configured` appears at the end of the GenVM section.
+
+### 2. Confirm your RPC is on the right chain
+
+`doctor` checks that the consensus address belongs to a known network (it prints `network: asimov` etc.) but does **not** verify that the contract bytecode actually exists on the connected RPC. A wrong-chain RPC will pass `doctor` and only fail at startup. Add this manual probe — replace the placeholders with the values from your `config.yaml` (`consensus.consensusaddress` and `rollup.genlayerchainrpcurl`):
+
+```sh copy
+curl -s -X POST -H "Content-Type: application/json" \
+  --data '{"jsonrpc":"2.0","method":"eth_getCode","params":["<YOUR_CONSENSUS_ADDRESS>","latest"],"id":1}' \
+  "<YOUR_RPC_URL>"
+```
+
+A non-`0x` bytecode string means the contract exists at that address on the connected chain. A bare `"0x"` means the address has no code on this RPC — your `genlayerchainrpcurl` is pointing at the wrong network. Note that the consensus address can change after a network upgrade, so always source it from your current `config.yaml` rather than from older notes.
+
+### 3. Operator key backed up off-site
+
+Confirm the encrypted keystore export from [Backing Up Your Operator Key](/validators/setup-guide#backing-up-your-operator-key) is stored on a separate host you control. The keystore on the validator server alone is a single point of failure.
+
+<Callout type="warning" emoji="🚨">
+  Test the backup works: try importing it on a throwaway machine. A backup you have never restored is not a backup.
+</Callout>
+
+### 4. Mode confirmed as `validator`
+
+Start the node and watch for these warnings in the first second of output. If you see them, the node has silently fallen back to full-node mode and is **not** participating in consensus:
+
+```
+WRN validator wallet address is not set in validator mode
+WRN SWITCHING to FULL MODE due to missing addresses
+INF full node mode detected, skipping validator setup
+```
+
+The fix is to populate `node.validatorWalletAddress` in `config.yaml` with the wallet address you got from [`genlayer staking wizard`](/validators/setup-guide#using-the-validator-wizard). See [Common Issues](#node-silently-runs-as-full-node) below.
+
+### 5. Telemetry visible on the public dashboard
+
+After [configuring monitoring](/validators/monitoring), confirm your `NODE_ID` appears on the [public Foundation dashboard](https://genlayerfoundation.grafana.net/public-dashboards/66a372d856ea44e78cf9ac21a344f792). A node that's running but not reporting metrics is hard to debug under load.
+
+### 6. System clock synchronized
+
+```sh copy
+timedatectl status
+```
+
+Look for `System clock synchronized: yes` and `NTP service: active`. A drifting clock is a frequent root cause of false alarms in monitoring, and on consensus-sensitive networks can cause real participation issues.
+
+### 7. Recovery procedure documented
+
+Before priming, write down (somewhere not on the validator server) how to: restore the keystore on a new host, recreate `config.yaml` from your version-controlled copy, and recover from a breaking upgrade per the [Upgrade Guide](/validators/upgrade). The first time you need this is the worst time to be figuring it out.
+
+---
+
+## Common Issues
+
+### `setup.py` fails: `ensurepip is not available`
+
+**Symptom:** `python3 ./third_party/genvm/bin/setup.py` exits with:
+
+```
+The virtual environment was not created successfully because ensurepip
+is not available.  On Debian/Ubuntu systems, you need to install the
+python3-venv package using the following command.
+    apt install python3.12-venv
+```
+
+**Cause:** On Debian/Ubuntu, the `venv` module is importable from `python3` directly but the bootstrap helper `ensurepip` lives in a separate package that isn't installed by default.
+
+**Fix:**
+
+```sh copy
+sudo apt-get install -y python3-venv python3.12-venv
+```
+
+Adjust the second package to your Python version (`python3.10-venv`, `python3.11-venv`, etc.). Re-run `setup.py` afterwards.
+
+### Node silently runs as full node
+
+**Symptom:** Startup log contains:
+
+```
+WRN validator wallet address is not set in validator mode
+WRN SWITCHING to FULL MODE due to missing addresses
+INF full node mode detected, skipping validator setup
+```
+
+**Cause:** `node.validatorWalletAddress` (and/or `node.operatorAddress`) is empty in `config.yaml`. The node has the binary, the keystore, and the operator key, but it has no validator-wallet contract address to sign duties for.
+
+**Fix:**
+
+1. Run the staking wizard ([`genlayer staking wizard`](/validators/setup-guide#using-the-validator-wizard)) to create the validator wallet — it returns a Validator Wallet address.
+2. Set `node.validatorWalletAddress: "0xYour..."` in `config.yaml`.
+3. Verify `node.operatorAddress` is also populated. `account new --setup` (or `account import --setup`) sets it automatically; without `--setup` the keystore is created but the config field stays empty.
+
+### Doctor passes, but node fails at startup with `no contract code`
+
+**Symptom:** `doctor` reports all checks passed, but `./bin/genlayernode run` exits immediately with:
+
+```
+ERR Failed to start application
+  error="...resolve ConsensusMain address from AddressManager:
+         no contract code at given address"
+```
+
+**Cause:** Your `genlayerchainrpcurl` resolves to a different chain than the one your `consensusaddress` belongs to (for example, ZKsync Era mainnet instead of the GenLayer Chain). Doctor matches the consensus address against a known-networks list — it doesn't verify the contract bytecode actually exists on the connected RPC.
+
+**Fix:** Run the `eth_getCode` probe from [Pre-Flight #2](#2-confirm-your-rpc-is-on-the-right-chain). If it returns `"0x"`, replace `genlayerchainrpcurl` / `genlayerchainwebsocketurl` with a node connected to the correct GenLayer Chain.
+
+### Doctor reports RPC unreachable
+
+**Symptom:**
+
+```
+✗ GenLayer Chain RPC: Connected but health check failed
+  Error: failed to get block number: ... no such host
+  Fix: Check GenLayer Chain logs for errors or ensure it is fully synced
+✗ GenLayer Chain WebSocket: Failed to connect to ...
+  Error: dial GenLayer Chain WebSocket: ... no such host
+```
+
+**Common causes:**
+
+- HTTP and WebSocket URLs swapped, or one of them blank.
+- DNS resolution failing for the RPC host.
+- RPC provider's IP allowlist not yet updated for the validator host.
+- Outbound firewall on the validator host blocking the RPC port.
+
+The binary's own `Fix:` hint suggests checking GenLayer Chain logs; in practice for a fresh setup the cause is almost always one of the above network/configuration issues, not a chain problem.
+
+**Fix:** Test both URLs manually:
+
+```sh copy
+# HTTP
+curl -s -X POST -H "Content-Type: application/json" \
+  --data '{"jsonrpc":"2.0","method":"eth_blockNumber","params":[],"id":1}' \
+  "$GENLAYERNODE_ROLLUP_GENLAYERCHAINRPCURL"
+```
+
+If `curl` succeeds but `doctor` still fails, double-check the exact strings in `config.yaml` for typos and trailing whitespace. If the literal string `FILLME` appears in the error (`dial unix FILLME: connect: no such file or directory`), the placeholder was never replaced or the env override is empty.
+
+### Telemetry credentials rejected
+
+**Symptom:** Alloy logs show repeated authentication failures pushing metrics or logs to the Foundation endpoints.
+
+**Common causes:** credentials no longer valid, username and password swapped between the metrics and logs sections, or trailing whitespace in `.env`.
+
+**Fix:** Request a fresh set of credentials in the GenLayer Discord operator channel, paste them into `.env` carefully, and restart the monitoring profile only:
+
+```sh copy
+docker compose --profile monitoring down
+docker compose --profile monitoring up -d
+```
+
+---
+
+## Observability tip: external monitor on a separate path
+
+The on-host metrics from the [Monitoring Guide](/validators/monitoring) are essential, but they all live on the same machine as the validator itself. If the host network goes down, those metrics go silent precisely when you most need them.
+
+A small external probe — running on a different cloud provider or autonomous system, hitting your node's RPC and ops endpoints every 1–2 minutes — gives you an outside view that survives the kind of issues your own host is struggling with. It can be as simple as a cron job on a small VM that posts to a chat channel when it can't reach your node.
+
+---
+
+## Still stuck?
+
+- Search the [Validator Changelog](/validators/changelog) for recent breaking changes that may affect your version.
+- Ask in the `#validators` channel of the [GenLayer Discord](https://discord.gg/genlayerlabs) — include your node version, the relevant log excerpt, and the output of `./bin/genlayernode doctor`.
