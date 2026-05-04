@@ -2,11 +2,13 @@
 rollup:
   genlayerchainrpcurl: "TODO: Set your GenLayer Chain ZKSync HTTP RPC URL here" # GenLayer Chain RPC URL
   genlayerchainwebsocketurl: "TODO: Set your GenLayer Chain ZKSync WebSocket RPC URL here" # GenLayer Chain WebSocket URL
+  provider: "TODO: Set your GenLayer Chain ZKSync provider" # Rollup operator name; surfaces as the "provider" label on RPC-driven metrics. Set explicitly per deployment.
 # consensus contracts configuration
 consensus:
   # Testnet - Phase 5
   consensusaddress: "0xe66B434bc83805f380509642429eC8e43AE9874a" # AddressManager Smart Contract Address
   genesis: 17326 # (Optional) Genesis block number for this consensus deployment. If not provided, it will be auto-detected by searching for the first log from the ConsensusMain contract.
+  # chain_submit_buffer: "30s" # (Optional) Slack reserved at the end of each consensus step to submit the resulting on-chain tx (commit vote, reveal vote, proposed receipt) before the slot closes. Tune to underlying settlement chain latency. Default 30s.
 # data directory
 datadir: "./data/node"
 # logging configuration
@@ -116,6 +118,7 @@ genvm:
   start_manager: true # if true node will start genvm manager itself
   manager_url: http://127.0.0.1:3999
   permits: 8 # Leave empty for autodiscovery, put a number for updating genvm permits on startup
+  sync_permits: 64 # Optional: permits used while !isSynced (bulk replay). Leave empty to reuse the steady-state `permits` value.
   sync_wait_timeout: "20s" # Max time to wait for GenVM to sync to a requested block before returning an error
 # Advanced configuration
 merkleforest:

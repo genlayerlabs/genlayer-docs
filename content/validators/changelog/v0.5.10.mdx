@@ -1,0 +1,24 @@
+## v0.5.10
+
+### New features
+
+- Resilient WS RPC for fallback path
+
+### Bug fixes
+
+- Close activator-binding race
+- Exit finalize loop on post-Submit race
+- Persist gas high-water across cycles
+- Lift gas ceiling on retry-count
+- Bound cancel gasFeeCap and lift bump ceiling on blocker lookup
+- Fall back to WS on block-not-found
+- Repair self-cancellation recovery
+- Make chain-submit buffer configurable and stop collapsing on short step_timeout
+- Add fault label to RPC error metric
+- Unwedge replay and filter sync
+
+### Misc
+
+- Label RPC metrics with provider
+- Add chain nonce and desync gauges metrics
+- Log timestamps after acquireTransaction
