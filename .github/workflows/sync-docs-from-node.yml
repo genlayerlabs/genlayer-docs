@@ -102,7 +102,9 @@ jobs:
           token: ${{ steps.app-token.outputs.token }}
           fetch-depth: 1
           sparse-checkout: |
-            docs
+            docs/changelog
+            docs/api/rpc
+            docs/api/ops
             configs/node/config.yaml.example
             configs/node/asimov.yaml.example
             configs/node/bradbury.yaml.example
