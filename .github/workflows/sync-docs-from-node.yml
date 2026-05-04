@@ -111,7 +111,7 @@ jobs:
             release/docker-compose.yaml
             release/alloy-config.river
             release/greybox-setup-guide.md
-          sparse-checkout-cone-mode: true
+          sparse-checkout-cone-mode: false
           path: source-repo
           ref: ${{ steps.final_version.outputs.version }}
 
