@@ -25,6 +25,7 @@ echo "Sanitizing config file: $CONFIG_FILE"
 yq -i '
   .rollup.genlayerchainrpcurl = "TODO: Set your GenLayer Chain ZKSync HTTP RPC URL here" |
   .rollup.genlayerchainwebsocketurl = "TODO: Set your GenLayer Chain ZKSync WebSocket RPC URL here" |
+  .rollup.provider = "TODO: Set your GenLayer Chain ZKSync provider" |
   del(.node.dev)
 ' "$CONFIG_FILE"
 
