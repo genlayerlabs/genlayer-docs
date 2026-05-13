@@ -3,6 +3,7 @@
     "error-handling": "Error Handling",
     "upgradability": "Upgradability",
     "value-transfers": "Value Transfers",
+    "transaction-context": "Transaction Context",
     "messages": "Messages",
     "interacting-with-intelligent-contracts": "Interacting with Intelligent Contracts",
     "interacting-with-evm-contracts": "Interacting with EVM Contracts",
