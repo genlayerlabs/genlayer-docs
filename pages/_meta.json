@@ -6,6 +6,12 @@
   "api-references": "API References",
   "partners": "Partners",
   "FAQ": "FAQ",
+  "skills": {
+    "title": "Skills 🤖",
+    "type": "page",
+    "href": "https://skills.genlayer.com/",
+    "newWindow": true
+  },
   "blog": {
     "title": "Blog 📚",
     "type": "page",
