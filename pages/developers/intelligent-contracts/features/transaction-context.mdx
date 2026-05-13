@@ -2,7 +2,7 @@ import { Callout } from "nextra-theme-docs";
 
 # Transaction Context
 
-Every contract execution has access to information about the transaction that triggered it — caller addresses, value, chain ID, and the transaction's datetime. This page covers what is available, how to access it, and what is *not* available.
+Every contract execution has access to information about the transaction that triggered it — caller addresses, value, chain ID, and the transaction **timestamp** (datetime). This page covers how to read the current time, get a Unix timestamp, access caller and tx metadata, and what is *not* exposed (block number, gas, wall-clock).
 
 ## `gl.message` — typed accessors
 
@@ -47,11 +47,22 @@ if gl.message_raw['is_init']:
   Prefer `gl.message` for the common fields — it gives you autocompletion and type checking. Reach for `gl.message_raw` only when you need one of the extra fields.
 </Callout>
 
-## Time in a contract
+## Time and Timestamps
 
-Time inside the GenVM is **deterministic and pinned to the transaction's datetime**. Every validator re-executing the transaction sees the same value, so you can use it for storage, comparisons, and prompt context without breaking equivalence.
+Time inside the GenVM is **deterministic and pinned to the transaction's timestamp**. Every validator re-executing the transaction sees the same value, so you can use it for storage, comparisons, and prompt context without breaking equivalence.
 
 The Python standard library's clock is wired to the transaction datetime — `datetime.now()`, `datetime.now(tz)`, and `time.time()` all return the same value across validators.
+
+### Transaction Timestamp
+
+The transaction timestamp is exposed three ways. Use whichever fits:
+
+| Form | How | Use for |
+|---|---|---|
+| Unix seconds | `int(datetime.now(timezone.utc).timestamp())` | Arithmetic, expiries, deltas |
+| Unix seconds (alt) | `int(time.time())` | Same — shorter |
+| `datetime` object | `datetime.now(timezone.utc)` | Comparisons, formatting |
+| ISO 8601 string | `datetime.now(timezone.utc).isoformat()` *or* `gl.message_raw['datetime']` | Storage, audit trails, prompts |
 
 ### Common patterns
 
