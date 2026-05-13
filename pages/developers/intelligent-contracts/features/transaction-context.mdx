@@ -1,0 +1,106 @@
+import { Callout } from "nextra-theme-docs";
+
+# Transaction Context
+
+Every contract execution has access to information about the transaction that triggered it — caller addresses, value, chain ID, and the transaction's datetime. This page covers what is available, how to access it, and what is *not* available.
+
+## `gl.message` — typed accessors
+
+The most common fields are exposed as a typed `NamedTuple`:
+
+| Field | Type | Description |
+|---|---|---|
+| `sender_address` | `Address` | Immediate caller — EOA, EVM contract, or IC depending on how the call was initiated |
+| `origin_address` | `Address` | Original transaction submitter — preserved through internal message chains |
+| `contract_address` | `Address` | The current contract's own address |
+| `value` | `u256` | GEN sent with the call (only in `@gl.public.write.payable` methods) |
+| `chain_id` | `u256` | Current chain ID |
+
+```python
+@gl.public.write
+def deposit(self):
+    self.balances[gl.message.sender_address] += gl.message.value
+```
+
+For the difference between `sender_address` and `origin_address` across internal message chains, see [Messages](/developers/intelligent-contracts/features/messages).
+
+## `gl.message_raw` — full message dict
+
+`gl.message_raw` is a `TypedDict` with everything the bootloader receives. It includes all `gl.message` fields plus:
+
+| Field | Type | Description |
+|---|---|---|
+| `datetime` | `str` | Transaction datetime as an ISO 8601 string |
+| `is_init` | `bool` | `True` iff this execution is a deployment |
+| `stack` | `list[Address]` | Stack of view-method callers, excluding the current contract |
+| `entry_kind` | `int` | `0` = MAIN, `1` = SANDBOX, `2` = CONSENSUS_STAGE |
+| `entry_data` | `bytes` | Raw entry payload |
+| `entry_stage_data` | — | Consensus-stage-specific data |
+
+```python
+# Detect whether the current execution is a deploy
+if gl.message_raw['is_init']:
+    self.deployer = gl.message.sender_address
+```
+
+<Callout type="info">
+  Prefer `gl.message` for the common fields — it gives you autocompletion and type checking. Reach for `gl.message_raw` only when you need one of the extra fields.
+</Callout>
+
+## Time in a contract
+
+Time inside the GenVM is **deterministic and pinned to the transaction's datetime**. Every validator re-executing the transaction sees the same value, so you can use it for storage, comparisons, and prompt context without breaking equivalence.
+
+The Python standard library's clock is wired to the transaction datetime — `datetime.now()`, `datetime.now(tz)`, and `time.time()` all return the same value across validators.
+
+### Common patterns
+
+**Unix timestamp for arithmetic:**
+
+```python
+from datetime import datetime, timezone
+
+@gl.public.write
+def mint(self):
+    now = int(datetime.now(timezone.utc).timestamp())
+    self.tokens[gl.message.sender_address] = Token(
+        expiry=u256(now + 86400),  # 24h from now
+    )
+```
+
+**Expiry check:**
+
+```python
+@gl.public.view
+def is_expired(self, token_id: u256) -> bool:
+    now = int(datetime.now(timezone.utc).timestamp())
+    return now > int(self.tokens[token_id].expiry)
+```
+
+**ISO string for audit trails or events:**
+
+```python
+@gl.public.write
+def submit(self, payload: str):
+    self.submissions.append(Submission(
+        sender=gl.message.sender_address,
+        payload=payload,
+        timestamp=datetime.now(timezone.utc).isoformat(),
+    ))
+```
+
+**Raw ISO string from the message (skip the clock):**
+
+```python
+ts: str = gl.message_raw['datetime']
+```
+
+<Callout type="warning">
+  The clock returns the **transaction datetime**, not host wall-clock time. Do not call `datetime.now()` expecting current real-world time — by the time validators re-execute, the transaction may be minutes or hours old. Use it for relative arithmetic ("expires 24h after the tx") and timestamping, not for "is it past 5pm right now".
+</Callout>
+
+## What is *not* in the context
+
+- **No block number, no block hash.** The transaction context does not carry block-level metadata. If your contract needs block height, fetch it via [Web Access](/developers/intelligent-contracts/features/web-access) against an RPC inside a non-deterministic block.
+- **No gas price, no nonce.** Transaction metadata beyond what is listed above is not exposed to the contract.
+- **No host wall-clock time.** As above — the clock is the transaction datetime, not the validator's current time.

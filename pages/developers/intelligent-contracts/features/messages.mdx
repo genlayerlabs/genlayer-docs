@@ -116,17 +116,9 @@ Every Intelligent Contract has a corresponding **ghost contract** on GenLayer Ch
   **Studio:** Ghost contracts are not implemented. The IC address is used directly, and balance is stored in a database table.
 </Callout>
 
-## Message Context (gl.message)
+## Message Context
 
-Every contract execution has access to `gl.message`:
-
-| Field | Type | Description |
-|---|---|---|
-| `sender_address` | `Address` | Immediate caller — EOA, EVM contract, or IC depending on how the call was initiated |
-| `origin_address` | `Address` | Original transaction submitter — preserved through internal message chains |
-| `contract_address` | `Address` | The current contract's own address |
-| `value` | `u256` | GEN sent with the call (only in `@gl.public.write.payable` methods) |
-| `chain_id` | `u256` | Current chain ID |
+Caller and execution metadata (`sender_address`, `origin_address`, `contract_address`, `value`, `chain_id`, transaction datetime, etc.) is available via `gl.message` and `gl.message_raw`. See [Transaction Context](/developers/intelligent-contracts/features/transaction-context).
 
 ## Timing: Accepted vs Finalized
 
