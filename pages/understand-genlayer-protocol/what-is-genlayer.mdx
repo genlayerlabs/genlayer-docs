@@ -2,15 +2,33 @@ import { Callout } from "nextra-theme-docs";
 
 # What is GenLayer
 
-## Trust Infrastructure for the AI Age
+## The Adjudication Layer for the Agentic Economy
 
-GenLayer is a blockchain where validator nodes powered by diverse AI models reach consensus on subjective decisions — a synthetic jurisdiction on-chain.
+GenLayer uses decentralized AI-validator consensus to resolve contracts that require judgment, not just code.
 
 Intelligent Contracts interpret language, process unstructured data, and pull live web inputs. No oracles, no intermediaries.
 
 - **Bitcoin** — Trustless Money
 - **Ethereum** — Trustless Computation
-- **GenLayer** — Trustless Decision-Making
+- **GenLayer** — Trustless Adjudication
+
+Where Bitcoin reached consensus on the *order* of transactions and Ethereum on the *execution* of code, GenLayer reaches consensus on the **meaning** of transactions. The technical primitive that makes this possible is the [Equivalence Principle](/developers/intelligent-contracts/features/non-determinism): two answers can be different in form yet equivalent in meaning, and a network of independent AI validators can agree on that.
+
+## The Missing Layer
+
+The agentic-commerce stack is being built in the open — and every layer of it stops at the happy path.
+
+| Layer | Standard | What it handles | Dispute resolution |
+|---|---|---|---|
+| Payments | [x402](https://www.x402.org/) (Coinbase) | Internet-native, agent-friendly payments | Not specified |
+| Identity & reputation | [ERC-8004](https://eips.ethereum.org/EIPS/eip-8004) (Ethereum) | Trustless agent identity | Delegated to external validation protocols |
+| Agent interoperability | [A2A](https://a2a-protocol.org) (Linux Foundation / Google) | How agents discover each other and exchange tasks | Not defined within the protocol |
+
+Other players are stacking in alongside them — Stripe + OpenAI's ACP (already powering ChatGPT checkout), Visa's Trusted Agent Protocol, Google's AP2, Mastercard's Agent Pay + BVNK, and Tempo (Stripe / Paradigm L1). The shape is the same in every case: the payment goes through, the job is accepted, the reputation is updated — and the moment a single material dispute appears, the stack reaches for a function it does not have.
+
+That function is **adjudication**. Not a sovereign court. A credible, machine-speed mechanism for evaluating contested commitments, weighing evidence, interpreting language, reaching a verdict, and attaching consequences to it.
+
+GenLayer is that layer.
 
 ## What Intelligent Contracts Can Do
 
