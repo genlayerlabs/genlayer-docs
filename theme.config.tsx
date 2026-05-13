@@ -20,7 +20,7 @@ const config: DocsThemeConfig = {
   navigation: true,
   head: (
     <>
-      <meta name="description" content="GenLayer the intelligence layer of the Internet" />
+      <meta name="description" content="GenLayer — the adjudication layer for the agentic economy" />
       <link rel="icon" href="/favicon.png" type="image/png" media="(prefers-color-scheme: light)" />
       <link rel="icon" href="/favicon-dark.png" type="image/png" media="(prefers-color-scheme: dark)" />
     </>
@@ -50,16 +50,16 @@ const config: DocsThemeConfig = {
     const isHomePage = asPath === "/";
     return {
       titleTemplate: isHomePage
-        ? "GenLayer the intelligence layer of the Internet - Documentation"
-        : "%s | Detailed GenLayer Documentation",
+        ? "GenLayer — The Adjudication Layer for the Agentic Economy"
+        : "%s | GenLayer Documentation",
       openGraph: {
         type: "website",
         locale: "en_IE",
         url: "https://docs.genlayer.com/" + asPath,
-        site_name: "GenLayer: the intelligence layer of the Internet - Documentation",
-        title: "GenLayer: the intelligence layer of the Internet - Documentation",
+        site_name: "GenLayer — The Adjudication Layer for the Agentic Economy",
+        title: "GenLayer — The Adjudication Layer for the Agentic Economy",
         description:
-          "Build and deploy AI-powered applications with GenLayer. Comprehensive documentation, guides, and API references for developers.",
+          "Documentation for GenLayer, the adjudication layer for the agentic economy. Build Intelligent Contracts in Python, integrate the SDKs, and run a validator node.",
         images: [
           {
             url: "/assets/genlayer.png",
@@ -76,11 +76,11 @@ const config: DocsThemeConfig = {
       additionalMetaTags: [
         {
           name: "description",
-          content: "Comprehensive documentation and guides on how to use GenLayer.",
+          content: "Documentation for GenLayer, the adjudication layer for the agentic economy. Build Intelligent Contracts in Python, integrate the SDKs, and run a validator node.",
         },
         {
           property: "og:description",
-          content: "GenLayer the intelligence layer of the Internet - Documentation.",
+          content: "GenLayer — the adjudication layer for the agentic economy. Decentralized AI-validator consensus for contracts that need judgment, not just code.",
         },
         {
           property: "og:image",

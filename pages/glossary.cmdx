@@ -1,8 +1,21 @@
 # Glossary
 
-- **Validators:** Participants who stake tokens to earn the right to validate transactions. They are critical in both the initial validation and the subsequent appeals process, if necessary.
-  
+- **Adjudication:** The act of weighing evidence, interpreting intent, and reaching a verdict the parties accept as legitimate. GenLayer is built as a first-instance, internet-native adjudication layer — fast, neutral, and reachable by anyone — for the disputes the agentic economy will produce at machine speed.
+
+- **Agentic economy:** The economy in which software agents transact, negotiate, and coordinate on their own behalf at machine speed, surfacing commitments and disagreements faster and more often than human-built institutions were designed to handle.
+
+- **Intelligent Contract:** A GenLayer smart contract written in Python that can read the web, interpret natural language, and reach consensus on subjective outcomes. The unit GenLayer adjudicates.
+
+- **Equivalence Principle:** The technical primitive at the core of GenLayer. The formal expression of the idea that two answers can be different in form yet equivalent in meaning, so a network of independent AI validators can reach consensus on non-deterministic outcomes.
+
+- **Optimistic Democracy:** GenLayer's consensus mechanism. A leader validator proposes a result; the rest of a randomly selected validator set independently evaluates it; majority agreement accepts the transaction, and anyone can appeal to expand the validator set.
+
+- **Validators:** Participants who stake tokens to earn the right to validate transactions. Critical in both the initial validation and the subsequent appeals process.
+
 - **Leader Selection:** A process that randomly selects one validator to propose the execution outcome for each transaction, ensuring fairness and reducing potential biases.
 
-- **Appeals Process:** This component allows any network participant to contest the results of a transaction's validation during a designated Finality Window, promoting transparency and accountability.
+- **Appeals Process:** Allows any network participant to contest the result of a transaction's validation during a designated Finality Window, promoting transparency and accountability.
 
+- **GenVM:** GenLayer's sandboxed execution environment for Intelligent Contracts — a WebAssembly-based VM running a Python interpreter with native access to LLMs, web data, and non-deterministic operations.
+
+- **Ghost contract:** The EVM-layer counterpart of every Intelligent Contract, deployed at the same address. Holds the contract's GEN balance, relays transactions to consensus, and executes external messages back into the chain layer.
