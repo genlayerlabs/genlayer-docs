@@ -1,5 +1,6 @@
 import Image from 'next/image'
 import { Card, Cards } from 'nextra-theme-docs'
+import { Callout } from 'nextra-theme-docs'
 import CustomCard from '../components/card'
 
 ## The Adjudication Layer for the Agentic Economy
@@ -15,6 +16,15 @@ Intelligent Contracts interpret language, process unstructured data, and pull li
 The agentic-commerce stack is being built in public — Coinbase's [x402](https://www.x402.org/) for payments, Ethereum's [ERC-8004](https://eips.ethereum.org/EIPS/eip-8004) for trustless agent identity, the Linux Foundation's [A2A](https://a2a-protocol.org) for agent interoperability, plus Stripe/OpenAI's ACP, Visa's Trusted Agent Protocol, Google's AP2, and Mastercard's Agent Pay. Every layer engineers the happy path. None ships dispute resolution. GenLayer fills that gap.
 
 Explore [use cases](/understand-genlayer-protocol/typical-use-cases) or jump straight into building.
+
+<Callout type="info">
+  **Start with Skills 🤖** — The fastest way to build a contract or run a validator is the [GenLayer Skills](https://skills.genlayer.com/) plugin for Claude Code. One command scaffolds, deploys, and operates — no manual setup.
+
+  ```bash
+  claude /plugin marketplace add genlayerlabs/skills
+  # then: genlayer-dev (build contracts) or genlayernode (run a validator)
+  ```
+</Callout>
 
 ## Get Started
 

@@ -5,6 +5,19 @@ import CustomCard from '../../../components/card'
 
 This guide covers everything you need to develop, test, and deploy Intelligent Contracts — from zero-setup exploration to a full local development environment with linting, testing, and agent-assisted workflows.
 
+## Recommended: GenLayer Skills
+
+The [GenLayer Skills](https://skills.genlayer.com/) plugin for Claude Code is the fastest path to a working development environment. The `genlayer-dev` skill scaffolds a project, installs prerequisites, runs the linter and direct-mode tests, and walks you through deployment — interactively.
+
+```bash copy
+claude /plugin marketplace add genlayerlabs/skills
+claude /plugin install genlayer-dev@genlayerlabs
+```
+
+Then run `claude /genlayer-dev` and follow the prompts. The skill bundles the same workflows documented in the rest of this page — it just runs them for you.
+
+The rest of this guide describes the manual setup, the reference path for anyone who wants fine-grained control or is integrating with existing tooling.
+
 ## Quick Start: GenLayer Studio
 
 The fastest way to start is [studio.genlayer.com](https://studio.genlayer.com) — a web-based IDE where you can write, deploy, and interact with Intelligent Contracts with zero setup.
@@ -309,14 +322,11 @@ The [GenLayer VS Code Extension](https://marketplace.visualstudio.com/items?item
 
 The boilerplate is designed to work well with AI coding agents. The linter and direct mode tests provide a fast feedback loop that agents can use without spinning up infrastructure.
 
-The [GenLayer Skills](https://github.com/genlayerlabs/skills) repository provides a Claude Code plugin marketplace with operational skills for GenLayer development:
+For Claude Code, install the [GenLayer Skills](https://skills.genlayer.com/) marketplace (covered at the top of this page) — it bundles the workflows below behind interactive commands.
 
-```bash
-# Add the skills marketplace to Claude Code
-/plugin marketplace add genlayerlabs/skills
-```
+For other IDEs and clients, the GenLayer MCP servers provide the same capabilities via the Model Context Protocol:
 
-The [GenLayer MCP Server](https://www.npmjs.com/package/genlayer-mcp) provides contract generation and GenLayer-specific guidance directly in your IDE via the Model Context Protocol:
+The [GenLayer MCP Server](https://www.npmjs.com/package/genlayer-mcp) provides contract generation and GenLayer-specific guidance directly in your IDE:
 
 ```bash
 # Add to Claude Code

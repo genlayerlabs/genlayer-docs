@@ -1,10 +1,26 @@
 import { Card, Cards } from 'nextra-theme-docs'
+import { Callout } from 'nextra-theme-docs'
 
 # Getting Started with GenLayer
 
-Welcome to the GenLayer getting started guide. This guide helps developers exploit the full potential of the GenLayer environment. This documentation will provide you with the tools and knowledge needed to build, deploy, and manage Intelligent Contracts on GenLayer.
+This guide helps developers build, deploy, and integrate Intelligent Contracts on GenLayer.
 
-The next topics focus on key areas of the development process. From setting up your development environment and writing your first Intelligent Contract to exploring advanced features and best practices, these resources are designed to support your journey in creating cutting-edge decentralized applications on GenLayer. Click on any link to delve into detailed guides and enhance your development skills with GenLayer.
+## Start with Skills (Recommended)
+
+The fastest path from zero to deployed contract is the [GenLayer Skills](https://skills.genlayer.com/) plugin for Claude Code. The `genlayer-dev` skill scaffolds a project, runs the linter and direct-mode tests, deploys to testnet, and walks you through the SDKs interactively.
+
+```bash copy
+claude /plugin marketplace add genlayerlabs/skills
+claude /plugin install genlayer-dev@genlayerlabs
+```
+
+Then run `claude /genlayer-dev` (or just ask Claude what to do next). The skill bundles the same workflows documented on this site — it just runs them for you.
+
+<Callout type="info">
+  Prefer to set things up manually or read the references first? The cards below cover every topic in depth, and the [Tooling Setup](/developers/intelligent-contracts/tooling-setup) page describes the manual install path.
+</Callout>
+
+## Reference
 
 import { Tabs } from 'nextra/components'
  
