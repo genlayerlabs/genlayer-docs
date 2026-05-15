@@ -7,7 +7,7 @@ The frontend may not load correctly due to caching issues or an outdated version
 
 ### Solution
 - **Refresh Frontend:** Simply reload the page in your browser.
-- **Clear Cache:** Clear your browser's cache by clicking on the left of your address bar -> Cookies and site data -> Manage on device site data -> Delete localhost.
+- **Clear Cache (Chrome/Chromium):** Clear your browser's cache by clicking on the left of your address bar -> Cookies and site data -> Manage on device site data -> Delete localhost.
 
 import Image from 'next/image'
  
@@ -33,7 +33,7 @@ The Studio may fail to start if some ports required for its operation are alread
      ```
    - **Windows:**
      ```cmd copy
-     netstat -aon | find <PORT_NUMBER>
+     netstat -aon | findstr <PORT_NUMBER>
      ```
 2. Use the following command to kill the process using the port. Replace `<PID>` with the Process ID obtained from the previous step.
    - **Linux / MacOS:**
