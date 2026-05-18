@@ -1,5 +1,47 @@
 # Changelog
 
+## v0.5.11
+
+### New features
+
+- Add node health state machine
+- Scope admin tokens per role
+- Add circuit breaker for RPC outages
+- Add bearer auth for admin endpoints
+- Unify CORS and WS origins allowlist
+- Inbound WebSocket JSON-RPC endpoint
+
+### Misc
+
+- Tag runtime metrics by network
+- Cap PreloadAccepted concurrency
+- Improve historical sync by sync-mode cleanup
+- Reframe /snapshot examples for SSH access; drop cloud refs
+- Default inbound WS path to /ws
+- Default WS example to single-listener
+- Multiplex WS subscriptions
+- Trace context cancellations on all watchers
+- Remove unused WaitMined method
+
+### Bug fixes
+
+- Guard nil GasFeeCap on bump retry
+- Ensure GenVM precompile cache before manager start
+- Keep sync ticker running while Synced
+- Create export file when --path is missing
+- Autodetect GenVM permit capacity
+- RPC debug error codes and id default
+- Trust XFF + cap WS frame size
+- Never halt sync on bloom mismatch
+- Refresh version on skip-sync
+- Route receipt polls to poll probes
+- Handle -32602 decode-rejection and cap GasFeeCap
+- Cap RPC body/batch and admin loopback bind
+
+### Security
+
+- Update module go.opentelemetry.io/otel to v1.41.0
+
 ## v0.5.10
 
 ### New features

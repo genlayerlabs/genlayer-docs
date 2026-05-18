@@ -210,18 +210,18 @@ One full node can be shared between multiple validators. The optimal validator-t
    You should see a list like this
 
    ```sh
+   v0.5.11
    v0.5.10
    v0.5.9
    v0.5.8
    v0.5.7
-   v0.5.6
    ```
 
    Typically, you will want to run the latest version
 
 2. Download the packaged application
    ```sh copy
-   export version=v0.5.10 # set your desired version here
+   export version=v0.5.11 # set your desired version here
    wget https://storage.googleapis.com/gh-af/genlayer-node/bin/amd64/${version}/genlayer-node-linux-amd64-${version}.tar.gz
    ```
 3. Extract the node software
@@ -310,7 +310,43 @@ node:
   admin:
     port: 9155
   rpc:
+    # host: 0.0.0.0 # bind address for the HTTP listener (default: all interfaces)
     port: 9151 # RPC server port
+    # allowed_origins: unified browser-origin allowlist applied to BOTH
+    # the HTTP transport (CORS) and the WS upgrade (gorilla CheckOrigin).
+    # Exact-match URLs only — no wildcard syntax beyond "*". Omit or
+    # leave empty to keep the permissive default ["*"]. Operators can
+    # override per-transport for WS via rpc.websocket.origins (rare).
+    # allowed_origins:
+    #   - "https://wallet.example.com"
+    #   - "https://app.example.com"
+    # websocket: inbound JSON-RPC WS endpoint for eth_subscribe /
+    # zks_subscribe plus all non-subscribe passthrough. Omit this whole
+    # block (the default) to keep WS disabled.
+    #
+    # When enabled, the default is single-listener mode: WS upgrades are
+    # served on the existing RPC listener (port above) — one port, one
+    # firewall entry, one reverse-proxy upstream. To run a dedicated WS
+    # listener instead (Geth-conventional dual-port pattern), set `port`
+    # to a value other than 0 and other than rpc.port (e.g. 9152) and
+    # set `host` for that listener.
+    # websocket:
+    #   enabled: true
+    #   # port: 0            # 0 or unset → single-listener on rpc.port (default)
+    #   # host: 0.0.0.0      # only used in dual-listener mode
+    #   path: "/ws"          # ws upgrade path — disambiguates HTTP RPC (POST /)
+    #                        # from WS upgrade (GET /ws) at the URL level.
+    #                        # Set to "/" for legacy behaviour (root path).
+    #   origins:             # WS-only override of rpc.allowed_origins (rare;
+    #                        # leave unset to inherit the unified allowlist)
+    #     - "*"              # permissive default — tighten via rpc.allowed_origins
+    #   max_conns: 1024
+    #   max_conns_per_ip: 16
+    #   max_subs_per_conn: 32
+    #   outbox_size: 256     # per-connection bounded queue; full → connection dropped
+    #   write_timeout: 10s
+    #   ping_interval: 30s
+    #   max_message_bytes: 10485760   # 10 MB cap on a single inbound frame (parity with rpc.max_request_body_bytes)
     # ratelimit_whitelist: IPs or CIDRs that bypass rate limiting entirely
     # ratelimit_whitelist:
     #   - "127.0.0.1"
