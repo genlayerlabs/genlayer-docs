@@ -1585,3 +1585,111 @@ Check if metrics collection is enabled in your configuration and that the node h
 
 - Collection intervals can be increased to reduce overhead further
 - Each collector runs independently and won't block others if one fails
+
+### snapshot
+
+Produces a consistent snapshot of the node's state at the current block. Two modes selected by the request body: stream the snapshot back as a gzipped tar response (operator path), or write it to a destination directory on the node's filesystem (zero-downtime upgrade-controller path).
+
+**Method:** `POST /snapshot`
+
+**Authentication:** required. Send the operator token in either header:
+
+```
+Authorization: Bearer <token>
+X-Admin-Auth: <token>
+```
+
+The token is the value of `GENLAYERNODE_NODE_OPERATOR_TOKEN` on the node process. When that variable is unset, the endpoint returns `401` to every caller regardless of header value (default-deny). The other ops routes (`/metrics`, `/health`, `/balance`) are unaffected and remain public.
+
+**Network exposure:** the ops server is intended for in-host or in-cluster access (Prometheus scraping `/metrics`, k8s probes hitting `/health`). The endpoint may not be reachable from outside the host depending on the deployment's firewall. The recommended operator workflow is therefore one of:
+
+- SSH onto the node and call the endpoint via `127.0.0.1:9153`, or
+- Open an SSH tunnel from the operator workstation to the node (`ssh -L 9153:127.0.0.1:9153 <node>`) and call `localhost:9153` through it.
+
+**Parameters:**
+
+- `destDir` (string, optional): Absolute path on the node's filesystem. When set, switches to write-to-path mode; when omitted or empty, the snapshot is streamed back as `application/gzip`.
+
+**Returns:**
+- Stream mode (`destDir` omitted): gzipped tar archive in the response body, `Content-Type: application/gzip`.
+- Write-to-path mode (`destDir` set): empty body, `204 No Content`.
+
+**Example Request — Stream Mode (operator):**
+
+On the node (after `ssh <node>`):
+
+```bash
+curl -X POST http://127.0.0.1:9153/snapshot \
+  -H "X-Admin-Auth: $GENLAYERNODE_NODE_OPERATOR_TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{}' \
+  -o snapshot.tar.gz
+```
+
+Or via SSH tunnel from a workstation (forwards `9153` to the node's loopback):
+
+```bash
+ssh -L 9153:127.0.0.1:9153 -N <node> &
+curl -X POST http://localhost:9153/snapshot \
+  -H "X-Admin-Auth: $GENLAYERNODE_NODE_OPERATOR_TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{}' \
+  -o snapshot.tar.gz
+```
+
+The response body is a stream — `curl` can write it to a file (as above) or pipe it through any tool that reads stdin, without staging on local disk.
+
+**Example Response — Stream Mode:**
+
+```
+HTTP/1.1 200 OK
+Content-Type: application/gzip
+Content-Disposition: attachment; filename="snapshot.tar.gz"
+
+<gzipped tar archive of the snapshot's files>
+```
+
+**Example Request — Write-to-Path Mode (upgrade controller):**
+
+```bash
+curl -X POST http://127.0.0.1:9153/snapshot \
+  -H "X-Admin-Auth: $GENLAYERNODE_NODE_OPERATOR_TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{"destDir": "/var/snapshots/asimov-100"}'
+```
+
+**Example Response — Write-to-Path Mode:**
+
+```
+HTTP/1.1 204 No Content
+```
+
+**HTTP Status Codes:**
+
+- `200 OK`: Stream mode succeeded; body carries the gzipped tar archive.
+- `204 No Content`: Write-to-path mode succeeded; snapshot is on disk at `destDir`.
+- `400 Bad Request`: `destDir` is not absolute, or already exists.
+- `401 Unauthorized`: Missing, invalid, or empty operator token (also returned when `GENLAYERNODE_NODE_OPERATOR_TOKEN` is unset on the node).
+- `500 Internal Server Error`: Snapshot creation failed (e.g., disk full, DB checkpoint error).
+
+**Notes:**
+
+- A snapshot may be several GB. In stream mode the connection stays open for the duration of the snapshot — configure reverse proxies / load balancers with adequate read timeouts and disable response buffering.
+- In stream mode, a dropped connection leaves no on-disk artifact on the node; retry the request from scratch.
+- In write-to-path mode, `destDir` must be an absolute path that does not yet exist; the node creates it. Path-traversal hardening beyond these checks is a separate (Sev: Medium) follow-up — treat the operator token as a credential that can write under the node user's filesystem permissions.
+- **Docker deploys**: in write-to-path mode, `destDir` is resolved inside the node container's filesystem, not on the host. To make the resulting directory reachable from the host (or from another container), use a volume mount that maps `destDir` identically on both sides, or stick with stream mode. Stream mode is unaffected — the response body is sent over HTTP regardless of where the node runs.
+- The snapshot includes the full chain database (SSTables, MANIFEST, WAL) at the moment of capture. Treat the artifact as sensitive — anyone holding it can reconstruct the node's state.
+- Token comparison is constant-time and length-padded so neither the value nor the length of the secret can be inferred from response timing.
+- Rotation: update `GENLAYERNODE_NODE_OPERATOR_TOKEN` and restart the node. Tokens are read once at startup and not hot-reloaded.
+
+**Forward-compatibility note:** when the zero-downtime upgrade controller (Phase 3) lands, `/snapshot` will additionally accept a second role (`upgrade`) so the controller can drive the snapshot + stop + start sequence with its own credential. The operator-token path documented here remains the same — no migration is required for operator tooling.
+
+**cURL Example with Bearer header:**
+
+```bash
+curl -X POST http://127.0.0.1:9153/snapshot \
+  -H "Authorization: Bearer $GENLAYERNODE_NODE_OPERATOR_TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{}' \
+  -o snapshot.tar.gz
+```
