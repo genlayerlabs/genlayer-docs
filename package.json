@@ -34,7 +34,7 @@
     "nextra": "^2.13.2",
     "nextra-theme-docs": "^2.13.2",
     "react": "^18.3.1",
-    "react-dom": "^18.3.1"
+    "react-dom": "^19.2.4"
   },
   "devDependencies": {
     "@playwright/test": "^1.55.0",
