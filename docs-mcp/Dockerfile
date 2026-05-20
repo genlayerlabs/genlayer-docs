@@ -1,8 +1,8 @@
-FROM node:20-slim
+FROM node:22-slim
 
 RUN apt-get update && \
     apt-get install -y --no-install-recommends python3 make g++ && \
-    npm install -g @arabold/docs-mcp-server@2.0.4 && \
+    npm install -g @arabold/docs-mcp-server@2.4.0 && \
     apt-get purge -y python3 make g++ && \
     apt-get autoremove -y && \
     rm -rf /var/lib/apt/lists/*
@@ -10,6 +10,7 @@ RUN apt-get update && \
 ENV PORT=8080
 ENV DOCS_URL=https://docs.genlayer.com
 ENV SDK_URL=https://sdk.genlayer.com/main/
+ENV DOCS_MCP_SERVER_HEARTBEAT_MS=10000
 
 EXPOSE 8080
 
