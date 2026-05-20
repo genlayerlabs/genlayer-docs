@@ -45,6 +45,10 @@ def validator_fn(leader_result) -> bool:
 
 The leader's result is only accepted if a majority of validators agree. If the majority rejects, the network rotates to a different leader and retries. If consensus still can't be reached, the transaction goes **undetermined** — it does not modify contract state.
 
+<Callout type="info">
+  **What gets stored?** The accepted leader result is the value your contract receives and can store. Validators verify or reject that leader result; their independent intermediate answers are not automatically persisted on-chain. If your application needs to expose multiple perspectives, make those perspectives explicit fields in the leader result and write validator logic that checks them.
+</Callout>
+
 ```mermaid
 graph TD
     subgraph "Step 1: Leader"
