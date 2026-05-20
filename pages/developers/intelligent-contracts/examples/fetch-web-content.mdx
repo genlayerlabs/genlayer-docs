@@ -104,6 +104,8 @@ You can monitor the contract's behavior through transaction logs, which will sho
 
 The `gl.nondet.web.get()` function supports different modes for retrieving web content. While the default mode returns the plain text content, `gl.nondet.web.render()` with `mode="html"` allows you to retrieve the complete HTML `<body>` of the webpage.
 
+Use `render` instead of `get` when the page needs a browser to execute JavaScript, load dynamic content, or render the DOM before your contract extracts data.
+
 Here's an example of using HTML mode:
 
 ```python
@@ -140,5 +142,27 @@ class FetchHTMLContent(gl.Contract):
 1. When you need to extract information from specific HTML elements
 3. When analyzing page structure or links
 4. If you need to process structured data like tables or forms
+
+### Waiting for Dynamic Pages
+
+Some pages finish the initial load before the data you need appears. For JavaScript-heavy sites, pass `wait_after_loaded` so the browser waits briefly after the page load event before returning content:
+
+```python
+def fetch_rendered_text() -> str:
+    return gl.nondet.web.render(
+        "https://example.com/dynamic-page",
+        mode="text",
+        wait_after_loaded="5s",
+    )
+```
+
+Use this sparingly:
+
+- Prefer `gl.nondet.web.get()` for stable APIs and static pages.
+- Use `render(..., mode="text")` when you only need readable page text.
+- Use `render(..., mode="html")` when you need DOM structure, attributes, links, or tables.
+- Keep waits short and extract stable structured fields before returning data from the non-deterministic block.
+
+Dynamic pages can still vary between validators. If the raw page content is unstable, extract the specific facts you need and validate only those fields in your equivalence logic.
 
 This addition provides users with a clear understanding of the HTML mode option and its specific use cases, complementing the existing text mode example.

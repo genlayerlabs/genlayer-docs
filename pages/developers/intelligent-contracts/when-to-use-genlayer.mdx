@@ -1,0 +1,118 @@
+# When to Use GenLayer
+
+GenLayer is most useful when your application needs a **shared, on-chain decision** about something a normal deterministic smart contract cannot evaluate by itself.
+
+Use GenLayer when the decision depends on evidence, language, or judgment — and when different parties need to trust the result without relying on a single backend, oracle, or operator.
+
+## Quick Fit Checklist
+
+A feature is usually a good fit for GenLayer if most of these are true:
+
+- **There is a real on-chain consequence**: payout, escrow release, market resolution, reputation update, rule enforcement, or another state change.
+- **The outcome requires judgment**: interpreting evidence, applying natural-language rules, evaluating quality, or resolving ambiguity.
+- **The evidence can be independently checked**: validators can fetch the same source material or enough comparable evidence to verify the leader's result.
+- **The decision benefits from neutral consensus**: counterparties should not have to trust your centralized backend or one AI provider.
+- **The result can be made explicit**: your contract can return a structured decision such as `accepted`, `winner`, `score`, `amount`, or `reason`.
+
+If your feature is mostly personalization, summarization, chat, analytics, routing, or UX assistance with no consensus-critical state change, it is usually better handled by a normal backend or frontend LLM.
+
+## Architecture Pattern
+
+A common GenLayer app has three layers:
+
+1. **Frontend or backend**: collects user intent, displays data, handles indexing, and may prepare URLs or evidence.
+2. **Intelligent Contract**: owns the consensus-critical decision and any on-chain state transition.
+3. **GenLayer validators**: independently verify the leader's result using the evidence and equivalence principle you define.
+
+The key question is:
+
+> What decision must not depend on my server alone?
+
+That decision is the part that belongs in the Intelligent Contract.
+
+## Good Fits
+
+### Prediction or resolution markets
+
+Good fit when the contract resolves a market by checking source evidence and applying listing or resolution rules.
+
+- Frontend: shows the market, lets users trade, links evidence.
+- Intelligent Contract: determines the outcome from trusted sources and settles the market.
+- Validators: verify that the outcome follows the evidence and rules.
+
+### Dispute or milestone workflows
+
+Good fit when parties agree up front that a contract should evaluate whether a deliverable, task, or condition was satisfied.
+
+- Frontend/backend: stores submissions, attachments, and communication context.
+- Intelligent Contract: evaluates the evidence against agreed criteria and releases funds or updates status.
+- Validators: verify that the accepted result is reasonable given the evidence.
+
+### Rule or policy verification
+
+Good fit when a decision depends on natural-language criteria.
+
+Examples:
+
+- Does a proposal comply with a DAO constitution?
+- Does a submitted work item meet bounty rules?
+- Does a listing meet market guidelines?
+- Does a claim satisfy policy conditions?
+
+## Weak Fits and Anti-Patterns
+
+### Frontend computes the answer, GenLayer only stores it
+
+If your frontend fetches data, asks an LLM for the answer, and sends the finished result to GenLayer for storage, GenLayer is not adding much trust.
+
+Better pattern: send the contract stable evidence references or inputs, then let the Intelligent Contract perform the consensus-critical evaluation.
+
+### Generic AI brain
+
+If GenLayer is only being used as an AI assistant, recommender, chatbot, or analytics engine, a normal backend is usually simpler and cheaper.
+
+Better pattern: use off-chain AI for UX and exploration, then use GenLayer only for the part where users need neutral settlement or verifiable judgment.
+
+### Private data that validators cannot verify
+
+If validators cannot access enough evidence to independently check the leader result, consensus becomes weak or impossible.
+
+Better pattern: commit to public evidence, signed attestations, hashes, URLs, or other verifiable inputs that validators can inspect.
+
+### Unbounded subjective output
+
+If the contract asks for open-ended text with no structured decision fields, validators may disagree even when they are all reasonable.
+
+Better pattern: return structured fields and compare only the parts that matter. See the [Equivalence Principle](/developers/intelligent-contracts/equivalence-principle).
+
+## What Belongs Where
+
+- **Frontend**: UX, forms, wallets, previews, charts, indexing, user guidance.
+- **Backend**: caching, notifications, search, off-chain analytics, non-critical LLM assistance.
+- **Intelligent Contract**: the decision that moves money, resolves a market, updates reputation, enforces rules, or creates another shared state transition.
+- **Evidence sources**: stable URLs, APIs, signed data, user submissions, or other material validators can fetch or evaluate.
+
+## Dispute Resolution Is Not a Court
+
+GenLayer can support agreed dispute-resolution workflows, but it does not automatically make a decision legally binding or replace a court.
+
+Use safer framing such as:
+
+- evidence-based settlement workflow
+- agreed arbitration primitive
+- contractual dispute-resolution mechanism
+- milestone or deliverable adjudication
+
+Avoid implying that an Intelligent Contract is a legal judge unless your application has the legal agreements, jurisdiction, and review process to support that claim.
+
+## Design Prompt
+
+Before building, answer these questions:
+
+1. What exact decision should GenLayer make?
+2. What state changes if the decision is accepted?
+3. What evidence will validators use to verify it?
+4. Which fields must validators agree on exactly, and which can vary?
+5. What happens if validators reject the leader result or the transaction becomes undetermined?
+
+If the answers are clear, the feature is probably a good candidate for GenLayer. If not, start by moving more logic off-chain or narrowing the on-chain decision.
