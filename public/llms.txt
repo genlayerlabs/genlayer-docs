@@ -6,7 +6,7 @@
 
 - [Full Documentation](https://docs.genlayer.com/full-documentation.txt): Complete documentation in a single file
 - [Developers Guide](https://docs.genlayer.com/developers): Build on GenLayer
-- [Validators Guide](https://docs.genlayer.com/validators): Run a validator node
+- [Validators Guide](https://docs.genlayer.com/validators/setup-guide): Run a validator node
 
 ## API References
 
@@ -19,6 +19,6 @@
 
 ## Key Concepts
 
-- [Intelligent Contracts](https://docs.genlayer.com/developers/intelligent-contracts): Contracts that can access the web and use LLMs
-- [Equivalence Principle](https://docs.genlayer.com/understand-genlayer-protocol/consensus): How validators reach consensus on nondeterministic outputs
+- [Intelligent Contracts](https://docs.genlayer.com/developers/intelligent-contracts/introduction): Contracts that can access the web and use LLMs
+- [Equivalence Principle](https://docs.genlayer.com/understand-genlayer-protocol/core-concepts/optimistic-democracy/equivalence-principle): How validators reach consensus on nondeterministic outputs
 - [Staking](https://docs.genlayer.com/developers/staking-guide): Validator and delegator staking guide
