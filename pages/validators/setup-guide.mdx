@@ -210,18 +210,18 @@ One full node can be shared between multiple validators. The optimal validator-t
    You should see a list like this
 
    ```sh
+   v0.5.12
    v0.5.11
    v0.5.10
    v0.5.9
    v0.5.8
-   v0.5.7
    ```
 
    Typically, you will want to run the latest version
 
 2. Download the packaged application
    ```sh copy
-   export version=v0.5.11 # set your desired version here
+   export version=v0.5.12 # set your desired version here
    wget https://storage.googleapis.com/gh-af/genlayer-node/bin/amd64/${version}/genlayer-node-linux-amd64-${version}.tar.gz
    ```
 3. Extract the node software
@@ -679,7 +679,7 @@ You can also run the GenLayer node using Docker and Docker Compose.
 services:
   webdriver-container:
     container_name: genlayer-node-webdriver
-    image: yeagerai/genlayer-genvm-webdriver:0.0.10
+    image: yeagerai/genlayer-genvm-webdriver:0.0.11
     shm_size: 2gb
     security_opt:
       - no-new-privileges:true
