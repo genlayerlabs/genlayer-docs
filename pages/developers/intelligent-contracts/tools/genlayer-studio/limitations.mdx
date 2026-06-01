@@ -1,18 +1,17 @@
 # Limitations of the GenLayer Studio
 
-The GenLayer Studio is in an early stage of development, with many features still being tested and refined. Here are some limitations of the studio:
-
-## Native Token Transfers
-Native Token transfers to and from contracts are not supported in the Studio.
+GenLayer Studio is a development environment for building and testing Intelligent Contracts. It supports core contract execution, consensus testing, appeals, web access, and native value transfers, but it is not a full live-network replica. These are the current Studio-specific caveats:
 
 ## Gas Usage
-Transactions within the Studio do not consume gas. While this is beneficial for rapid prototyping, the absence of gas simulation may result in behavior differing from live blockchain networks.
 
-## Consensus Algorithm
-The GenLayer Studio does not implement the full Optimistic Democracy consensus mechanism. There is no appeals process. The studio focuses on providing a basic execution environment without the complexities of the full consensus mechanism.
+Studio is gasless for EVM-compatible wallet flows. `eth_gasPrice` returns `0`, `eth_estimateGas` returns a compatibility estimate, and transaction receipts should not be used to benchmark live-network gas usage or fees.
 
-## Programming Language
-The programming language used in the Studio is an early version and is not final. It is expected to undergo many changes as development progresses.
+## Chain-Layer and EVM Parity
+
+Studio tracks contract and account state in its local database. Native value transfers are supported for local testing, but Studio does not fully model the live network's chain-layer and ghost-contract behavior.
+
+EVM contract interaction beyond value transfers to EOAs or addresses is not implemented in Studio. `@gl.evm.contract_interface` calls that depend on EVM contract execution should be validated on a live network.
 
 ## Web Access
-While the Studio supports web browsing capabilities, it is primarily for testing purposes. The actual web access and data retrieval might differ when deployed on the live network.
+
+Studio web access depends on its local browser/WebDriver service and the network access available to your Studio environment. Validate production-critical web reads against the target network before relying on exact rendering, timing, or availability behavior.
