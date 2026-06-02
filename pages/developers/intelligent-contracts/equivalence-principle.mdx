@@ -17,15 +17,31 @@ Can validators reproduce the exact same normalized output?
 │         Examples: blockchain RPC, stable REST APIs.
 │
 └── NO  → Write a custom validator function (run_nondet_unsafe)
-          You control the full logic: rerun and compare with tolerances,
-          derive status, extract stable fields, or evaluate the leader's
-          output directly without rerunning — whatever your contract needs.
+          Default: produce independent evidence. Usually rerun the same task
+          and compare decision fields, derived status, scores, or other stable
+          outputs with explicit tolerances. Only skip the second answer when the
+          validator can judge the leader output against source data and criteria.
 ```
 
 For most contracts, you'll write a custom validator function. It gives you full control over comparison logic and error handling.
 
 <Callout type="info">
 GenLayer also provides `prompt_comparative` and `prompt_non_comparative` as convenience wrappers for common patterns, but in practice most contracts outgrow them quickly. Starting with a custom validator function gives you full flexibility from the start.
+</Callout>
+
+## Independent Verification Is Required
+
+Never treat the leader's result as trusted input. A validator must verify the substance of the leader's answer using evidence other than the leader's answer alone:
+
+- Re-run the same LLM/web task and compare the stable decision fields
+- Fetch the same source data and independently derive the status being stored
+- Run an explicit comparative LLM judgment over the leader output and validator output
+- For open-ended outputs, judge the leader output against the same input/source data and explicit criteria
+
+A validator that only checks `leader_result.calldata` for a valid JSON shape, allowed enum value, non-empty summary, or confidence in range is not performing consensus. That is leader-output-only validation: it proves the leader formatted the answer correctly, but it does not verify the answer itself.
+
+<Callout type="warning">
+  Non-comparative validation does **not** mean "trust the leader." It means the validator does not produce a second candidate answer. It still must read the same input/source data and decide whether the leader output is valid under clear criteria.
 </Callout>
 
 ## The Leader/Validator Pattern
@@ -271,9 +287,9 @@ The `EqComparative` template sends both answers and your principle to the valida
   If comparative LLM comparison is too loose or too strict, consider whether you can reduce the problem to [partial field matching](#pattern-1-partial-field-matching) or [numeric tolerance](#pattern-2-numeric-tolerance) — those give you deterministic, programmatic control.
 </Callout>
 
-### Pattern 4: Non-Comparative Validation
+### Pattern 4: Source-Grounded Non-Comparative Validation
 
-In rare cases, you may not want the validator to repeat the leader's work at all. Instead, the validator **evaluates the leader's output** against the source data.
+In rare cases, you may not want the validator to produce a second candidate answer. Instead, the validator **evaluates the leader's output** against the same input/source data and explicit criteria.
 
 ```mermaid
 graph TD
@@ -299,7 +315,7 @@ graph TD
     validator -.->|accept/reject| final_result
 ```
 
-Note that the validator **does not perform the task** — it only judges whether the leader's output satisfies the criteria given the input.
+Note that the validator **does not write its own final answer**. It still executes the input function and uses that input to judge whether the leader's output satisfies the criteria.
 
 The simplest way is `prompt_non_comparative`:
 
@@ -377,6 +393,10 @@ The validator never writes its own summary — it only judges whether the leader
 
 <Callout emoji="💡">
   Non-comparative validation is rare in practice. Most use cases are better served by patterns 1-3 where the validator independently reproduces the result. Non-comparative is most useful when the output is open-ended and there's no meaningful way to compare two independent results — e.g., summarization, where two valid summaries can be completely different yet both correct.
+</Callout>
+
+<Callout type="warning">
+  Do not use non-comparative validation as a schema check. A validator that only accepts `authentic`, `suspicious`, or `inconclusive`; checks that `confidence` is between 0 and 100; and requires a non-empty summary is still trusting the leader's decision. For classification, scoring, extraction, authenticity, safety, ranking, and settlement logic, validators should almost always re-run or independently derive the answer, then compare the decision field, extracted fields, score bucket, or derived status.
 </Callout>
 
 ## `run_nondet` vs `run_nondet_unsafe`
@@ -519,11 +539,11 @@ The leader performs a task, and validators evaluate the leader's output against 
 ```python
 result = gl.eq_principle.prompt_non_comparative(
     lambda: gl.nondet.web.get(url).body.decode("utf-8"),
-    task="Classify the sentiment as positive, negative, or neutral",
+    task="Summarize this article in 2-3 sentences",
     criteria="""
-        Output must be one of: positive, negative, neutral
-        Consider context and tone
-        Account for sarcasm and idioms
+        Summary must capture the main point of the article
+        Must not include information not present in the source
+        Must be 2-3 sentences long
     """
 )
 ```
@@ -531,9 +551,9 @@ result = gl.eq_principle.prompt_non_comparative(
 Parameters:
 - **`fn`** — function that provides the input data (runs on both leader and validator)
 - **`task`** — instruction for the leader's LLM
-- **`criteria`** — rules the validator's LLM uses to judge the leader's output
+- **`criteria`** — rules the validator's LLM uses to judge the leader's output against the input data
 
-**Use when:** the task is subjective (NLP, classification, extraction) and you want validators to judge output quality rather than reproduce it.
+**Use when:** the output is open-ended and validity can be judged against the input/source data without producing a second candidate output. Summaries are the clearest example: many different summaries can be valid, but the validator can still check faithfulness, coverage, hallucinations, and constraints. For classification, scoring, extraction, authenticity, safety, ranking, or settlement decisions, prefer comparative validation unless you can clearly explain how the validator independently verifies the decision from source data.
 
 ## Writing Secure Validators
 
@@ -545,6 +565,23 @@ def validator(leader_result):
     return True  # Insecure! Leader can return arbitrary data
 ```
 
+**Bad — validates only the leader's formatting:**
+```python
+def validator(leader_result):
+    if not isinstance(leader_result, gl.vm.Return):
+        return False
+    data = leader_result.calldata
+    return (
+        data.get("decision") in ("authentic", "suspicious", "inconclusive")
+        and isinstance(data.get("confidence"), int)
+        and 0 <= data["confidence"] <= 100
+        and isinstance(data.get("summary"), str)
+        and len(data["summary"]) > 0
+    )
+```
+
+This validator checks that the output looks valid, but it never verifies whether the decision follows from the source data. The leader still decides alone.
+
 **Good — independent verification:**
 ```python
 def validator(leader_result):
@@ -555,9 +592,7 @@ def validator(leader_result):
 ```
 
 Guidelines:
-1. **Never trust the leader** — always verify what you can independently
+1. **Never trust the leader** — verify against source data or an independently computed result
 2. **Tolerate nondeterminism** — use thresholds for scores, percentage tolerance for prices, field-level comparison for structured data
 3. **Check error types** — handle `UserError` and `VMError` before accessing `.calldata`
 4. **Reject when in doubt** — security first
-
-
