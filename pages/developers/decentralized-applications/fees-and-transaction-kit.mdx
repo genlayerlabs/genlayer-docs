@@ -1,0 +1,104 @@
+# Fees and the Transaction Kit
+
+This guide covers what an app developer needs to know about GenLayer's v0.6 fee model and how to integrate fee approval and signing into an app with `@genlayer/transaction-kit` — the drop-in fee receipt, hold-to-sign and tracking surface for React and Vue.
+
+## The fee model in five sentences
+
+1. Every transaction makes **one deposit up front** that covers everything it might need; whatever isn't used is **refunded automatically when the transaction finalizes**.
+2. The deposit is the sum of four parts: **consensus work** (leader + validator time units priced in GEN per time unit), an **execution budget** per leader round (paying for receipt writes, storage writes and message writes — not GenVM compute, which is what the time units pay for), a **message-fees bucket** (funding child transactions the contract emits), and any **value** you send to the contract.
+3. How much consensus work you buy is mostly a question of **appeal posture**: more appeal rounds means a bigger deposit and stronger guarantees — that's what the kit's `low` / `standard` / `high` presets control (0, 1, or 2 appeal rounds).
+4. The deposit locks **price caps** (GEN per time unit, storage price, receipt gas price); if network prices rise above any cap before execution, the transaction is rejected and **nothing is charged** — caps are your price protection, never a hidden cost.
+5. A transaction is **successful** only when its status is `ACCEPTED` or `FINALIZED` *and* the execution result is `FINISHED_WITH_RETURN`; an `UNDETERMINED` transaction may carry a leader result, but you should treat it as **not executed**.
+
+## What you never have to do
+
+- **Compute fees by hand.** Estimation derives the deposit from allocation parameters plus live price reads with headroom.
+- **Simulate the call per estimate.** GenLayer transactions take minutes of consensus; simulating each one to size a quote would be far too expensive. Quotes are sized from a *developer fee profile* measured offline by your test suite (below), falling back to network defaults.
+- **Explain a stuck transaction to your users.** The kit's tracking surface maps every status and error selector (`InsufficientFees`, `MaxPriceExceeded`, `FeeValueMustBeNonZero`, appeal bonds, user rejection…) to honest, human copy.
+
+## The toolchain
+
+| Tool | Role |
+| --- | --- |
+| [`genlayer-js`](https://github.com/genlayerlabs/genlayer-js) v2 | SDK: `estimateTransactionFees`, `writeContract`/`deployContract` with `fees`, `waitForTransactionReceipt({ waitUntil })`, `isSuccessful` |
+| [`@genlayer/transaction-kit`](https://github.com/genlayerlabs/genlayer-transaction-kit) | Core: `estimate` → policy quote, submit via any EIP-1193 wallet, track, verification fingerprint |
+| `@genlayer/transaction-kit-react` / `-vue` | `<GenLayerTransactionPanel />`: fee receipt, presets, price-protection card, hold-to-sign, status timeline, outcome surfaces |
+| [`gltest`](https://github.com/genlayerlabs/genlayer-testing-suite) `--fee-profile` | Measures real per-method fee consumption from your test suite and writes the suggestions file the kit consumes |
+| GenLayer Explorer | Per-transaction fee panel: net cost, allocation vs consumed, locked prices vs caps, refunds, validator distribution |
+
+## Integration in four steps
+
+### 1. Install
+
+```jsonc
+// package.json — until the npm release, install from the packed branches:
+{
+  "dependencies": {
+    "@genlayer/transaction-kit": "github:genlayerlabs/genlayer-transaction-kit#pkg/core",
+    "@genlayer/transaction-kit-react": "github:genlayerlabs/genlayer-transaction-kit#pkg/react"
+  }
+}
+```
+
+(Vue apps use `#pkg/vue`; the adapters never import the core at runtime, so the packages version independently.)
+
+### 2. Create the kit with your wallet's provider
+
+The kit depends only on an injected [EIP-1193](https://eips.ethereum.org/EIPS/eip-1193) provider — MetaMask, Privy (embedded or external), WalletConnect, anything that exposes `request()`. It never touches `window.ethereum` directly.
+
+```typescript
+import { createTransactionKit } from '@genlayer/transaction-kit';
+import { testnetAsimov } from 'genlayer-js/chains';
+import feeProfile from './fee-profile.json';
+
+const kit = createTransactionKit({
+  chain: testnetAsimov,
+  provider: window.ethereum,        // or await privyWallet.getEthereumProvider()
+  account: userAddress,
+  suggestions: feeProfile,          // measured allocations — see step 4
+});
+```
+
+### 3. Drop in the panel
+
+```tsx
+import { GenLayerTransactionPanel } from '@genlayer/transaction-kit-react';
+import '@genlayer/transaction-kit-react/styles.css';
+
+<GenLayerTransactionPanel
+  kit={kit}
+  tx={{ kind: 'write', address: contract, method: 'place_bet', args: [42] }}
+  network="testnet-asimov"
+  trackUntil="decided"              // or "finalized" for stricter UX
+  onDone={(status) => refetchAppState()}
+/>
+```
+
+The panel owns the whole flow: estimate → itemized fee receipt with preset selection → price-protection card → hold-to-sign → status timeline → outcome. Deploys work the same way with `tx={{ kind: 'deploy', code }}`.
+
+If you want your own UI instead, the same flow is available headless: `useTransactionFlow` (React hook / Vue composable) drives `estimating → review → signing → tracking → done | error`, and the core's `estimate` / `submit` / `track` / `verification` can be called directly.
+
+### 4. Measure fees in your tests, ship the profile
+
+The panel never simulates your call to size a quote. Instead, your contract test suite measures what executions actually consume, and the kit uses those measurements as **suggestions** — prices stay live, so a stale profile can never break the solvency caps:
+
+```bash
+gltest tests/ --fee-profile frontend/fee-profile.json   # headroom defaults to 1.25
+```
+
+This produces a JSON artifact keyed by method (plus a `deploy` entry) with measured allocation values as decimal strings. Commit it next to your frontend and pass it as `suggestions`. The receipt then shows *"Sized from the developer's measured fee profile"* instead of *"Sized from network defaults"* — provenance your users can see, and `PolicyQuote.source` reports it programmatically. Methods without a profile entry fall back to network defaults automatically; regenerate the profile when contract logic changes materially.
+
+## Outcomes: what to tell your users
+
+| Status + result | Meaning | Surface it as |
+| --- | --- | --- |
+| `ACCEPTED` / `FINALIZED` + `FINISHED_WITH_RETURN` | Success | Done; unused deposit refunds at finalization |
+| `UNDETERMINED` + any result | Validators could not reach a majority | **Treat as not executed**, even if a leader result exists |
+| Rejected at submission (`MaxPriceExceeded`, …) | A price cap was exceeded before execution | Nothing charged; re-estimate and retry |
+| `FINISHED_WITH_ERROR` | The contract reverted/errored | Execution failed; consensus fees are still consumed |
+
+`isSuccessful(tx)` in genlayer-js encodes the success rule; the kit's outcome surfaces apply it for you.
+
+## Debugging fees
+
+Open the transaction in the Explorer: the **Fees** section shows net cost (what the sender actually paid after refunds), the full breakdown — allocation vs consumed, locked prices vs caps, refunds by category, per-validator distribution, appeal bonds — and a settlement-failed flag if fee settlement itself went wrong. If a quote looks oversized, check whether the method has a profile entry (`source: 'network-default'` means it doesn't) and whether your appeal preset is higher than the action warrants.
