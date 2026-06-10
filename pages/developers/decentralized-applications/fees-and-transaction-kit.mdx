@@ -74,7 +74,7 @@ import '@genlayer/transaction-kit-react/styles.css';
 />
 ```
 
-The panel owns the whole flow: estimate → itemized fee receipt with preset selection → price-protection card → sign (click on desktop, press-and-hold on touch) → status timeline → outcome. While the transaction is queued, the timeline shows its position in the pending queue. Deploys work the same way with `tx={{ kind: 'deploy', code }}`.
+The panel owns the whole flow: estimate → itemized fee receipt with preset selection → price-protection card → sign (click on desktop, press-and-hold on touch) → status timeline → outcome. Before signing, the review step shows how many transactions are queued ahead for the target contract (read from the consensus contracts through the RPC passthrough — no extra infrastructure); while queued, the timeline shows your position. Deploys work the same way with `tx={{ kind: 'deploy', code }}`.
 
 The timeline is good to have, but don't trap users in it: transactions that make LLM calls or web requests can take minutes, so best practice is to let the user navigate away and track the transaction in your backend (poll `getTransaction` / `waitForTransactionReceipt` server-side and notify on completion). Use `onDone` and `trackUntil="decided"` for the in-app happy path, not as your source of truth.
 
