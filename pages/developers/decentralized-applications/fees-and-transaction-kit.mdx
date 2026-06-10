@@ -6,14 +6,14 @@ This guide covers what an app developer needs to know about GenLayer's fee model
 
 1. Every transaction makes **one deposit up front** that covers everything it might need; whatever isn't used is **refunded automatically when the transaction finalizes**.
 2. The deposit is the sum of four parts: **consensus work** (leader + validator time units priced in GEN per time unit), an **execution budget** per leader round (paying for receipt writes, storage writes and message writes — not GenVM compute, which is what the time units pay for), a **message-fees bucket** (funding child transactions the contract emits), and any **value** you send to the contract.
-3. How much consensus work you buy is mostly a question of **appeal posture**: more appeal rounds means a bigger deposit and stronger guarantees — that's what the kit's `low` / `standard` / `high` presets control (0, 1, or 2 appeal rounds).
+3. How much consensus work you buy is mostly a question of **appeal posture**: more appeal rounds means a bigger deposit and stronger guarantees — that's what the kit's `low` / `standard` / `high` presets control (1, 3, or 5 appeal rounds; the Advanced expander accepts any higher number). Rotations also consume rounds, but they're not a user choice — they're empirical per application and come from the developer fee profile.
 4. The deposit locks **price caps** (GEN per time unit, storage price, receipt gas price); if network prices rise above any cap before execution, the transaction is rejected and **nothing is charged** — caps are your price protection, never a hidden cost.
 5. A transaction is **successful** only when its status is `ACCEPTED` or `FINALIZED` *and* the execution result is `FINISHED_WITH_RETURN`; an `UNDETERMINED` transaction may carry a leader result, but you should treat it as **not executed**.
 
 ## What you never have to do
 
 - **Compute fees by hand.** Estimation derives the deposit from allocation parameters plus live price reads with headroom.
-- **Simulate the call per estimate.** GenLayer transactions take minutes of consensus; simulating each one to size a quote would be far too expensive. Quotes are sized from a *developer fee profile* measured offline by your test suite (below), falling back to network defaults.
+- **Simulate the call per estimate.** GenLayer transactions can take minutes of consensus when they make several LLM calls or web requests; simulating each one to size a quote would be far too expensive. Quotes are sized from a *developer fee profile* measured offline by your test suite (below), falling back to network defaults.
 - **Explain a stuck transaction to your users.** The kit's tracking surface maps every status and error selector (`InsufficientFees`, `MaxPriceExceeded`, `FeeValueMustBeNonZero`, appeal bonds, user rejection…) to honest, human copy.
 
 ## The toolchain
@@ -74,7 +74,9 @@ import '@genlayer/transaction-kit-react/styles.css';
 />
 ```
 
-The panel owns the whole flow: estimate → itemized fee receipt with preset selection → price-protection card → hold-to-sign → status timeline → outcome. Deploys work the same way with `tx={{ kind: 'deploy', code }}`.
+The panel owns the whole flow: estimate → itemized fee receipt with preset selection → price-protection card → sign (click on desktop, press-and-hold on touch) → status timeline → outcome. While the transaction is queued, the timeline shows its position in the pending queue. Deploys work the same way with `tx={{ kind: 'deploy', code }}`.
+
+The timeline is good to have, but don't trap users in it: transactions that make LLM calls or web requests can take minutes, so best practice is to let the user navigate away and track the transaction in your backend (poll `getTransaction` / `waitForTransactionReceipt` server-side and notify on completion). Use `onDone` and `trackUntil="decided"` for the in-app happy path, not as your source of truth.
 
 If you want your own UI instead, the same flow is available headless: `useTransactionFlow` (React hook / Vue composable) drives `estimating → review → signing → tracking → done | error`, and the core's `estimate` / `submit` / `track` / `verification` can be called directly.
 
