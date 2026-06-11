@@ -1,0 +1,49 @@
+# GenLayer Documentation — https://docs.genlayer.com
+# LLM-friendly resources:
+#   Docs index for LLMs:        https://docs.genlayer.com/llms.txt
+#   Complete docs in one file:  https://docs.genlayer.com/llms-full.txt
+
+User-agent: *
+Allow: /
+
+# AI crawlers and assistants — explicitly welcome
+User-agent: GPTBot
+Allow: /
+
+User-agent: OAI-SearchBot
+Allow: /
+
+User-agent: ChatGPT-User
+Allow: /
+
+User-agent: ClaudeBot
+Allow: /
+
+User-agent: Claude-SearchBot
+Allow: /
+
+User-agent: Claude-User
+Allow: /
+
+User-agent: PerplexityBot
+Allow: /
+
+User-agent: Perplexity-User
+Allow: /
+
+User-agent: Google-Extended
+Allow: /
+
+User-agent: Bingbot
+Allow: /
+
+User-agent: CCBot
+Allow: /
+
+User-agent: meta-externalagent
+Allow: /
+
+User-agent: Applebot-Extended
+Allow: /
+
+Sitemap: https://docs.genlayer.com/sitemap.xml

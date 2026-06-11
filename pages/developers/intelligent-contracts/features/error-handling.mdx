@@ -1,4 +1,10 @@
+---
+description: "Error Handling in GenVM explains unrecoverable exits, UserError, VMError, propagation, result types, and consensus patterns."
+---
+
 # Error Handling
+
+Error Handling in GenVM defines how Intelligent Contracts terminate, report user-generated failures, surface VM-generated failures, propagate errors from non-deterministic code, and classify failures for consensus. GenVM execution can end with unrecoverable exit codes or unhandled exceptions, produce `UserError` and `VMError` results, and let contracts catch user errors from sub-VMs when using the Equivalence Principle.
 
 ## Unrecoverable Errors
 

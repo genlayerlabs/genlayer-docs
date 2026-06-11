@@ -1,8 +1,11 @@
+---
+description: "Messages in GenLayer define transactions, internal IC calls, external chain-layer calls, ghost contracts, and message context."
+---
 import { Callout } from "nextra-theme-docs";
 
 # Messages
 
-GenLayer has three types of interaction, each operating at a different layer of the architecture.
+Messages in GenLayer are interactions that move execution between callers, Intelligent Contracts, the GenVM layer, and the GenLayer Chain. GenLayer has three types of interaction, each operating at a different layer of the architecture: transactions that start Intelligent Contract execution, internal messages between Intelligent Contracts, and external messages from an Intelligent Contract to the chain layer.
 
 ## Transactions (→ Intelligent Contract)
 

@@ -1,17 +1,23 @@
 const fs = require("fs");
 const path = require("path");
+const { buildGitDates } = require("./lib/git-dates");
 
 // Function to recursively get all MDX files
 function getMdxFiles(dir, fileList = []) {
   const files = fs.readdirSync(dir);
 
   files.forEach((file) => {
+    // Skip hidden pages/directories (_temp, _providers, _meta.json, etc.)
+    if (file.startsWith("_")) {
+      return;
+    }
+
     const filePath = path.join(dir, file);
     const stat = fs.statSync(filePath);
 
     if (stat.isDirectory()) {
       getMdxFiles(filePath, fileList);
-    } else if (file.endsWith(".mdx")) {
+    } else if (file.endsWith(".mdx") || file.endsWith(".md")) {
       fileList.push(filePath);
     }
   });
@@ -24,17 +30,29 @@ function getUrlFromPath(filePath, pagesDir) {
   // Get relative path from pages directory
   let relativePath = path.relative(pagesDir, filePath);
 
-  // Remove .mdx extension
-  relativePath = relativePath.replace(/\.mdx$/, "");
-
-  // Replace index with empty string (for root-level pages)
-  relativePath = relativePath === "index" ? "" : relativePath;
+  // Remove .mdx/.md extension
+  relativePath = relativePath.replace(/\.mdx?$/, "");
 
   // Convert Windows backslashes to forward slashes if needed
   relativePath = relativePath.split(path.sep).join("/");
 
+  // Strip index segments (pages/index.mdx -> /, pages/foo/index.mdx -> /foo)
+  relativePath = relativePath.replace(/(^|\/)index$/, "$1").replace(/\/$/, "");
+
   // Construct full URL (replace with your actual domain)
   return `https://docs.genlayer.com/${relativePath}`;
+}
+
+function dedupeFilesByUrl(files, pagesDir) {
+  const byUrl = new Map();
+  files.forEach((filePath) => {
+    const url = getUrlFromPath(filePath, pagesDir);
+    const existing = byUrl.get(url);
+    if (!existing || /(^|\/)index\.mdx?$/.test(filePath)) {
+      byUrl.set(url, filePath);
+    }
+  });
+  return [...byUrl.values()];
 }
 
 // Function to generate sitemap XML
@@ -47,7 +65,10 @@ function generateSitemapXml() {
     fs.mkdirSync(outputDir);
   }
 
-  const mdxFiles = getMdxFiles(pagesDir);
+  const mdxFiles = dedupeFilesByUrl(getMdxFiles(pagesDir), pagesDir);
+
+  // Last-commit dates from git; mtime is meaningless on CI (= checkout time)
+  const gitDates = buildGitDates();
 
   // Start XML content
   let xmlContent = `<?xml version="1.0" encoding="UTF-8"?>
@@ -56,8 +77,8 @@ function generateSitemapXml() {
   // Add each MDX file as a URL entry
   mdxFiles.forEach((filePath) => {
     const url = getUrlFromPath(filePath, pagesDir);
-    // Get last modified time of the file
-    const lastMod = new Date(fs.statSync(filePath).mtime).toISOString();
+    const lastMod =
+      gitDates[filePath] || new Date(fs.statSync(filePath).mtime).toISOString().slice(0, 10);
 
     xmlContent += `
   <url>

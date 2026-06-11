@@ -1,8 +1,11 @@
+---
+description: "Primitive Types in GenVM cover sized integers, strings, bytes, booleans, conversions, and storage range checks."
+---
 import { Callout } from 'nextra-theme-docs'
 
 # Primitive Types
 
-GenVM provides comprehensive sized integer types for efficient storage. These types are primarily used for type annotations in storage fields and enforce range constraints only when assigned to storage.
+Primitive Types in GenVM are Python-compatible value types used in Intelligent Contracts, including sized integers for efficient storage and type annotations on storage fields. Sized integer types enforce range constraints only when values are assigned to storage.
 
 <Callout emoji="ℹ️">
 **Important**: Sized integer types (`u8`, `u256`, etc.) are `typing.NewType` aliases that behave like regular Python `int` outside of storage context. Range checking and overflow protection only occur when assigning values to storage fields.

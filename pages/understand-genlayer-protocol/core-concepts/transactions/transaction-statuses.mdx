@@ -1,5 +1,9 @@
+---
+description: "Transaction Processing explains GenLayer transaction statuses from pending queue to finalized, undetermined, or canceled outcomes."
+---
+
 # Transaction Processing
-In GenLayer, transactions are processed through an account-based queue system that ensures orderliness. Here’s how transactions transition through different statuses:
+GenLayer transaction processing is the account-based queue flow that moves each transaction through network statuses from submission to execution outcome. Transactions are queued per account to preserve the order in which they were submitted, then transition through pending, proposing, committing, revealing, accepted, finalized, undetermined, or canceled states.
 
 ## 1. Pending
 When a transaction is first submitted, it enters the pending state. This means it has been received by the network but is waiting to be processed. Transactions are queued per account, ensuring that each account's transactions are processed in the order they were submitted.

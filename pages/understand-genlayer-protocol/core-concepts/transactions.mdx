@@ -1,6 +1,9 @@
-# Transactions
-Transactions are the fundamental operations that drive the GenLayer protocol. Whether it's deploying a new contract, sending value between accounts, or invoking a function within an existing contract, transactions are the means by which state changes occur on the network.
+---
+description: "Transactions in GenLayer define how deployments, transfers, and contract calls change network state."
+---
 
+# Transactions
+Transactions in GenLayer are the fundamental operations that change network state, including deploying a new contract, sending value between accounts, or invoking a function within an existing contract. A transaction records the call data, sender and recipient addresses, gas limit, nonce, status, consensus data, and execution receipts used by the protocol to process and finalize the operation.
 
 Here is the general structure of a transaction:
 
@@ -102,6 +105,7 @@ Here is the general structure of a transaction:
   "value": 0
 }
 ```
+
 ## Explanation of fields:
 
 - consensus_data: Object containing information about the consensus process

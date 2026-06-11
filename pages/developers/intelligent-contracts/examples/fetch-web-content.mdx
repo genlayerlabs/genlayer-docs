@@ -1,6 +1,10 @@
+---
+description: "FetchWebContent Contract shows how an Intelligent Contract fetches web content, stores it, and reaches node agreement."
+---
+
 # FetchWebContent Contract
 
-The FetchWebContent contract demonstrates how to fetch and store web content within an intelligent contract. This contract shows how to use the [comparative equivalence principle](/developers/intelligent-contracts/equivalence-principle#comparative-equivalence-principle) to ensure all nodes agree on the same web content.
+The FetchWebContent contract is an Intelligent Contract example that fetches web content, stores it in contract state, and uses the [comparative equivalence principle](/developers/intelligent-contracts/equivalence-principle#comparative-equivalence-principle) so all nodes agree on the same web content. The contract retrieves `https://example.com/`, decodes the response body as UTF-8 text, stores the result in `content`, and exposes it through `show_content()`.
 
 ```python
 # { "Depends": "py-genlayer:1jb45aa8ynh2a9c9xn3b7qqh8sm5q93hwfp7jqmwsfhh8jpz09h6" }

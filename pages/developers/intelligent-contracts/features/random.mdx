@@ -1,7 +1,10 @@
+---
+description: "Random in Intelligent Contracts uses seeded randomness to avoid nondeterministic disagreement or leader trust."
+---
+
 # Random
 
-Getting random in deterministic part may be difficult. Trying to delegate it to non-deterministic block will cause
-your contract to either never agree on that block or to trust the leader. For that reason it is advised to use seeded random.
+Randomness in an Intelligent Contract should use seeded random values because getting random data in the deterministic part may be difficult. Delegating randomness to a non-deterministic block can cause the contract to either never agree on that block or to trust the leader.
 
 ## Seed acquisition methods
 

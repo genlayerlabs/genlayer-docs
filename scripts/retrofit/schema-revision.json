@@ -1,0 +1,22 @@
+{
+  "type": "object",
+  "properties": {
+    "description": {
+      "type": "string",
+      "minLength": 50,
+      "maxLength": 160,
+      "pattern": "^[^\\n\\r]*$",
+      "description": "Answer-first meta description for the page, 50-160 characters, single line"
+    },
+    "intro": {
+      "type": "string",
+      "description": "The revised intro region: everything from the H1 line (inclusive) up to but not including the first H2 line. Must keep the H1 text unchanged."
+    },
+    "notes": {
+      "type": "string",
+      "description": "One sentence on what was changed and why"
+    }
+  },
+  "required": ["description", "intro", "notes"],
+  "additionalProperties": false
+}

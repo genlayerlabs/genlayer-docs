@@ -1,3 +1,6 @@
+---
+description: "Optimistic Democracy consensus in GenLayer: validator selection, recomputation, and AI-driven transaction validation."
+---
 ## What is GenLayer? 
 
 GenLayer is the first AI-native blockchain built for AI-powered smart contracts—called Intelligent Contracts—capable of reasoning and adapting to real-world data. Its foundation is the Optimistic Democracy consensus mechanism, an enhanced Delegated Proof of Stake (dPoS) model where validators connect directly to Large Language Models (LLMs). This setup allows for non-deterministic operations—such as processing text prompts, fetching live web data, and executing AI-based decision-making—while preserving the reliability and security of a traditional blockchain.
@@ -30,9 +33,9 @@ This architecture supports autonomous DAOs, self-executing prediction markets, a
 
 # Optimistic Democracy: How Consensus Works
 
-<img src="/studio/Diagram MAIN.jpg" alt="GenLayer Optimistic Democracy Consensus Diagram" width="100%" />
+Optimistic Democracy is GenLayer's consensus mechanism for merging probabilistic AI systems with deterministic blockchain rules so the network can reach secure and accurate consensus at scale. Inspired by **[Condorcet's Jury Theorem](https://jury-theorem.genlayer.com/)** (click the link to check out our interactive model), the process uses validator recomputation and majority agreement as a safety net for AI-driven computations.
 
-Inspired by **[Condorcet's Jury Theorem](https://jury-theorem.genlayer.com/)** (click the link to check out our interactive model), Optimistic Democracy merges probabilistic AI systems with deterministic blockchain rules, ensuring secure and accurate consensus at scale.
+<img src="/studio/Diagram MAIN.jpg" alt="GenLayer Optimistic Democracy Consensus Diagram" width="100%" />
 
 1. **User Submits a Transaction**
 A user sends a transaction request to the network (see the diagram's Step 1).
@@ -43,12 +46,10 @@ The network selects a Leader, who processes the request and proposes an outcome 
 3. **Validators Recompute**
 A group of Validators independently re-compute the transaction (Step 3). If the output aligns with the Leader's proposal, they approve; otherwise, they deny.
 
-This multi-layer validation ensures majority agreement, adding a safety net for AI-driven computations.
+## Validator Selection Mechanism
+Token holders bolster network security by delegating tokens to validator candidates. A deterministic function f(x) then randomly designates Leader-Validator and Validators for each transaction. This process promotes fairness, helps decentralize validation power, and strengthens GenLayer's security and trustlessness.
 
-# Validator Selection Mechanism
-Token holders bolster network security by delegating tokens to validator candidates. A deterministic function f(x) then randomly designates Leader-Validator and Validators for each transaction. This process not only promotes fairness but also helps decentralize validation power, strengthening GenLayer's security and trustlessness.
-
-# Validator Operational Framework
+## Validator Operational Framework
 Each GenLayer validator node integrates:
 
 - **Validator Software**
@@ -62,7 +63,7 @@ Validators seamlessly manage both:
 1. **Deterministic Transactions** typical of traditional blockchains.
 2. **Non-Deterministic Transactions** that leverage AI-driven logic (e.g., searching the internet, analyzing data, making probabilistic inferences).
 
-By splitting tasks between standard deterministic and advanced AI-powered transactions, GenLayer ensures high performance without compromising on security.
+By splitting tasks between standard deterministic transactions and advanced AI-powered transactions, GenLayer ensures high performance without compromising on security.
 
-# Putting It All Together
+## Putting It All Together
 With Optimistic Democracy guiding consensus and validators empowered by AI, GenLayer enables a new class of blockchain applications. From DAOs that self-govern based on real-time data to DeFi protocols that dynamically adjust parameters in response to market changes, developers can now build truly intelligent decentralized solutions.

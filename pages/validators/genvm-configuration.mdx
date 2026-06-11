@@ -1,8 +1,11 @@
+---
+description: "GenVM Configuration explains how validators configure LLM providers, model routing, web access, hot reloads, and costs."
+---
 import { Callout } from "nextra-theme-docs";
 
 # GenVM Configuration
 
-Your validator's GenVM needs two things to function: **LLM providers** to process AI-powered contract logic, and a **web module** to fetch live internet data. This page covers how to configure both.
+GenVM Configuration defines the LLM providers and web module settings a validator's GenVM needs to process AI-powered contract logic and fetch live internet data. This page covers how to configure both.
 
 **Why this matters:** The LLM providers you choose directly affect your validator's operating costs and performance. Faster, cheaper models reduce your costs per transaction. Higher-quality models improve your consensus accuracy, which affects your rewards and avoids slashing. By tuning your provider setup — choosing the right models, configuring fallback chains, running local inference, or applying input filters — you can optimize the economics of running your validator.
 

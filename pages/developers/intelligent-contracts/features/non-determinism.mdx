@@ -1,6 +1,12 @@
+---
+description: "Non-determinism in Intelligent Contracts: when to use nondet blocks and how GenVM consensus validates variable outputs"
+---
+
 # Non-determinism
 
 import { Callout } from 'nextra-theme-docs'
+
+Non-determinism in Intelligent Contracts is any operation whose result can vary between nodes, such as external API calls, LLM and AI model calls, random number generation, or other variable execution. GenVM requires these operations to run inside nondeterministic blocks so validators can reach consensus on the agreed result before deterministic side effects occur.
 
 ## When to Use
 

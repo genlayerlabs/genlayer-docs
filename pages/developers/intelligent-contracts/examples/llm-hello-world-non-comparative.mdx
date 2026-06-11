@@ -1,6 +1,10 @@
+---
+description: "LlmHelloWorldNonComparative shows non-comparative Equivalence Principle prompting in a Python Intelligent Contract."
+---
+
 # LlmHelloWorldNonComparative Contract
 
-The LlmHelloWorldNonComparative contract demonstrates a simple example of integrating AI capabilities within an intelligent contract without requiring that all the validators execute the full task. They just need to evaluate the leader's response against the specified criteria. This is done by using the [non-comparative equivalence principle](/developers/intelligent-contracts/equivalence-principle#non-comparative-equivalence-principle).
+The `LlmHelloWorldNonComparative` contract is a Python Intelligent Contract example that stores an LLM response validated with the non-comparative Equivalence Principle. It demonstrates integrating AI capabilities without requiring all validators to execute the full task; validators only evaluate the leader's response against specified criteria. This is done by using the [non-comparative equivalence principle](/developers/intelligent-contracts/equivalence-principle#non-comparative-equivalence-principle).
 
 ```python
 # { "Depends": "py-genlayer:1jb45aa8ynh2a9c9xn3b7qqh8sm5q93hwfp7jqmwsfhh8jpz09h6" }
@@ -17,8 +21,11 @@ class LlmHelloWorldNonComparative(gl.Contract):
 
     @gl.public.write
     def set_message(self) -> typing.Any:
+        def get_input() -> str:
+            return "There is no context, I just want you to answer with truthy value in python (for example: 'yes', 'True', 1)"
+
         self.message = gl.eq_principle.prompt_non_comparative(
-            lambda: "There is no context, I just want you to answer with truthy value in python (for example: 'yes', 'True', 1)",
+            get_input,
             task="Answer with truthy value in python (for example: 'yes', 'True', 1)",
             criteria="Answer should be a truthy value in python"
         )
@@ -34,7 +41,7 @@ class LlmHelloWorldNonComparative(gl.Contract):
 - **Write Method**: 
   - `set_message()` uses AI functionality to generate and store a message.
   - Uses `gl.eq_principle.prompt_non_comparative()` with three parameters:
-    - A lambda function providing the prompt
+    - An input function (`get_input`) providing the prompt
     - A task description
     - Validation criteria for the response
 - **Read Method**: 
