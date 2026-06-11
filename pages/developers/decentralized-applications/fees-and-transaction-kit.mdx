@@ -90,6 +90,10 @@ gltest tests/ --fee-profile frontend/fee-profile.json   # headroom defaults to 1
 
 This produces a JSON artifact keyed by method (plus a `deploy` entry) with measured allocation values as decimal strings. Commit it next to your frontend and pass it as `suggestions`. The receipt then shows *"Sized from the developer's measured fee profile"* instead of *"Sized from network defaults"* — provenance your users can see, and `PolicyQuote.source` reports it programmatically. Methods without a profile entry fall back to network defaults automatically; regenerate the profile when contract logic changes materially.
 
+## Gasless networks
+
+Some Studio deployments run **gasless** (fee accounting disabled — all prices zero). The kit detects this from the estimate (`policy.enabled: false`): the quote is marked `gasless`, the panel replaces the fee receipt with a "No fees on this network" notice, and submission omits fee params entirely. The same app code works on gasless and fee-charging networks without branches.
+
 ## Outcomes: what to tell your users
 
 | Status + result | Meaning | Surface it as |
