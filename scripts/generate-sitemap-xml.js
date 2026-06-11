@@ -43,6 +43,18 @@ function getUrlFromPath(filePath, pagesDir) {
   return `https://docs.genlayer.com/${relativePath}`;
 }
 
+function dedupeFilesByUrl(files, pagesDir) {
+  const byUrl = new Map();
+  files.forEach((filePath) => {
+    const url = getUrlFromPath(filePath, pagesDir);
+    const existing = byUrl.get(url);
+    if (!existing || /(^|\/)index\.mdx?$/.test(filePath)) {
+      byUrl.set(url, filePath);
+    }
+  });
+  return [...byUrl.values()];
+}
+
 // Function to generate sitemap XML
 function generateSitemapXml() {
   const pagesDir = path.join(process.cwd(), "pages");
@@ -53,7 +65,7 @@ function generateSitemapXml() {
     fs.mkdirSync(outputDir);
   }
 
-  const mdxFiles = getMdxFiles(pagesDir);
+  const mdxFiles = dedupeFilesByUrl(getMdxFiles(pagesDir), pagesDir);
 
   // Last-commit dates from git; mtime is meaningless on CI (= checkout time)
   const gitDates = buildGitDates();

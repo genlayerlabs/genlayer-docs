@@ -91,6 +91,17 @@ function routeForPage(filePath, pagesDir) {
   return route.replace(/(^|\/)index$/, '$1').replace(/\/$/, '');
 }
 
+function dedupePagesByRoute(pages) {
+  const byRoute = new Map();
+  for (const page of pages) {
+    const existing = byRoute.get(page.route);
+    if (!existing || /(^|\/)index\.mdx?$/.test(page.filePath)) {
+      byRoute.set(page.route, page);
+    }
+  }
+  return [...byRoute.values()];
+}
+
 // Minimal flat-YAML frontmatter parser (string values only)
 function parseFrontmatter(raw) {
   const match = raw.match(/^---\n([\s\S]*?)\n---\n/);
@@ -363,13 +374,14 @@ function generateFullDocs() {
       return !(raw.length < 500 && /This page has moved/i.test(raw));
     })
     .map(page => preparePage(page, pagesDir, gitDates));
+  const uniquePages = dedupePagesByRoute(pages);
 
   // 1. Single-file concatenated export (legacy name + llms-full.txt).
   // The individual CLI command pages are omitted here to keep the root
   // bundle within a single context window — the genlayer-cli overview page
   // stays in, and the full command reference lives in
   // api-references/llms-full.txt.
-  const rootPages = pages.filter(
+  const rootPages = uniquePages.filter(
     page => !page.route.startsWith('api-references/genlayer-cli/')
   );
   const fullContent = rootPages.map(fullDocsEntry).join('\n\n---\n\n') + '\n';
@@ -383,7 +395,7 @@ function generateFullDocs() {
   // 2. Section-scoped bundles (kept well under a single context window)
   const sections = ['understand-genlayer-protocol', 'developers', 'validators', 'api-references'];
   for (const section of sections) {
-    const sectionPages = pages.filter(
+    const sectionPages = uniquePages.filter(
       page => page.route === section || page.route.startsWith(`${section}/`)
     );
     if (!sectionPages.length) continue;
@@ -396,14 +408,14 @@ function generateFullDocs() {
   }
 
   // 3. Per-page markdown mirrors (served at <page-url>.md)
-  writePageMirrors(pages, outputDir);
+  writePageMirrors(uniquePages, outputDir);
 
   // 4. llms.txt index
   const rootMeta = parseMetaJson(pagesDir) || {};
-  fs.writeFileSync(path.join(outputDir, 'llms.txt'), generateLlmsTxt(pages, rootMeta));
+  fs.writeFileSync(path.join(outputDir, 'llms.txt'), generateLlmsTxt(uniquePages, rootMeta));
 
   console.log(
-    `generate-full-docs: ${pages.length} pages -> full-documentation.txt, llms-full.txt ` +
+    `generate-full-docs: ${uniquePages.length} pages -> full-documentation.txt, llms-full.txt ` +
       `(${rootPages.length} pages, CLI command pages only in api-references bundle), ` +
       `${sections.length} section bundles, per-page .md mirrors, llms.txt`
   );
