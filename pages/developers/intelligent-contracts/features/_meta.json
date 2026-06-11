@@ -1,5 +1,5 @@
 {
-    "storage": "Storage",
+    "storage": "Storage Reference",
     "error-handling": "Error Handling",
     "upgradability": "Upgradability",
     "value-transfers": "Value Transfers",
@@ -9,7 +9,7 @@
     "interacting-with-evm-contracts": "Interacting with EVM Contracts",
     "special-methods": "Special Methods",
     "vector-storage": "Vector Storage",
-    "debugging": "Debugging",
+    "debugging": "Debugging Code",
     "random": "Random",
     "non-determinism": "Non-determinism",
     "calling-llms": "Calling LLMs",

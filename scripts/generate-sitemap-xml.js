@@ -1,5 +1,6 @@
 const fs = require("fs");
 const path = require("path");
+const { buildGitDates } = require("./lib/git-dates");
 
 // Function to recursively get all MDX files
 function getMdxFiles(dir, fileList = []) {
@@ -54,6 +55,9 @@ function generateSitemapXml() {
 
   const mdxFiles = getMdxFiles(pagesDir);
 
+  // Last-commit dates from git; mtime is meaningless on CI (= checkout time)
+  const gitDates = buildGitDates();
+
   // Start XML content
   let xmlContent = `<?xml version="1.0" encoding="UTF-8"?>
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">`;
@@ -61,8 +65,8 @@ function generateSitemapXml() {
   // Add each MDX file as a URL entry
   mdxFiles.forEach((filePath) => {
     const url = getUrlFromPath(filePath, pagesDir);
-    // Get last modified time of the file
-    const lastMod = new Date(fs.statSync(filePath).mtime).toISOString();
+    const lastMod =
+      gitDates[filePath] || new Date(fs.statSync(filePath).mtime).toISOString().slice(0, 10);
 
     xmlContent += `
   <url>

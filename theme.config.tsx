@@ -31,6 +31,14 @@ const config: DocsThemeConfig = {
   footer: {
     text: "GenLayer Documentation",
   },
+  gitTimestamp: function GitTimestamp({ timestamp }) {
+    return (
+      <span>
+        Last updated on{" "}
+        {timestamp.toLocaleDateString("en-US", { year: "numeric", month: "long", day: "numeric" })}
+      </span>
+    );
+  },
   sidebar: {
     defaultMenuCollapseLevel: 1,
   },
@@ -112,20 +120,19 @@ const config: DocsThemeConfig = {
 
   useNextSeoProps: () => {
     const { asPath } = useRouter();
-    const { frontMatter } = useConfig();
+    const { frontMatter, title } = useConfig();
     const isHomePage = asPath === "/";
     const description = frontMatter.description || DEFAULT_DESCRIPTION;
+    const siteTitle = "GenLayer — The Adjudication Layer for the Agentic Economy";
     return {
-      titleTemplate: isHomePage
-        ? "GenLayer — The Adjudication Layer for the Agentic Economy"
-        : "%s | GenLayer Documentation",
+      titleTemplate: isHomePage ? siteTitle : "%s | GenLayer Documentation",
       description,
       openGraph: {
         type: "website",
         locale: "en_IE",
         url: SITE_URL + asPath,
-        site_name: "GenLayer — The Adjudication Layer for the Agentic Economy",
-        title: "GenLayer — The Adjudication Layer for the Agentic Economy",
+        site_name: siteTitle,
+        title: isHomePage || !title ? siteTitle : `${title} | GenLayer Documentation`,
         description,
         images: [
           {

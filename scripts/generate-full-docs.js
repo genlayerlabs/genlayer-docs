@@ -1,6 +1,6 @@
 const fs = require('fs');
 const path = require('path');
-const { execFileSync } = require('child_process');
+const { buildGitDates } = require('./lib/git-dates');
 
 const DOMAIN = 'https://docs.genlayer.com';
 
@@ -228,29 +228,6 @@ function extractDescription(markdown) {
   return '';
 }
 
-// Map of file -> last commit date, built from a single git log pass
-function buildGitDates(pagesDir) {
-  const dates = {};
-  try {
-    const output = execFileSync('git', ['log', '--format=%cI', '--name-only', '--', 'pages'], {
-      cwd: process.cwd(),
-      encoding: 'utf8',
-      maxBuffer: 64 * 1024 * 1024,
-    });
-    let currentDate = null;
-    for (const line of output.split('\n')) {
-      if (/^\d{4}-\d{2}-\d{2}T/.test(line)) {
-        currentDate = line.trim();
-      } else if (line.startsWith('pages/') && currentDate && !(line in dates)) {
-        dates[path.join(process.cwd(), line)] = currentDate.slice(0, 10);
-      }
-    }
-  } catch (e) {
-    // git unavailable (e.g. some CI environments) — fall back to mtime below
-  }
-  return dates;
-}
-
 function preparePage(page, pagesDir, gitDates) {
   const raw = fs.readFileSync(page.filePath, 'utf8');
   const { data: frontmatter, content } = parseFrontmatter(raw);
@@ -317,7 +294,7 @@ const LLMS_TXT_PREAMBLE = `# GenLayer Documentation
 Instructions for AI agents and LLMs:
 
 - Every page below links to its raw markdown version. You can also append \`.md\` to any docs URL (e.g. ${DOMAIN}/developers/intelligent-contracts/introduction.md).
-- The complete documentation in a single file: ${DOMAIN}/llms-full.txt. Section-scoped bundles: ${DOMAIN}/understand-genlayer-protocol/llms-full.txt, ${DOMAIN}/developers/llms-full.txt, ${DOMAIN}/validators/llms-full.txt, ${DOMAIN}/api-references/llms-full.txt.
+- The complete documentation in a single file: ${DOMAIN}/llms-full.txt (omits the per-command CLI pages). Section-scoped bundles: ${DOMAIN}/understand-genlayer-protocol/llms-full.txt, ${DOMAIN}/developers/llms-full.txt, ${DOMAIN}/validators/llms-full.txt, ${DOMAIN}/api-references/llms-full.txt (includes the full CLI command reference).
 - To build Intelligent Contracts or run a validator with AI assistance, install the GenLayer Skills plugin for Claude Code: https://skills.genlayer.com/
 - Key entry points: "What is GenLayer" for concepts, "Your First Contract" for development, "Setup Guide" for validators, "GenLayerJS" for dApps.
 `;
@@ -378,7 +355,7 @@ function generateFullDocs() {
     fs.mkdirSync(outputDir);
   }
 
-  const gitDates = buildGitDates(pagesDir);
+  const gitDates = buildGitDates();
   const pages = collectPages(pagesDir)
     .filter(page => {
       // Skip tiny "This page has moved" redirect stubs kept for SEO
@@ -387,8 +364,15 @@ function generateFullDocs() {
     })
     .map(page => preparePage(page, pagesDir, gitDates));
 
-  // 1. Single-file concatenated export (legacy name + llms-full.txt)
-  const fullContent = pages.map(fullDocsEntry).join('\n\n---\n\n') + '\n';
+  // 1. Single-file concatenated export (legacy name + llms-full.txt).
+  // The individual CLI command pages are omitted here to keep the root
+  // bundle within a single context window — the genlayer-cli overview page
+  // stays in, and the full command reference lives in
+  // api-references/llms-full.txt.
+  const rootPages = pages.filter(
+    page => !page.route.startsWith('api-references/genlayer-cli/')
+  );
+  const fullContent = rootPages.map(fullDocsEntry).join('\n\n---\n\n') + '\n';
   fs.writeFileSync(path.join(outputDir, 'full-documentation.txt'), fullContent);
   const llmsFullPath = path.join(outputDir, 'llms-full.txt');
   if (fs.existsSync(llmsFullPath) && fs.lstatSync(llmsFullPath).isSymbolicLink()) {
@@ -419,7 +403,8 @@ function generateFullDocs() {
   fs.writeFileSync(path.join(outputDir, 'llms.txt'), generateLlmsTxt(pages, rootMeta));
 
   console.log(
-    `generate-full-docs: ${pages.length} pages -> full-documentation.txt, llms-full.txt, ` +
+    `generate-full-docs: ${pages.length} pages -> full-documentation.txt, llms-full.txt ` +
+      `(${rootPages.length} pages, CLI command pages only in api-references bundle), ` +
       `${sections.length} section bundles, per-page .md mirrors, llms.txt`
   );
 }

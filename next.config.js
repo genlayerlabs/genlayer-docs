@@ -174,6 +174,19 @@ const actualRedirects = [
 ];
 
 const nextConfig = withNextra({
+  async rewrites() {
+    return {
+      // Runs only when no real file matched, so valid .md mirrors in
+      // public/ are served directly and misses get a markdown 404 with
+      // closest-match suggestions instead of an HTML error page.
+      afterFiles: [
+        {
+          source: "/:requested(.*\\.md)",
+          destination: "/api/markdown-404?requested=:requested",
+        },
+      ],
+    };
+  },
   async redirects() {
     return [
       // Previous redirects
