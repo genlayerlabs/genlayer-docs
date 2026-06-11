@@ -1,6 +1,10 @@
+---
+description: "LlmHelloWorld is the simplest Intelligent Contract LLM example: the leader generates a salute and validators judge it against criteria."
+---
+
 # LlmHelloWorld Contract
 
-The LlmHelloWorld contract demonstrates a simple example of integrating AI capabilities within an intelligent contract. This contract shows how to use the [comparative equivalence principle](/developers/intelligent-contracts/equivalence-principle#comparative-equivalence-principle) to call an LLM and store the response in the contract state.
+The `LlmHelloWorld` contract is the simplest example of calling an LLM from a Python Intelligent Contract. The leader validator asks an LLM to generate a short salute, and the other validators use the [non-comparative Equivalence Principle](/developers/intelligent-contracts/equivalence-principle#pattern-4-source-grounded-non-comparative-validation) to judge whether the leader's response actually is a salute — without each validator generating its own. This is how GenLayer reaches consensus on open-ended LLM output that would never match word-for-word across validators.
 
 ```python
 # { "Depends": "py-genlayer:1jb45aa8ynh2a9c9xn3b7qqh8sm5q93hwfp7jqmwsfhh8jpz09h6" }
@@ -17,35 +21,42 @@ class LlmHelloWorld(gl.Contract):
 
     @gl.public.write
     def set_message(self) -> typing.Any:
+        def get_input() -> str:
+            return "A new developer just deployed their first Intelligent Contract on GenLayer"
 
-        def get_message() -> str:
-            task = "There is no context, I just want you to answer with a string equal to 'yes'"
-            result = gl.nondet.exec_prompt(task)
-            print(result)
-            return result
-
-        self.message = gl.eq_principle.strict_eq(get_message)
+        self.message = gl.eq_principle.prompt_non_comparative(
+            get_input,
+            task="Write a short, friendly salute of at most one sentence celebrating this moment",
+            criteria="""
+                The response is a salute or greeting
+                It is friendly and positive
+                It is at most one sentence
+            """,
+        )
 
     @gl.public.view
-    def get_message(self) -> str:       
+    def get_message(self) -> str:
         return self.message
 ```
 
 ## Code Explanation
 
 - **Initialization**: The `LlmHelloWorld` class initializes with an empty string in the `message` variable.
-- **Write Method**: 
-  - `set_message()` uses AI functionality to generate and store a message.
-  - It contains an inner function `get_message()` that prompts an AI model with a simple task.
-  - Uses `gl.eq_principle.strict_eq()` to ensure deterministic AI responses across the network.
-- **Read Method**: 
-  - `get_message()` returns the stored message.
+- **Write Method**:
+  - `set_message()` calls `gl.eq_principle.prompt_non_comparative()` with three parameters:
+    - An input function (`get_input`) providing the context the LLM works from
+    - A `task` describing what the leader's LLM should generate
+    - The `criteria` validators use to judge the leader's output
+  - The **leader** runs the LLM with the input and task and proposes the salute it generated.
+  - Each **validator** does not generate its own salute; it evaluates the leader's response against the criteria and votes to accept or reject.
+- **Read Method**:
+  - `get_message()` returns the stored salute.
 
 ## Key Components
 
-1. **AI Integration**: The contract uses `gl.nondet.exec_prompt()` to interact with an AI model.
-2. **Deterministic Execution**: `gl.eq_principle.strict_eq()` ensures that all nodes in the network arrive at the same exact result.
-3. **State Management**: The contract maintains a single string state variable that stores the AI response.
+1. **Open-ended LLM output**: Every LLM run produces a differently worded salute, so validators could never agree on an exact string.
+2. **Criteria-based consensus**: `gl.eq_principle.prompt_non_comparative()` lets validators agree on whether the output *satisfies the criteria* ("is this a friendly one-sentence salute?") instead of requiring identical text.
+3. **State Management**: The contract stores the accepted salute in a single string state variable.
 
 ## Deploying the Contract
 
@@ -58,38 +69,38 @@ To deploy the LlmHelloWorld contract:
 
 After deployment, you can:
 
-- Use `get_message()` to view the currently stored message.
+- Use `get_message()` to view the currently stored salute.
 - Initially, this will return an empty string.
 
 ## Executing Transactions
 
 To interact with the deployed contract:
 
-1. Call `set_message()` to trigger the AI interaction.
+1. Call `set_message()` to trigger the LLM interaction.
 2. The function will:
-   - Execute the AI prompt requesting a "yes" response
-   - Store the result using the equivalence principle
-   - Print the result to the logs
+   - Have the leader's LLM generate a one-sentence salute
+   - Have validators judge the salute against the criteria
+   - Store the salute once validators accept it
 
-## Understanding AI Integration
+## Understanding the Consensus Flow
 
 This contract demonstrates several important concepts:
 
-- **AI Prompting**: Shows how to formulate simple prompts for AI models within smart contracts.
-- **Deterministic AI**: Uses the equivalence principle to ensure all nodes reach consensus on AI outputs.
-- **State Updates**: Demonstrates how AI-generated content can be stored in blockchain state.
+- **Leader proposes, validators judge**: Only the leader generates the salute; validators evaluate it, which is cheaper and tolerant of wording differences.
+- **Subjective agreement**: Validators reach consensus on a subjective question ("is this a salute?") rather than on exact bytes.
+- **State Updates**: LLM-generated content becomes blockchain state only after validators accept it.
 
 ## Handling Different Scenarios
 
 - **Initial State**: The message starts empty.
-- **After set_message()**: The message will contain "yes" (the AI's response).
-- **Multiple Calls**: Each call to `set_message()` will update the stored message.
-- **Network Consensus**: All nodes will agree on the same message due to the equivalence principle.
+- **After set_message()**: The message contains a salute, worded differently on every run.
+- **Multiple Calls**: Each call to `set_message()` stores a new, differently worded salute.
+- **Validator rejection**: If the leader's LLM returns something that is not a salute (or violates the criteria), validators reject it and consensus handles the disagreement.
 
 ## Important Notes
 
-1. This is a minimal example to demonstrate AI-blockchain integration.
-2. The AI prompt is intentionally simple for demonstration purposes.
-3. The equivalence principle ensures that the AI response is consistent across all network nodes.
+1. This is a minimal example of LLM integration in an Intelligent Contract; the prompt and criteria are intentionally simple.
+2. Never use `gl.eq_principle.strict_eq()` for LLM calls — LLM output is non-deterministic, so exact-match consensus fails. Use criteria-based validation like this example, or a [custom validator function](/developers/intelligent-contracts/equivalence-principle#validation-patterns) for full control.
+3. For a variant where validators check the response against task criteria with explicit parameters, see [LlmHelloWorldNonComparative](/developers/intelligent-contracts/examples/llm-hello-world-non-comparative).
 
-You can monitor the contract's behavior through transaction logs, which will show the AI responses and state updates as they occur.
+You can monitor the contract's behavior through transaction logs, which will show the LLM responses and state updates as they occur.

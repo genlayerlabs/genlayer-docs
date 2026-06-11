@@ -21,8 +21,11 @@ class LlmHelloWorldNonComparative(gl.Contract):
 
     @gl.public.write
     def set_message(self) -> typing.Any:
+        def get_input() -> str:
+            return "There is no context, I just want you to answer with truthy value in python (for example: 'yes', 'True', 1)"
+
         self.message = gl.eq_principle.prompt_non_comparative(
-            lambda: "There is no context, I just want you to answer with truthy value in python (for example: 'yes', 'True', 1)",
+            get_input,
             task="Answer with truthy value in python (for example: 'yes', 'True', 1)",
             criteria="Answer should be a truthy value in python"
         )
@@ -38,7 +41,7 @@ class LlmHelloWorldNonComparative(gl.Contract):
 - **Write Method**: 
   - `set_message()` uses AI functionality to generate and store a message.
   - Uses `gl.eq_principle.prompt_non_comparative()` with three parameters:
-    - A lambda function providing the prompt
+    - An input function (`get_input`) providing the prompt
     - A task description
     - Validation criteria for the response
 - **Read Method**: 
