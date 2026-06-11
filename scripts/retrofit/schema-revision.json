@@ -3,6 +3,9 @@
   "properties": {
     "description": {
       "type": "string",
+      "minLength": 50,
+      "maxLength": 160,
+      "pattern": "^[^\\n\\r]*$",
       "description": "Answer-first meta description for the page, 50-160 characters, single line"
     },
     "intro": {
