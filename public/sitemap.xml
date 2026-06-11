@@ -2,817 +2,1279 @@
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
   <url>
     <loc>https://docs.genlayer.com/FAQ</loc>
-    <lastmod>2026-03-09T15:19:14.172Z</lastmod>
+    <lastmod>2026-06-11T08:56:09.941Z</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
   </url>
   <url>
-    <loc>https://docs.genlayer.com/_providers/ollama</loc>
-    <lastmod>2026-03-09T15:19:14.173Z</lastmod>
+    <loc>https://docs.genlayer.com/api-references/genlayer-cli/accounts/account/create</loc>
+    <lastmod>2026-06-11T08:56:09.941Z</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
   </url>
   <url>
-    <loc>https://docs.genlayer.com/_providers/openai</loc>
-    <lastmod>2026-03-09T15:19:14.173Z</lastmod>
+    <loc>https://docs.genlayer.com/api-references/genlayer-cli/accounts/account/export</loc>
+    <lastmod>2026-06-11T08:56:09.941Z</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
   </url>
   <url>
-    <loc>https://docs.genlayer.com/_temp/security-and-best-practices/grey-boxing</loc>
-    <lastmod>2026-03-09T15:19:14.173Z</lastmod>
+    <loc>https://docs.genlayer.com/api-references/genlayer-cli/accounts/account/import</loc>
+    <lastmod>2026-06-11T08:56:09.941Z</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
   </url>
   <url>
-    <loc>https://docs.genlayer.com/_temp/security-and-best-practices/universal-attacks</loc>
-    <lastmod>2026-03-09T15:19:14.173Z</lastmod>
+    <loc>https://docs.genlayer.com/api-references/genlayer-cli/accounts/account/list</loc>
+    <lastmod>2026-06-11T08:56:09.941Z</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.8</priority>
+  </url>
+  <url>
+    <loc>https://docs.genlayer.com/api-references/genlayer-cli/accounts/account/lock</loc>
+    <lastmod>2026-06-11T08:56:09.941Z</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.8</priority>
+  </url>
+  <url>
+    <loc>https://docs.genlayer.com/api-references/genlayer-cli/accounts/account/remove</loc>
+    <lastmod>2026-06-11T08:56:09.941Z</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.8</priority>
+  </url>
+  <url>
+    <loc>https://docs.genlayer.com/api-references/genlayer-cli/accounts/account/send</loc>
+    <lastmod>2026-06-11T08:56:09.941Z</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.8</priority>
+  </url>
+  <url>
+    <loc>https://docs.genlayer.com/api-references/genlayer-cli/accounts/account/show</loc>
+    <lastmod>2026-06-11T08:56:09.941Z</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.8</priority>
+  </url>
+  <url>
+    <loc>https://docs.genlayer.com/api-references/genlayer-cli/accounts/account/unlock</loc>
+    <lastmod>2026-06-11T08:56:09.941Z</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.8</priority>
+  </url>
+  <url>
+    <loc>https://docs.genlayer.com/api-references/genlayer-cli/accounts/account/use</loc>
+    <lastmod>2026-06-11T08:56:09.941Z</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.8</priority>
+  </url>
+  <url>
+    <loc>https://docs.genlayer.com/api-references/genlayer-cli/accounts/account</loc>
+    <lastmod>2026-06-11T08:56:09.941Z</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.8</priority>
+  </url>
+  <url>
+    <loc>https://docs.genlayer.com/api-references/genlayer-cli/configuration/config/get</loc>
+    <lastmod>2026-06-11T08:56:09.941Z</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.8</priority>
+  </url>
+  <url>
+    <loc>https://docs.genlayer.com/api-references/genlayer-cli/configuration/config/reset</loc>
+    <lastmod>2026-06-11T08:56:09.941Z</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.8</priority>
+  </url>
+  <url>
+    <loc>https://docs.genlayer.com/api-references/genlayer-cli/configuration/config/set</loc>
+    <lastmod>2026-06-11T08:56:09.941Z</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.8</priority>
+  </url>
+  <url>
+    <loc>https://docs.genlayer.com/api-references/genlayer-cli/configuration/config</loc>
+    <lastmod>2026-06-11T08:56:09.941Z</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.8</priority>
+  </url>
+  <url>
+    <loc>https://docs.genlayer.com/api-references/genlayer-cli/configuration/network/info</loc>
+    <lastmod>2026-06-11T08:56:09.941Z</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.8</priority>
+  </url>
+  <url>
+    <loc>https://docs.genlayer.com/api-references/genlayer-cli/configuration/network/list</loc>
+    <lastmod>2026-06-11T08:56:09.941Z</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.8</priority>
+  </url>
+  <url>
+    <loc>https://docs.genlayer.com/api-references/genlayer-cli/configuration/network/set</loc>
+    <lastmod>2026-06-11T08:56:09.941Z</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.8</priority>
+  </url>
+  <url>
+    <loc>https://docs.genlayer.com/api-references/genlayer-cli/configuration/network</loc>
+    <lastmod>2026-06-11T08:56:09.941Z</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.8</priority>
+  </url>
+  <url>
+    <loc>https://docs.genlayer.com/api-references/genlayer-cli/contracts/call</loc>
+    <lastmod>2026-06-11T08:56:09.941Z</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.8</priority>
+  </url>
+  <url>
+    <loc>https://docs.genlayer.com/api-references/genlayer-cli/contracts/code</loc>
+    <lastmod>2026-06-11T08:56:09.941Z</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.8</priority>
+  </url>
+  <url>
+    <loc>https://docs.genlayer.com/api-references/genlayer-cli/contracts/deploy</loc>
+    <lastmod>2026-06-11T08:56:09.941Z</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.8</priority>
+  </url>
+  <url>
+    <loc>https://docs.genlayer.com/api-references/genlayer-cli/contracts/schema</loc>
+    <lastmod>2026-06-11T08:56:09.941Z</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.8</priority>
+  </url>
+  <url>
+    <loc>https://docs.genlayer.com/api-references/genlayer-cli/contracts/write</loc>
+    <lastmod>2026-06-11T08:56:09.941Z</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.8</priority>
+  </url>
+  <url>
+    <loc>https://docs.genlayer.com/api-references/genlayer-cli/environment/init</loc>
+    <lastmod>2026-06-11T08:56:09.941Z</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.8</priority>
+  </url>
+  <url>
+    <loc>https://docs.genlayer.com/api-references/genlayer-cli/environment/new</loc>
+    <lastmod>2026-06-11T08:56:09.941Z</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.8</priority>
+  </url>
+  <url>
+    <loc>https://docs.genlayer.com/api-references/genlayer-cli/environment/stop</loc>
+    <lastmod>2026-06-11T08:56:09.941Z</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.8</priority>
+  </url>
+  <url>
+    <loc>https://docs.genlayer.com/api-references/genlayer-cli/environment/up</loc>
+    <lastmod>2026-06-11T08:56:09.941Z</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.8</priority>
+  </url>
+  <url>
+    <loc>https://docs.genlayer.com/api-references/genlayer-cli/environment/update/ollama</loc>
+    <lastmod>2026-06-11T08:56:09.941Z</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.8</priority>
+  </url>
+  <url>
+    <loc>https://docs.genlayer.com/api-references/genlayer-cli/environment/update</loc>
+    <lastmod>2026-06-11T08:56:09.941Z</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.8</priority>
+  </url>
+  <url>
+    <loc>https://docs.genlayer.com/api-references/genlayer-cli/finalize-batch</loc>
+    <lastmod>2026-06-11T08:56:09.941Z</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.8</priority>
+  </url>
+  <url>
+    <loc>https://docs.genlayer.com/api-references/genlayer-cli/finalize</loc>
+    <lastmod>2026-06-11T08:56:09.941Z</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
   </url>
   <url>
     <loc>https://docs.genlayer.com/api-references/genlayer-cli</loc>
-    <lastmod>2026-03-09T15:19:14.173Z</lastmod>
+    <lastmod>2026-06-11T08:56:09.941Z</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.8</priority>
+  </url>
+  <url>
+    <loc>https://docs.genlayer.com/api-references/genlayer-cli/localnet/localnet/validators/count</loc>
+    <lastmod>2026-06-11T08:56:09.941Z</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.8</priority>
+  </url>
+  <url>
+    <loc>https://docs.genlayer.com/api-references/genlayer-cli/localnet/localnet/validators/create-random</loc>
+    <lastmod>2026-06-11T08:56:09.941Z</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.8</priority>
+  </url>
+  <url>
+    <loc>https://docs.genlayer.com/api-references/genlayer-cli/localnet/localnet/validators/create</loc>
+    <lastmod>2026-06-11T08:56:09.941Z</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.8</priority>
+  </url>
+  <url>
+    <loc>https://docs.genlayer.com/api-references/genlayer-cli/localnet/localnet/validators/delete</loc>
+    <lastmod>2026-06-11T08:56:09.941Z</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.8</priority>
+  </url>
+  <url>
+    <loc>https://docs.genlayer.com/api-references/genlayer-cli/localnet/localnet/validators/get</loc>
+    <lastmod>2026-06-11T08:56:09.941Z</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.8</priority>
+  </url>
+  <url>
+    <loc>https://docs.genlayer.com/api-references/genlayer-cli/localnet/localnet/validators/update</loc>
+    <lastmod>2026-06-11T08:56:09.941Z</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.8</priority>
+  </url>
+  <url>
+    <loc>https://docs.genlayer.com/api-references/genlayer-cli/localnet/localnet/validators</loc>
+    <lastmod>2026-06-11T08:56:09.941Z</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.8</priority>
+  </url>
+  <url>
+    <loc>https://docs.genlayer.com/api-references/genlayer-cli/localnet/localnet</loc>
+    <lastmod>2026-06-11T08:56:09.941Z</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.8</priority>
+  </url>
+  <url>
+    <loc>https://docs.genlayer.com/api-references/genlayer-cli/staking/staking/active-validators</loc>
+    <lastmod>2026-06-11T08:56:09.941Z</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.8</priority>
+  </url>
+  <url>
+    <loc>https://docs.genlayer.com/api-references/genlayer-cli/staking/staking/banned-validators</loc>
+    <lastmod>2026-06-11T08:56:09.941Z</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.8</priority>
+  </url>
+  <url>
+    <loc>https://docs.genlayer.com/api-references/genlayer-cli/staking/staking/delegation-info</loc>
+    <lastmod>2026-06-11T08:56:09.941Z</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.8</priority>
+  </url>
+  <url>
+    <loc>https://docs.genlayer.com/api-references/genlayer-cli/staking/staking/delegator-claim</loc>
+    <lastmod>2026-06-11T08:56:09.941Z</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.8</priority>
+  </url>
+  <url>
+    <loc>https://docs.genlayer.com/api-references/genlayer-cli/staking/staking/delegator-exit</loc>
+    <lastmod>2026-06-11T08:56:09.941Z</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.8</priority>
+  </url>
+  <url>
+    <loc>https://docs.genlayer.com/api-references/genlayer-cli/staking/staking/delegator-join</loc>
+    <lastmod>2026-06-11T08:56:09.941Z</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.8</priority>
+  </url>
+  <url>
+    <loc>https://docs.genlayer.com/api-references/genlayer-cli/staking/staking/epoch-info</loc>
+    <lastmod>2026-06-11T08:56:09.941Z</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.8</priority>
+  </url>
+  <url>
+    <loc>https://docs.genlayer.com/api-references/genlayer-cli/staking/staking/prime-all</loc>
+    <lastmod>2026-06-11T08:56:09.941Z</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.8</priority>
+  </url>
+  <url>
+    <loc>https://docs.genlayer.com/api-references/genlayer-cli/staking/staking/quarantined-validators</loc>
+    <lastmod>2026-06-11T08:56:09.941Z</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.8</priority>
+  </url>
+  <url>
+    <loc>https://docs.genlayer.com/api-references/genlayer-cli/staking/staking/set-identity</loc>
+    <lastmod>2026-06-11T08:56:09.941Z</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.8</priority>
+  </url>
+  <url>
+    <loc>https://docs.genlayer.com/api-references/genlayer-cli/staking/staking/set-operator</loc>
+    <lastmod>2026-06-11T08:56:09.941Z</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.8</priority>
+  </url>
+  <url>
+    <loc>https://docs.genlayer.com/api-references/genlayer-cli/staking/staking/validator-claim</loc>
+    <lastmod>2026-06-11T08:56:09.941Z</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.8</priority>
+  </url>
+  <url>
+    <loc>https://docs.genlayer.com/api-references/genlayer-cli/staking/staking/validator-deposit</loc>
+    <lastmod>2026-06-11T08:56:09.941Z</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.8</priority>
+  </url>
+  <url>
+    <loc>https://docs.genlayer.com/api-references/genlayer-cli/staking/staking/validator-exit</loc>
+    <lastmod>2026-06-11T08:56:09.941Z</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.8</priority>
+  </url>
+  <url>
+    <loc>https://docs.genlayer.com/api-references/genlayer-cli/staking/staking/validator-history</loc>
+    <lastmod>2026-06-11T08:56:09.941Z</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.8</priority>
+  </url>
+  <url>
+    <loc>https://docs.genlayer.com/api-references/genlayer-cli/staking/staking/validator-info</loc>
+    <lastmod>2026-06-11T08:56:09.941Z</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.8</priority>
+  </url>
+  <url>
+    <loc>https://docs.genlayer.com/api-references/genlayer-cli/staking/staking/validator-join</loc>
+    <lastmod>2026-06-11T08:56:09.941Z</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.8</priority>
+  </url>
+  <url>
+    <loc>https://docs.genlayer.com/api-references/genlayer-cli/staking/staking/validator-prime</loc>
+    <lastmod>2026-06-11T08:56:09.941Z</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.8</priority>
+  </url>
+  <url>
+    <loc>https://docs.genlayer.com/api-references/genlayer-cli/staking/staking/validators</loc>
+    <lastmod>2026-06-11T08:56:09.941Z</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.8</priority>
+  </url>
+  <url>
+    <loc>https://docs.genlayer.com/api-references/genlayer-cli/staking/staking/wizard</loc>
+    <lastmod>2026-06-11T08:56:09.941Z</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.8</priority>
+  </url>
+  <url>
+    <loc>https://docs.genlayer.com/api-references/genlayer-cli/staking/staking</loc>
+    <lastmod>2026-06-11T08:56:09.941Z</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.8</priority>
+  </url>
+  <url>
+    <loc>https://docs.genlayer.com/api-references/genlayer-cli/transactions/appeal-bond</loc>
+    <lastmod>2026-06-11T08:56:09.941Z</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.8</priority>
+  </url>
+  <url>
+    <loc>https://docs.genlayer.com/api-references/genlayer-cli/transactions/appeal</loc>
+    <lastmod>2026-06-11T08:56:09.941Z</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.8</priority>
+  </url>
+  <url>
+    <loc>https://docs.genlayer.com/api-references/genlayer-cli/transactions/receipt</loc>
+    <lastmod>2026-06-11T08:56:09.941Z</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.8</priority>
+  </url>
+  <url>
+    <loc>https://docs.genlayer.com/api-references/genlayer-cli/transactions/trace</loc>
+    <lastmod>2026-06-11T08:56:09.941Z</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.8</priority>
+  </url>
+  <url>
+    <loc>https://docs.genlayer.com/api-references/genlayer-cli</loc>
+    <lastmod>2026-06-11T08:56:09.941Z</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.8</priority>
+  </url>
+  <url>
+    <loc>https://docs.genlayer.com/api-references/genlayer-js/contracts</loc>
+    <lastmod>2026-06-11T08:56:09.941Z</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.8</priority>
+  </url>
+  <url>
+    <loc>https://docs.genlayer.com/api-references/genlayer-js/staking</loc>
+    <lastmod>2026-06-11T08:56:09.941Z</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.8</priority>
+  </url>
+  <url>
+    <loc>https://docs.genlayer.com/api-references/genlayer-js/transactions</loc>
+    <lastmod>2026-06-11T08:56:09.941Z</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
   </url>
   <url>
     <loc>https://docs.genlayer.com/api-references/genlayer-js</loc>
-    <lastmod>2026-03-09T15:19:14.173Z</lastmod>
+    <lastmod>2026-06-11T08:56:09.941Z</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.8</priority>
+  </url>
+  <url>
+    <loc>https://docs.genlayer.com/api-references/genlayer-linter</loc>
+    <lastmod>2026-06-11T08:56:09.941Z</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
   </url>
   <url>
     <loc>https://docs.genlayer.com/api-references/genlayer-node/debug/gen_dbg_ping</loc>
-    <lastmod>2026-03-09T15:19:14.174Z</lastmod>
+    <lastmod>2026-06-11T08:56:09.941Z</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.8</priority>
+  </url>
+  <url>
+    <loc>https://docs.genlayer.com/api-references/genlayer-node/debug/gen_dbg_traceTransaction</loc>
+    <lastmod>2026-06-11T08:56:09.941Z</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
   </url>
   <url>
     <loc>https://docs.genlayer.com/api-references/genlayer-node/debug/gen_dbg_trie</loc>
-    <lastmod>2026-03-09T15:19:14.174Z</lastmod>
+    <lastmod>2026-06-11T08:56:09.941Z</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
   </url>
   <url>
     <loc>https://docs.genlayer.com/api-references/genlayer-node/gen/gen_call</loc>
-    <lastmod>2026-03-09T15:19:14.174Z</lastmod>
+    <lastmod>2026-06-11T08:56:09.951Z</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
   </url>
   <url>
     <loc>https://docs.genlayer.com/api-references/genlayer-node/gen/gen_getContractCode</loc>
-    <lastmod>2026-03-09T15:19:14.174Z</lastmod>
+    <lastmod>2026-06-11T08:56:09.951Z</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
   </url>
   <url>
     <loc>https://docs.genlayer.com/api-references/genlayer-node/gen/gen_getContractSchema</loc>
-    <lastmod>2026-03-09T15:19:14.174Z</lastmod>
+    <lastmod>2026-06-11T08:56:09.951Z</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
   </url>
   <url>
     <loc>https://docs.genlayer.com/api-references/genlayer-node/gen/gen_getContractState</loc>
-    <lastmod>2026-03-09T15:19:14.174Z</lastmod>
+    <lastmod>2026-06-11T08:56:09.951Z</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
   </url>
   <url>
     <loc>https://docs.genlayer.com/api-references/genlayer-node/gen/gen_getTransactionReceipt</loc>
-    <lastmod>2026-03-09T15:19:14.174Z</lastmod>
+    <lastmod>2026-06-11T08:56:09.951Z</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.8</priority>
+  </url>
+  <url>
+    <loc>https://docs.genlayer.com/api-references/genlayer-node/gen/gen_getTransactionStatus</loc>
+    <lastmod>2026-06-11T08:56:09.951Z</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.8</priority>
+  </url>
+  <url>
+    <loc>https://docs.genlayer.com/api-references/genlayer-node/gen/gen_syncing</loc>
+    <lastmod>2026-06-11T08:56:09.951Z</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
   </url>
   <url>
     <loc>https://docs.genlayer.com/api-references/genlayer-node/ops/balance</loc>
-    <lastmod>2026-03-09T15:19:14.174Z</lastmod>
+    <lastmod>2026-06-11T08:56:09.951Z</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
   </url>
   <url>
     <loc>https://docs.genlayer.com/api-references/genlayer-node/ops/health</loc>
-    <lastmod>2026-03-09T15:19:14.174Z</lastmod>
+    <lastmod>2026-06-11T08:56:09.951Z</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
   </url>
   <url>
     <loc>https://docs.genlayer.com/api-references/genlayer-node/ops/metrics</loc>
-    <lastmod>2026-03-09T15:19:14.175Z</lastmod>
+    <lastmod>2026-06-11T08:56:09.951Z</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.8</priority>
+  </url>
+  <url>
+    <loc>https://docs.genlayer.com/api-references/genlayer-node/ops/snapshot</loc>
+    <lastmod>2026-06-11T08:56:09.951Z</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
   </url>
   <url>
     <loc>https://docs.genlayer.com/api-references/genlayer-node</loc>
-    <lastmod>2026-03-09T16:05:27.624Z</lastmod>
+    <lastmod>2026-06-11T08:56:09.941Z</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.8</priority>
+  </url>
+  <url>
+    <loc>https://docs.genlayer.com/api-references/genlayer-py/api</loc>
+    <lastmod>2026-06-11T08:56:09.951Z</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
   </url>
   <url>
     <loc>https://docs.genlayer.com/api-references/genlayer-py</loc>
-    <lastmod>2026-03-09T15:19:14.175Z</lastmod>
+    <lastmod>2026-06-11T08:56:09.951Z</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.8</priority>
+  </url>
+  <url>
+    <loc>https://docs.genlayer.com/api-references/genlayer-test/direct</loc>
+    <lastmod>2026-06-11T08:56:09.951Z</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.8</priority>
+  </url>
+  <url>
+    <loc>https://docs.genlayer.com/api-references/genlayer-test/glsim</loc>
+    <lastmod>2026-06-11T08:56:09.951Z</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.8</priority>
+  </url>
+  <url>
+    <loc>https://docs.genlayer.com/api-references/genlayer-test/integration</loc>
+    <lastmod>2026-06-11T08:56:09.951Z</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
   </url>
   <url>
     <loc>https://docs.genlayer.com/api-references/genlayer-test</loc>
-    <lastmod>2026-03-09T15:19:14.175Z</lastmod>
+    <lastmod>2026-06-11T08:56:09.951Z</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
   </url>
   <url>
     <loc>https://docs.genlayer.com/api-references</loc>
-    <lastmod>2026-03-09T15:19:14.173Z</lastmod>
+    <lastmod>2026-06-11T08:56:09.941Z</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
   </url>
   <url>
     <loc>https://docs.genlayer.com/developers/decentralized-applications/architecture-overview</loc>
-    <lastmod>2026-03-09T15:19:14.175Z</lastmod>
+    <lastmod>2026-06-11T08:56:09.951Z</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
   </url>
   <url>
     <loc>https://docs.genlayer.com/developers/decentralized-applications/dapp-development-workflow</loc>
-    <lastmod>2026-03-09T15:19:14.175Z</lastmod>
+    <lastmod>2026-06-11T08:56:09.951Z</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
   </url>
   <url>
     <loc>https://docs.genlayer.com/developers/decentralized-applications/genlayer-js</loc>
-    <lastmod>2026-03-09T15:19:14.175Z</lastmod>
+    <lastmod>2026-06-11T08:56:09.951Z</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
   </url>
   <url>
     <loc>https://docs.genlayer.com/developers/decentralized-applications/project-boilerplate</loc>
-    <lastmod>2026-03-09T15:19:14.175Z</lastmod>
+    <lastmod>2026-06-11T08:56:09.951Z</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
   </url>
   <url>
     <loc>https://docs.genlayer.com/developers/decentralized-applications/querying-a-transaction</loc>
-    <lastmod>2026-03-09T15:19:14.175Z</lastmod>
+    <lastmod>2026-06-11T08:56:09.951Z</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
   </url>
   <url>
     <loc>https://docs.genlayer.com/developers/decentralized-applications/reading-data</loc>
-    <lastmod>2026-03-09T15:19:14.175Z</lastmod>
+    <lastmod>2026-06-11T08:56:09.951Z</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
   </url>
   <url>
     <loc>https://docs.genlayer.com/developers/decentralized-applications/testing</loc>
-    <lastmod>2026-03-09T15:19:14.175Z</lastmod>
+    <lastmod>2026-06-11T08:56:09.951Z</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
   </url>
   <url>
     <loc>https://docs.genlayer.com/developers/decentralized-applications/writing-data</loc>
-    <lastmod>2026-03-09T15:19:14.176Z</lastmod>
+    <lastmod>2026-06-11T08:56:09.951Z</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
   </url>
   <url>
     <loc>https://docs.genlayer.com/developers/intelligent-contracts/crafting-prompts</loc>
-    <lastmod>2026-03-09T15:19:14.176Z</lastmod>
+    <lastmod>2026-06-11T08:56:09.951Z</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
   </url>
   <url>
     <loc>https://docs.genlayer.com/developers/intelligent-contracts/debugging</loc>
-    <lastmod>2026-03-09T15:19:14.176Z</lastmod>
+    <lastmod>2026-06-11T08:56:09.951Z</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
   </url>
   <url>
     <loc>https://docs.genlayer.com/developers/intelligent-contracts/deploying/cli-deployment</loc>
-    <lastmod>2026-03-09T15:19:14.176Z</lastmod>
+    <lastmod>2026-06-11T08:56:09.951Z</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
   </url>
   <url>
     <loc>https://docs.genlayer.com/developers/intelligent-contracts/deploying/deploy-scripts</loc>
-    <lastmod>2026-03-09T15:19:14.176Z</lastmod>
+    <lastmod>2026-06-11T08:56:09.951Z</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
   </url>
   <url>
     <loc>https://docs.genlayer.com/developers/intelligent-contracts/deploying/deployment-methods</loc>
-    <lastmod>2026-03-09T15:19:14.176Z</lastmod>
+    <lastmod>2026-06-11T08:56:09.951Z</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
   </url>
   <url>
     <loc>https://docs.genlayer.com/developers/intelligent-contracts/deploying/network-configuration</loc>
-    <lastmod>2026-03-09T15:19:14.176Z</lastmod>
+    <lastmod>2026-06-11T08:56:09.951Z</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
   </url>
   <url>
     <loc>https://docs.genlayer.com/developers/intelligent-contracts/deploying</loc>
-    <lastmod>2026-03-09T15:19:14.176Z</lastmod>
+    <lastmod>2026-06-11T08:56:09.951Z</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
   </url>
   <url>
     <loc>https://docs.genlayer.com/developers/intelligent-contracts/equivalence-principle</loc>
-    <lastmod>2026-03-09T15:19:14.176Z</lastmod>
-    <changefreq>weekly</changefreq>
-    <priority>0.8</priority>
-  </url>
-  <url>
-    <loc>https://docs.genlayer.com/developers/intelligent-contracts/examples/_advanced/_adr-validator</loc>
-    <lastmod>2026-03-09T15:19:14.176Z</lastmod>
-    <changefreq>weekly</changefreq>
-    <priority>0.8</priority>
-  </url>
-  <url>
-    <loc>https://docs.genlayer.com/developers/intelligent-contracts/examples/_advanced/_flight-insurance</loc>
-    <lastmod>2026-03-09T15:19:14.176Z</lastmod>
-    <changefreq>weekly</changefreq>
-    <priority>0.8</priority>
-  </url>
-  <url>
-    <loc>https://docs.genlayer.com/developers/intelligent-contracts/examples/_advanced/_genlayer-dao</loc>
-    <lastmod>2026-03-09T15:19:14.177Z</lastmod>
-    <changefreq>weekly</changefreq>
-    <priority>0.8</priority>
-  </url>
-  <url>
-    <loc>https://docs.genlayer.com/developers/intelligent-contracts/examples/_advanced/_git-bounties</loc>
-    <lastmod>2026-03-09T15:19:14.177Z</lastmod>
-    <changefreq>weekly</changefreq>
-    <priority>0.8</priority>
-  </url>
-  <url>
-    <loc>https://docs.genlayer.com/developers/intelligent-contracts/examples/_advanced/_influencer-tweet-analyzer</loc>
-    <lastmod>2026-03-09T15:19:14.177Z</lastmod>
-    <changefreq>weekly</changefreq>
-    <priority>0.8</priority>
-  </url>
-  <url>
-    <loc>https://docs.genlayer.com/developers/intelligent-contracts/examples/_advanced/_purellm-dao</loc>
-    <lastmod>2026-03-09T15:19:14.177Z</lastmod>
-    <changefreq>weekly</changefreq>
-    <priority>0.8</priority>
-  </url>
-  <url>
-    <loc>https://docs.genlayer.com/developers/intelligent-contracts/examples/_advanced/_rokos-mansion</loc>
-    <lastmod>2026-03-09T15:19:14.177Z</lastmod>
+    <lastmod>2026-06-11T08:56:09.951Z</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
   </url>
   <url>
     <loc>https://docs.genlayer.com/developers/intelligent-contracts/examples/fetch-github-profile</loc>
-    <lastmod>2026-03-09T15:19:14.177Z</lastmod>
+    <lastmod>2026-06-11T08:56:09.951Z</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
   </url>
   <url>
     <loc>https://docs.genlayer.com/developers/intelligent-contracts/examples/fetch-web-content</loc>
-    <lastmod>2026-03-09T15:19:14.177Z</lastmod>
+    <lastmod>2026-06-11T08:56:09.951Z</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
   </url>
   <url>
     <loc>https://docs.genlayer.com/developers/intelligent-contracts/examples/github-profile-projects</loc>
-    <lastmod>2026-03-09T15:19:14.177Z</lastmod>
+    <lastmod>2026-06-11T08:56:09.951Z</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
   </url>
   <url>
     <loc>https://docs.genlayer.com/developers/intelligent-contracts/examples/github-profile-summary</loc>
-    <lastmod>2026-03-09T15:19:14.177Z</lastmod>
+    <lastmod>2026-06-11T08:56:09.951Z</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
   </url>
   <url>
     <loc>https://docs.genlayer.com/developers/intelligent-contracts/examples/llm-hello-world-non-comparative</loc>
-    <lastmod>2026-03-09T15:19:14.177Z</lastmod>
+    <lastmod>2026-06-11T08:56:09.951Z</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
   </url>
   <url>
     <loc>https://docs.genlayer.com/developers/intelligent-contracts/examples/llm-hello-world</loc>
-    <lastmod>2026-03-09T15:19:14.177Z</lastmod>
+    <lastmod>2026-06-11T08:56:09.951Z</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
   </url>
   <url>
     <loc>https://docs.genlayer.com/developers/intelligent-contracts/examples/prediction</loc>
-    <lastmod>2026-03-09T15:19:14.177Z</lastmod>
+    <lastmod>2026-06-11T08:56:09.951Z</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
   </url>
   <url>
     <loc>https://docs.genlayer.com/developers/intelligent-contracts/examples/storage</loc>
-    <lastmod>2026-03-09T15:19:14.177Z</lastmod>
+    <lastmod>2026-06-11T08:56:09.951Z</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
   </url>
   <url>
     <loc>https://docs.genlayer.com/developers/intelligent-contracts/examples/user-storage</loc>
-    <lastmod>2026-03-09T15:19:14.177Z</lastmod>
+    <lastmod>2026-06-11T08:56:09.951Z</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
   </url>
   <url>
     <loc>https://docs.genlayer.com/developers/intelligent-contracts/examples/vector-store-log-indexer</loc>
-    <lastmod>2026-03-09T15:19:14.178Z</lastmod>
+    <lastmod>2026-06-11T08:56:09.951Z</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
   </url>
   <url>
     <loc>https://docs.genlayer.com/developers/intelligent-contracts/examples/wizard-of-coin</loc>
-    <lastmod>2026-03-09T15:19:14.178Z</lastmod>
+    <lastmod>2026-06-11T08:56:09.951Z</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
   </url>
   <url>
     <loc>https://docs.genlayer.com/developers/intelligent-contracts/features/balances</loc>
-    <lastmod>2026-03-09T15:19:14.178Z</lastmod>
+    <lastmod>2026-06-11T08:56:09.951Z</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
   </url>
   <url>
     <loc>https://docs.genlayer.com/developers/intelligent-contracts/features/calling-llms</loc>
-    <lastmod>2026-03-09T15:19:14.178Z</lastmod>
+    <lastmod>2026-06-11T08:56:09.951Z</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
   </url>
   <url>
     <loc>https://docs.genlayer.com/developers/intelligent-contracts/features/debugging</loc>
-    <lastmod>2026-03-09T15:19:14.178Z</lastmod>
+    <lastmod>2026-06-11T08:56:09.951Z</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
   </url>
   <url>
     <loc>https://docs.genlayer.com/developers/intelligent-contracts/features/error-handling</loc>
-    <lastmod>2026-03-09T15:19:14.178Z</lastmod>
+    <lastmod>2026-06-11T08:56:09.951Z</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
   </url>
   <url>
-    <loc>https://docs.genlayer.com/developers/intelligent-contracts/features/features</loc>
-    <lastmod>2026-03-09T15:19:14.178Z</lastmod>
+    <loc>https://docs.genlayer.com/developers/intelligent-contracts/features/image-processing</loc>
+    <lastmod>2026-06-11T08:56:09.951Z</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
   </url>
   <url>
     <loc>https://docs.genlayer.com/developers/intelligent-contracts/features/interacting-with-evm-contracts</loc>
-    <lastmod>2026-03-09T15:19:14.178Z</lastmod>
+    <lastmod>2026-06-11T08:56:09.951Z</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
   </url>
   <url>
     <loc>https://docs.genlayer.com/developers/intelligent-contracts/features/interacting-with-intelligent-contracts</loc>
-    <lastmod>2026-03-09T15:19:14.178Z</lastmod>
+    <lastmod>2026-06-11T08:56:09.951Z</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.8</priority>
+  </url>
+  <url>
+    <loc>https://docs.genlayer.com/developers/intelligent-contracts/features/messages</loc>
+    <lastmod>2026-06-11T08:56:09.951Z</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
   </url>
   <url>
     <loc>https://docs.genlayer.com/developers/intelligent-contracts/features/non-determinism</loc>
-    <lastmod>2026-03-09T15:19:14.178Z</lastmod>
+    <lastmod>2026-06-11T08:56:09.951Z</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
   </url>
   <url>
     <loc>https://docs.genlayer.com/developers/intelligent-contracts/features/random</loc>
-    <lastmod>2026-03-09T15:19:14.178Z</lastmod>
+    <lastmod>2026-06-11T08:56:09.951Z</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
   </url>
   <url>
     <loc>https://docs.genlayer.com/developers/intelligent-contracts/features/special-methods</loc>
-    <lastmod>2026-03-09T15:19:14.178Z</lastmod>
+    <lastmod>2026-06-11T08:56:09.951Z</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
   </url>
   <url>
     <loc>https://docs.genlayer.com/developers/intelligent-contracts/features/storage</loc>
-    <lastmod>2026-03-09T15:19:14.178Z</lastmod>
+    <lastmod>2026-06-11T08:56:09.951Z</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.8</priority>
+  </url>
+  <url>
+    <loc>https://docs.genlayer.com/developers/intelligent-contracts/features/transaction-context</loc>
+    <lastmod>2026-06-11T08:56:09.951Z</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
   </url>
   <url>
     <loc>https://docs.genlayer.com/developers/intelligent-contracts/features/upgradability</loc>
-    <lastmod>2026-03-09T15:19:14.178Z</lastmod>
+    <lastmod>2026-06-11T08:56:09.951Z</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.8</priority>
+  </url>
+  <url>
+    <loc>https://docs.genlayer.com/developers/intelligent-contracts/features/value-transfers</loc>
+    <lastmod>2026-06-11T08:56:09.951Z</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
   </url>
   <url>
     <loc>https://docs.genlayer.com/developers/intelligent-contracts/features/vector-storage</loc>
-    <lastmod>2026-03-09T15:19:14.178Z</lastmod>
+    <lastmod>2026-06-11T08:56:09.951Z</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
   </url>
   <url>
     <loc>https://docs.genlayer.com/developers/intelligent-contracts/features/web-access</loc>
-    <lastmod>2026-03-09T15:19:14.178Z</lastmod>
+    <lastmod>2026-06-11T08:56:09.951Z</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.8</priority>
+  </url>
+  <url>
+    <loc>https://docs.genlayer.com/developers/intelligent-contracts/features</loc>
+    <lastmod>2026-06-11T08:56:09.951Z</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
   </url>
   <url>
     <loc>https://docs.genlayer.com/developers/intelligent-contracts/first-contract</loc>
-    <lastmod>2026-03-09T15:19:14.179Z</lastmod>
+    <lastmod>2026-06-11T08:56:09.951Z</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
   </url>
   <url>
     <loc>https://docs.genlayer.com/developers/intelligent-contracts/first-intelligent-contract</loc>
-    <lastmod>2026-03-09T15:19:14.179Z</lastmod>
+    <lastmod>2026-06-11T08:56:09.951Z</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
   </url>
   <url>
     <loc>https://docs.genlayer.com/developers/intelligent-contracts/ideas</loc>
-    <lastmod>2026-03-09T15:19:14.179Z</lastmod>
+    <lastmod>2026-06-11T08:56:09.951Z</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
   </url>
   <url>
     <loc>https://docs.genlayer.com/developers/intelligent-contracts/introduction</loc>
-    <lastmod>2026-03-09T15:19:14.179Z</lastmod>
+    <lastmod>2026-06-11T08:56:09.951Z</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
   </url>
   <url>
     <loc>https://docs.genlayer.com/developers/intelligent-contracts/security-and-best-practices/prompt-injection</loc>
-    <lastmod>2026-03-09T15:19:14.179Z</lastmod>
+    <lastmod>2026-06-11T08:56:09.951Z</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
   </url>
   <url>
     <loc>https://docs.genlayer.com/developers/intelligent-contracts/storage</loc>
-    <lastmod>2026-03-09T15:19:14.179Z</lastmod>
+    <lastmod>2026-06-11T08:56:09.951Z</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.8</priority>
+  </url>
+  <url>
+    <loc>https://docs.genlayer.com/developers/intelligent-contracts/testing</loc>
+    <lastmod>2026-06-11T08:56:09.951Z</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
   </url>
   <url>
     <loc>https://docs.genlayer.com/developers/intelligent-contracts/tooling-setup</loc>
-    <lastmod>2026-03-09T15:19:14.179Z</lastmod>
+    <lastmod>2026-06-11T08:56:09.951Z</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
   </url>
   <url>
     <loc>https://docs.genlayer.com/developers/intelligent-contracts/tools/genlayer-cli</loc>
-    <lastmod>2026-03-09T15:19:14.179Z</lastmod>
+    <lastmod>2026-06-11T08:56:09.951Z</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
   </url>
   <url>
     <loc>https://docs.genlayer.com/developers/intelligent-contracts/tools/genlayer-studio/advanced-features/custom-plugins</loc>
-    <lastmod>2026-03-09T15:19:14.180Z</lastmod>
+    <lastmod>2026-06-11T08:56:09.951Z</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
   </url>
   <url>
     <loc>https://docs.genlayer.com/developers/intelligent-contracts/tools/genlayer-studio/contract-state</loc>
-    <lastmod>2026-03-09T15:19:14.180Z</lastmod>
+    <lastmod>2026-06-11T08:56:09.951Z</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
   </url>
   <url>
     <loc>https://docs.genlayer.com/developers/intelligent-contracts/tools/genlayer-studio/deploying-contract</loc>
-    <lastmod>2026-03-09T15:19:14.180Z</lastmod>
+    <lastmod>2026-06-11T08:56:09.951Z</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
   </url>
   <url>
     <loc>https://docs.genlayer.com/developers/intelligent-contracts/tools/genlayer-studio/development-tips</loc>
-    <lastmod>2026-03-09T15:19:14.180Z</lastmod>
+    <lastmod>2026-06-11T08:56:09.951Z</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
   </url>
   <url>
     <loc>https://docs.genlayer.com/developers/intelligent-contracts/tools/genlayer-studio/execute-transaction</loc>
-    <lastmod>2026-03-09T15:19:14.180Z</lastmod>
+    <lastmod>2026-06-11T08:56:09.951Z</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
   </url>
   <url>
     <loc>https://docs.genlayer.com/developers/intelligent-contracts/tools/genlayer-studio/limitations</loc>
-    <lastmod>2026-03-09T15:19:14.180Z</lastmod>
+    <lastmod>2026-06-11T08:56:09.951Z</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
   </url>
   <url>
     <loc>https://docs.genlayer.com/developers/intelligent-contracts/tools/genlayer-studio/loading-contract</loc>
-    <lastmod>2026-03-09T15:19:14.180Z</lastmod>
+    <lastmod>2026-06-11T08:56:09.951Z</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
   </url>
   <url>
     <loc>https://docs.genlayer.com/developers/intelligent-contracts/tools/genlayer-studio/monitoring-node-logs</loc>
-    <lastmod>2026-03-09T15:19:14.180Z</lastmod>
+    <lastmod>2026-06-11T08:56:09.951Z</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
   </url>
   <url>
     <loc>https://docs.genlayer.com/developers/intelligent-contracts/tools/genlayer-studio/providers</loc>
-    <lastmod>2026-03-09T15:19:14.180Z</lastmod>
+    <lastmod>2026-06-11T08:56:09.951Z</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
   </url>
   <url>
     <loc>https://docs.genlayer.com/developers/intelligent-contracts/tools/genlayer-studio/reset-the-studio</loc>
-    <lastmod>2026-03-09T15:19:14.180Z</lastmod>
+    <lastmod>2026-06-11T08:56:09.951Z</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
   </url>
   <url>
     <loc>https://docs.genlayer.com/developers/intelligent-contracts/tools/genlayer-studio/troubleshooting</loc>
-    <lastmod>2026-03-09T15:19:14.180Z</lastmod>
+    <lastmod>2026-06-11T08:56:09.951Z</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
   </url>
   <url>
     <loc>https://docs.genlayer.com/developers/intelligent-contracts/tools/genlayer-studio/validators</loc>
-    <lastmod>2026-03-09T15:19:14.180Z</lastmod>
+    <lastmod>2026-06-11T08:56:09.951Z</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
   </url>
   <url>
     <loc>https://docs.genlayer.com/developers/intelligent-contracts/tools/genlayer-studio</loc>
-    <lastmod>2026-03-09T15:19:14.179Z</lastmod>
+    <lastmod>2026-06-11T08:56:09.951Z</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
   </url>
   <url>
     <loc>https://docs.genlayer.com/developers/intelligent-contracts/types/address</loc>
-    <lastmod>2026-03-09T15:19:14.180Z</lastmod>
+    <lastmod>2026-06-11T08:56:09.951Z</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
   </url>
   <url>
     <loc>https://docs.genlayer.com/developers/intelligent-contracts/types/collections</loc>
-    <lastmod>2026-03-09T15:19:14.180Z</lastmod>
+    <lastmod>2026-06-11T08:56:09.951Z</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
   </url>
   <url>
     <loc>https://docs.genlayer.com/developers/intelligent-contracts/types/dataclasses</loc>
-    <lastmod>2026-03-09T15:19:14.181Z</lastmod>
+    <lastmod>2026-06-11T08:56:09.951Z</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
   </url>
   <url>
     <loc>https://docs.genlayer.com/developers/intelligent-contracts/types/primitive</loc>
-    <lastmod>2026-03-09T15:19:14.181Z</lastmod>
+    <lastmod>2026-06-11T08:56:09.951Z</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.8</priority>
+  </url>
+  <url>
+    <loc>https://docs.genlayer.com/developers/intelligent-contracts/when-to-use-genlayer</loc>
+    <lastmod>2026-06-11T08:56:09.951Z</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.8</priority>
+  </url>
+  <url>
+    <loc>https://docs.genlayer.com/developers/networks</loc>
+    <lastmod>2026-06-11T08:56:09.951Z</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
   </url>
   <url>
     <loc>https://docs.genlayer.com/developers/staking-guide</loc>
-    <lastmod>2026-03-09T15:19:14.181Z</lastmod>
+    <lastmod>2026-06-11T08:56:09.951Z</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
   </url>
   <url>
     <loc>https://docs.genlayer.com/developers</loc>
-    <lastmod>2026-03-09T15:19:14.175Z</lastmod>
+    <lastmod>2026-06-11T08:56:09.951Z</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
   </url>
   <url>
     <loc>https://docs.genlayer.com/</loc>
-    <lastmod>2026-03-09T15:19:14.181Z</lastmod>
+    <lastmod>2026-06-11T08:56:09.951Z</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
   </url>
   <url>
     <loc>https://docs.genlayer.com/partners/chutes</loc>
-    <lastmod>2026-03-09T16:04:56.383Z</lastmod>
+    <lastmod>2026-06-11T08:56:09.951Z</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
   </url>
   <url>
     <loc>https://docs.genlayer.com/partners/comput3</loc>
-    <lastmod>2026-03-09T15:19:14.181Z</lastmod>
+    <lastmod>2026-06-11T08:56:09.951Z</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
   </url>
   <url>
     <loc>https://docs.genlayer.com/partners/genlayerlabs</loc>
-    <lastmod>2026-03-09T15:19:14.181Z</lastmod>
+    <lastmod>2026-06-11T08:56:09.951Z</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
   </url>
   <url>
     <loc>https://docs.genlayer.com/partners/heurist</loc>
-    <lastmod>2026-03-09T15:19:14.181Z</lastmod>
+    <lastmod>2026-06-11T08:56:09.951Z</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
   </url>
   <url>
     <loc>https://docs.genlayer.com/partners/ionet</loc>
-    <lastmod>2026-03-09T15:19:14.181Z</lastmod>
+    <lastmod>2026-06-11T08:56:09.951Z</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.8</priority>
+  </url>
+  <url>
+    <loc>https://docs.genlayer.com/partners/libertai</loc>
+    <lastmod>2026-06-11T08:56:09.951Z</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.8</priority>
+  </url>
+  <url>
+    <loc>https://docs.genlayer.com/partners/morpheus</loc>
+    <lastmod>2026-06-11T08:56:09.951Z</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
   </url>
   <url>
     <loc>https://docs.genlayer.com/understand-genlayer-protocol/core-concepts/accounts-and-addresses</loc>
-    <lastmod>2026-03-09T15:19:14.182Z</lastmod>
+    <lastmod>2026-06-11T08:56:09.951Z</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
   </url>
   <url>
     <loc>https://docs.genlayer.com/understand-genlayer-protocol/core-concepts/economic-model</loc>
-    <lastmod>2026-03-09T15:19:14.182Z</lastmod>
+    <lastmod>2026-06-11T08:56:09.951Z</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
   </url>
   <url>
     <loc>https://docs.genlayer.com/understand-genlayer-protocol/core-concepts/genvm</loc>
-    <lastmod>2026-03-09T15:19:14.182Z</lastmod>
+    <lastmod>2026-06-11T08:56:09.951Z</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
   </url>
   <url>
     <loc>https://docs.genlayer.com/understand-genlayer-protocol/core-concepts/large-language-model-llm-integration</loc>
-    <lastmod>2026-03-09T15:19:14.182Z</lastmod>
+    <lastmod>2026-06-11T08:56:09.951Z</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
   </url>
   <url>
     <loc>https://docs.genlayer.com/understand-genlayer-protocol/core-concepts/non-deterministic-operations-handling</loc>
-    <lastmod>2026-03-09T15:19:14.182Z</lastmod>
+    <lastmod>2026-06-11T08:56:09.951Z</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
   </url>
   <url>
     <loc>https://docs.genlayer.com/understand-genlayer-protocol/core-concepts/optimistic-democracy/appeal-process</loc>
-    <lastmod>2026-03-09T15:19:14.182Z</lastmod>
+    <lastmod>2026-06-11T08:56:09.951Z</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
   </url>
   <url>
     <loc>https://docs.genlayer.com/understand-genlayer-protocol/core-concepts/optimistic-democracy/equivalence-principle</loc>
-    <lastmod>2026-03-09T15:19:14.182Z</lastmod>
+    <lastmod>2026-06-11T08:56:09.951Z</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
   </url>
   <url>
     <loc>https://docs.genlayer.com/understand-genlayer-protocol/core-concepts/optimistic-democracy/finality</loc>
-    <lastmod>2026-03-09T15:19:14.182Z</lastmod>
+    <lastmod>2026-06-11T08:56:09.951Z</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
   </url>
   <url>
     <loc>https://docs.genlayer.com/understand-genlayer-protocol/core-concepts/optimistic-democracy/slashing</loc>
-    <lastmod>2026-03-09T15:19:14.182Z</lastmod>
+    <lastmod>2026-06-11T08:56:09.951Z</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
   </url>
   <url>
     <loc>https://docs.genlayer.com/understand-genlayer-protocol/core-concepts/optimistic-democracy/staking</loc>
-    <lastmod>2026-03-09T15:19:14.183Z</lastmod>
+    <lastmod>2026-06-11T08:56:09.951Z</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
   </url>
   <url>
     <loc>https://docs.genlayer.com/understand-genlayer-protocol/core-concepts/optimistic-democracy/unstaking</loc>
-    <lastmod>2026-03-09T15:19:14.183Z</lastmod>
+    <lastmod>2026-06-11T08:56:09.951Z</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
   </url>
   <url>
     <loc>https://docs.genlayer.com/understand-genlayer-protocol/core-concepts/optimistic-democracy</loc>
-    <lastmod>2026-03-09T15:19:14.182Z</lastmod>
+    <lastmod>2026-06-11T08:56:09.951Z</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
   </url>
   <url>
     <loc>https://docs.genlayer.com/understand-genlayer-protocol/core-concepts/rollup-integration</loc>
-    <lastmod>2026-03-09T15:19:14.183Z</lastmod>
+    <lastmod>2026-06-11T08:56:09.951Z</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
   </url>
   <url>
     <loc>https://docs.genlayer.com/understand-genlayer-protocol/core-concepts/transactions/transaction-encoding-serialization-and-signing</loc>
-    <lastmod>2026-03-09T15:19:14.183Z</lastmod>
+    <lastmod>2026-06-11T08:56:09.951Z</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
   </url>
   <url>
     <loc>https://docs.genlayer.com/understand-genlayer-protocol/core-concepts/transactions/transaction-execution</loc>
-    <lastmod>2026-03-09T15:19:14.183Z</lastmod>
+    <lastmod>2026-06-11T08:56:09.951Z</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
   </url>
   <url>
     <loc>https://docs.genlayer.com/understand-genlayer-protocol/core-concepts/transactions/transaction-statuses</loc>
-    <lastmod>2026-03-09T15:19:14.183Z</lastmod>
+    <lastmod>2026-06-11T08:56:09.951Z</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
   </url>
   <url>
     <loc>https://docs.genlayer.com/understand-genlayer-protocol/core-concepts/transactions/types-of-transactions</loc>
-    <lastmod>2026-03-09T15:19:14.183Z</lastmod>
+    <lastmod>2026-06-11T08:56:09.951Z</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
   </url>
   <url>
     <loc>https://docs.genlayer.com/understand-genlayer-protocol/core-concepts/transactions</loc>
-    <lastmod>2026-03-09T15:19:14.183Z</lastmod>
+    <lastmod>2026-06-11T08:56:09.951Z</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
   </url>
   <url>
     <loc>https://docs.genlayer.com/understand-genlayer-protocol/core-concepts/validators-and-validator-roles</loc>
-    <lastmod>2026-03-09T15:19:14.183Z</lastmod>
+    <lastmod>2026-06-11T08:56:09.951Z</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
   </url>
   <url>
     <loc>https://docs.genlayer.com/understand-genlayer-protocol/core-concepts/web-data-access</loc>
-    <lastmod>2026-03-09T15:19:14.183Z</lastmod>
+    <lastmod>2026-06-11T08:56:09.951Z</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
   </url>
   <url>
     <loc>https://docs.genlayer.com/understand-genlayer-protocol/core-concepts</loc>
-    <lastmod>2026-03-09T15:19:14.182Z</lastmod>
+    <lastmod>2026-06-11T08:56:09.951Z</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
   </url>
   <url>
     <loc>https://docs.genlayer.com/understand-genlayer-protocol/optimistic-democracy-how-genlayer-works</loc>
-    <lastmod>2026-03-09T15:19:14.183Z</lastmod>
+    <lastmod>2026-06-11T08:56:09.951Z</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
   </url>
   <url>
     <loc>https://docs.genlayer.com/understand-genlayer-protocol/typical-use-cases</loc>
-    <lastmod>2026-03-09T15:19:14.183Z</lastmod>
+    <lastmod>2026-06-11T08:56:09.951Z</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
   </url>
   <url>
     <loc>https://docs.genlayer.com/understand-genlayer-protocol/what-are-intelligent-contracts</loc>
-    <lastmod>2026-03-09T15:19:14.183Z</lastmod>
+    <lastmod>2026-06-11T08:56:09.951Z</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.8</priority>
+  </url>
+  <url>
+    <loc>https://docs.genlayer.com/understand-genlayer-protocol/what-is-genlayer</loc>
+    <lastmod>2026-06-11T08:56:09.951Z</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
   </url>
   <url>
     <loc>https://docs.genlayer.com/understand-genlayer-protocol/what-makes-genlayer-different</loc>
-    <lastmod>2026-03-09T15:19:14.184Z</lastmod>
+    <lastmod>2026-06-11T08:56:09.951Z</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
   </url>
   <url>
     <loc>https://docs.genlayer.com/understand-genlayer-protocol/who-is-genlayer-for</loc>
-    <lastmod>2026-03-09T15:19:14.184Z</lastmod>
+    <lastmod>2026-06-11T08:56:09.951Z</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
   </url>
   <url>
     <loc>https://docs.genlayer.com/understand-genlayer-protocol/why-we-are-building-genlayer</loc>
-    <lastmod>2026-03-09T15:19:14.184Z</lastmod>
+    <lastmod>2026-06-11T08:56:09.951Z</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
   </url>
   <url>
     <loc>https://docs.genlayer.com/understand-genlayer-protocol</loc>
-    <lastmod>2026-03-09T15:19:14.181Z</lastmod>
+    <lastmod>2026-06-11T08:56:09.951Z</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
   </url>
   <url>
     <loc>https://docs.genlayer.com/validators/changelog</loc>
-    <lastmod>2026-03-09T16:05:26.719Z</lastmod>
+    <lastmod>2026-06-11T08:56:09.951Z</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
   </url>
   <url>
     <loc>https://docs.genlayer.com/validators/genvm-configuration</loc>
-    <lastmod>2026-03-09T16:05:04.111Z</lastmod>
+    <lastmod>2026-06-11T08:56:09.951Z</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
   </url>
   <url>
     <loc>https://docs.genlayer.com/validators/monitoring</loc>
-    <lastmod>2026-03-09T15:19:14.184Z</lastmod>
+    <lastmod>2026-06-11T08:56:09.951Z</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
   </url>
   <url>
     <loc>https://docs.genlayer.com/validators/setup-guide</loc>
-    <lastmod>2026-03-09T16:05:27.399Z</lastmod>
+    <lastmod>2026-06-11T08:56:09.951Z</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
   </url>
   <url>
     <loc>https://docs.genlayer.com/validators/system-requirements</loc>
-    <lastmod>2026-03-09T15:19:14.184Z</lastmod>
+    <lastmod>2026-06-11T08:56:09.951Z</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
   </url>
   <url>
     <loc>https://docs.genlayer.com/validators/upgrade</loc>
-    <lastmod>2026-03-09T15:19:14.184Z</lastmod>
+    <lastmod>2026-06-11T08:56:09.951Z</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
   </url>

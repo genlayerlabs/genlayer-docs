@@ -54,7 +54,7 @@ const previousRedirects = [
   { old: "/build-with-genlayer/use-cases/llm-erc20", new: "/developers/intelligent-contracts/ideas" },
   {
     old: "/advanced-features/:page*",
-    new: "/developers/intelligent-contracts/advanced-features/:page*",
+    new: "/developers/intelligent-contracts/features/:page*",
   },
   { old: "/core-concepts/intelligent-contracts", new: "/developers/intelligent-contracts/introduction" },
   {
@@ -85,7 +85,7 @@ const actualRedirects = [
   },
   {
     old: "/build-with-genlayer/intelligent-contracts/advanced-features/:page*",
-    new: "/developers/intelligent-contracts/advanced-features/:page*",
+    new: "/developers/intelligent-contracts/features/:page*",
   },
   {
     old: "/build-with-genlayer/use-cases/:page*",
@@ -148,8 +148,16 @@ const actualRedirects = [
     new: "/developers/intelligent-contracts/examples/storage",
   },
   {
-    old: "/developers/intelligent-contracts/advanced-features",
-    new: "/developers/intelligent-contracts/advanced-features/contract-to-contract-interaction",
+    old: "/developers/intelligent-contracts/advanced-features/:page*",
+    new: "/developers/intelligent-contracts/features/:page*",
+  },
+  {
+    old: "/developers/intelligent-contracts/features/contract-to-contract-interaction",
+    new: "/developers/intelligent-contracts/features/interacting-with-intelligent-contracts",
+  },
+  {
+    old: "/developers/intelligent-contracts/features/features",
+    new: "/developers/intelligent-contracts/features",
   },
   {
     old: "/developers/intelligent-contracts/testing-and-debugging",
@@ -161,7 +169,7 @@ const actualRedirects = [
   },
   {
     old: "/developers/intelligent-contracts/error-handling",
-    new: "/developers/intelligent-contracts/advanced-features/error-handling",
+    new: "/developers/intelligent-contracts/features/error-handling",
   },
 ];
 

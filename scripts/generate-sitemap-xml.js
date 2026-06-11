@@ -6,12 +6,17 @@ function getMdxFiles(dir, fileList = []) {
   const files = fs.readdirSync(dir);
 
   files.forEach((file) => {
+    // Skip hidden pages/directories (_temp, _providers, _meta.json, etc.)
+    if (file.startsWith("_")) {
+      return;
+    }
+
     const filePath = path.join(dir, file);
     const stat = fs.statSync(filePath);
 
     if (stat.isDirectory()) {
       getMdxFiles(filePath, fileList);
-    } else if (file.endsWith(".mdx")) {
+    } else if (file.endsWith(".mdx") || file.endsWith(".md")) {
       fileList.push(filePath);
     }
   });
@@ -24,14 +29,14 @@ function getUrlFromPath(filePath, pagesDir) {
   // Get relative path from pages directory
   let relativePath = path.relative(pagesDir, filePath);
 
-  // Remove .mdx extension
-  relativePath = relativePath.replace(/\.mdx$/, "");
-
-  // Replace index with empty string (for root-level pages)
-  relativePath = relativePath === "index" ? "" : relativePath;
+  // Remove .mdx/.md extension
+  relativePath = relativePath.replace(/\.mdx?$/, "");
 
   // Convert Windows backslashes to forward slashes if needed
   relativePath = relativePath.split(path.sep).join("/");
+
+  // Strip index segments (pages/index.mdx -> /, pages/foo/index.mdx -> /foo)
+  relativePath = relativePath.replace(/(^|\/)index$/, "$1").replace(/\/$/, "");
 
   // Construct full URL (replace with your actual domain)
   return `https://docs.genlayer.com/${relativePath}`;
