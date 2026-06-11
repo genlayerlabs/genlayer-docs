@@ -1,13 +1,15 @@
+---
+description: "Your First Intelligent Contract shows how to use non-deterministic blocks, web rendering, and strict_eq in GenLayer."
+---
+
 # Your First **Intelligent** Contract
 
-Now is the time to utilize all the power of GenLayer!
-
-For blockchain integrity reasons, non-determinism must be contained within special non-deterministic blocks. Such blocks are regular Python functions with no arguments, which can return arbitrary values. However, there are some limitations:
+An Intelligent Contract in GenLayer can contain non-deterministic blocks: regular Python functions with no arguments that may return arbitrary values and must be invoked through `gl.eq_principle.*`. For blockchain integrity reasons, non-determinism must be contained within these special non-deterministic blocks, and the blocks have two important limitations:
 - Storage is inaccessible from non-deterministic blocks
 - State of the Python interpreter is not passed back to the deterministic code (for instance, you won't see changes in global variables)
 
 ### Simple Case
-To illustrate how it works, let's get a webpage as plain HTML, and verify that it has a link to the owner:
+To illustrate how non-deterministic blocks work, this example gets a webpage as plain HTML and verifies that it has a link to the owner:
 
 ```py
 example_web_address = 'https://example.org'
@@ -41,3 +43,4 @@ class Contract(gl.Contract):
             return 'iana' in web_data
         self.had_iana = gl.eq_principle.strict_eq(my_non_deterministic_block)
 ```
+

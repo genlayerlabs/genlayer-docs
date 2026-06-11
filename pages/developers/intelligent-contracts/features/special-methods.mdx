@@ -1,8 +1,13 @@
+---
+description: "Special Methods in Intelligent Contracts define GenVM fallback and receive handlers for unmatched calls and value transfers."
+---
+
 # Special Methods
+
+Special methods are the two methods allowed in each contract **definition** for handling undefined method calls and no-method value transfers: `__handle_undefined_method__` and `__receive__`. GenVM uses these methods when an unhandled message does not match any regular method.
 
 > For how these methods fit into value transfer flows, see [Value Transfers](/developers/intelligent-contracts/features/value-transfers#receiving-value-without-a-method-call).
 
-There are two special methods allowed in each contract **definition**:
 ```python
 class Contract(gl.Contract):
     @gl.public.write # .payable?
@@ -48,3 +53,4 @@ graph TD
     fallback_defined -->|yes| fallback2{{call __handle_undefined_method__}}
     fallback_defined -->|no| error2{{error}}
 ```
+

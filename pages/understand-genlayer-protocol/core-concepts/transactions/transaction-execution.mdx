@@ -1,7 +1,11 @@
-# Transaction execution
-Once a transaction is received and properly verified by the `eth_sendRawTransaction` method on the RPC server, it is stored with a PENDING status and its hash is returned as the RPC method response. This means that the transaction has been validated for authenticity and format, but it has not yet been executed. From this point, the transaction enters the GenLayer consensus mechanism, where it is picked up for execution by the network's validators according to the consensus rules.
+---
+description: "Transaction execution in GenLayer: how submitted transactions move from pending through validator consensus to finalization"
+---
 
-As the transaction progresses through various stages—such as proposing, committing, and revealing—its status is updated accordingly. Throughout this process, the current status and output of the transaction can be queried by the user. This is done by calling the `eth_getTransactionByHash` method on the RPC server, which retrieves the transaction's details based on its unique hash. This method allows users to track the transaction's journey from submission to finalization, providing transparency and ensuring that they can monitor the outcome of their transactions in real-time.
+# Transaction execution
+Transaction execution in GenLayer is the process that starts after `eth_sendRawTransaction` receives and verifies a transaction, stores it with a PENDING status, and returns its hash as the RPC response. At that point, the transaction has been validated for authenticity and format, but it has not yet been executed; it enters the GenLayer consensus mechanism, where the network's validators pick it up for execution according to the consensus rules.
+
+As the transaction progresses through stages such as proposing, committing, and revealing, its status is updated accordingly. Users can query the current status and output of the transaction by calling the `eth_getTransactionByHash` method on the RPC server, which retrieves the transaction's details based on its unique hash. This method lets users track the transaction's journey from submission to finalization, providing transparency and helping them monitor transaction outcomes in real time.
 
 ## Transaction Status Transitions
 

@@ -1,0 +1,16 @@
+{
+  "type": "object",
+  "properties": {
+    "approved": {
+      "type": "boolean",
+      "description": "True only if the revision is factually faithful to the original, uses canonical GenLayer terminology, and reads as documentation (not marketing)"
+    },
+    "issues": {
+      "type": "array",
+      "items": { "type": "string" },
+      "description": "Specific problems found; empty when approved"
+    }
+  },
+  "required": ["approved", "issues"],
+  "additionalProperties": false
+}

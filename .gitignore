@@ -14,4 +14,4 @@ public/**/*.md
 .claude/settings.local.json
 playwright-report/
 test-results/
-blob-report/
+blob-report/scripts/retrofit/retrofit-log.json

@@ -1,8 +1,11 @@
+---
+description: "Transaction Context exposes GenVM transaction metadata, caller addresses, GEN value, chain ID, and deterministic timestamps."
+---
 import { Callout } from "nextra-theme-docs";
 
 # Transaction Context
 
-Every contract execution has access to information about the transaction that triggered it — caller addresses, value, chain ID, and the transaction **timestamp** (datetime). This page covers how to read the current time, get a Unix timestamp, access caller and tx metadata, and what is *not* exposed (block number, gas, wall-clock).
+Transaction Context is the GenVM execution metadata available to every Intelligent Contract execution, including caller addresses, value, chain ID, and the transaction **timestamp** (datetime). This page explains how to read the current transaction time, derive a Unix timestamp, access caller and transaction metadata, and understand what is *not* exposed, including block number, gas, and host wall-clock time.
 
 ## `gl.message` — typed accessors
 

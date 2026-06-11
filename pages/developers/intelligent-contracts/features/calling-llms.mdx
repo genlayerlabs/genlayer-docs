@@ -1,6 +1,11 @@
+---
+description: "Calling LLMs in Intelligent Contracts with exec_prompt, JSON responses, image inputs, validation, parsing, and error handling"
+---
 import { Callout } from 'nextra-theme-docs'
 
 # Calling LLMs
+
+Calling LLMs in Intelligent Contracts uses `gl.nondet.exec_prompt` to execute prompts, request JSON responses, process image inputs, and return model output through `run_nondet_unsafe` with custom validation. Because LLM outputs are non-deterministic, validators should check response structure, validity, and error behavior instead of requiring exact equality.
 
 ## Basic LLM Calls
 
