@@ -2,7 +2,7 @@
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
   <url>
     <loc>https://docs.genlayer.com/FAQ</loc>
-    <lastmod>2026-06-11T08:56:09.941Z</lastmod>
+    <lastmod>2026-06-11T09:55:08.097Z</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
   </url>
@@ -566,7 +566,7 @@
   </url>
   <url>
     <loc>https://docs.genlayer.com/api-references</loc>
-    <lastmod>2026-06-11T08:56:09.941Z</lastmod>
+    <lastmod>2026-06-11T09:55:09.890Z</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
   </url>
@@ -842,7 +842,7 @@
   </url>
   <url>
     <loc>https://docs.genlayer.com/developers/intelligent-contracts/first-contract</loc>
-    <lastmod>2026-06-11T08:56:09.951Z</lastmod>
+    <lastmod>2026-06-11T09:54:48.712Z</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
   </url>
@@ -860,7 +860,7 @@
   </url>
   <url>
     <loc>https://docs.genlayer.com/developers/intelligent-contracts/introduction</loc>
-    <lastmod>2026-06-11T08:56:09.951Z</lastmod>
+    <lastmod>2026-06-11T09:54:48.712Z</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
   </url>
@@ -884,7 +884,7 @@
   </url>
   <url>
     <loc>https://docs.genlayer.com/developers/intelligent-contracts/tooling-setup</loc>
-    <lastmod>2026-06-11T08:56:09.951Z</lastmod>
+    <lastmod>2026-06-11T09:54:48.712Z</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
   </url>
@@ -1004,7 +1004,7 @@
   </url>
   <url>
     <loc>https://docs.genlayer.com/developers/networks</loc>
-    <lastmod>2026-06-11T08:56:09.951Z</lastmod>
+    <lastmod>2026-06-11T09:54:48.722Z</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
   </url>
@@ -1016,13 +1016,13 @@
   </url>
   <url>
     <loc>https://docs.genlayer.com/developers</loc>
-    <lastmod>2026-06-11T08:56:09.951Z</lastmod>
+    <lastmod>2026-06-11T09:54:48.702Z</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
   </url>
   <url>
     <loc>https://docs.genlayer.com/</loc>
-    <lastmod>2026-06-11T08:56:09.951Z</lastmod>
+    <lastmod>2026-06-11T09:55:06.442Z</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
   </url>
@@ -1040,7 +1040,7 @@
   </url>
   <url>
     <loc>https://docs.genlayer.com/partners/genlayerlabs</loc>
-    <lastmod>2026-06-11T08:56:09.951Z</lastmod>
+    <lastmod>2026-06-11T09:54:04.245Z</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
   </url>
@@ -1106,7 +1106,7 @@
   </url>
   <url>
     <loc>https://docs.genlayer.com/understand-genlayer-protocol/core-concepts/optimistic-democracy/equivalence-principle</loc>
-    <lastmod>2026-06-11T08:56:09.951Z</lastmod>
+    <lastmod>2026-06-11T09:54:48.712Z</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
   </url>
@@ -1148,13 +1148,13 @@
   </url>
   <url>
     <loc>https://docs.genlayer.com/understand-genlayer-protocol/core-concepts/transactions/transaction-encoding-serialization-and-signing</loc>
-    <lastmod>2026-06-11T08:56:09.951Z</lastmod>
+    <lastmod>2026-06-11T09:54:04.245Z</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
   </url>
   <url>
     <loc>https://docs.genlayer.com/understand-genlayer-protocol/core-concepts/transactions/transaction-execution</loc>
-    <lastmod>2026-06-11T08:56:09.951Z</lastmod>
+    <lastmod>2026-06-11T09:54:04.245Z</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
   </url>
@@ -1214,7 +1214,7 @@
   </url>
   <url>
     <loc>https://docs.genlayer.com/understand-genlayer-protocol/what-is-genlayer</loc>
-    <lastmod>2026-06-11T08:56:09.951Z</lastmod>
+    <lastmod>2026-06-11T09:54:48.712Z</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
   </url>
@@ -1262,7 +1262,7 @@
   </url>
   <url>
     <loc>https://docs.genlayer.com/validators/setup-guide</loc>
-    <lastmod>2026-06-11T08:56:09.951Z</lastmod>
+    <lastmod>2026-06-11T09:54:48.722Z</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
   </url>

@@ -1,5 +1,6 @@
 const fs = require('fs');
 const path = require('path');
+const { execFileSync } = require('child_process');
 
 const DOMAIN = 'https://docs.genlayer.com';
 
@@ -81,14 +82,25 @@ function collectPages(baseDir) {
   return pages;
 }
 
-function urlForPage(filePath, pagesDir) {
+function routeForPage(filePath, pagesDir) {
   let route = path
     .relative(pagesDir, filePath)
     .replace(/\.mdx?$/, '')
     .split(path.sep)
     .join('/');
-  route = route.replace(/(^|\/)index$/, '$1').replace(/\/$/, '');
-  return route ? `${DOMAIN}/${route}` : DOMAIN;
+  return route.replace(/(^|\/)index$/, '$1').replace(/\/$/, '');
+}
+
+// Minimal flat-YAML frontmatter parser (string values only)
+function parseFrontmatter(raw) {
+  const match = raw.match(/^---\n([\s\S]*?)\n---\n/);
+  if (!match) return { data: {}, content: raw };
+  const data = {};
+  for (const line of match[1].split('\n')) {
+    const kv = line.match(/^(\w[\w-]*):\s*(.*)$/);
+    if (kv) data[kv[1]] = kv[2].replace(/^["']|["']$/g, '').trim();
+  }
+  return { data, content: raw.slice(match[0].length) };
 }
 
 function parseAttributes(attrString) {
@@ -185,9 +197,6 @@ function transformJsxSegment(text) {
 
 // Apply JSX-to-markdown transforms outside fenced code blocks only
 function cleanMdxContent(content) {
-  // Strip frontmatter
-  content = content.replace(/^---\n[\s\S]*?\n---\n/, '');
-
   content = transformBlockJsx(content);
 
   const segments = content.split(/(```[\s\S]*?```|~~~[\s\S]*?~~~)/g);
@@ -199,21 +208,164 @@ function cleanMdxContent(content) {
   return cleaned.replace(/\n{3,}/g, '\n\n').trim();
 }
 
-// Prefix each page with its canonical URL so agents can cite/return to it,
-// and guarantee an H1 so pages chunk cleanly.
-function formatPage({ filePath, title }, pagesDir) {
-  const raw = fs.readFileSync(filePath, 'utf8');
-  const content = cleanMdxContent(raw);
-  const url = urlForPage(filePath, pagesDir);
-
-  const lines = content.split('\n');
-  const h1Index = lines.findIndex(line => /^#\s/.test(line));
-
-  if (h1Index !== -1) {
-    lines.splice(h1Index + 1, 0, `Source: ${url}`);
-    return lines.join('\n');
+// First plain-text paragraph after the H1, for use as a link description
+function extractDescription(markdown) {
+  for (const line of markdown.split('\n')) {
+    const trimmed = line.trim();
+    if (!trimmed) continue;
+    if (/^(#|!\[|>|```|\||-|\*|\d+\.|<)/.test(trimmed)) continue;
+    // Strip markdown links/emphasis, keep the text
+    let text = trimmed
+      .replace(/\[([^\]]*)\]\([^)]*\)/g, '$1')
+      .replace(/[*_`]/g, '')
+      .trim();
+    if (text.length < 20) continue;
+    if (text.length > 160) {
+      text = text.slice(0, 160).replace(/\s+\S*$/, '') + '…';
+    }
+    return text;
   }
-  return `# ${title}\nSource: ${url}\n\n${content}`;
+  return '';
+}
+
+// Map of file -> last commit date, built from a single git log pass
+function buildGitDates(pagesDir) {
+  const dates = {};
+  try {
+    const output = execFileSync('git', ['log', '--format=%cI', '--name-only', '--', 'pages'], {
+      cwd: process.cwd(),
+      encoding: 'utf8',
+      maxBuffer: 64 * 1024 * 1024,
+    });
+    let currentDate = null;
+    for (const line of output.split('\n')) {
+      if (/^\d{4}-\d{2}-\d{2}T/.test(line)) {
+        currentDate = line.trim();
+      } else if (line.startsWith('pages/') && currentDate && !(line in dates)) {
+        dates[path.join(process.cwd(), line)] = currentDate.slice(0, 10);
+      }
+    }
+  } catch (e) {
+    // git unavailable (e.g. some CI environments) — fall back to mtime below
+  }
+  return dates;
+}
+
+function preparePage(page, pagesDir, gitDates) {
+  const raw = fs.readFileSync(page.filePath, 'utf8');
+  const { data: frontmatter, content } = parseFrontmatter(raw);
+  let markdown = cleanMdxContent(content);
+
+  const route = routeForPage(page.filePath, pagesDir);
+  const url = route ? `${DOMAIN}/${route}` : DOMAIN;
+
+  const lines = markdown.split('\n');
+  const h1Index = lines.findIndex(line => /^#\s/.test(line));
+  const title =
+    frontmatter.title || (h1Index !== -1 ? lines[h1Index].replace(/^#\s*/, '').trim() : page.title);
+  if (h1Index === -1) {
+    markdown = `# ${title}\n\n${markdown}`;
+  }
+
+  const description = frontmatter.description || extractDescription(markdown);
+  const lastUpdated =
+    gitDates[page.filePath] ||
+    new Date(fs.statSync(page.filePath).mtime).toISOString().slice(0, 10);
+
+  return {
+    route,
+    url,
+    title,
+    description,
+    lastUpdated,
+    markdown,
+    section: route.includes('/') ? route.split('/')[0] : route || 'index',
+  };
+}
+
+// One concatenated-export entry: H1, then Source: URL, then body
+function fullDocsEntry(page) {
+  const lines = page.markdown.split('\n');
+  const h1Index = lines.findIndex(line => /^#\s/.test(line));
+  lines.splice(h1Index + 1, 0, `Source: ${page.url}`);
+  return lines.join('\n');
+}
+
+function writePageMirrors(pages, outputDir) {
+  for (const page of pages) {
+    const relPath = page.route ? `${page.route}.md` : 'index.md';
+    const outPath = path.join(outputDir, relPath);
+    fs.mkdirSync(path.dirname(outPath), { recursive: true });
+    const frontmatter = [
+      '---',
+      `title: "${page.title.replace(/"/g, "'")}"`,
+      page.description ? `description: "${page.description.replace(/"/g, "'")}"` : null,
+      `source: ${page.url}`,
+      `last_updated: ${page.lastUpdated}`,
+      '---',
+    ]
+      .filter(Boolean)
+      .join('\n');
+    fs.writeFileSync(outPath, `${frontmatter}\n\n${page.markdown}\n`);
+  }
+}
+
+const LLMS_TXT_PREAMBLE = `# GenLayer Documentation
+
+> GenLayer is the first Intelligent Blockchain — a DLT capable of nondeterministic operations through dynamic consensus, enabling smart contracts ("Intelligent Contracts", written in Python) to natively access the Internet, call LLMs, and make subjective decisions. Consensus over nondeterministic results is reached through Optimistic Democracy and the Equivalence Principle.
+
+Instructions for AI agents and LLMs:
+
+- Every page below links to its raw markdown version. You can also append \`.md\` to any docs URL (e.g. ${DOMAIN}/developers/intelligent-contracts/introduction.md).
+- The complete documentation in a single file: ${DOMAIN}/llms-full.txt. Section-scoped bundles: ${DOMAIN}/understand-genlayer-protocol/llms-full.txt, ${DOMAIN}/developers/llms-full.txt, ${DOMAIN}/validators/llms-full.txt, ${DOMAIN}/api-references/llms-full.txt.
+- To build Intelligent Contracts or run a validator with AI assistance, install the GenLayer Skills plugin for Claude Code: https://skills.genlayer.com/
+- Key entry points: "What is GenLayer" for concepts, "Your First Contract" for development, "Setup Guide" for validators, "GenLayerJS" for dApps.
+`;
+
+function generateLlmsTxt(pages, rootMeta) {
+  const sectionTitles = {};
+  for (const key of Object.keys(rootMeta)) {
+    const value = rootMeta[key];
+    if (value && typeof value === 'object' && value.href) continue;
+    sectionTitles[key] = typeof value === 'string' ? value : (value && value.title) || key;
+  }
+
+  const optionalSections = new Set(['partners']);
+  const groups = new Map();
+  for (const page of pages) {
+    const key = page.route.includes('/') ? page.route.split('/')[0] : page.route || 'index';
+    const groupKey = sectionTitles[key] ? key : 'index';
+    if (!groups.has(groupKey)) groups.set(groupKey, []);
+    groups.get(groupKey).push(page);
+  }
+
+  let output = LLMS_TXT_PREAMBLE;
+
+  const orderedKeys = Object.keys(sectionTitles).filter(key => groups.has(key));
+  for (const key of orderedKeys) {
+    if (optionalSections.has(key)) continue;
+    const heading = key === 'index' ? 'Overview' : sectionTitles[key];
+    output += `\n## ${heading}\n\n`;
+    for (const page of groups.get(key)) {
+      const mdUrl = page.route ? `${DOMAIN}/${page.route}.md` : `${DOMAIN}/index.md`;
+      output += page.description
+        ? `- [${page.title}](${mdUrl}): ${page.description}\n`
+        : `- [${page.title}](${mdUrl})\n`;
+    }
+  }
+
+  output += `\n## Optional\n\n`;
+  for (const key of orderedKeys) {
+    if (!optionalSections.has(key)) continue;
+    for (const page of groups.get(key)) {
+      const mdUrl = `${DOMAIN}/${page.route}.md`;
+      output += page.description
+        ? `- [${page.title}](${mdUrl}): ${page.description}\n`
+        : `- [${page.title}](${mdUrl})\n`;
+    }
+  }
+
+  return output;
 }
 
 // Main function
@@ -226,15 +378,50 @@ function generateFullDocs() {
     fs.mkdirSync(outputDir);
   }
 
-  const pages = collectPages(pagesDir).filter(page => {
-    // Skip tiny "This page has moved" redirect stubs kept for SEO
-    const raw = fs.readFileSync(page.filePath, 'utf8');
-    return !(raw.length < 500 && /This page has moved/i.test(raw));
-  });
-  const fullContent = pages.map(page => formatPage(page, pagesDir)).join('\n\n---\n\n');
+  const gitDates = buildGitDates(pagesDir);
+  const pages = collectPages(pagesDir)
+    .filter(page => {
+      // Skip tiny "This page has moved" redirect stubs kept for SEO
+      const raw = fs.readFileSync(page.filePath, 'utf8');
+      return !(raw.length < 500 && /This page has moved/i.test(raw));
+    })
+    .map(page => preparePage(page, pagesDir, gitDates));
 
-  fs.writeFileSync(path.join(outputDir, 'full-documentation.txt'), fullContent + '\n');
-  console.log(`generate-full-docs: wrote ${pages.length} pages to public/full-documentation.txt`);
+  // 1. Single-file concatenated export (legacy name + llms-full.txt)
+  const fullContent = pages.map(fullDocsEntry).join('\n\n---\n\n') + '\n';
+  fs.writeFileSync(path.join(outputDir, 'full-documentation.txt'), fullContent);
+  const llmsFullPath = path.join(outputDir, 'llms-full.txt');
+  if (fs.existsSync(llmsFullPath) && fs.lstatSync(llmsFullPath).isSymbolicLink()) {
+    fs.unlinkSync(llmsFullPath);
+  }
+  fs.writeFileSync(llmsFullPath, fullContent);
+
+  // 2. Section-scoped bundles (kept well under a single context window)
+  const sections = ['understand-genlayer-protocol', 'developers', 'validators', 'api-references'];
+  for (const section of sections) {
+    const sectionPages = pages.filter(
+      page => page.route === section || page.route.startsWith(`${section}/`)
+    );
+    if (!sectionPages.length) continue;
+    const sectionDir = path.join(outputDir, section);
+    fs.mkdirSync(sectionDir, { recursive: true });
+    fs.writeFileSync(
+      path.join(sectionDir, 'llms-full.txt'),
+      sectionPages.map(fullDocsEntry).join('\n\n---\n\n') + '\n'
+    );
+  }
+
+  // 3. Per-page markdown mirrors (served at <page-url>.md)
+  writePageMirrors(pages, outputDir);
+
+  // 4. llms.txt index
+  const rootMeta = parseMetaJson(pagesDir) || {};
+  fs.writeFileSync(path.join(outputDir, 'llms.txt'), generateLlmsTxt(pages, rootMeta));
+
+  console.log(
+    `generate-full-docs: ${pages.length} pages -> full-documentation.txt, llms-full.txt, ` +
+      `${sections.length} section bundles, per-page .md mirrors, llms.txt`
+  );
 }
 
 generateFullDocs();

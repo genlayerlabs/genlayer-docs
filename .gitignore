@@ -2,7 +2,12 @@
 .next
 node_modules
 pnpm-lock.yaml
+# Generated LLM exports (see scripts/generate-full-docs.js)
 public/full-documentation.txt
+public/llms.txt
+public/llms-full.txt
+public/**/llms-full.txt
+public/**/*.md
 .specstory/
 # SpecStory explanation file
 .specstory/.what-is-this.md
