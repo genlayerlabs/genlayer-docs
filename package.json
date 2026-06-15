@@ -38,7 +38,7 @@
   },
   "devDependencies": {
     "@napi-rs/simple-git": "^0.1.22",
-    "@playwright/test": "^1.55.0",
+    "@playwright/test": "^1.61.0",
     "@types/node": "22.10.1",
     "typescript": "^5.0.0"
   },
