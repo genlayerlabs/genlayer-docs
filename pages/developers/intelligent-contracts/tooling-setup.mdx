@@ -346,6 +346,15 @@ claude mcp add genlayer-docs --transport sse https://docs-mcp.genlayer.com/sse
 
 This is a hosted service — no local setup required. It provides a `search_docs` tool that searches across both the [GenLayer documentation](https://docs.genlayer.com) and the [GenLayer SDK reference](https://sdk.genlayer.com). Compatible with any MCP client (Claude Code, Cursor, Windsurf, etc.).
 
+<Callout emoji="🩺">
+  **Verify the hosted Docs MCP before relying on it.** Run
+  `curl -I https://docs-mcp.genlayer.com/sse` and expect a non-5xx response from the
+  hosted service. If the endpoint returns `502` or another `5xx`, the hosted Docs MCP
+  is temporarily unavailable; retry later and use [docs.genlayer.com](https://docs.genlayer.com),
+  the [SDK reference](https://sdk.genlayer.com), or the GenLayer Skills plugin as the fallback
+  source for agent context.
+</Callout>
+
 The boilerplate also includes a `CLAUDE.md` file pre-configured with commands, architecture context, and testing patterns — so agents understand the project structure immediately.
 
 ## Frontend Development
