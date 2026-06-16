@@ -1,0 +1,313 @@
+# Fee Profiling and Estimation
+
+Fee profiling is how a GenLayer app turns contract tests into reusable fee suggestions. The output is a JSON file, usually `frontend/fee-profile.json` or `fee-profile.json`, that any submission path can use when it estimates a deploy or write transaction.
+
+The profile is not a live simulation result. It is a checked-in artifact generated from representative tests. Prices and caps are still read live at transaction time.
+
+`@genlayer/transaction-kit` can consume the profile directly for frontend flows. If you are building a CLI, backend worker, Python script or custom JS app without transaction-kit, use the same profile values as inputs to `estimateTransactionFees` / `estimate_transaction_fees`, then submit the returned `distribution` and `feeValue`.
+
+## Why profiles exist
+
+GenLayer transactions can take different paths:
+
+- a method may or may not emit messages
+- a method may make different LLM or web calls depending on state
+- a child transaction may terminate early or run through an expensive branch
+- appeals and rotations change the amount of consensus work that must be funded
+- storage, receipt and rollup writes vary with output size
+
+Simulating all of that before every user action would be too slow. Instead, the developer measures the important branches during tests, commits the maximum observed requirements and lets the app quote from that profile.
+
+## How methods are aggregated
+
+Profiles are keyed by contract method name, not by pytest test name and not by arguments.
+
+If five tests call `register_and_claim`, all five observations are merged into one `methods.register_and_claim` entry. For each field, the profiler keeps the maximum value observed across the whole run, then applies headroom to fee and time-unit values.
+
+Example:
+
+| Test path | Execution budget | Message fees | Rotations |
+| --- | ---: | ---: | ---: |
+| user already registered, no referral message | 600 | 0 | 0 |
+| new user, emits referral message | 200 | 800 | 1 |
+
+The generated profile uses:
+
+```json
+{
+  "methods": {
+    "register_and_claim": {
+      "executionBudgetPerRound": "600",
+      "totalMessageFees": "800",
+      "rotationsPerRound": "1"
+    }
+  }
+}
+```
+
+That combined entry may not describe a single historical transaction. It is intentionally conservative: it is the union of the worst observed components for that method. This is the right default for app safety because a user can usually trigger any branch that the method allows.
+
+If your app can prove a specific user flow cannot hit the expensive branch, use an explicit override for that flow. Keep the committed profile conservative.
+
+## What to measure
+
+Measure scenarios, not just methods. A good profile suite covers:
+
+- deploy, if the app lets users deploy contracts
+- the cheapest successful path
+- the most expensive normal path
+- every branch that emits a different message set
+- every branch that changes storage or receipt size materially
+- every branch where child transactions can run different paths
+- expected failure/revert paths, if users can trigger them and they consume fees
+
+For a Rally-style contract, that means tests for paths such as:
+
+- user already registered, no referral message
+- user not registered, referral message emitted
+- main transaction passes and emits the shard message
+- main transaction fails before the shard message
+- shard transaction terminates early
+- shard transaction reaches the expensive branch
+
+The parent method profile should include the worst observed `totalMessageFees` across these paths. If the parent emits child transactions, the message fee budget must be large enough for the worst child path that the parent can create.
+
+## Generate the profile
+
+Create a script in the app repository so developers do not have to remember the exact command:
+
+```jsonc
+{
+  "scripts": {
+    "test:fees": "python3 -m pytest tests/integration/test_football_bets.py::test_fee_profile_create_bet --fee-profile frontend/fee-profile.json -v -s"
+  }
+}
+```
+
+Run it against a fee-reporting Studio or network:
+
+```bash
+npm run test:fees -- --rpc-url http://127.0.0.1:4000/api
+```
+
+The underlying mechanism is a pytest option provided by `gltest`:
+
+```bash
+python3 -m pytest tests/integration --fee-profile frontend/fee-profile.json
+```
+
+Use `--fee-profile-headroom` to adjust the multiplier:
+
+```bash
+python3 -m pytest tests/integration \
+  --fee-profile frontend/fee-profile.json \
+  --fee-profile-headroom 1.5
+```
+
+The default headroom is `1.25`.
+
+## Wait for finalized receipts
+
+Profile tests should wait for finalized receipts:
+
+```python
+receipt = contract.create_bet(args=["2024-06-20", "Spain", "Italy", "1"]).transact(
+    fees=transaction_fee_preset(),
+    wait_until="finalized",
+)
+```
+
+Earlier statuses can prove that validators accepted a transaction before all fee accounting and refunds are settled. Finalized receipts are the reliable source for the profile.
+
+## Submit the profiling transaction
+
+The measured transaction itself still needs a fee preset. In local Studio runs, use a trusted developer preset sized from the active fee policy:
+
+```python
+from gltest.clients import get_gl_client
+
+FEE_ESTIMATE_OPTIONS = {
+    "leaderTimeunitsAllocation": 100,
+    "validatorTimeunitsAllocation": 200,
+    "totalMessageFees": 0,
+    "rotations": [1],
+}
+
+def transaction_fee_preset():
+    estimate = get_gl_client().estimate_transaction_fees(FEE_ESTIMATE_OPTIONS)
+    return {
+        "distribution": estimate["distribution"],
+        "feeValue": estimate["feeValue"],
+    }
+```
+
+Use that preset on deploys and writes:
+
+```python
+contract = factory.deploy(fees=transaction_fee_preset(), wait_until="finalized")
+
+receipt = contract.create_bet(args=["2024-06-20", "Spain", "Italy", "1"]).transact(
+    fees=transaction_fee_preset(),
+    wait_until="finalized",
+)
+```
+
+For message-producing scenarios, increase `totalMessageFees` in the profiling preset so the emitted child transactions have enough budget. The generated profile records the observed message budget from the finalized receipt. If no message-producing path is measured, that method will recommend a zero message budget.
+
+## Profile shape
+
+A generated profile looks like this:
+
+```json
+{
+  "version": 1,
+  "network": "localnet",
+  "measuredAt": "2026-06-15T17:26:36Z",
+  "deploy": {
+    "leaderTimeunitsAllocation": "125",
+    "validatorTimeunitsAllocation": "250",
+    "executionBudgetPerRound": "786434",
+    "totalMessageFees": "0",
+    "rotationsPerRound": "1"
+  },
+  "methods": {
+    "create_bet": {
+      "leaderTimeunitsAllocation": "125",
+      "validatorTimeunitsAllocation": "250",
+      "executionBudgetPerRound": "786297",
+      "totalMessageFees": "0",
+      "rotationsPerRound": "1"
+    }
+  }
+}
+```
+
+| Field | Meaning |
+| --- | --- |
+| `leaderTimeunitsAllocation` | Suggested leader time units for the method or deploy. |
+| `validatorTimeunitsAllocation` | Suggested validator time units for the method or deploy. |
+| `executionBudgetPerRound` | Budget for receipt, storage and rollup writes per leader round. |
+| `totalMessageFees` | Budget for child transactions emitted by the contract. |
+| `rotationsPerRound` | Suggested rotations per leader round. This is recorded exactly, not multiplied by headroom. |
+
+The profile intentionally does not contain `feeValue` or live price caps. Those are quoted from the current network fee policy when the user is about to sign.
+
+## Use the profile in transaction-kit
+
+For frontend flows, commit the profile next to the frontend and pass it to the kit:
+
+```typescript
+import feeProfile from './fee-profile.json';
+
+const kit = createTransactionKit({
+  chain,
+  provider,
+  account,
+  suggestions: feeProfile,
+});
+```
+
+When a transaction matches a profile entry, the quote source is `developer`. Methods without a matching entry fall back to network defaults.
+
+## Use the profile with genlayer-js
+
+Without transaction-kit, load the profile yourself, select the deploy or method entry, convert `rotationsPerRound` into the `rotations` array for the appeal posture you want, then estimate from live prices:
+
+```typescript
+import feeProfile from './fee-profile.json';
+
+const methodProfile = feeProfile.methods.create_bet;
+const appealRounds = 1n;
+const rotationsPerRound = BigInt(methodProfile.rotationsPerRound ?? '0');
+
+const estimate = await client.estimateTransactionFees({
+  leaderTimeunitsAllocation: BigInt(methodProfile.leaderTimeunitsAllocation),
+  validatorTimeunitsAllocation: BigInt(methodProfile.validatorTimeunitsAllocation),
+  executionBudgetPerRound: BigInt(methodProfile.executionBudgetPerRound),
+  totalMessageFees: BigInt(methodProfile.totalMessageFees ?? '0'),
+  appealRounds,
+  rotations: Array.from(
+    { length: Number(appealRounds) + 1 },
+    () => rotationsPerRound,
+  ),
+});
+
+await client.writeContract({
+  address: contract,
+  functionName: 'create_bet',
+  args: ['2024-06-20', 'Spain', 'Italy', '1'],
+  fees: {
+    distribution: estimate.distribution,
+    feeValue: estimate.feeValue,
+  },
+});
+```
+
+## Use the profile with genlayer-py
+
+Python follows the same shape:
+
+```python
+import json
+
+with open("fee-profile.json", encoding="utf-8") as f:
+    fee_profile = json.load(f)
+
+method_profile = fee_profile["methods"]["create_bet"]
+appeal_rounds = 1
+rotations_per_round = int(method_profile.get("rotationsPerRound", "0"))
+
+estimate = client.estimate_transaction_fees(
+    {
+        "leaderTimeunitsAllocation": int(method_profile["leaderTimeunitsAllocation"]),
+        "validatorTimeunitsAllocation": int(method_profile["validatorTimeunitsAllocation"]),
+        "executionBudgetPerRound": int(method_profile["executionBudgetPerRound"]),
+        "totalMessageFees": int(method_profile.get("totalMessageFees", "0")),
+        "appealRounds": appeal_rounds,
+        "rotations": [rotations_per_round] * (appeal_rounds + 1),
+    }
+)
+
+tx_hash = client.write_contract(
+    account=account,
+    address=contract_address,
+    function_name="create_bet",
+    args=["2024-06-20", "Spain", "Italy", "1"],
+    fees={
+        "distribution": estimate["distribution"],
+        "feeValue": estimate["feeValue"],
+    },
+)
+```
+
+## Use the profile with the CLI
+
+The CLI accepts fee estimate options as JSON. Extract the method profile and pass the same fields to `estimate-fees`:
+
+```bash
+genlayer estimate-fees \
+  --json \
+  --fees '{"leaderTimeunitsAllocation":"125","validatorTimeunitsAllocation":"250","executionBudgetPerRound":"786297","totalMessageFees":"0","appealRounds":"1","rotations":["1","1"]}'
+```
+
+Then pass the printed transaction fee object to `genlayer write` or `genlayer deploy`:
+
+```bash
+genlayer write 0x123456789abcdef create_bet \
+  --fees '{"distribution":{"leaderTimeunitsAllocation":"125","validatorTimeunitsAllocation":"250","executionBudgetPerRound":"786297","totalMessageFees":"0","appealRounds":"1","rotations":["1","1"]},"feeValue":"..."}' \
+  --args "2024-06-20" "Spain" "Italy" "1"
+```
+
+This is intentionally the same policy flow as transaction-kit: the profile provides allocation suggestions, while the SDK/CLI estimate reads current network prices and produces the final deposit.
+
+## Regenerate policy
+
+Regenerate and review `fee-profile.json` when you change:
+
+- contract code that affects LLM calls, web requests, messages, storage or receipt data
+- application arguments that select different branches
+- child transaction behavior
+- intended appeal or rotation posture
+- the GenVM or Studio version used for fee accounting
+
+Treat the file like a performance budget. It should change in the same pull request as the behavior that changed the fee shape.
