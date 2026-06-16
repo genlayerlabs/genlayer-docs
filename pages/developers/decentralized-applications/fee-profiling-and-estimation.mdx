@@ -282,21 +282,38 @@ tx_hash = client.write_contract(
 
 ## Use the profile with the CLI
 
-The CLI accepts fee estimate options as JSON. Extract the method profile and pass the same fields to `estimate-fees`:
+The CLI can consume the generated profile directly:
 
 ```bash
-genlayer estimate-fees \
+genlayer estimate-fees 0x123456789abcdef create_bet \
+  --fee-profile frontend/fee-profile.json \
+  --fee-preset standard \
   --json \
-  --fees '{"leaderTimeunitsAllocation":"125","validatorTimeunitsAllocation":"250","executionBudgetPerRound":"786297","totalMessageFees":"0","appealRounds":"1","rotations":["1","1"]}'
+  --args "2024-06-20" "Spain" "Italy" "1"
 ```
 
-Then pass the printed transaction fee object to `genlayer write` or `genlayer deploy`:
+For writes, pass the same profile path when submitting:
 
 ```bash
 genlayer write 0x123456789abcdef create_bet \
-  --fees '{"distribution":{"leaderTimeunitsAllocation":"125","validatorTimeunitsAllocation":"250","executionBudgetPerRound":"786297","totalMessageFees":"0","appealRounds":"1","rotations":["1","1"]},"feeValue":"..."}' \
+  --fee-profile frontend/fee-profile.json \
+  --fee-preset standard \
   --args "2024-06-20" "Spain" "Italy" "1"
 ```
+
+For deploys, the CLI uses the profile's `deploy` entry:
+
+```bash
+genlayer deploy \
+  --contract contracts/football_bets.py \
+  --fee-profile frontend/fee-profile.json
+```
+
+`write` and targeted `estimate-fees` use `methods[method]`. The CLI converts the measured profile entry into SDK estimate options, reads current prices from the backend, then submits the returned `distribution` and `feeValue`.
+
+`--fee-preset` controls the appeal posture. The standard preset maps to one appeal round; `low` maps to zero and `high` maps to two. Use `--appeal-rounds` for an explicit override.
+
+Use `--fees` alongside `--fee-profile` only when a flow needs to override part of the generated profile, for example a custom `messageAllocations` set. Use `--fee-value` only when you need to force the transaction deposit instead of using the SDK estimate.
 
 This is intentionally the same policy flow as transaction-kit: the profile provides allocation suggestions, while the SDK/CLI estimate reads current network prices and produces the final deposit.
 
