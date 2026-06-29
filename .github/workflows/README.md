@@ -181,7 +181,7 @@ The workflow uses composite actions for code reusability:
 - `.github/scripts/git-utils.sh` - Branch creation, commit, and push operations
 - `.github/scripts/version-utils.sh` - Version detection and validation
 - `.github/scripts/doc-generator.sh` - Wrapper for npm documentation generation
-- `.github/scripts/sanitize-config.sh` - Sanitizes config file (replaces URLs)
+- `.github/scripts/sanitize-config.sh` - Sanitizes config file (replaces RPC URLs and provider)
 - `.github/scripts/sanitize-docker-compose.sh` - Removes alloy service and volumes from docker-compose
 
 ### Config Sanitization
