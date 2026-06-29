@@ -181,13 +181,12 @@ The workflow uses composite actions for code reusability:
 - `.github/scripts/git-utils.sh` - Branch creation, commit, and push operations
 - `.github/scripts/version-utils.sh` - Version detection and validation
 - `.github/scripts/doc-generator.sh` - Wrapper for npm documentation generation
-- `.github/scripts/sanitize-config.sh` - Sanitizes config file (replaces URLs, removes dev section)
+- `.github/scripts/sanitize-config.sh` - Sanitizes config file (replaces URLs)
 - `.github/scripts/sanitize-docker-compose.sh` - Removes alloy service and volumes from docker-compose
 
 ### Config Sanitization
 The config sync process includes automatic sanitization using `yq`:
-- **URL Replacement**: RPC URLs replaced with TODO placeholders
-- **Dev Section Removal**: `node.dev` section is removed
+- **URL Replacement**: RPC URLs and provider replaced with TODO placeholders
 
 ### Docker Compose Sanitization
 The docker-compose sync process includes automatic sanitization using `yq` and `sed`:
