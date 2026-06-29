@@ -168,6 +168,8 @@ console.log(trace.genvm_log);    // detailed GenVM execution logs
 
 When building a browser dApp, create two clients: one for reads (no wallet needed) and one for writes (signed by the wallet). This follows the standard viem pattern and keeps concerns separated.
 
+GenLayerJS can sign browser transactions through a standard EIP-1193 wallet provider such as `window.ethereum`. The SDK does not require a MetaMask Snap for this flow. If your app also integrates a separate GenLayer wallet plugin or Snap, treat it as a separate wallet integration path and make it explicit in your UI so users understand why the browser is showing Snap or third-party-wallet warnings.
+
 ```typescript
 import { createClient } from "genlayer-js";
 import { testnetBradbury } from "genlayer-js/chains";
@@ -237,6 +239,15 @@ const txHash = await client.writeContract({
 Available networks: `"localnet"`, `"studionet"`, `"testnetAsimov"`, `"testnetBradbury"`.
 
 > **Note:** If the wallet is on the wrong chain when you call `writeContract`, the SDK will throw a clear error telling you which chain the wallet is on vs. which chain the client expects. Call `client.connect()` to resolve this.
+
+### Wallet provider troubleshooting
+
+If users report that a dApp is asking for the GenLayer wallet plugin, a MetaMask Snap, or that another wallet extension such as Rabby must be disabled, first check which provider your app is passing to GenLayerJS:
+
+- For the standard SDK flow, pass the selected wallet's EIP-1193 provider, for example `provider: window.ethereum`, and call `client.connect()` before writing.
+- Do not assume `window.ethereum` always points to MetaMask when several wallet extensions are installed. Use your wallet connector's selected provider when possible.
+- If you intentionally depend on a Snap or wallet plugin, tell users this is an app-level wallet requirement, not a requirement of `writeContract` itself.
+- Keep a read-only client without a wallet provider for `readContract`, `getTransaction`, and receipt polling so read paths still work when the wallet is disconnected or on the wrong chain.
 
 ### Staking Operations
 
