@@ -241,6 +241,10 @@ genStaking.delegatorClaim(msg.sender, validator3);
 
 Epoch 0 is the **genesis bootstrapping period** with special rules designed to facilitate network launch. The normal staking rules are relaxed to allow rapid network bootstrapping.
 
+<Callout type="info">
+  For a conceptual, operator- and delegator-facing walkthrough of the bootstrap epoch — relaxed minimums, free restake/redelegate, the conditional 0 to 2 advancement, and what changes at epoch 2 — see [Epoch Zero (Bootstrap)](/validators/epoch-zero). The sections below focus on the Solidity behavior.
+</Callout>
+
 ### What is Epoch 0?
 
 Epoch 0 is the **bootstrapping period** before the network becomes operational. During epoch 0:

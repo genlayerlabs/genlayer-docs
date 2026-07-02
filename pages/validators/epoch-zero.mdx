@@ -1,0 +1,100 @@
+---
+description: "Epoch Zero explains the GenLayer bootstrap epoch: relaxed minimum stake, free restake and redelegate, the conditional 0 to 2 advancement, and what changes at epoch 2."
+---
+
+import { Callout } from "nextra-theme-docs";
+
+# Epoch Zero: The Bootstrap Epoch
+
+Epoch 0 is the **bootstrap epoch** for a GenLayer network. It exists so the very first validators and delegators can register their stake before the network has an active validator set, an economic model, or any transactions to process. Because there is no functioning validator set to protect yet, several of the normal staking rules are deliberately relaxed during epoch 0.
+
+This page explains what makes epoch 0 special, how the network leaves it, and what changes once the network reaches epoch 2. It is written for **validator operators** and **delegators** who are participating in a network from genesis.
+
+<Callout type="info">
+  For the mechanics of the staking calls themselves (`validatorJoin`, `delegatorJoin`, exits, claims), see the [Staking Contract Guide](/developers/staking-guide). For the concepts behind epochs, weights, and rewards, see [Staking in GenLayer](/understand-genlayer-protocol/core-concepts/optimistic-democracy/staking).
+</Callout>
+
+## What Epoch 0 Is and Why It Exists
+
+At genesis the network has no validators, so there is nothing to secure and no consensus to run. Epoch 0 is the window in which participants **assemble the initial stake** that will form the first active validator set. The protocol treats this window as a special case: joins and stake changes are recorded on-chain, but the usual protections that guard a live network are not yet needed and are therefore not enforced.
+
+Three things make epoch 0 different from every later epoch:
+
+1. The **minimum stake is not enforced** — validators and delegators can register with any non-zero amount.
+2. **Stake changes are free** — restaking (topping up) and redelegating (moving stake between validators) happen with no unbonding delay.
+3. **Advancement is a conditional 0 to 2 jump** — epoch 1 has zero duration, so `epochAdvance` effectively moves the network from 0 straight to 2, but only once inflation is initialized and funded.
+
+Each of these is described in detail below.
+
+## Relaxed Minimum Stake
+
+In normal operation a validator must stake at least the validator minimum (**42,000 GEN** on testnet) and a delegator must stake at least the delegator minimum (**42 GEN**) per validator. In epoch 0 these minimums are **not enforced**:
+
+- The validator join path only checks the minimum `if epoch > 0`. During epoch 0 that check is skipped, so a validator can be created below the minimum.
+- Delegators join through a **separate epoch-0 join path** that carries no minimum check at all.
+
+This lets a network be seeded incrementally — participants can register early with a partial stake and top up before the network goes live, rather than needing the full minimum on hand at the moment they join.
+
+<Callout type="warning">
+  Below-minimum stake is allowed to **exist** in epoch 0, but the minimum still governs whether that stake counts once the network is live. At epoch 2 the active validator set is selected by weight and only validators **at or above the minimum** are included. See [What Changes at Epoch 2](#what-changes-at-epoch-2).
+</Callout>
+
+## Free Restake and Redelegate
+
+In a live network, exiting stake starts an unbonding period (7 epochs) before the tokens can be claimed, and moving stake between validators means exiting one and waiting before joining another. **In epoch 0 there is no unbonding delay.** The protocol forks stake operations into epoch-0 helpers so that:
+
+- **Restaking / topping up** — adding to an existing validator or delegation — takes effect immediately.
+- **Exiting** — an epoch-0 exit **pays out immediately**. There is no locked period.
+
+Because exits pay out immediately, **redelegating** (moving stake from one validator to another) is simply an **exit followed by a join**, and both halves are free:
+
+<Callout type="info">
+  There is **no atomic "redelegate" operation.** To move stake between validators in epoch 0 you exit the first validator (immediate payout) and then join the second. Both steps are free in epoch 0, so the round trip carries no unbonding cost.
+</Callout>
+
+This makes epoch 0 the right time to correct a delegation choice, consolidate stake, or rebalance across validators. Once the network reaches epoch 2, the normal unbonding delay applies and these moves are no longer free.
+
+## How and When Epoch 0 Advances
+
+Epoch 1 exists only as a **technical intermediate with zero duration**. As a result, calling `epochAdvance` from epoch 0 moves the network to **epoch 2 in effect** — a conditional 0 to 2 jump — rather than resting at 1.
+
+The jump is **conditional on inflation being ready**:
+
+- **If inflation is initialized and funded to at least epoch 2**, `epochAdvance` carries the network from 0 through the zero-duration epoch 1 and into epoch 2, where normal operation begins.
+- **If inflation is *not* initialized**, the network genuinely **rests at epoch 1** until inflation is set up. Epoch 1 is where the network waits when it cannot yet fund epoch 2.
+
+<Callout type="warning">
+  The 0 to 2 jump is not automatic. It only happens once inflation is initialized and funded through epoch 2. Until then, advancing the epoch lands the network at **epoch 1**, which is the resting state — not an error, and not a stuck network. It means the reward schedule still needs to be initialized before the network can go live.
+</Callout>
+
+## What Changes at Epoch 2
+
+Epoch 2 is where **normal rules begin**:
+
+- **Active set selection by weight.** The active validator set is selected by stake weight, and **only validators at or above the minimum stake are included.** Validators that registered below the minimum in epoch 0 still exist on-chain, but they carry **zero active weight** until they top up to the minimum.
+- **Unbonding delays apply.** From epoch 2 onward, exiting stake starts the normal unbonding period before tokens can be claimed. The free, immediate exits of epoch 0 are gone.
+- **Standard join and deposit rules apply.** New joins and deposits must meet the minimum and follow the usual activation timeline.
+
+<Callout type="info">
+  If you registered below the minimum during epoch 0, **top up to at least the minimum before epoch 2** so your stake carries active weight in the first live set. Stake that is still below the minimum at epoch 2 remains on-chain but contributes nothing to selection until it is topped up.
+</Callout>
+
+## What You'll See as an Operator
+
+If you are running a validator or holding a delegation during epoch 0, some readings will look unusual compared with a live network. This is expected:
+
+- **Below-minimum stake is normal in epoch 0, not an error.** Explorers and tooling may show a validator or delegation below the usual minimum. In epoch 0 that is a valid, registered state — not a misconfiguration.
+- **The network may sit at epoch 1.** If the epoch reads as 1 rather than jumping to 2, inflation has not been initialized and funded yet. The network is resting, waiting for the reward schedule — not stuck.
+- **Exits settle instantly.** An exit during epoch 0 pays out immediately with no unbonding wait. Do not wait for a claim window in epoch 0; there isn't one.
+- **Plan your final stake before epoch 2.** Because the 0 to 2 jump can happen once inflation is funded, make sure any validator you want in the first active set is **at or above the minimum** before the jump, and finish any free redelegations while they are still free.
+
+<Callout type="warning">
+  Treat epoch 0 as your setup window. Once the network advances to epoch 2, minimums are enforced for active weight, unbonding delays apply, and stake moves are no longer free.
+</Callout>
+
+## Related Resources
+
+- [Staking Contract Guide](/developers/staking-guide) — Solidity calls for validator and delegator staking, including the epoch-0 join paths
+- [Setting Up Your GenLayer Validator](/validators/setup-guide) — end-to-end validator node setup
+- [Staking in GenLayer](/understand-genlayer-protocol/core-concepts/optimistic-democracy/staking) — how epochs, weights, and rewards work
+- [Unstaking](/understand-genlayer-protocol/core-concepts/optimistic-democracy/unstaking) — the normal unbonding process that applies from epoch 2
