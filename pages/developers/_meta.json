@@ -1,6 +1,9 @@
 {
   "networks": "Networks & RPCs",
+  "bridging-gen": "Bridging GEN (L1 ↔ L2)",
+  "exchange-wallet-integration": "Exchange & Wallet Integration",
   "intelligent-contracts": "Intelligent Contracts",
   "decentralized-applications": "Frontend & SDK Integration",
+  "delegating-gen": "Delegating GEN",
   "staking-guide": "Staking Contract Guide"
 }

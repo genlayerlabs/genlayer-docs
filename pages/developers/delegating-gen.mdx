@@ -1,0 +1,202 @@
+---
+description: "A delegator's guide to staking GEN with a GenLayer validator: choose a validator, delegate, monitor and claim rewards, and switch validators safely."
+---
+
+import { Callout } from "nextra-theme-docs";
+import { Card, Cards } from "nextra-theme-docs";
+
+# Delegating GEN: A Delegator's Guide
+
+Delegating lets you put your GEN to work without running a validator node yourself. You pick a validator, delegate your GEN to it, and share in the rewards that validator earns for participating in consensus — while the validator does the operational work of running the node.
+
+This guide is written for token holders. It walks through the whole lifecycle: choosing a validator, delegating, monitoring and claiming rewards, and switching to a different validator. For the concepts underneath delegation (epochs, shares vs. stake, validator weight, reward distribution), see [Staking in GenLayer](/understand-genlayer-protocol/core-concepts/optimistic-democracy/staking).
+
+<Callout type="info">
+  Delegating is not the same as running a validator. As a delegator you never operate a node — you back an existing validator with your stake. If you want to run your own node instead, see the [Validator Setup Guide](/validators/setup-guide).
+</Callout>
+
+## How delegation works, in brief
+
+- You delegate GEN to a specific validator. Your delegation is tracked as **shares** in that validator's pool, not as a fixed token amount.
+- Rewards **compound**: as the validator earns, the value of each share grows, so your position grows without any action on your part.
+- Delegations follow the network's **epoch** timing. A new delegation activates **2 epochs after** you make it (with a special exception during the genesis bootstrap — see [Delegating during Epoch 0](#delegating-during-epoch-0)).
+- Exiting is **not instant**. When you unstake, your GEN is locked for an **unbonding period of 7 epochs** before you can claim it back.
+
+<Callout type="warning">
+  Because you hold **shares**, not a token balance, you always **exit by specifying a number of shares** (or a percentage of your shares), never a GEN amount. Keep this in mind for every unstake.
+</Callout>
+
+An epoch is a fixed time window in which the validator set is active; on the network, an epoch lasts one day. See [Epoch System](/understand-genlayer-protocol/core-concepts/optimistic-democracy/staking#epoch-system) for details.
+
+---
+
+## Step 1 — Choose a validator
+
+Your rewards and risk both depend on the validator you back. Evaluate candidates before committing.
+
+### Where to look
+
+- **Block explorer (no tooling required).** Open the explorer for your network and find its **Validators** view — it lists the active validator set with each validator's stake and status. On [Testnet Bradbury](/developers/networks#testnet-bradbury) that's [explorer-bradbury.genlayer.com](https://explorer-bradbury.genlayer.com); each network's explorer is linked from the [Networks](/developers/networks) page.
+- **CLI (for a scriptable, always-current list).** The [GenLayer CLI](/api-references/genlayer-cli) prints the validator set with stake, status, and voting power:
+
+  ```bash
+  genlayer staking validators
+  genlayer staking validators --all   # also include banned validators
+  ```
+
+  To inspect a single validator's stake, shares, and live/banned status:
+
+  ```bash
+  genlayer staking validator-info --validator 0xVALIDATOR_ADDRESS
+  ```
+
+### What to evaluate
+
+| Signal | Why it matters | How to check |
+|---|---|---|
+| **Uptime / liveness** | Validators that miss their duties earn less and risk penalties, which drags on your rewards. | `live` field in `validator-info`; status column in the explorer. |
+| **Not banned or quarantined** | A quarantined or banned validator is excluded from selection, so your delegation earns nothing while it's out. | `banned` field in `validator-info`; `genlayer staking validators --all` shows banned entries; `genlayer staking quarantined-validators` and `banned-validators` list them. |
+| **Stake size** | Very large validators are heavily backed already; smaller (but reliable) validators can mean a larger share of that validator's rewards go to you. | Stake column in the explorer / `validators` output. |
+| **Track record** | Consistent participation over time is a better signal than a single snapshot. | `genlayer staking validator-history --validator 0x...` shows recent per-epoch history. |
+
+<Callout type="info">
+  **Diversify.** You can delegate to more than one validator. Spreading your GEN across several reliable validators limits the impact if any single one has downtime or gets penalized. A downside of one validator does not affect delegations you hold with others.
+</Callout>
+
+<Callout type="warning">
+  Rewards are never guaranteed and can be reduced by validator downtime or [slashing](/understand-genlayer-protocol/core-concepts/optimistic-democracy/slashing). Choosing a reliable validator is the single biggest lever you control.
+</Callout>
+
+---
+
+## Step 2 — Delegate your GEN
+
+Make sure your wallet is connected to the right network first (RPC and chain ID are on the [Networks](/developers/networks) page), and that you hold enough GEN to cover your delegation plus transaction fees.
+
+### Minimum
+
+Under normal rules (epoch 2 onward), the minimum delegation is **42 GEN per validator**. During the genesis bootstrap (epoch 0) this minimum is relaxed — see [Delegating during Epoch 0](#delegating-during-epoch-0).
+
+### Delegate with the CLI
+
+```bash
+genlayer staking delegator-join --validator 0xVALIDATOR_ADDRESS --amount 42gen
+```
+
+The `--amount` accepts a value in wei, or with a `gen` / `eth` suffix (for example `100gen`). To delegate to several validators, run the command once per validator with the address of each.
+
+<Callout type="info">
+  **When does it start earning?** Under normal rules, a new delegation activates **2 epochs after** you submit it. It begins accruing rewards once it's active, not the moment the transaction lands. Track the current epoch with `genlayer staking epoch-info`.
+</Callout>
+
+### Add more to an existing delegation
+
+To increase a delegation you already hold, delegate again to the **same validator** — additional deposits have no minimum, and rewards on your existing position keep compounding in the meantime.
+
+For the underlying contract-level calls (useful if you're integrating delegation into your own tooling rather than using the CLI), see the [Staking Contract Guide](/developers/staking-guide#delegator-operations).
+
+---
+
+## Step 3 — Monitor and claim rewards
+
+### Rewards compound automatically
+
+You do **not** need to claim to keep earning. Rewards accrue into the validator's pool and raise the value of each share, so your delegated position grows on its own. Claiming is only needed when you want to withdraw GEN back to your wallet after unstaking (Step 4).
+
+### Check your position
+
+```bash
+genlayer staking delegation-info --validator 0xVALIDATOR_ADDRESS
+```
+
+This shows your delegation with the given validator (defaulting to your signer address; pass `--delegator 0x...` to check another address). Because your position is denominated in shares, its GEN value moves as the pool earns.
+
+To see network-wide reward context for an epoch — total inflation, how much has been claimed, and how much is still unclaimed — use:
+
+```bash
+genlayer staking epoch-info
+genlayer staking epoch-info --epoch 4   # a specific (current or previous) epoch
+```
+
+See [Reward Distribution](/understand-genlayer-protocol/core-concepts/optimistic-democracy/staking#reward-distribution) for how rewards are shared between a validator and its delegators.
+
+---
+
+## Step 4 — Unstake and claim your GEN
+
+Unstaking is a two-phase process because of the unbonding period.
+
+**Phase 1 — Exit (start unbonding).** You specify how many **shares** to withdraw. Those shares stop earning immediately, and the corresponding GEN enters a **7-epoch** lock.
+
+```bash
+# Withdraw a number of shares from a validator you delegate to
+genlayer staking delegator-exit --validator 0xVALIDATOR_ADDRESS --shares SHARES
+```
+
+**Phase 2 — Claim (after unbonding).** Once 7 full epochs have passed since your exit, claim the GEN back to your address:
+
+```bash
+genlayer staking delegator-claim --validator 0xVALIDATOR_ADDRESS
+```
+
+```
+Epoch 5:      delegator-exit  →  unbonding starts, shares stop earning
+Epochs 6–11:  locked period (cannot claim yet)
+Epoch 12:     delegator-claim available
+```
+
+<Callout type="warning">
+  Plan around the 7-epoch wait — that's roughly 7 days on the network. Exited GEN earns nothing during unbonding, so only exit what you actually intend to withdraw. Track eligibility with `genlayer staking epoch-info`.
+</Callout>
+
+<Callout type="info">
+  If you delegate to multiple validators, exit and claim from **each validator separately** — each delegation has its own shares and its own unbonding timer.
+</Callout>
+
+For the concept-level walkthrough of exits and cooldowns, see [Unstaking in GenLayer](/understand-genlayer-protocol/core-concepts/optimistic-democracy/unstaking).
+
+---
+
+## Switching validators
+
+There is **no "redelegate" operation** on GenLayer. Moving your stake from one validator to another is not atomic — it is a full unstake from the old validator followed by a fresh delegation to the new one, with the unbonding period in between. Concretely:
+
+1. **Exit** your shares from your current validator: `genlayer staking delegator-exit --validator 0xOLD --shares SHARES`.
+2. **Wait** the full **7-epoch** unbonding period (~7 days on the network). Your GEN is locked and earning nothing during this time.
+3. **Claim** the released GEN back to your wallet: `genlayer staking delegator-claim --validator 0xOLD`.
+4. **Delegate** the claimed GEN to the new validator: `genlayer staking delegator-join --validator 0xNEW --amount ...`. Remember this new delegation then takes **2 epochs** to activate.
+
+<Callout type="error">
+  **Switching is not instant and not free of downtime.** Between exiting the old validator and your new delegation activating, your GEN spends the unbonding period unstaked (no rewards) and then 2 more epochs pending activation. If you value continuity, consider building a new position with fresh GEN rather than moving an existing one — or diversifying across validators from the start so you rarely need to move stake at all.
+</Callout>
+
+---
+
+## Delegating during Epoch 0
+
+**Epoch 0 is the genesis bootstrapping period** before the network is operational. Its rules are deliberately relaxed to help the network launch, and they differ from everything above:
+
+- **Delegation is effectively free of the usual minimum** — any non-zero amount is accepted, so you can delegate below the normal 42 GEN threshold.
+- **Below-minimum delegations are allowed to register**, but a delegation only becomes **active in epoch 2** if it meets the normal minimum by then. The network jumps straight from epoch 0 to epoch 2 (epoch 1 is skipped).
+- **No rewards are earned in epoch 0**, because no transactions are processed yet.
+
+From **epoch 2 onward, normal rules apply**: the 42 GEN minimum, the +2-epoch activation delay, and the 7-epoch unbonding period all take effect.
+
+<Callout type="warning">
+  If you delegate a below-minimum amount during epoch 0, top it up to at least **42 GEN** before epoch 2 begins, or that delegation will not activate.
+</Callout>
+
+The full epoch-0 rules — including validator behavior, share calculation, and the transition to epoch 2 — are documented in [Genesis Epoch 0](/developers/staking-guide#genesis-epoch-0).
+
+---
+
+## Related resources
+
+<Cards>
+<Card title="🥩 Staking in GenLayer" href="/understand-genlayer-protocol/core-concepts/optimistic-democracy/staking" />
+<Card title="📜 Staking Contract Guide" href="/developers/staking-guide" />
+<Card title="🌱 Genesis Epoch 0" href="/developers/staking-guide#genesis-epoch-0" />
+<Card title="⛓️ Unstaking" href="/understand-genlayer-protocol/core-concepts/optimistic-democracy/unstaking" />
+<Card title="⚔️ Slashing" href="/understand-genlayer-protocol/core-concepts/optimistic-democracy/slashing" />
+<Card title="🛠️ GenLayer CLI: Staking" href="/api-references/genlayer-cli#staking-operations" />
+</Cards>
