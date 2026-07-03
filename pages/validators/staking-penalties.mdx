@@ -41,7 +41,7 @@ GenLayer tracks idleness with a **strike system**:
 - When strikes reach the **strike threshold**, the validator is banned for the **current and next epoch**, then reactivated automatically.
 
 <Callout type="info">
-  The strike threshold is a **governance parameter** (`setStrikesMax()`), so the exact number can change. The documented default is **3 strikes** within a single epoch. Because strikes reset each epoch, an occasional single miss will not accumulate into a ban — sustained idleness within one epoch does.
+  The strike threshold is a **governance parameter** (`setStrikesMax()`), so the exact number can change. The current network setting is **5 strikes** within a single epoch. Because strikes reset each epoch, an occasional single miss will not accumulate into a ban — sustained idleness within one epoch does.
 </Callout>
 
 **Failure to reveal a vote** is treated the same way: if a validator commits a vote but never reveals it within the timeout, that counts as **one strike** toward the ban threshold (in addition to being slashed — see [Slashing](#slashing)).
@@ -139,7 +139,7 @@ When you watch a validator — via `genlayer staking validator-info`, the banned
 | Epoch length | ~24 hours (minimum 1 day) | Can extend past 24h due to finalization constraints |
 | Validator minimum self-stake | 42,000 GEN | Governance-configurable; below this the validator is **not active** |
 | Delegator minimum stake | 42 GEN | Per validator |
-| Idleness strike threshold | 3 strikes per epoch (default) | Governance parameter (`setStrikesMax()`); strikes reset each epoch |
+| Idleness strike threshold | 5 strikes per epoch (current network setting) | Governance parameter (`setStrikesMax()`); strikes reset each epoch |
 | Idleness ban duration | Current + next epoch | Then auto-reactivates |
 | Slash enactment delay | ~2 epochs | Applied lazily at the next `validatorPrime()` |
 | Unbonding period (exit) | 7 epochs | Applies to voluntary exits, unrelated to penalties |
