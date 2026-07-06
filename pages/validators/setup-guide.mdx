@@ -839,4 +839,8 @@ For a quick setup using Docker Compose:
 
 3. **Verify your node is pushing metrics** by checking the [GenLayer Foundation public dashboard](https://genlayerfoundation.grafana.net/public-dashboards/66a372d856ea44e78cf9ac21a344f792)
 
-For detailed monitoring setup including Prometheus metrics, Grafana dashboards, and centralized logging with Alloy, see the [Monitoring Guide](/validators/monitoring).
+<Callout type="warning">
+  Keep the `alloy-config.river` and monitoring service from the validator release tarball. Only change `.env` values such as credentials, `NODE_ID`, and `VALIDATOR_NAME`; custom Alloy labels can make data arrive in Grafana Cloud while still hiding the validator from dashboards and uptime checks.
+</Callout>
+
+For detailed monitoring setup including the required Alloy labels, Prometheus metrics, Grafana dashboards, and centralized logging, see the [Monitoring Guide](/validators/monitoring).
