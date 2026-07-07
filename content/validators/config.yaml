@@ -43,7 +43,7 @@ node:
   mode: "validator"
   # Address of the ValidatorWallet contract (required for validator mode)
   validatorWalletAddress: ""
-  # Address of the operator that owns the ValidatorWallet
+  # Address of the operator that performs consensus duties for the ValidatorWallet
   operatorAddress: ""
   admin:
     port: 9155
