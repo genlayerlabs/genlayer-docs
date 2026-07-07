@@ -2,6 +2,8 @@
 description: "Staking in GenLayer explains validator and delegator token locking, network consensus participation, and transaction processing."
 ---
 
+import { Callout } from "nextra-theme-docs";
+
 # Staking in GenLayer
 
 Staking in GenLayer is the process where validators lock a specified amount of tokens on the rollup layer to participate in the network. This commitment supports GenLayer's consensus mechanism and enables validators to process transactions and help manage the network.
@@ -31,13 +33,63 @@ Staking in GenLayer is the process where validators lock a specified amount of t
 
 ## Owner, Operator, and ValidatorWallet
 
-When a validator joins, the system creates three distinct entities:
+Every validator involves three distinct entities. Two of them are **keys** (regular externally owned accounts) and one is a **smart contract** — a distinction that matters when you plan key management:
 
-**ValidatorWallet**: A separate smart contract wallet created automatically on `validatorJoin()`. This is the primary validator identifier and holds staked GEN tokens.
+```mermaid
+graph LR
+    Owner["Owner key<br/>(cold wallet, kept offline)"]
+    Operator["Operator key<br/>(hot wallet, in the node keystore)"]
+    VW["ValidatorWallet<br/>(smart contract, on-chain)<br/>holds stake and rewards"]
 
-**Owner Address**: The address that creates the validator (msg.sender). It controls staking operations and can change the operator address. Should use a cold wallet for security.
+    Owner -->|"owns: exit, claim,<br/>change operator, set identity"| VW
+    Operator -->|"operates: propose receipts,<br/>commit and reveal votes"| VW
+    VW -.->|"claimed funds<br/>paid to owner"| Owner
+```
 
-**Operator Address**: Used for consensus operations. Can differ from the owner (hot wallet recommended). It can be changed by the owner but cannot be the zero address or reused across validators.
+**ValidatorWallet** — a smart contract, not a key. It is deployed automatically when `validatorJoin()` is called and becomes the validator's on-chain identity: stake is accounted against its address, rewards accrue to it, and all consensus actions are executed through it. There is no private key for the ValidatorWallet; it is controlled entirely by the owner and operator keys.
+
+**Owner key** — the wallet that calls `validatorJoin()` (the `msg.sender`) becomes the owner. This is an external wallet that you create and safeguard yourself — **the node never generates, stores, or needs it, and it cannot be extracted from a validator server**. The owner controls everything related to funds and administration:
+
+- Exit stake (`validatorExit`) and claim rewards and withdrawals (`validatorClaim` — claimed funds are paid out to the owner address)
+- Change the operator (`setOperator`)
+- Set the validator's public identity (`setIdentity`)
+- Hand over ownership to a new owner (`transferOwnership`)
+
+**Operator key** — the hot key the node uses for day-to-day consensus duties: activating transactions, proposing receipts, committing and revealing votes. This is the only key that lives on the validator server. It is created or imported with `genlayernode account new` / `account import` and referenced as `operatorAddress` in the node configuration. If no operator is passed to `validatorJoin()`, it defaults to the owner, but a separate operator is strongly recommended: if the server is compromised, the staked funds (controlled by the owner) remain safe. An operator address cannot be the zero address and cannot be reused by another validator.
+
+<Callout type="info">
+Heard the terms "node key" or "validator key"? Both refer to the operator key — the node manages exactly one key. There is also no separate "rewards key": rewards accrue to the ValidatorWallet contract and are claimed by the owner.
+</Callout>
+
+### Which key does what
+
+| | Owner key | Operator key | ValidatorWallet |
+|---|---|---|---|
+| **What it is** | External wallet (EOA) | External wallet (EOA) | Smart contract (no key) |
+| **Where it lives** | Cold wallet, offline | Node keystore on the server | On-chain |
+| **Created by** | You, before joining | `genlayernode account new` or the CLI wizard | Automatically on `validatorJoin()` |
+| **Used for** | Staking operations: join, deposit, exit, claim, change operator | Consensus operations: propose, commit, reveal | Holds stake and rewards; validator's on-chain identity |
+| **Receives funds** | Yes — all claims pay out here | No (only needs gas for consensus transactions) | Stake and rewards accrue here until claimed |
+| **If lost** | **Unrecoverable** — see below | Owner assigns a new operator | Not applicable |
+
+Topping up stake is the one exception to the owner-only rule: `validatorDeposit()` is permissionless, so any address can add stake to a validator.
+
+### Key rotation and loss scenarios
+
+**Losing the operator key is an inconvenience.** The owner can replace the operator at any time with `setOperator(newOperator)`. Generate a new key on the server (`genlayernode account new`), call `setOperator` from the owner wallet, and update `operatorAddress` in the node config. For planned handovers (for example, migrating to a new server or service provider) there is also a two-step flow — `initiateOperatorTransfer(newOperator)` followed by `completeOperatorTransfer()` after a safety delay (48 hours by default), cancellable in between with `cancelOperatorTransfer()`. See [Set Operator](/api-references/genlayer-cli/staking/staking/set-operator) for the CLI command and [backing up your operator key](/validators/setup-guide#backing-up-your-operator-key) to avoid the situation entirely.
+
+**Losing the owner key is unrecoverable.** Ownership can only be transferred by the current owner (`transferOwnership`); there is no admin override, no social recovery, and the operator key cannot stand in for it. Without the owner key you can no longer exit stake, claim rewards, or change the operator — the staked funds stay locked in the ValidatorWallet permanently.
+
+<Callout type="warning">
+The node setup flow only ever creates the **operator** key. If you inherited a running validator from someone else, verify that you were also handed the **owner** wallet's private key or seed phrase — it is not on the server and cannot be derived from any of the node's keys. Treat it like the keys to the stake itself: keep it in cold storage, back it up, and document who holds it.
+</Callout>
+
+### How the pieces come together
+
+1. Create an owner wallet (cold) and an operator key on your server ([setup guide](/validators/setup-guide#understanding-validator-addresses)).
+2. From the owner wallet, call `validatorJoin(operator)` with your stake. The ValidatorWallet contract is deployed and its address is returned — save it.
+3. Configure the node with `validatorWalletAddress` and `operatorAddress`. The node signs consensus duties with the operator key; the owner wallet stays offline.
+4. Rewards accrue to the ValidatorWallet. The owner exits and claims when needed (see [Unstaking and Withdrawing](#unstaking-and-withdrawing) below).
 
 ## Epoch System
 

@@ -107,6 +107,8 @@ GenLayer validators use three distinct addresses:
 | **Validator Wallet** | Smart contract created when you join. This is your validator's on-chain identity. | Node config: `validatorWalletAddress` |
 
 The wizard outputs all three addresses at the end. Save them - you'll need the Validator Wallet and Operator addresses for your node configuration.
+
+**Back up the owner wallet's private key or seed phrase.** The wizard's keystore export only covers the operator key — the owner key never touches your server and cannot be recovered from the node. If it is lost, staked funds can no longer be exited or claimed. See [Owner, Operator, and ValidatorWallet](/understand-genlayer-protocol/core-concepts/optimistic-democracy/staking#owner-operator-and-validatorwallet) for how the three relate.
 </Callout>
 
 ### Prerequisites
@@ -309,7 +311,7 @@ node:
   mode: "validator"
   # Address of the ValidatorWallet contract (required for validator mode)
   validatorWalletAddress: ""
-  # Address of the operator that owns the ValidatorWallet
+  # Address of the operator that performs consensus duties for the ValidatorWallet
   operatorAddress: ""
   admin:
     port: 9155
