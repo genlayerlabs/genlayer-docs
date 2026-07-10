@@ -103,7 +103,7 @@ GenLayer validators use three distinct addresses:
 | Address | Description | Where Used |
 |---------|-------------|------------|
 | **Owner** | The only address that can withdraw staked funds. Keep this secure (cold wallet). | CLI wizard - signs staking transaction |
-| **Operator** | Hot wallet on your server that signs blocks. Can be same as owner, but separate is recommended. | Node config: `operatorAddress` |
+| **Operator** | Hot wallet on your server that signs blocks and submits validator transactions. It must hold liquid GEN to pay gas. Can be the same as the owner, but a separate account is recommended. | Node config: `operatorAddress` |
 | **Validator Wallet** | Smart contract created when you join. This is your validator's on-chain identity. | Node config: `validatorWalletAddress` |
 
 The wizard outputs all three addresses at the end. Save them - you'll need the Validator Wallet and Operator addresses for your node configuration.
@@ -118,7 +118,7 @@ The wizard outputs all three addresses at the end. Save them - you'll need the V
   ```bash copy
   npm install -g genlayer
   ```
-- **GEN tokens** - You need at least **42,000 GEN** for the minimum self-stake requirement
+- **GEN tokens** - You need at least **42,000 GEN** for the minimum self-stake requirement, plus a separate liquid balance for operator gas if you use a different operator account
 
 ### Using the Validator Wizard
 
@@ -145,6 +145,28 @@ The wizard guides you through:
 #### Operator Keystore Export
 
 The wizard creates and exports an operator keystore file for you to transfer to your validator server. If your server is compromised, your staked funds (controlled by owner) remain safe.
+
+#### Fund the Operator Wallet
+
+The operator signs and submits on-chain validator duties, including epoch priming, proposals, votes, and finalization. A separate operator therefore needs a liquid GEN balance for gas. GEN staked through the Validator Wallet, including vesting-backed stake, cannot pay the operator's gas.
+
+Send a gas buffer to the operator address from a funded account before starting the node. You can use your wallet UI or, when the funding account is stored in the CLI, run:
+
+```bash copy
+genlayer account send 0xYourOperatorAddress... 10gen
+```
+
+The required buffer depends on network activity and gas prices. Monitor and top it up before it runs out. Verify the operator balance on the node's target network:
+
+```bash copy
+genlayer balances --beneficiary 0xYourOperatorAddress...
+```
+
+<Callout type="warning" emoji="⛽">
+  A zero operator balance prevents priming and other consensus transactions even
+  when the Validator Wallet has enough stake. The node can remain synced while
+  missing validator duties, so verify this balance independently of sync health.
+</Callout>
 
 ### Verify Your Validator
 
@@ -599,8 +621,9 @@ Once you have configured everything, you are ready to start the node.
     **Important:** Before starting the node, ensure you have:
     1. **Operator key** imported into the node (see "Import the Operator Key" above)
     2. **Validator wallet address** - obtained after joining as validator via `genlayer staking wizard` or `validator-join`
+    3. **Funded operator address** - the configured operator must hold liquid GEN for priming and other validator transaction gas (see "Fund the Operator Wallet" above)
 
-    Without both configured, your node will run as a full node instead of a validator.
+    Without the operator key and Validator Wallet configured, your node will run as a full node instead of a validator. Without operator gas, it cannot submit validator duties.
 </Callout>
 
 #### Running the Node using the binary
