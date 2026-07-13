@@ -20,13 +20,11 @@ fi
 echo "Sanitizing config file: $CONFIG_FILE"
 
 # Use yq to:
-# 1. Replace RPC URLs with TODO placeholders
-# 2. Delete node.dev section
+# Replace RPC URLs / provider with TODO placeholders
 yq -i '
   .rollup.genlayerchainrpcurl = "TODO: Set your GenLayer Chain ZKSync HTTP RPC URL here" |
   .rollup.genlayerchainwebsocketurl = "TODO: Set your GenLayer Chain ZKSync WebSocket RPC URL here" |
-  .rollup.provider = "TODO: Set your GenLayer Chain ZKSync provider" |
-  del(.node.dev)
+  .rollup.provider = "TODO: Set your GenLayer Chain ZKSync provider"
 ' "$CONFIG_FILE"
 
 echo "Config sanitization completed"
