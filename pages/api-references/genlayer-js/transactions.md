@@ -119,20 +119,26 @@ vote vector and `txExecutionResultName` together.
 
 `COMMITTING` and `REVEALING` are in-flight. `ACCEPTED`, `FINALIZED`,
 `UNDETERMINED` and `CANCELED` are decided. A numeric `status` value that has no
-name in your SDK version (for example `14`) is a transient state, not an error:
-keep polling rather than treating it as a failure.
+name in your SDK version (for example `14`) has been observed as a transient
+state rather than an error: keep polling rather than treating it as a failure.
 
-### Do not reach for an EVM receipt helper
+### A generic EVM receipt helper will not find the transaction
 
-`getTransactionReceipt` from a generic EVM client returns "not found" for
-GenLayer transactions. Use `getTransaction`.
+`getTransactionReceipt` from a generic EVM client (for example Viem's) returns
+"not found" for GenLayer transactions. Use genlayer-js's `getTransaction`. This
+note is about the EVM client's method, not about genlayer-js's own
+`waitForTransactionReceipt`, which is supported.
 
-### Allow a deploy to settle before calling a write method
+### A write fired right after a deploy may revert
 
-Calling a write method immediately after a successful deploy can revert at the
-EVM level against the consensus contract, even when the deploy itself returned a
-unanimous AGREE. The same call to the same contract address succeeds once the
-deploy has settled. If you are scripting deploy-then-write cycles, insert a
-short wait between the two rather than chaining them directly.
+Calling a write method seconds after a successful deploy can revert at the EVM
+level against the consensus contract, even when the deploy itself returned a
+unanimous AGREE. We observed this ~2.2s after a deploy, with the identical call
+to the identical address succeeding after a wait.
+
+Treat it as a flake to retry through rather than something a delay reliably
+prevents: we have also seen this revert occur with a 25 second post-deploy
+delay. The practical point is that a revert here may have nothing to do with
+your contract logic, so it is not the first place to look.
 
 ---
