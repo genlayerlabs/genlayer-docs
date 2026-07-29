@@ -1,0 +1,23 @@
+name: Docs MCP Production Health
+
+on:
+  schedule:
+    - cron: "*/15 * * * *"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: docs-mcp-production-health
+  cancel-in-progress: true
+
+jobs:
+  mcp-handshake:
+    runs-on: ubuntu-latest
+    timeout-minutes: 3
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Initialize MCP and list tools
+        run: node docs-mcp/smoke-test.mjs https://docs-mcp.genlayer.com/sse

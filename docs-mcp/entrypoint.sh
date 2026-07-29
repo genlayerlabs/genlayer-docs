@@ -30,12 +30,28 @@ index_is_usable() {
     docs-mcp-server --quiet find-version genlayer-sdk --store-path "$STORE_PATH" >/dev/null 2>&1
 }
 
+explain_index_failure() {
+  echo "Index diagnostics:"
+  docs-mcp-server find-version genlayer-docs --store-path "$STORE_PATH" || true
+  docs-mcp-server find-version genlayer-sdk --store-path "$STORE_PATH" || true
+}
+
+reset_index() {
+  echo "Removing unusable derived index files before rebuilding..."
+  rm -f \
+    "$STORE_PATH/documents.db" \
+    "$STORE_PATH/documents.db-shm" \
+    "$STORE_PATH/documents.db-wal"
+  index_docs
+}
+
 if [ ! -f "$STORE_PATH/documents.db" ]; then
   echo "No index found at $STORE_PATH/documents.db"
   index_docs
 elif ! index_is_usable; then
-  echo "Existing index at $STORE_PATH/documents.db is not usable; rebuilding..."
-  index_docs
+  echo "Existing index at $STORE_PATH/documents.db is not usable."
+  explain_index_failure
+  reset_index
 else
   echo "Usable index found at $STORE_PATH/documents.db"
 fi
@@ -43,6 +59,7 @@ fi
 echo "Verifying index..."
 if ! index_is_usable; then
   echo "Index verification failed." >&2
+  explain_index_failure >&2
   exit 1
 fi
 echo "Index verification complete."
