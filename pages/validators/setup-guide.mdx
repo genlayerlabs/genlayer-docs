@@ -216,18 +216,18 @@ One full node can be shared between multiple validators. The optimal validator-t
    You should see a list like this
 
    ```sh
+   v0.5.13
    v0.5.12
    v0.5.11
    v0.5.10
    v0.5.9
-   v0.5.8
    ```
 
    Typically, you will want to run the latest version
 
 2. Download the packaged application
    ```sh copy
-   export version=v0.5.12 # set your desired version here
+   export version=v0.5.13 # set your desired version here
    wget https://storage.googleapis.com/gh-af/genlayer-node/bin/amd64/${version}/genlayer-node-linux-amd64-${version}.tar.gz
    ```
 3. Extract the node software
@@ -311,7 +311,7 @@ node:
   mode: "validator"
   # Address of the ValidatorWallet contract (required for validator mode)
   validatorWalletAddress: ""
-  # Address of the operator that performs consensus duties for the ValidatorWallet
+  # Address of the operator that owns the ValidatorWallet
   operatorAddress: ""
   admin:
     port: 9155

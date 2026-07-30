@@ -1126,6 +1126,18 @@ curl -X GET http://localhost:9153/health
   "status": "up",
   "node_version": "v1.2.3",
   "protocol_version": "consensus-v2.1",
+  "genvm_modules": {
+    "llm": {
+      "state": "healthy",
+      "timestamp": "2024-01-15T10:30:45Z",
+      "last_ok": "2024-01-15T10:30:45Z"
+    },
+    "web": {
+      "state": "healthy",
+      "timestamp": "2024-01-15T10:30:45Z",
+      "last_ok": "2024-01-15T10:30:45Z"
+    }
+  },
   "checks": {
     "test-check": {
       "status": "up",
@@ -1140,11 +1152,38 @@ curl -X GET http://localhost:9153/health
 - `status` (string): Overall health status - "up" if all checks pass, "down" if any check fails
 - `node_version` (string): The version of the GenLayer node software
 - `protocol_version` (string): The consensus protocol version
+- `genvm_modules` (object): Per-module GenVM health — whether this node can currently do LLM and web work. Reported for `llm` and `web`.
+  - `state` (string): `healthy`, `suspect`, `degraded`, or `unknown`. `suspect` means one failure has been observed and is not yet treated as confirmed; `unknown` means the module has not been exercised yet.
+  - `timestamp` (string, optional): ISO 8601 time the verdict was last updated. Absent until the module is first observed.
+  - `last_ok` (string, optional): ISO 8601 time the module last answered successfully. Absent if it never has.
+  - `detail` (string, optional): the module's own error text. Present only while not healthy.
 - `checks` (object, optional): Map of individual health check results
   - `[check-name]` (object): Results for a specific health check
     - `status` (string): Check status - "up" or "down"
     - `timestamp` (string): ISO 8601 timestamp of when the check was performed
     - `error` (string, optional): Error message if check failed
+
+**GenVM module health does not affect `status`.**
+
+A node with a broken module is still booted, synced and voting — it votes Timeout on the transactions that need that module, which is the designed degraded behaviour rather than an outage. Failing the endpoint would pull a working validator out of load balancers and page an operator about a node behaving as intended. So `genvm_modules` is reported alongside `checks` rather than as one of them, and `status` stays `up`:
+
+```json
+{
+  "status": "up",
+  "genvm_modules": {
+    "llm": {
+      "state": "degraded",
+      "timestamp": "2024-01-15T10:30:45Z",
+      "last_ok": "2024-01-15T04:12:03Z",
+      "detail": "provider unreachable — voting Timeout on transactions that need an LLM"
+    },
+    "web": { "state": "healthy", "timestamp": "2024-01-15T10:30:45Z", "last_ok": "2024-01-15T10:30:45Z" }
+  }
+}
+```
+
+`timestamp` and `last_ok` answer different questions and are both reported. `timestamp` is when the verdict was last updated; `last_ok` is when the module last worked. They match while healthy, and the gap between them while degraded shows how long the outage has run. `timestamp` matters more here than under `checks`: those entries are re-evaluated on every request, whereas module state is folded from real transaction traffic and is not polled while healthy — so on a quiet validator a `healthy` verdict can rest on an older observation.
+
 
 **HTTP Status Codes:**
 
