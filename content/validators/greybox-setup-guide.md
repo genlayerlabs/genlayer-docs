@@ -174,4 +174,26 @@ After editing the YAML, restart the LLM module (see "Updating Greybox on a Runni
 **All models exhausted error:**
 - OpenRouter may be down or your key is invalid
 - Check your key at https://openrouter.ai/settings/keys
+- Run `task node:doctor` — the "LLM Providers" section probes each enabled backend and reports which ones actually answer, rather than only whether a key variable is set
 - Fallback providers (heurist, ionet) also need valid keys if you want fallback to work
+
+## No usable LLM backend: the node starts DEGRADED
+
+A node with no working LLM backend no longer refuses to start. It boots, syncs and
+stays in the validator set, but it votes **Timeout** on every transaction that
+needs an LLM, logs a loud alert naming the broken module, and reports
+`genvm_modules.llm.state = "degraded"` on ops `/health` while `status` stays
+`"up"`. That is better than the old behaviour — the node used to exit about 75
+seconds after start and then be banned for idleness — but it is **not** a working
+validator: Timeout votes are penalized. Treat it as a failure to fix, not a state
+to run in. The same applies to the web module when the webdriver is unreachable.
+
+Recovery is automatic once a provider answers again — the node learns from its own
+transaction traffic and needs no restart. The **one exception** is a key added to
+`.env`: the node reads its environment at exec, so a running process cannot pick
+that up. Restart it. Editing `genvm-module-llm.yaml` does not require a restart.
+
+**Configure more than one provider.** A backend only enters the fallback chain if
+its key is set, so a node set up with OpenRouter alone has no fallback: when that
+provider goes down or is decommissioned, the chain exhausts immediately. `doctor`
+warns when only one backend is usable.
