@@ -4,24 +4,30 @@ description: "LogIndexer Contract demonstrates VecDB log storage, CRUD operation
 
 # LogIndexer Contract
 
-The LogIndexer contract is an Intelligent Contract example that uses the Vector Store database (VecDB) provided by the GenVM SDK to index text logs with vector embeddings. The contract demonstrates how to store, retrieve, update, and remove logs, then search them by similarity.
+The LogIndexer contract is an Intelligent Contract example that uses the Vector Store database (VecDB) provided by the `genlayer_embeddings` package to index text logs with vector embeddings. The contract demonstrates how to store, retrieve, update, and remove logs, then search them by similarity.
+
+This is the same contract used in GenLayer's own test suite — a complete, verified, copy-pasteable example. See the Vector Store feature page for the full `VecDB`/`VecDBElement` API reference.
 
 ```python
+# v0.3.0
 # {
 #   "Seq": [
-#     { "Depends": "py-lib-genlayermodelwrappers:1jb45aa8ynh2a9c9xn3b7qqh8sm5q93hwfp7jqmwsfhh8jpz09h6" },
-#     { "Depends": "py-genlayer:1jb45aa8ynh2a9c9xn3b7qqh8sm5q93hwfp7jqmwsfhh8jpz09h6" }
+#     { "Depends": "py-lib-genlayer-embeddings:kr2rb2dcp01mw9khpg3tg2jasx4f82mcsy3eg08rjj1zdcm9q350" },
+#     { "Depends": "py-genlayer:9b8kjyda2ycxyq4ea6g4yfpnydxhd52gqba5rb8dw7krkh5mn9p0" }
 #   ]
 # }
 
-from genlayer import *
-import genlayermodelwrappers
 import numpy as np
+import genlayer as gl
+from genlayer.types import *
+from genlayer.storage import TreeMap
+import genlayer_embeddings as gle
+
 from dataclasses import dataclass
 import typing
 
 
-@allow_storage
+@gl.storage.allow
 @dataclass
 class StoreValue:
     log_id: u256
@@ -29,14 +35,19 @@ class StoreValue:
 
 
 # contract class
-class LogIndexer(gl.Contract):
-    vector_store: VecDB[np.float32, typing.Literal[384], StoreValue]
+class LogIndexer(gl.contract.Contract):
+    # The v0.3 embeddings runner's VecDB takes an explicit metric type.
+    vector_store: gle.VecDB[
+        np.float32, typing.Literal[384], StoreValue, gle.EuclideanDistance
+    ]
+    log_vector_ids: TreeMap[u256, u32]
+    removed_log_ids: TreeMap[u256, bool]
 
     def __init__(self):
         pass
 
     def get_embedding_generator(self):
-        return genlayermodelwrappers.SentenceTransformer("all-MiniLM-L6-v2")
+        return gle.SentenceTransformer("all-MiniLM-L6-v2")
 
     def get_embedding(
         self, txt: str
@@ -46,51 +57,72 @@ class LogIndexer(gl.Contract):
     @gl.public.view
     def get_closest_vector(self, text: str) -> dict | None:
         emb = self.get_embedding(text)
-        result = list(self.vector_store.knn(emb, 1))
-        if len(result) == 0:
-            return None
-        result = result[0]
-        return {
-            "vector": list(str(x) for x in result.key),
-            "similarity": str(1 - result.distance),
-            "id": result.value.log_id,
-            "text": result.value.text,
-        }
+        for result in self.vector_store.knn(emb, len(self.vector_store)):
+            log_id = result.value.log_id
+            if log_id in self.removed_log_ids and self.removed_log_ids[log_id]:
+                continue
+            if log_id not in self.log_vector_ids:
+                continue
+            if self.log_vector_ids[log_id] != result.id:
+                continue
+            return {
+                "vector": list(str(x) for x in result.key),
+                "similarity": str(1 - result.distance),
+                "id": result.value.log_id,
+                "text": result.value.text,
+            }
+        return None
 
     @gl.public.write
     def add_log(self, log: str, log_id: int) -> None:
+        key = log_id
+        if key in self.log_vector_ids:
+            self.vector_store.get_by_id(self.log_vector_ids[key]).value = StoreValue(
+                text=log, log_id=key
+            )
+            return
+
         emb = self.get_embedding(log)
-        self.vector_store.insert(emb, StoreValue(text=log, log_id=u256(log_id)))
+        vector_id = self.vector_store.insert(emb, StoreValue(text=log, log_id=key))
+        self.log_vector_ids[key] = vector_id
 
     @gl.public.write
     def update_log(self, log_id: int, log: str) -> None:
+        key = log_id
+        if key in self.log_vector_ids:
+            self.vector_store.get_by_id(self.log_vector_ids[key]).value = StoreValue(
+                text=log, log_id=key
+            )
+            return
+
         emb = self.get_embedding(log)
-        for elem in self.vector_store.knn(emb, 2):
-            if elem.value.text == log:
-                elem.value.log_id = u256(log_id)
+        vector_id = self.vector_store.insert(emb, StoreValue(text=log, log_id=key))
+        self.log_vector_ids[key] = vector_id
 
     @gl.public.write
     def remove_log(self, id: int) -> None:
-        for el in self.vector_store:
-            if el.value.log_id == id:
-                el.remove()
+        key = id
+        if key in self.log_vector_ids:
+            self.removed_log_ids[key] = True
 ```
 
 ## Code Explanation
 
 - **Data Structure**: Uses `StoreValue` dataclass to store log ID and text.
-- **Vector Store**: Initializes a VecDB with 384-dimensional float32 vectors.
-- **Embedding Generation**: Uses the SentenceTransformer model for text embedding.
+- **Vector Store**: Initializes a `VecDB` with 384-dimensional float32 vectors and `EuclideanDistance` as the metric.
+- **Embedding Generation**: Uses `gle.SentenceTransformer` for text embedding — this returns a plain `str -> np.ndarray` callable, not a class instance.
+- **Duplicate protection**: `log_vector_ids` maps each `log_id` to its `VecDB` element id, so `add_log`/`update_log` overwrite the existing entry's `.value` in place instead of inserting a duplicate vector when a `log_id` is reused.
+- **Tombstones instead of hard deletes**: `remove_log` marks the id in `removed_log_ids` rather than calling `.remove()` on the `VecDB` element — `get_closest_vector` filters tombstoned and orphaned entries out of the `knn()` results.
 - **Methods**:
-  - `get_closest_vector()`: Finds the most similar log entry.
-  - `add_log()`: Adds a new log with its embedding.
-  - `update_log()`: Updates an existing log entry.
-  - `remove_log()`: Removes a log by its ID.
+  - `get_closest_vector()`: Finds the closest non-removed log entry, scanning `knn()` results nearest-first.
+  - `add_log()`: Adds a new log with its embedding (or overwrites if `log_id` already exists).
+  - `update_log()`: Same as `add_log` — replaces the text at that `log_id`.
+  - `remove_log()`: Tombstones a log by its ID.
 
 ## Key Components
 
-1. **Vector Database**: Uses VecDB for efficient similarity-based searches.
-2. **Embedding Model**: Utilizes SentenceTransformer for text vectorization.
+1. **Vector Database**: Uses `VecDB` for efficient similarity-based searches via a cover tree.
+2. **Embedding Model**: Utilizes `SentenceTransformer` for text vectorization.
 3. **CRUD Operations**: Implements Create, Read, Update, Delete functionality.
 4. **Similarity Search**: Supports k-nearest neighbors (KNN) queries.
 
@@ -101,12 +133,14 @@ To deploy the LogIndexer contract:
 1. **Deploy the Contract**: No initial parameters are needed.
 2. The contract will initialize with an empty vector store.
 
+If deployment fails with a generic "Could not load contract schema" error, see the "Debugging a Could not load contract schema error" section on the Vector Store feature page for how to see the real traceback.
+
 ## Checking the Contract State
 
 After deployment, you can:
 
 - Use `get_closest_vector()` to find similar logs.
-- Query will return None if no logs are stored.
+- Query will return `None` if no logs are stored (or all matching logs have been removed).
 
 ## Executing Transactions
 
@@ -114,19 +148,19 @@ The contract supports several operations:
 
 1. **Adding Logs**:
    - Call `add_log(log, log_id)` with text and ID.
-   - Creates embedding and stores in VecDB.
+   - Creates embedding and stores in `VecDB`, or overwrites the existing entry if `log_id` is already indexed.
 
 2. **Finding Similar Logs**:
    - Use `get_closest_vector(text)` to find matches.
-   - Returns vector, similarity score, ID, and text.
+   - Returns vector, similarity score, ID, and text — or `None`.
 
 3. **Updating Logs**:
    - Call `update_log(log_id, log)` to modify entries.
-   - Updates based on text similarity.
+   - Overwrites the stored text for that `log_id`.
 
 4. **Removing Logs**:
-   - Use `remove_log(id)` to delete entries.
-   - Removes based on log ID.
+   - Use `remove_log(id)` to tombstone an entry.
+   - Removes it from future `get_closest_vector()` results.
 
 ## Understanding Vector Storage
 
@@ -135,34 +169,20 @@ This contract demonstrates several important concepts:
 - **Vector Embeddings**: Converts text to numerical vectors.
 - **Similarity Search**: Uses vector distance for finding related content.
 - **Persistent Storage**: Maintains vector database state.
-- **Efficient Querying**: Supports fast nearest neighbor searches.
-
-## Handling Different Scenarios
-
-- **Empty Database**: Returns None for searches.
-- **Adding New Logs**: Creates new vector embeddings.
-- **Updating Logs**: Modifies existing entries.
-- **Removing Logs**: Deletes entries by ID.
-
-## Important Notes
-
-1. This is a demonstration of VecDB features.
-2. Uses a specific embedding dimension (384).
-3. Similarity is based on vector distance.
-4. Supports basic CRUD operations.
+- **Efficient Querying**: Supports fast nearest neighbor searches via a cover tree.
 
 ## Performance Considerations
 
 1. Embedding generation may be computationally intensive.
-2. KNN searches scale with database size.
+2. `knn()` searches scale with database size, though the cover tree prunes much of it.
 3. Vector dimension affects storage requirements.
-4. Consider batch operations for efficiency.
+4. `SentenceTransformer` caches the loaded model internally, so repeated calls with the same model name are cheap.
 
 ## Technical Details
 
 1. Uses 384-dimensional float32 vectors.
-2. Implements the all-MiniLM-L6-v2 model.
-3. Stores both vector embeddings and metadata.
-4. Supports exact and approximate nearest neighbor search.
+2. Implements the `all-MiniLM-L6-v2` model.
+3. Stores both vector embeddings and metadata (`StoreValue`).
+4. `knn()` returns exact nearest neighbors (not approximate) via the cover tree.
 
 You can monitor the contract's behavior through transaction logs, which will show vector operations and search results as they occur.
