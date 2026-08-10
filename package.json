@@ -32,7 +32,7 @@
     "next": "15.0.7",
     "nextjs-google-analytics": "^2.3.3",
     "nextra": "^2.13.2",
-    "nextra-theme-docs": "^2.13.2",
+    "nextra-theme-docs": "^4.6.1",
     "react": "^18.3.1",
     "react-dom": "^18.3.1"
   },
