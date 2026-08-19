@@ -1,38 +1,40 @@
 ---
-description: "GenVM is GenLayer's virtual machine for executing Python Intelligent Contracts with web and LLM access."
+description: "GenVM is GenLayer's WebAssembly sandbox for deterministic and non-deterministic Intelligent Contract execution."
 ---
 
-# GenVM (GenLayer Virtual Machine)
+# GenVM
 
-GenVM is the execution environment for Intelligent Contracts in the GenLayer protocol, processing and managing contract operations across the GenLayer ecosystem. GenVM executes Intelligent Contracts that may use non-deterministic code while preserving blockchain security and consistency.
+GenVM is the execution environment for Intelligent Contracts. It runs contract code in a WebAssembly sandbox and exposes controlled host functions for contract state, messages, web access, and LLM calls.
 
-[Source code at GitHub](https://github.com/genlayerlabs/genvm)
+[View the GenVM source code](https://github.com/genlayerlabs/genvm).
 
-## Purpose of GenVM
+## Execution model
 
-The only purpose of the GenVM is to execute Intelligent Contracts, which can have non-deterministic code while maintaining blockchain security and consistency.
+GenVM separates reproducible execution from operations that can vary across validators.
 
-In summary, the GenVM plays a crucial role in enabling GenLayer's unique features, bridging the gap between traditional smart contracts and AI-powered, web-connected Intelligent Contracts.
+```mermaid
+flowchart TD
+    Call[Intelligent Contract call] --> Deterministic[Deterministic execution]
+    Deterministic --> Block{Non-deterministic block?}
+    Block -->|No| Receipt[Execution receipt]
+    Block -->|Yes| Isolated[Isolated GenVM instance]
+    Isolated --> Host[Web or LLM host function]
+    Host --> Eq[Leader output or validator decision]
+    Eq --> Deterministic
+```
 
-## Key Features That Make the GenVM Different
+The top-level contract path must be deterministic. A non-deterministic block runs in a separate VM instance so that its transient memory and side effects cannot leak directly into deterministic state. Only the block's returned value crosses the boundary.
 
-Unlike traditional blockchain virtual machines such as Ethereum Virtual Machine (EVM), the GenVM has some advanced features.
+In leader mode, the block produces the candidate value used by the transaction. In validator mode, it evaluates the leader's value and returns whether it is acceptable. Consensus, not GenVM alone, decides whether the receipt is accepted.
 
-- **Integration with LLMs**: the GenVM facilitates seamless interaction between Intelligent Contracts and Large Language Models
-- **Web access**: the GenVM provides access to the Internet
-- **User friendliness**: Intelligent Contracts can be written in Python, which makes the learning curve much more shallow
+## Runners and languages
 
-## How the GenVM Works
+GenVM executes WebAssembly contracts through **runners**. A runner packages the language runtime or other support code a contract needs and identifies that package by a human-readable name and content hash. Pinning the runner makes the execution environment explicit and reproducible across nodes.
 
-1. **Contract Deployment**: When an Intelligent Contract is deployed, the GenVM compiles and executes the contract code.
+The standard developer experience uses Python on a CPython WebAssembly runner. The runtime boundary is WebAssembly/WASI, so the architecture can support other compatible runners and compiled languages as they become available.
 
-2. **Transaction Processing**: As transactions are submitted to the network, the GenVM executes the relevant contract functions and produces the contract's next state.
+## Security boundary
 
-## Developer Considerations
+GenVM constrains contract capabilities through its WebAssembly runtime and host interface. Intelligent Contracts do not receive unrestricted access to the validator machine. Web and LLM functions are available through the non-deterministic interface, where their output is subject to the contract's [equivalence rule](/understand-genlayer-protocol/core-concepts/optimistic-democracy/equivalence-principle).
 
-When developing Intelligent Contracts for the GenVM:
-
-- Utilize Python's robust libraries and features
-- Consider potential non-deterministic outcomes when integrating LLMs
-- Implement proper error handling for web data access
-- Optimize code for efficient execution within the rollup environment
+For code and API details, see [your first Intelligent Contract](/developers/intelligent-contracts/first-contract) and [non-determinism](/developers/intelligent-contracts/features/non-determinism).

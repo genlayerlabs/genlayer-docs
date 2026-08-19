@@ -1,52 +1,73 @@
 ---
-description: "Optimistic Democracy: how GenLayer validators reach consensus, handle non-determinism, appeals, and finality."
+description: "Follow an Intelligent Contract transaction through GenLayer Chain, GenVM execution, validator consensus, appeals, and finality."
 ---
-import { Callout } from "nextra-theme-docs";
 
-# How GenLayer Works
+# How GenLayer works
 
-GenLayer works through **Optimistic Democracy**, a consensus mechanism where validators running diverse AI models independently evaluate transactions and vote on outcomes. This page explains the transaction lifecycle, how GenLayer reaches consensus on non-deterministic results from Intelligent Contracts, and how appeals lead to finality.
+GenLayer separates **ordering and consensus state** from **Intelligent Contract execution**. Consensus contracts on GenLayer Chain coordinate the process. Validator nodes execute the contract in GenVM and report their actions back to the chain.
 
-## Optimistic Democracy
+## The three components
 
-GenLayer uses **Optimistic Democracy** for consensus — a mechanism where validators running diverse AI models independently evaluate transactions and vote on outcomes. It applies [Condorcet's Jury Theorem](https://en.wikipedia.org/wiki/Condorcet%27s_jury_theorem): a group of independent reasoners is more likely to reach the correct answer than any individual. This is what lets GenLayer act as an **adjudication layer** for the agentic economy — judgments emerge from a diverse validator set rather than from any one model, operator, or jurisdiction.
+| Component | Responsibility |
+| --- | --- |
+| GenLayer Chain | Orders EVM transactions and stores authoritative consensus state, assignments, votes, fees, and final outcomes. |
+| Validator node | Watches chain events, maintains derived Intelligent Contract state, performs assigned consensus duties, and serves GenLayer RPC requests. |
+| GenVM | Executes Intelligent Contracts in a WebAssembly sandbox, including isolated web and LLM operations. |
 
-Transactions are accepted if a majority of validators agree. Anyone can appeal an accepted result, triggering re-evaluation by a new, larger validator set. This process can escalate through multiple rounds until a final decision is reached.
+This design makes phase deadlines and the order of consensus actions objectively observable. A proposal, commit, reveal, or appeal is a transaction to a consensus contract—not a message in a separate validator network.
 
-## Transaction Lifecycle
+## Transaction lifecycle
 
-Every transaction moves through these stages:
+```mermaid
+flowchart LR
+    A[Pending] --> B[Proposing]
+    B --> C[Committing]
+    C --> D[Leader revealing]
+    D --> E[Revealing]
+    E --> F{Decided}
+    F -->|Accepted or timeout| G[Appeal window]
+    F -->|Undetermined| G
+    G -->|No appeal| H[Ready to finalize]
+    H --> I[Finalized]
+    G -->|Validator appeal| J[Appeal commit-reveal]
+    J -->|Decision overturned| B
+    J -->|Decision confirmed| G
+    G -->|Leader appeal| B
+```
 
-1. **Pending** — queued, waiting to be picked up
-2. **Proposing** — a leader validator executes the contract and proposes a result
-3. **Committing** — other validators execute independently and submit encrypted votes
-4. **Leader Revealing** — the leader reveals execution data and decryption keys
-5. **Revealing** — validators reveal their votes
-6. **Accepted** — majority consensus reached; transaction enters the appeal window
-7. **Finalized** — appeal window closed, result is permanent and irreversible
+### 1. Submit and queue
 
-If consensus is not reached, the transaction may be marked **Undetermined** or rotate to a new leader.
+A user or EVM contract sends a transaction to the Intelligent Contract's Ghost. The Ghost forwards the request to the consensus contracts, which assign a transaction ID and add it to the recipient's pending queue. Transactions for one Intelligent Contract are processed sequentially through the active consensus phases.
 
-See [Transaction Execution](/understand-genlayer-protocol/core-concepts/transactions/transaction-execution) for the full state machine.
+### 2. Activate and select
 
-## Non-Determinism and Consensus
+The protocol selects one validator uniformly from the active set to be the **activator**. Activation fixes the transaction's seed and selects a stake-weighted committee and its leader. The activator is excluded from the leader selection when it is also in the selected committee.
 
-Because Intelligent Contracts use LLMs and web data, validators may produce different outputs for the same input. GenLayer provides several strategies for reaching consensus on non-deterministic results:
+### 3. Propose
 
-- **Strict equality** — all validators must produce the exact same output (for deterministic operations)
-- **LLM-based comparison** — an LLM compares validator outputs against developer-defined criteria
-- **Custom validation** — developers write explicit leader/validator function pairs with full control over consensus logic
+The leader runs the transaction in GenVM and proposes a receipt containing the execution result and state changes. The leader also runs the validator path and later votes as part of the committee.
 
-See [Non-determinism](/developers/intelligent-contracts/features/non-determinism) for implementation details.
+### 4. Commit and reveal
 
-## Appeals and Finality
+Every committee member evaluates the leader's proposal. Deterministic execution must match. For each non-deterministic block, the validator applies the equivalence rule chosen by the contract developer.
 
-After a transaction is accepted, it enters a **finality window** during which anyone can appeal the result.
+Validators first commit encrypted votes. The leader then reveals its execution data and keys, after which the committee reveals its votes. This ordering prevents validators from adapting their votes to votes already made public.
 
-- An appeal triggers a new round with a fresh, larger validator set
-- Appeals can escalate through multiple rounds
-- The final round's decision is binding
+### 5. Decide
 
-Once the finality window closes without appeal (or after the final appeal round), the transaction is **finalized** — permanent and irreversible.
+A majority can accept the leader's proposal. The round can instead end in a validator timeout, leader timeout, or an undetermined result. When disagreement can still be retried within the transaction's funded execution budget, the protocol rotates the leader and starts another proposal round.
 
-See [Appeal Process](/understand-genlayer-protocol/core-concepts/optimistic-democracy/appeal-process) and [Finality](/understand-genlayer-protocol/core-concepts/optimistic-democracy/finality) for details.
+### 6. Appeal and finalize
+
+Decided transactions enter an appeal window. Validator appeals recheck an Accepted or ValidatorsTimeout decision with a fresh committee. Leader appeals restart execution after an Undetermined or LeaderTimeout decision. If no valid appeal remains, anyone can finalize the transaction.
+
+See [transaction execution](/understand-genlayer-protocol/core-concepts/transactions/transaction-execution), [appeals](/understand-genlayer-protocol/core-concepts/optimistic-democracy/appeal-process), and [finality](/understand-genlayer-protocol/core-concepts/optimistic-democracy/finality) for the detailed rules.
+
+## Why results can differ
+
+Web pages change, service responses vary, and LLMs do not always return identical text. GenLayer does not pretend these operations are deterministic. Instead, the contract divides execution into:
+
+- deterministic code, which validators reproduce exactly; and
+- non-deterministic blocks, whose proposed outputs validators assess using the [Equivalence Principle](/understand-genlayer-protocol/core-concepts/optimistic-democracy/equivalence-principle).
+
+This makes the validation rule part of the application rather than an assumption hidden in infrastructure.

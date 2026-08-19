@@ -1,21 +1,51 @@
 ---
-description: "Appeals Process explains how GenLayer challenges validation decisions, escalates validator review, and handles appeal bonds and gas costs."
+description: "Learn how validator appeals and leader appeals challenge GenLayer consensus decisions."
 ---
 
-# Appeals Process
+# Appeals
 
-The appeals process in GenLayer is the Optimistic Democracy mechanism for correcting errors or disagreements in the validation of Intelligent Contracts. Participants can challenge an initial validation decision so non-deterministic transactions are reassessed, helping preserve the platform's robustness and fairness.
+An appeal challenges a decided Intelligent Contract transaction before finalization. Anyone can appeal an eligible transaction during its appeal window by posting the bond quoted by the consensus contracts.
 
-## How It Works
+GenLayer has two appeal paths because a disputed committee decision and a round that failed to produce a decision require different remedies.
 
-- **Initiating an Appeal**: Participants can appeal the initial decision by submitting a request and a required bond during the Finality Window. A new set of validators is then added to the original group to reassess the transaction.
+## Validator appeals
 
-- **Appeal Evaluation**: The new validators first review the existing transaction to decide if it needs to be overturned. If they agree it should be re-evaluated, a new leader re-evaluates the transaction. The combined group of original and new validators then review this new evaluation to ensure accuracy.
+A validator appeal challenges an **Accepted** or **ValidatorsTimeout** decision.
 
-- **Escalating Appeals**: If unresolved, the appeal can escalate, doubling the number of validators each round until a majority consensus is reached or all validators have participated.
+1. The protocol selects an entirely fresh appeal committee that did not participate in earlier rounds for the transaction.
+2. The fresh validators evaluate the original leader's proposal.
+3. They commit and reveal their votes in `AppealCommitting` and `AppealRevealing`.
+4. If their majority differs from the original majority, the appeal succeeds and the transaction returns for recomputation. If the majorities match, the appeal fails.
 
-Once a consensus is reached, the final decision is recorded, and the transaction's state is updated. Correct appellants receive a reward, while those who are incorrect may lose their bond.
+For a normal committee of size *N*, the appeal committee has *N + 2* validators. An appeal round does not choose a new leader or produce a new proposal; it rechecks the existing proposal.
 
-## Gas Costs for Appeals
+## Leader appeals
 
-The gas costs for an appeal can be covered by the original user, the appellant, or any third party. When submitting a transaction, users can include an optional tip to cover potential appeal costs. If insufficient gas is provided, the appeal may fail to be processed, but any party can supply additional gas to ensure the appeal proceeds.
+A leader appeal challenges an **Undetermined** or **LeaderTimeout** decision. It automatically starts a new proposal round instead of asking an appeal committee to vote on the old result.
+
+- After **Undetermined**, the protocol drops the previous leader, carries forward the remaining committee members, adds fresh validators, and uses the larger normal-round committee size.
+- After **LeaderTimeout**, the protocol keeps the committee, removes the timed-out leader, and selects a new leader from the remaining members.
+
+The new round's outcome determines whether the appeal was economically successful.
+
+## Committee growth
+
+Normal execution and validator-appeal committees follow interleaved growth schedules. The first normal round currently uses 5 validators, its validator appeal uses 7 fresh validators, and the next expanded normal round uses 11. Later rounds continue growing. These values are protocol parameters and can change through a protocol upgrade.
+
+## Bonds and incentives
+
+The appeal bond covers the additional validation work and discourages frivolous challenges. The consensus contracts calculate the required amount from the appeal type and round size.
+
+- A successful appellant recovers the bond and receives the configured reward.
+- A failed validator appeal forfeits its bond to the majority-aligned validators in that appeal round.
+- Leader-appeal bond handling depends on the prior status and the result of the new round.
+
+Clients should request the current bond quote instead of hardcoding an amount.
+
+## Appeal windows and dependent transactions
+
+The appeal-window duration and its reduction after an unsuccessful validator appeal are governance-managed parameters. The window pauses while a validator appeal is voting. A successful appeal gives the recomputed transaction a fresh window.
+
+Because transactions for one Intelligent Contract depend on earlier state, a successful appeal can return later non-finalized transactions in that contract's queues for recomputation. Appeals on those dependent transactions are canceled and their bonds refunded when necessary.
+
+Deterministic-violation tribunals are separate. They decide penalties for provable execution fraud but do not change the transaction outcome. See [slashing](/understand-genlayer-protocol/core-concepts/optimistic-democracy/slashing).

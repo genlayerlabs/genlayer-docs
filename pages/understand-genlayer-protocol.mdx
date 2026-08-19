@@ -1,69 +1,50 @@
 ---
-description: "Optimistic Democracy consensus in GenLayer: validator selection, recomputation, and AI-driven transaction validation."
+description: "Understand GenLayer architecture, Intelligent Contract execution, Optimistic Democracy, transactions, and protocol economics."
 ---
-## What is GenLayer? 
 
-GenLayer is the first AI-native blockchain built for AI-powered smart contracts—called Intelligent Contracts—capable of reasoning and adapting to real-world data. Its foundation is the Optimistic Democracy consensus mechanism, an enhanced Delegated Proof of Stake (dPoS) model where validators connect directly to Large Language Models (LLMs). This setup allows for non-deterministic operations—such as processing text prompts, fetching live web data, and executing AI-based decision-making—while preserving the reliability and security of a traditional blockchain.
+import { Card, Cards } from "nextra-theme-docs";
 
-## Core Technology
+# Discover the GenLayer protocol
 
+GenLayer is an intelligent blockchain for applications that need consensus on outcomes derived from natural language, live web data, or other non-deterministic inputs.
 
-At the heart of GenLayer lies Optimistic Democracy—an enhanced Delegated Proof of Stake (dPoS) consensus mechanism that integrates AI models directly into validator operations. This synergy delivers three capabilities traditional blockchains cannot match:
+Intelligent Contracts divide execution into deterministic code and isolated non-deterministic operations. A selected leader proposes an execution result, a validator committee evaluates it under the contract's equivalence rule, and the onchain consensus system coordinates appeals and finality.
 
-1. **On-Chain AI Processing**
+## Start here
 
-Validators connect to leading AI models (GPT, LLaMA, Meta, etc.) to execute complex reasoning on-chain, from natural language comprehension to data-driven predictions.
+<Cards>
+  <Card title="What is GenLayer?" href="/understand-genlayer-protocol/what-is-genlayer" />
+  <Card title="How GenLayer works" href="/understand-genlayer-protocol/optimistic-democracy-how-genlayer-works" />
+  <Card title="Use cases" href="/understand-genlayer-protocol/typical-use-cases" />
+  <Card title="Core concepts" href="/understand-genlayer-protocol/core-concepts" />
+</Cards>
 
-2. **Consensus-Backed Security**
+## Architecture at a glance
 
-Multiple validators vote on outcomes, ensuring collective agreement and robust reliability for every transaction—even those involving non-deterministic AI outputs.
+```mermaid
+flowchart LR
+    App[Application] -->|signed EVM transaction| Chain[GenLayer Chain<br/>consensus contracts]
+    Chain --> Node[Validator node]
+    Node --> VM[GenVM<br/>Intelligent Contract execution]
+    VM --> Node
+    Node -->|proposal or vote| Chain
+```
 
-3. **Intelligent Contracts**
+- **GenLayer Chain** orders actions and stores the authoritative consensus state.
+- **Validator nodes** watch the chain, maintain derived Intelligent Contract state, and perform assigned consensus duties.
+- **GenVM** runs Intelligent Contracts in a WebAssembly sandbox and isolates web and LLM operations.
 
-Smart contracts in GenLayer gain reasoning abilities, allowing them to understand natural language, process real-world data, and adapt to evolving conditions.
+Each Intelligent Contract has an EVM-facing Ghost contract at the same address. The Ghost routes calls and messages between GenLayer Chain and GenVM.
 
-## Technical Implementation
+## Explore by topic
 
-To integrate AI seamlessly with the blockchain, GenLayer employs a distributed neural consensus network, wherein validators run specialized software connected via API to advanced AI models. This approach unifies:
+<Cards>
+  <Card title="Architecture and GenVM" href="/understand-genlayer-protocol/core-concepts/rollup-integration" />
+  <Card title="Non-deterministic operations" href="/understand-genlayer-protocol/core-concepts/non-deterministic-operations-handling" />
+  <Card title="Optimistic Democracy" href="/understand-genlayer-protocol/core-concepts/optimistic-democracy" />
+  <Card title="Equivalence Principle" href="/understand-genlayer-protocol/core-concepts/optimistic-democracy/equivalence-principle" />
+  <Card title="Transactions and finality" href="/understand-genlayer-protocol/core-concepts/transactions" />
+  <Card title="Protocol economics" href="/understand-genlayer-protocol/core-concepts/economic-model" />
+</Cards>
 
-- Delegated Proof of Stake (dPoS) for efficient block production and governance.
-- Neural Consensus for non-deterministic transactions requiring advanced AI reasoning.
-
-This architecture supports autonomous DAOs, self-executing prediction markets, and dynamic DeFi protocols that react to real-world data in real time.
-
-# Optimistic Democracy: How Consensus Works
-
-Optimistic Democracy is GenLayer's consensus mechanism for merging probabilistic AI systems with deterministic blockchain rules so the network can reach secure and accurate consensus at scale. Inspired by **[Condorcet's Jury Theorem](https://jury-theorem.genlayer.com/)** (click the link to check out our interactive model), the process uses validator recomputation and majority agreement as a safety net for AI-driven computations.
-
-<img src="/studio/Diagram MAIN.jpg" alt="GenLayer Optimistic Democracy Consensus Diagram" width="100%" />
-
-1. **User Submits a Transaction**
-A user sends a transaction request to the network (see the diagram's Step 1).
-
-2. **Leader (Validator) Proposes Result**
-The network selects a Leader, who processes the request and proposes an outcome (Step 2).
-
-3. **Validators Recompute**
-A group of Validators independently re-compute the transaction (Step 3). If the output aligns with the Leader's proposal, they approve; otherwise, they deny.
-
-## Validator Selection Mechanism
-Token holders bolster network security by delegating tokens to validator candidates. A deterministic function f(x) then randomly designates Leader-Validator and Validators for each transaction. This process promotes fairness, helps decentralize validation power, and strengthens GenLayer's security and trustlessness.
-
-## Validator Operational Framework
-Each GenLayer validator node integrates:
-
-- **Validator Software**
-Handles core blockchain functions: networking, block production, and transaction management.
-
-- **AI Model Integration**
-Connects to Large Language Models (LLMs) or other AI services for complex reasoning, natural language processing, and real-time data retrieval.
-
-Validators seamlessly manage both:
-
-1. **Deterministic Transactions** typical of traditional blockchains.
-2. **Non-Deterministic Transactions** that leverage AI-driven logic (e.g., searching the internet, analyzing data, making probabilistic inferences).
-
-By splitting tasks between standard deterministic transactions and advanced AI-powered transactions, GenLayer ensures high performance without compromising on security.
-
-## Putting It All Together
-With Optimistic Democracy guiding consensus and validators empowered by AI, GenLayer enables a new class of blockchain applications. From DAOs that self-govern based on real-time data to DeFi protocols that dynamically adjust parameters in response to market changes, developers can now build truly intelligent decentralized solutions.
+For the extended architectural rationale, read [Making GenLayer 100% Secure, Part 1: The Architecture](https://genlayer.com/blog/making-genlayer-100-percent-secure-part-1-the-architecture).

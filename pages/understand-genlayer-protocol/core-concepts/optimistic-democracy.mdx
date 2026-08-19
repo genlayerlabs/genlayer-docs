@@ -1,37 +1,55 @@
 ---
-description: "Optimistic Democracy explains GenLayer consensus for validating Intelligent Contract transactions and appeals."
+description: "Optimistic Democracy coordinates leader proposals, validator votes, appeals, and finality for Intelligent Contracts."
 ---
-import { Callout } from 'nextra-theme-docs'
 
 # Optimistic Democracy
 
-Optimistic Democracy is GenLayer's consensus method for validating transactions and operations of Intelligent Contracts. It is designed to handle unpredictable outcomes from transactions involving web data or AI models, helping keep the network reliable and secure.
+Optimistic Democracy is GenLayer's protocol for deciding Intelligent Contract outcomes. A randomly selected leader proposes an execution result, a stake-weighted committee evaluates it, and the decision becomes final unless someone funds a valid appeal.
 
-## Key Components
+It is **optimistic** because the protocol starts with a small committee and finalizes an uncontested result after an appeal window. It is **democratic** because a majority of independently selected validators decides whether the proposal is acceptable.
 
-- **Validators:** Participants who stake tokens to earn the right to validate transactions. They play a crucial role in both the initial validation and any appeals process if needed.
-- **Leader Selection:** A process that randomly picks one validator to propose the outcome for each transaction, ensuring fairness and reducing potential biases.
+## One consensus round
 
-## How It Works
+```mermaid
+sequenceDiagram
+    participant C as Consensus contracts
+    participant L as Leader
+    participant V as Validator committee
+    C->>L: Assign transaction
+    L->>L: Execute leader and validator paths
+    L->>C: Propose receipt
+    V->>V: Evaluate proposal in GenVM
+    L->>C: Commit encrypted vote
+    V->>C: Commit encrypted votes
+    L->>C: Reveal execution data and key
+    V->>C: Reveal votes
+    C->>C: Calculate majority and record decision
+```
 
-Optimistic Democracy relies on a mix of trust and verification to ensure transaction integrity:
+The committee checks two kinds of work:
 
-![](/optimistic-democracy-concept.png)
+- Deterministic execution must reproduce the leader's proposed state transition exactly.
+- Non-deterministic outputs must satisfy the contract's [Equivalence Principle](/understand-genlayer-protocol/core-concepts/optimistic-democracy/equivalence-principle).
 
-1. **Initial Validation:** When a transaction is submitted, a small group of randomly selected validators checks its validity. One is chosen as the leader. The leader executes the transaction, and the other validators assess the leader's proposal using the Equivalence Principle.
+The commit-reveal process hides votes until commitments are fixed. A separate leader-revealing phase exposes the leader's execution data before the remaining validators reveal.
 
-2. **Majority Consensus:** If most validators accept the leader's proposal, the transaction is provisionally accepted. However, this decision is not final yet, allowing for possible appeals during a limited window of time, known as the **Finality Window**.
+## Possible decisions
 
-<Callout>
-  If any validator fails to vote within the specified timeframe, they are replaced, and a new validator is selected to cast a vote.
-</Callout>
+- **Accepted**: The committee reached the required majority on the proposed outcome.
+- **ValidatorsTimeout**: A majority reported that validation could not finish within its execution allowance.
+- **LeaderTimeout**: The leader reported that it could not produce a proposal within its allowance.
+- **Undetermined**: The round could not reach consensus and no funded rotation remained.
 
-3. **Initiating an Appeal:** If a participant disagrees with the initial validation (if it's incorrect or fraudulent), they can appeal during the Finality Window. They must submit a request and provide a bond. After the appeal starts, a new group of validators joins the original ones. This group first votes on whether the transaction should be re-evaluated. If they agree, a new leader is chosen to reassess the transaction, and all validators then review this new evaluation.
+Accepted describes agreement, not whether the contract returned without an error. A receipt that contains a contract error can still be Accepted when validators agree that it is the correct result.
 
-4. **Appeal Evaluation:** The new leader re-evaluates the transaction, while the other validators assess the leader's proposal using the Equivalence Principle. This step involves more validators, increasing the chances of an accurate decision.
+## Appeals scale review
 
-5. **Escalating Appeals:** If the appealing party is still not satisfied, the process can escalate, with each round involving more validators. Each round doubles the number of validators. A new leader is only chosen if the transaction is overturned.
+Anyone can challenge an eligible decision during its appeal window by posting the required bond. The protocol distinguishes:
 
-6. **Final Decision:** The appeals process continues until a majority consensus is reached or until all validators have participated. The final decision is recorded, and the transaction's state is updated accordingly. If the appealing party is correct, they receive a reward for their efforts, while incorrect appellants lose their bond.
+- a **validator appeal**, which asks fresh validators to re-evaluate the existing proposal; and
+- a **leader appeal**, which starts another proposal round after an Undetermined or LeaderTimeout result.
 
+Further appeals use larger committees and exclude validators already consumed by the relevant appeal selection. This increases the cost of sustaining an incorrect result while avoiding the expense of involving the whole active set in routine transactions.
+
+Read [appeals](/understand-genlayer-protocol/core-concepts/optimistic-democracy/appeal-process) and [finality](/understand-genlayer-protocol/core-concepts/optimistic-democracy/finality) for the next steps in the lifecycle.
 

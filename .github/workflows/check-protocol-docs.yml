@@ -1,0 +1,28 @@
+name: Check Protocol Documentation
+
+on:
+  pull_request:
+    paths:
+      - "pages/understand-genlayer-protocol.mdx"
+      - "pages/understand-genlayer-protocol/**"
+      - "pages/api-references/genlayer-node/gen/gen_getTransactionStatus.mdx"
+      - "scripts/check-protocol-docs.js"
+      - "PROTOCOL_DOCUMENTATION.md"
+  push:
+    branches: [main]
+    paths:
+      - "pages/understand-genlayer-protocol.mdx"
+      - "pages/understand-genlayer-protocol/**"
+      - "pages/api-references/genlayer-node/gen/gen_getTransactionStatus.mdx"
+      - "scripts/check-protocol-docs.js"
+      - "PROTOCOL_DOCUMENTATION.md"
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - run: node scripts/check-protocol-docs.js

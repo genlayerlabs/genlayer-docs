@@ -1,27 +1,30 @@
 ---
-description: "Large Language Model integration in GenLayer lets Intelligent Contracts use LLMs for natural language decisions."
+description: "Learn how Intelligent Contracts use LLMs and how validators assess model-generated results."
 ---
 
-# Large Language Model (LLM) Integration
+# LLM integration
 
-Large Language Model (LLM) integration in GenLayer lets Intelligent Contracts interact directly with LLMs for natural language processing and context-aware decision-making within blockchain applications.
+Intelligent Contracts can use large language models (LLMs) inside non-deterministic blocks. This enables decisions based on natural-language instructions, unstructured evidence, text classification, extraction, and multimodal inputs.
 
-## Overview
+An LLM response does not become trusted state merely because a model returned it. The leader proposes a result, and the selected validators apply the contract's validation logic before consensus can accept the transaction.
 
-Intelligent Contracts in GenLayer can interact directly with Large Language Models (LLMs), enabling natural language processing and more complex decision-making capabilities within blockchain applications.
+## Model diversity and equivalence
 
-## Key Features
+Validators can use different supported models or providers. Their raw wording may differ while their conclusions remain equivalent. Contracts should therefore define the properties an acceptable response must satisfy instead of depending on exact prose unless exact equality is intentional.
 
-- **Natural Language Understanding**: Contracts can process and interpret instructions written in natural language.
-- **Dynamic Decision Making**: Utilizing LLMs allows contracts to make context-aware decisions based on complex inputs.
+Common patterns include:
 
-## Implementation
+- require JSON with a fixed schema, then check its fields;
+- independently repeat a classification and compare the label;
+- ask validators whether the proposal satisfies explicit natural-language criteria; or
+- combine objective checks with an LLM judgment for the remaining subjective question.
 
-1. **LLM Providers**: Validators are configured with LLM providers (e.g., OpenAI, Ollama) to process LLM requests.
-2. **Equivalence Principle**: LLM outputs are validated using the Equivalence Principle to ensure consensus among validators.
-3. **Prompt Design**: Developers craft prompts to interact effectively with LLMs, specifying expected formats and constraints.
+## Design considerations
 
-## Considerations
+- Treat prompts and retrieved content as untrusted input.
+- Keep prompts specific and define the evidence and criteria validators should use.
+- Request structured output where possible.
+- Handle timeouts, provider errors, and malformed responses.
+- Avoid making the validation rule a paraphrase of “agree with the leader.”
 
-- **Cost and Performance**: LLM interactions may incur additional computational costs and latency.
-- **Security**: Care must be taken to prevent prompt injections and ensure the reliability of LLM responses.
+See [prompt and data techniques](/developers/intelligent-contracts/crafting-prompts) and [non-determinism](/developers/intelligent-contracts/features/non-determinism) for current contract APIs.

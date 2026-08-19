@@ -1,29 +1,42 @@
 ---
-description: "Slashing in GenLayer penalizes validators for missed execution or appeal windows by reducing stake after finality."
+description: "Learn how GenLayer handles validator idleness, failure to reveal, deterministic violations, quarantine, bans, and stake penalties."
 ---
 
-# Slashing in GenLayer
+# Slashing and validator penalties
 
-Slashing in GenLayer is the validator penalty mechanism that reduces stake for behavior detrimental to the network, such as missing required execution or appeal windows. Slashing helps validators act honestly and effectively, maintains the integrity of the platform and the Intelligent Contracts executed within it, and aligns validator incentives with the network and its users.
+GenLayer uses several penalties to protect liveness and punish provable protocol violations. Not every incorrect or minority vote is slashable, and not every penalty immediately removes stake.
 
-## Slashing Process
+## Penalty types
 
-1. **Violation Detection**: The network identifies a violation, such as missing an execution window.
+| Behavior | Protocol response |
+| --- | --- |
+| Missed activation, proposal, commit, or reveal duty | Replace or rotate the idle participant; record idleness where applicable. |
+| Repeated idleness or failure to reveal | Add epoch strikes and ban the validator after the configured threshold. |
+| Failure to reveal a committed vote | Record a percentage-based stake slash and a strike. |
+| Vote that loses after an appeal | Forfeit the applicable reward or receive a negative fee adjustment; this alone is not a deterministic-violation slash. |
+| Provable deterministic execution violation | Quarantine the accused validator and open a tribunal that can impose a larger slash or clear the quarantine. |
 
-2. **Slash Calculation**: The amount to be slashed is calculated based on the specific violation and platform rules.
+## Bans and quarantine
 
-3. **Stake Reduction**: The slashed amount is deducted from the validator's stake.
+A **ban** temporarily excludes a validator after it accumulates the configured number of idleness strikes. Current defaults use three strikes in an epoch and exclude the validator for the current and following epoch.
 
-4. **Finality**: The slashing becomes final after the Finality Window closes, ensuring that the validator's balance is finalized and accounts for any potential appeals.
+A **quarantine** immediately excludes a validator selected for a deterministic-violation tribunal. The tribunal uses the active validator network to decide punishment. It runs separately from the transaction's outcome: the transaction continues through rotation or its ordinary appeal path.
 
-## When Slashing Occurs
+## Current slash parameters
 
-Validators in GenLayer can be slashed for several reasons:
+Current protocol parameters include:
 
-1. **Missing Transaction Execution Window**: Validators are expected to execute transactions within a specified time frame. If a validator misses this window, they are penalized, ensuring that validators remain active and responsive.
+- 1% of stake for validator idleness or failure to reveal;
+- 5% for a leader found responsible for a deterministic violation;
+- 1% for other minority validators found responsible in that tribunal; and
+- a 10% per-epoch cap on deterministic-violation slashes.
 
-2. **Missing Appeal Execution Window**: During the appeals process, validators must respond within a set time frame. If they fail to do so, they are slashed, which motivates validators to participate in the appeals process.
+Percentage-based slashes currently draw 80% of the penalty from validator self-stake and 20% from delegated stake. These values are upgradeable protocol parameters and can differ by deployment.
 
-### Amount Slashed
+## Delayed, permissionless enforcement
 
-The amount slashed varies based on the severity of the violation and the specific rules set by the GenLayer platform. The slashing amount is designed to be substantial enough to deter malicious or negligent behavior while not being excessively punitive for honest mistakes.
+Slashable events record a pending penalty. Under the current implementation, a two-epoch delay gives governance time to correct an erroneous slash before it can be enforced. The stake deduction is then applied lazily when someone calls `validatorPrime()`.
+
+Priming is permissionless so a validator cannot reliably avoid enforcement by refusing to process itself. The caller currently receives 1% of an applied slash as an execution incentive; the remainder enters the protocol's slashed-token accounting.
+
+For operational monitoring and current configuration, see the [validator setup guide](/validators/setup-guide).

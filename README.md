@@ -40,6 +40,8 @@ You can use either `npm` or `pnpm` as your package manager.
 
 ## Maintaining Documentation
 
+For protocol concept pages, follow [PROTOCOL_DOCUMENTATION.md](./PROTOCOL_DOCUMENTATION.md) and run `npm run check:protocol-docs` before opening a pull request.
+
 ### Adding New Changelog Entries
 
 The changelog is automatically generated from individual version files during the build process.
