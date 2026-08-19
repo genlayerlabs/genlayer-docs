@@ -22,10 +22,19 @@ Minimums and the maximum active-set size are governance-configurable. Check curr
 A validator separates control of funds from day-to-day node operation.
 
 ```mermaid
-flowchart LR
-    Owner[Owner key<br/>funds and administration] --> Wallet[ValidatorWallet<br/>onchain identity]
-    Operator[Operator key<br/>node duties] --> Wallet
-    Wallet --> Stake[Stake and rewards]
+%%{init: {"flowchart": {"curve": "basis", "nodeSpacing": 48, "rankSpacing": 48, "htmlLabels": true}}}%%
+flowchart TB
+    Owner["Owner key<br/>funds and administration"] --> Wallet["ValidatorWallet<br/>onchain identity"]
+    Operator["Operator key<br/>consensus duties"] --> Wallet
+    Wallet --> Stake(["Stake and rewards"])
+
+    classDef key fill:#F7F8FC,stroke:#8B95A7,color:#202536,stroke-width:1.5px;
+    classDef identity fill:#EFEDFF,stroke:#6D5DF5,color:#251E63,stroke-width:2px;
+    classDef value fill:#E9F8F0,stroke:#23966B,color:#123F30,stroke-width:2px;
+    class Owner,Operator key;
+    class Wallet identity;
+    class Stake value;
+    linkStyle default stroke:#7C879C,stroke-width:1.8px;
 ```
 
 - The **owner key** joins, deposits, exits, claims, changes the operator, and controls the validator identity. Keep it offline when practical.

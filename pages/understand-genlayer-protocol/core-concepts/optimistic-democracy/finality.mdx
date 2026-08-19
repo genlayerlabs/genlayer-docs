@@ -9,12 +9,20 @@ An Intelligent Contract transaction is final when the consensus decision can no 
 ## Decision, appeal window, and finalization
 
 ```mermaid
-flowchart LR
-    D[Decided outcome] --> W[Appeal window]
-    W -->|valid appeal| A[Appeal processing]
-    A -->|confirmed or recomputed| W
-    W -->|window elapsed| R[Ready to finalize]
-    R --> F[Finalized]
+%%{init: {"flowchart": {"curve": "basis", "nodeSpacing": 42, "rankSpacing": 48, "htmlLabels": true}}}%%
+flowchart TB
+    D["Decided outcome"] --> W["Appeal window"]
+    W -->|"window elapses"| R["Ready to finalize"] --> F(["Finalized"])
+    W -->|"valid appeal"| A["Appeal processing"]
+    A -->|"confirmed or recomputed"| W
+
+    classDef phase fill:#EFEDFF,stroke:#6D5DF5,color:#251E63,stroke-width:2px;
+    classDef challenge fill:#FFF4E5,stroke:#D58A16,color:#583705,stroke-width:2px;
+    classDef success fill:#E9F8F0,stroke:#23966B,color:#123F30,stroke-width:2px;
+    class D,W phase;
+    class A challenge;
+    class R,F success;
+    linkStyle default stroke:#7C879C,stroke-width:1.8px;
 ```
 
 The appeal window starts after a decided outcome such as Accepted, Undetermined, ValidatorsTimeout, or LeaderTimeout. Its duration is governed by the protocol configuration. Applications should read the effective transaction status rather than assume a fixed number of seconds.

@@ -7,13 +7,37 @@ description: "Learn how GenLayer Chain, its consensus contracts, validator nodes
 GenLayer Chain is an EVM-compatible chain built with the ZK Stack. It hosts ordinary Solidity contracts and the consensus contracts that coordinate Intelligent Contract execution. GenVM is a separate execution environment operated by nodes; it is not an EVM precompile or an Ethereum rollup execution engine.
 
 ```mermaid
+%%{init: {"flowchart": {"curve": "basis", "nodeSpacing": 48, "rankSpacing": 54, "htmlLabels": true}}}%%
 flowchart TB
-    Ethereum[Ethereum] <-->|bridge and settlement| Chain[GenLayer Chain<br/>EVM + consensus contracts]
-    Client[Wallet or application] -->|EVM JSON-RPC| Chain
-    Chain -->|events and reads| Node[GenLayer node]
-    Node -->|execute and validate| VM[GenVM]
-    Node -->|proposal, vote, appeal,<br/>or finalization transaction| Chain
-    Client -->|GenLayer JSON-RPC| Node
+    Client(["Wallet or application"])
+    Ethereum[("Ethereum")]
+
+    subgraph Onchain["Onchain layer"]
+        Chain["GenLayer Chain<br/>EVM + consensus contracts"]
+    end
+
+    subgraph Offchain["Validator execution layer"]
+        direction LR
+        Node["GenLayer node"] <--> VM["GenVM"]
+    end
+
+    Client -->|"EVM JSON-RPC"| Chain
+    Client -->|"GenLayer JSON-RPC"| Node
+    Ethereum <-->|"bridge and settlement"| Chain
+    Chain -->|"events and reads"| Node
+    Node -->|"signed consensus transaction"| Chain
+
+    classDef actor fill:#F7F8FC,stroke:#8B95A7,color:#202536,stroke-width:1.5px;
+    classDef settlement fill:#FFF4E5,stroke:#D58A16,color:#583705,stroke-width:2px;
+    classDef chain fill:#EFEDFF,stroke:#6D5DF5,color:#251E63,stroke-width:2px;
+    classDef compute fill:#EAF7FF,stroke:#2686C4,color:#113F59,stroke-width:2px;
+    class Client actor;
+    class Ethereum settlement;
+    class Chain chain;
+    class Node,VM compute;
+    style Onchain fill:#F8F7FF,stroke:#B9B0FF,stroke-width:1px
+    style Offchain fill:#F5FBFF,stroke:#A8D7F2,stroke-width:1px
+    linkStyle default stroke:#7C879C,stroke-width:1.8px;
 ```
 
 ## What lives on GenLayer Chain

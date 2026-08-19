@@ -11,11 +11,20 @@ It does not wait for every transaction in which the validator participated to fi
 ## Exit lifecycle
 
 ```mermaid
-flowchart LR
-    A[Request exit<br/>burn shares] --> B[Pending epoch processing]
-    B --> C[Stake removed from<br/>active position]
-    C --> D[Unbonding]
-    D -->|current default: 7 epochs<br/>from exit request| E[Claimable GEN]
+%%{init: {"flowchart": {"curve": "basis", "nodeSpacing": 42, "rankSpacing": 44, "htmlLabels": true}}}%%
+flowchart TB
+    A(["Request exit<br/>burn shares"]) --> B["Pending epoch<br/>processing"]
+    B --> C["Remove stake from<br/>active position"]
+    C --> D["Unbonding<br/>current default: 7 epochs"]
+    D --> E(["Claimable GEN"])
+
+    classDef action fill:#F7F8FC,stroke:#8B95A7,color:#202536,stroke-width:1.5px;
+    classDef pending fill:#FFF4E5,stroke:#D58A16,color:#583705,stroke-width:2px;
+    classDef success fill:#E9F8F0,stroke:#23966B,color:#123F30,stroke-width:2px;
+    class A action;
+    class B,C,D pending;
+    class E success;
+    linkStyle default stroke:#7C879C,stroke-width:1.8px;
 ```
 
 1. The validator owner or delegator chooses a positive number of shares and submits an exit.

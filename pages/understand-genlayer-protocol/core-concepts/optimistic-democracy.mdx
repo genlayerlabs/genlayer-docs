@@ -11,16 +11,22 @@ It is **optimistic** because the protocol starts with a small committee and fina
 ## One consensus round
 
 ```mermaid
+%%{init: {"sequence": {"useMaxWidth": true, "diagramMarginX": 32, "actorMargin": 56, "messageMargin": 34, "mirrorActors": false}}}%%
 sequenceDiagram
+    autonumber
     participant C as Consensus contracts
     participant L as Leader
     participant V as Validator committee
     C->>L: Assign transaction
-    L->>L: Execute leader and validator paths
+    Note over L,V: Execute independently in GenVM
+    L->>L: Run leader and validator paths
     L->>C: Propose receipt
     V->>V: Evaluate proposal in GenVM
-    L->>C: Commit encrypted vote
-    V->>C: Commit encrypted votes
+    par Commit before seeing other votes
+        L->>C: Commit encrypted vote
+    and
+        V->>C: Commit encrypted votes
+    end
     L->>C: Reveal execution data and key
     V->>C: Reveal votes
     C->>C: Calculate majority and record decision
@@ -52,4 +58,3 @@ Anyone can challenge an eligible decision during its appeal window by posting th
 Further appeals use larger committees and exclude validators already consumed by the relevant appeal selection. This increases the cost of sustaining an incorrect result while avoiding the expense of involving the whole active set in routine transactions.
 
 Read [appeals](/understand-genlayer-protocol/core-concepts/optimistic-democracy/appeal-process) and [finality](/understand-genlayer-protocol/core-concepts/optimistic-democracy/finality) for the next steps in the lifecycle.
-

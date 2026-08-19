@@ -19,20 +19,29 @@ This design makes phase deadlines and the order of consensus actions objectively
 ## Transaction lifecycle
 
 ```mermaid
-flowchart LR
-    A[Pending] --> B[Proposing]
-    B --> C[Committing]
-    C --> D[Leader revealing]
-    D --> E[Revealing]
-    E --> F{Decided}
-    F -->|Accepted or timeout| G[Appeal window]
-    F -->|Undetermined| G
-    G -->|No appeal| H[Ready to finalize]
-    H --> I[Finalized]
-    G -->|Validator appeal| J[Appeal commit-reveal]
-    J -->|Decision overturned| B
-    J -->|Decision confirmed| G
-    G -->|Leader appeal| B
+%%{init: {"flowchart": {"curve": "basis", "nodeSpacing": 42, "rankSpacing": 48, "htmlLabels": true}}}%%
+flowchart TB
+    Pending(["Pending"])
+    Round["Proposal and<br/>commit–reveal round"]
+    Decision{"Decided<br/>outcome"}
+    Window["Appeal window"]
+    Review["Funded appeal<br/>fresh review"]
+    Ready["Ready to finalize"]
+    Final(["Finalized"])
+
+    Pending --> Round --> Decision --> Window
+    Window -->|"window elapses"| Ready --> Final
+    Window -->|"appeal"| Review
+    Review -->|"decision confirmed"| Window
+    Review -->|"decision overturned"| Round
+
+    classDef phase fill:#EFEDFF,stroke:#6D5DF5,color:#251E63,stroke-width:2px;
+    classDef challenge fill:#FFF4E5,stroke:#D58A16,color:#583705,stroke-width:2px;
+    classDef success fill:#E9F8F0,stroke:#23966B,color:#123F30,stroke-width:2px;
+    class Pending,Round,Decision,Window phase;
+    class Review challenge;
+    class Ready,Final success;
+    linkStyle default stroke:#7C879C,stroke-width:1.8px;
 ```
 
 ### 1. Submit and queue

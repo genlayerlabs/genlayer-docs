@@ -13,14 +13,30 @@ GenVM is the execution environment for Intelligent Contracts. It runs contract c
 GenVM separates reproducible execution from operations that can vary across validators.
 
 ```mermaid
+%%{init: {"flowchart": {"curve": "basis", "nodeSpacing": 42, "rankSpacing": 50, "htmlLabels": true}}}%%
 flowchart TD
-    Call[Intelligent Contract call] --> Deterministic[Deterministic execution]
-    Deterministic --> Block{Non-deterministic block?}
-    Block -->|No| Receipt[Execution receipt]
-    Block -->|Yes| Isolated[Isolated GenVM instance]
-    Isolated --> Host[Web or LLM host function]
-    Host --> Eq[Leader output or validator decision]
-    Eq --> Deterministic
+    Call(["Intelligent Contract call"]) --> Deterministic["Deterministic execution"]
+    Deterministic --> Block{"Enter a<br/>non-deterministic block?"}
+    Block -->|"no"| Receipt(["Execution receipt"])
+
+    subgraph Isolated["Isolated GenVM instance"]
+        direction LR
+        Sandbox["Non-deterministic code"] --> Host["Web or LLM<br/>host function"] --> Result["Candidate output or<br/>validator decision"]
+    end
+
+    Block -->|"yes"| Sandbox
+    Result -->|"return value only"| Deterministic
+
+    classDef boundary fill:#F7F8FC,stroke:#8B95A7,color:#202536,stroke-width:1.5px;
+    classDef deterministic fill:#EFEDFF,stroke:#6D5DF5,color:#251E63,stroke-width:2px;
+    classDef nondeterministic fill:#EAF7FF,stroke:#2686C4,color:#113F59,stroke-width:2px;
+    classDef output fill:#E9F8F0,stroke:#23966B,color:#123F30,stroke-width:2px;
+    class Call boundary;
+    class Deterministic,Block deterministic;
+    class Sandbox,Host,Result nondeterministic;
+    class Receipt output;
+    style Isolated fill:#F5FBFF,stroke:#A8D7F2,stroke-width:1px
+    linkStyle default stroke:#7C879C,stroke-width:1.8px;
 ```
 
 The top-level contract path must be deterministic. A non-deterministic block runs in a separate VM instance so that its transient memory and side effects cannot leak directly into deterministic state. Only the block's returned value crosses the boundary.

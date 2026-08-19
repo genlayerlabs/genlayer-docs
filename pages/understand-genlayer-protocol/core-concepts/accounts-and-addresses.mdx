@@ -19,11 +19,36 @@ GenLayer uses Ethereum-style, `0x`-prefixed addresses. The meaning of an address
 Deploying an Intelligent Contract creates a Ghost contract on GenLayer Chain and the corresponding Intelligent Contract in GenVM. Both use the same address.
 
 ```mermaid
-flowchart LR
-    Sender[EOA or EVM contract] -->|call 0xABC…| Ghost[Ghost 0xABC…<br/>GenLayer Chain]
-    Ghost --> Consensus[Consensus contracts]
-    Consensus --> Node[Validator nodes]
-    Node --> IC[Intelligent Contract 0xABC…<br/>GenVM]
+%%{init: {"flowchart": {"curve": "basis", "nodeSpacing": 44, "rankSpacing": 50, "htmlLabels": true}}}%%
+flowchart TB
+    Sender(["EOA or EVM contract"])
+    Address{"Address<br/>0xABC…"}
+
+    subgraph ChainLayer["GenLayer Chain"]
+        direction LR
+        Ghost["Ghost contract<br/>0xABC…"] --> Consensus["Consensus contracts"]
+    end
+
+    subgraph ExecutionLayer["Validator execution"]
+        direction LR
+        Node["Validator nodes"] --> IC["Intelligent Contract<br/>0xABC… · GenVM"]
+    end
+
+    Sender -->|"call"| Address --> Ghost
+    Consensus --> Node
+    Address -. "same logical address" .-> IC
+
+    classDef actor fill:#F7F8FC,stroke:#8B95A7,color:#202536,stroke-width:1.5px;
+    classDef address fill:#FFF4E5,stroke:#D58A16,color:#583705,stroke-width:2px;
+    classDef chain fill:#EFEDFF,stroke:#6D5DF5,color:#251E63,stroke-width:2px;
+    classDef compute fill:#EAF7FF,stroke:#2686C4,color:#113F59,stroke-width:2px;
+    class Sender actor;
+    class Address address;
+    class Ghost,Consensus chain;
+    class Node,IC compute;
+    style ChainLayer fill:#F8F7FF,stroke:#B9B0FF,stroke-width:1px
+    style ExecutionLayer fill:#F5FBFF,stroke:#A8D7F2,stroke-width:1px
+    linkStyle default stroke:#7C879C,stroke-width:1.8px;
 ```
 
 The Ghost is an EVM-facing proxy for protocol integration, not a second copy of the Intelligent Contract logic. It holds the address's native GEN balance on GenLayer Chain and forwards calls into consensus. If GenVM deployment fails, the Ghost can remain as the address placeholder for a later successful deployment.

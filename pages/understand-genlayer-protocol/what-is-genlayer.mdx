@@ -26,13 +26,28 @@ Different validators can receive different raw answers. The contract defines how
 GenLayer has three cooperating components:
 
 ```mermaid
-flowchart LR
-    User[User or application] -->|EVM transaction| Chain[GenLayer Chain<br/>consensus contracts]
-    Chain -->|events and state| Node[Validator node]
-    Node -->|execute contract| VM[GenVM]
-    VM -->|receipt or vote| Node
-    Node -->|signed transaction| Chain
-    Chain -->|accepted state| User
+%%{init: {"flowchart": {"curve": "basis", "nodeSpacing": 44, "rankSpacing": 52, "htmlLabels": true}}}%%
+flowchart TB
+    User(["User or application"])
+    Ghost["Ghost contract<br/>EVM entry point"]
+    Consensus["Consensus contracts<br/>order and assign work"]
+    Node["Validator node<br/>observe and coordinate"]
+    VM["GenVM<br/>execute or validate"]
+    State(["Consensus state updated"])
+
+    User -->|"submit transaction"| Ghost
+    Ghost --> Consensus
+    Consensus -->|"publish assignment"| Node
+    Node -->|"run contract"| VM
+    VM -->|"proposal or vote"| State
+
+    classDef actor fill:#F7F8FC,stroke:#8B95A7,color:#202536,stroke-width:1.5px;
+    classDef chain fill:#EFEDFF,stroke:#6D5DF5,color:#251E63,stroke-width:2px;
+    classDef compute fill:#EAF7FF,stroke:#2686C4,color:#113F59,stroke-width:2px;
+    class User actor;
+    class Ghost,Consensus,State chain;
+    class Node,VM compute;
+    linkStyle default stroke:#7C879C,stroke-width:1.8px;
 ```
 
 ### GenLayer Chain

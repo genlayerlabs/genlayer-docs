@@ -11,16 +11,32 @@ The principle is implemented as contract code. It is not a network-wide similari
 ## Leader and validator responsibilities
 
 ```mermaid
-flowchart LR
-    L[Leader function] -->|candidate output| P[Proposed receipt]
-    P --> V1[Validator function]
-    P --> V2[Validator function]
-    P --> V3[Validator function]
-    V1 --> M{Committee majority}
+%%{init: {"flowchart": {"curve": "basis", "nodeSpacing": 46, "rankSpacing": 48, "htmlLabels": true}}}%%
+flowchart TB
+    L["Leader function"] -->|"candidate output"| P["Proposed receipt"]
+
+    V1["Validator 1<br/>independent check"]
+    V2["Validator 2<br/>independent check"]
+    V3["Validator 3<br/>independent check"]
+
+    P --> V1
+    P --> V2
+    P --> V3
+    V1 --> M{"Majority<br/>accepts?"}
     V2 --> M
     V3 --> M
-    M -->|acceptable| A[Accept proposal]
-    M -->|not acceptable| R[Reject or rotate]
+    M -->|"yes"| A(["Accept proposal"])
+    M -->|"no"| R(["Reject or rotate"])
+
+    classDef leader fill:#EFEDFF,stroke:#6D5DF5,color:#251E63,stroke-width:2px;
+    classDef validator fill:#EAF7FF,stroke:#2686C4,color:#113F59,stroke-width:2px;
+    classDef success fill:#E9F8F0,stroke:#23966B,color:#123F30,stroke-width:2px;
+    classDef challenge fill:#FFF4E5,stroke:#D58A16,color:#583705,stroke-width:2px;
+    class L,P,M leader;
+    class V1,V2,V3 validator;
+    class A success;
+    class R challenge;
+    linkStyle default stroke:#7C879C,stroke-width:1.8px;
 ```
 
 The leader function produces the value that the surrounding deterministic code can use. Each validator function receives that value and independently returns an accept or reject decision. Intermediate validator results do not automatically become contract state.

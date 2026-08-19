@@ -22,12 +22,28 @@ Intelligent Contracts divide execution into deterministic code and isolated non-
 ## Architecture at a glance
 
 ```mermaid
-flowchart LR
-    App[Application] -->|signed EVM transaction| Chain[GenLayer Chain<br/>consensus contracts]
-    Chain --> Node[Validator node]
-    Node --> VM[GenVM<br/>Intelligent Contract execution]
-    VM --> Node
-    Node -->|proposal or vote| Chain
+%%{init: {"flowchart": {"curve": "basis", "nodeSpacing": 44, "rankSpacing": 54, "htmlLabels": true}}}%%
+flowchart TB
+    App(["Application"])
+    Chain["GenLayer Chain<br/>orders and coordinates"]
+    Worker["Validator node<br/>performs assigned duty"]
+    VM["GenVM<br/>executes or validates"]
+    Action["Signed proposal or vote"]
+    State(["Updated onchain state"])
+
+    App -->|"1 · submit transaction"| Chain
+    Chain -->|"2 · publish assignment"| Worker
+    Worker -->|"3 · run contract"| VM
+    VM -->|"4 · return result"| Action
+    Action -->|"5 · record consensus action"| State
+
+    classDef actor fill:#F7F8FC,stroke:#8B95A7,color:#202536,stroke-width:1.5px;
+    classDef chain fill:#EFEDFF,stroke:#6D5DF5,color:#251E63,stroke-width:2px;
+    classDef compute fill:#EAF7FF,stroke:#2686C4,color:#113F59,stroke-width:2px;
+    class App actor;
+    class Chain,Action,State chain;
+    class Worker,VM compute;
+    linkStyle default stroke:#7C879C,stroke-width:1.8px;
 ```
 
 - **GenLayer Chain** orders actions and stores the authoritative consensus state.

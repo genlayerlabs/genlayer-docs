@@ -7,30 +7,23 @@ description: "Follow a GenLayer transaction through activation, leader execution
 After an EVM submission creates a GenLayer transaction, the consensus contracts coordinate execution as an onchain state machine. Validator nodes observe the current phase, perform work in GenVM, and submit the next signed consensus action.
 
 ```mermaid
+%%{init: {"flowchart": {"curve": "basis", "nodeSpacing": 40, "rankSpacing": 44, "htmlLabels": true}}}%%
 flowchart TD
-    A[Pending] -->|activator selects committee| B[Proposing]
-    B -->|leader proposes receipt| C[Committing]
-    C -->|all required commitments| D[LeaderRevealing]
-    D -->|leader reveals data and keys| E[Revealing]
-    E -->|majority accepts| F[Accepted]
-    E -->|majority times out| VT[ValidatorsTimeout]
-    E -->|no decision and no rotation| U[Undetermined]
-    E -->|funded rotation remains| B
-    B -->|leader reports timeout| LT[LeaderTimeout]
+    Pending(["Pending"]) -->|"activate and select committee"| Propose["Proposing"]
+    Propose -->|"leader submits receipt"| Vote["Committing → LeaderRevealing → Revealing"]
+    Vote --> Decision{"Decided<br/>outcome"}
+    Decision --> Window["Appeal window"]
+    Window -->|"window elapses"| Ready["ReadyToFinalize"]
+    Ready --> Final(["Finalized"])
+    Pending -. "cancel or expire" .-> Canceled(["Canceled"])
 
-    F --> W[Appeal window]
-    VT --> W
-    U --> W
-    LT --> W
-    W -->|validator appeal| AC[AppealCommitting]
-    AC --> AR[AppealRevealing]
-    AR -->|decision confirmed| W
-    AR -->|decision overturned| B
-    W -->|leader appeal| B
-    W -->|window elapsed| RF[ReadyToFinalize]
-    RF --> FIN[Finalized]
-
-    A -.->|cancel or expire| X[Canceled]
+    classDef phase fill:#EFEDFF,stroke:#6D5DF5,color:#251E63,stroke-width:2px;
+    classDef success fill:#E9F8F0,stroke:#23966B,color:#123F30,stroke-width:2px;
+    classDef inactive fill:#F3F4F6,stroke:#9CA3AF,color:#374151,stroke-width:1.5px;
+    class Pending,Propose,Vote,Decision,Window phase;
+    class Ready,Final success;
+    class Canceled inactive;
+    linkStyle default stroke:#7C879C,stroke-width:1.8px;
 ```
 
 ## Pending and activation
@@ -52,6 +45,25 @@ The leader reveals its execution data and decryption keys in `LeaderRevealing`. 
 ## Decision and appeals
 
 Accepted, ValidatorsTimeout, Undetermined, and LeaderTimeout are decided outcomes that enter an appeal window. Validator appeals use a fresh committee to check the existing proposal. Leader appeals begin another proposal round. See [appeals](/understand-genlayer-protocol/core-concepts/optimistic-democracy/appeal-process).
+
+```mermaid
+%%{init: {"flowchart": {"curve": "basis", "nodeSpacing": 40, "rankSpacing": 46, "htmlLabels": true}}}%%
+flowchart TB
+    Decision["Decided outcome"] --> Window["Appeal window"]
+    Window -->|"no appeal"| Ready["Ready to finalize"]
+    Window -->|"validator appeal"| Review["Fresh committee review"]
+    Review -->|"confirmed"| Window
+    Review -->|"overturned"| Round["New proposal round"]
+    Window -->|"leader appeal"| Round
+
+    classDef phase fill:#EFEDFF,stroke:#6D5DF5,color:#251E63,stroke-width:2px;
+    classDef challenge fill:#FFF4E5,stroke:#D58A16,color:#583705,stroke-width:2px;
+    classDef success fill:#E9F8F0,stroke:#23966B,color:#123F30,stroke-width:2px;
+    class Decision,Window,Round phase;
+    class Review challenge;
+    class Ready success;
+    linkStyle default stroke:#7C879C,stroke-width:1.8px;
+```
 
 ## Finalization
 

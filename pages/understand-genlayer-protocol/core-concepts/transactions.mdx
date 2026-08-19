@@ -9,11 +9,19 @@ import { Card, Cards } from "nextra-theme-docs";
 An Intelligent Contract interaction begins as an EVM transaction on GenLayer Chain and creates a protocol transaction managed by the consensus contracts. These are related records with different purposes and finality.
 
 ```mermaid
-flowchart LR
-    E[EVM transaction<br/>signed by caller] --> G[Ghost or consensus contract]
-    G --> T[GenLayer transaction<br/>queued for consensus]
-    T --> R[Leader receipt and votes]
-    R --> F[Finalized state]
+%%{init: {"flowchart": {"curve": "basis", "nodeSpacing": 38, "rankSpacing": 44, "htmlLabels": true}}}%%
+flowchart TB
+    E(["1 · Sign<br/>EVM request"]) --> G["2 · Queue<br/>GenLayer transaction"]
+    G --> V["3 · Execute<br/>and reach consensus"]
+    V --> F(["4 · Finalize<br/>contract state"])
+
+    classDef request fill:#F7F8FC,stroke:#8B95A7,color:#202536,stroke-width:1.5px;
+    classDef consensus fill:#EFEDFF,stroke:#6D5DF5,color:#251E63,stroke-width:2px;
+    classDef success fill:#E9F8F0,stroke:#23966B,color:#123F30,stroke-width:2px;
+    class E request;
+    class G,V consensus;
+    class F success;
+    linkStyle default stroke:#7C879C,stroke-width:1.8px;
 ```
 
 ## EVM transaction
@@ -49,4 +57,3 @@ Messages emitted by Intelligent Contracts also create transactions and preserve 
 </Cards>
 
 For the current receipt schema, see [`gen_getTransactionReceipt`](/api-references/genlayer-node/gen/gen_getTransactionReceipt).
-
