@@ -2,58 +2,121 @@
 
 The Docs MCP service has three separately owned parts:
 
-- this repository builds and publishes the server image;
-- `genlayerlabs/devexp-apps-workload` deploys the image to Kubernetes through
-  ArgoCD;
-- `genlayerlabs/skills` exposes the public SSE endpoint from the
-  `genlayer-dev` plugin.
+- this repository builds and publishes the server image to GHCR;
+- `genlayerlabs/devexp-argocd-apps` deploys the production workload on AWS EKS;
+- `genlayerlabs/argocd-aws-apps` registers that workload with ArgoCD;
+- `genlayerlabs/skills` exposes the hosted connection through the GenLayer Docs plugin.
 
-Publishing an image is not a deployment. Production must reference an immutable
-`sha-<commit>` image tag (or digest) in the workload repository. A deployment is
-complete only after the new Kubernetes rollout succeeds and
-`smoke-test.mjs` completes an MCP `initialize` and `tools/list` exchange against
-the public endpoint.
+The primary endpoint is stateless Streamable HTTP at
+`https://docs-mcp.genlayer.com/mcp`. Legacy SSE remains available at `/sse` and
+`/messages` for clients that do not support Streamable HTTP yet.
 
-## Health check
+## Release and deployment flow
 
-Run the protocol-level canary:
+Merges to `main` that change `docs-mcp/**` or `pages/**` publish `latest` and
+`sha-<commit>` to GHCR. The image embeds the full source commit as the OCI
+`org.opencontainers.image.revision` label, so a docs-only change produces a new
+image digest even when the server files are unchanged.
+
+`devexp-argocd-apps` polls that labeled release, resolves its immutable digest,
+opens and auto-merges a one-line-or-two-line workload bump PR, and lets ArgoCD
+roll the StatefulSet. The deployment is complete only after:
+
+1. ArgoCD reports the exact GitOps revision synced and healthy;
+2. the workload is running the expected immutable digest;
+3. the public `/mcp` canary initializes without a session, lists tools, and runs
+   real `search_docs` queries against both indexes without duplicate
+   Markdown-mirror results or undefined result metadata; and
+4. the legacy `/sse` compatibility handshake still succeeds.
+
+The GitOps verification workflow restores the previous `docs-mcp` manifests
+when a rollout or public canary fails. Scheduled canary failures create or
+update an incident issue in this repository and close it after recovery.
+
+## Index lifecycle
+
+The AWS cluster provides EBS block storage, not a shared filesystem suitable
+for SQLite. Each StatefulSet pod therefore uses its own `emptyDir` volume:
+
+1. an init container scrapes `docs.genlayer.com` and `sdk.genlayer.com` into a
+   fresh local SQLite index;
+2. it verifies that both libraries are usable;
+3. the serving container starts read-only from that immutable local copy.
+
+The rolling update creates and readies one freshly indexed pod at a time. This
+avoids concurrent SQLite writers, removes the stale shared-PVC failure mode,
+and allows the two serving replicas to run on different nodes. The previous
+EBS PVC is intentionally retained, unmounted, for short-term rollback evidence;
+it is not part of the active data path.
+
+Rendered pages and their `.md` mirrors contain the same content. The scraper
+excludes `.md` URLs so each canonical page is indexed once.
+
+## Health checks
+
+Run the primary protocol and search-quality canary:
 
 ```bash
-node docs-mcp/smoke-test.mjs https://docs-mcp.genlayer.com/sse
+node docs-mcp/smoke-test.mjs https://docs-mcp.genlayer.com/mcp
 ```
 
-An HTTP-only `/healthz` check is insufficient. The production nginx sidecar can
-answer that route even when the MCP container is unavailable.
+Run the legacy compatibility canary without a duplicate search call:
+
+```bash
+DOCS_MCP_SKIP_SEARCH=true \
+  node docs-mcp/smoke-test.mjs https://docs-mcp.genlayer.com/sse
+```
+
+Run the SDK-index canary:
+
+```bash
+DOCS_MCP_SEARCH_LIBRARY=genlayer-sdk \
+DOCS_MCP_SEARCH_QUERY='manager socket protocol' \
+DOCS_MCP_SEARCH_EXPECTED_TEXT='Manager Socket Protocol' \
+  node docs-mcp/smoke-test.mjs https://docs-mcp.genlayer.com/mcp
+```
+
+An HTTP-only `/healthz` check is insufficient. The ingress health route proves
+that nginx can reach the MCP process, while the protocol canary proves that the
+server and index can answer real MCP traffic.
 
 ## Incident triage
 
-Check both the pod and the MCP container before restarting anything:
+Check ArgoCD, both StatefulSet pods, and their init-container logs before
+restarting anything:
 
 ```bash
-kubectl get pods -n studio-prd -l app=docs-mcp-server
-kubectl describe pod -n studio-prd -l app=docs-mcp-server
-kubectl logs -n studio-prd -l app=docs-mcp-server -c docs-mcp-server --tail=200
-kubectl logs -n studio-prd -l app=docs-mcp-server -c docs-mcp-server \
-  --previous --tail=200
-kubectl get events -n studio-prd --sort-by=.lastTimestamp
+kubectl --context devexp-prd -n argocd get application docs-mcp
+kubectl --context devexp-prd -n studio-prd get statefulset,pods \
+  -l app=docs-mcp-server
+kubectl --context devexp-prd -n studio-prd describe pod \
+  -l app=docs-mcp-server
+kubectl --context devexp-prd -n studio-prd logs \
+  -l app=docs-mcp-server -c index-docs --tail=200
+kubectl --context devexp-prd -n studio-prd logs \
+  -l app=docs-mcp-server -c docs-mcp-server --tail=200
+kubectl --context devexp-prd -n studio-prd get events \
+  --sort-by=.lastTimestamp
 ```
 
-Inspect PVC capacity and index size when logs mention SQLite, disk, migration,
-or verification errors. `documents.db` is derived data; the entrypoint removes
-an unusable database and rebuilds it from the configured docs sources.
+The index is derived data. A failed init container should be diagnosed from its
+scrape and verification output; deleting or repairing a shared database is no
+longer part of normal recovery.
 
-## Required deployment guardrails
+## Deployment guardrails
 
-The workload repository should:
+The production workload must continue to:
 
-1. pin an immutable image tag or digest;
-2. use a rolling deployment with at least two serving replicas;
-3. move indexing into a separate Job that writes a new index before rollout;
-4. make readiness and ingress health depend on the MCP process, not nginx;
-5. wait for rollout completion and run the public protocol canary;
-6. roll back automatically when the canary fails;
-7. alert the owning channel when the scheduled canary fails.
+1. pin immutable image digests;
+2. run at least two Streamable HTTP serving replicas with rolling updates and
+   one pod available throughout the rollout;
+3. build a fresh pod-local index before each server starts;
+4. route `/sse` and `/messages` to one stable StatefulSet pod while legacy
+   sessions are supported;
+5. make readiness and ingress health depend on the MCP process;
+6. wait for ArgoCD convergence and run both public protocol canaries;
+7. restore the previous manifests automatically when verification fails; and
+8. open an incident issue when the scheduled production canary fails.
 
 Do not restore the removed `POST /web/jobs/scrape` workflow call. That route is
-not exposed by the pinned `docs-mcp-server mcp` runtime. Refresh the index with a
-dedicated indexing Job instead.
+not exposed by the read-only `docs-mcp-server mcp` runtime.
