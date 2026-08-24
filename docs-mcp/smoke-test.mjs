@@ -235,6 +235,51 @@ function validateTools(payload, expectedTool) {
   return tools.map((tool) => tool.name);
 }
 
+function markdownMirrorIdentity(rawUrl) {
+  try {
+    const url = new URL(rawUrl);
+    let pathname = url.pathname;
+
+    if (/\/index(?:\.html)?\.md$/i.test(pathname)) {
+      pathname = pathname.replace(/\/index(?:\.html)?\.md$/i, "");
+    } else if (/\.html\.md$/i.test(pathname)) {
+      pathname = pathname.replace(/\.md$/i, "");
+    } else if (/\.md$/i.test(pathname)) {
+      pathname = pathname.replace(/\.md$/i, "");
+    }
+
+    pathname = pathname.replace(/\/+$/, "") || "/";
+    return `${url.origin}${pathname}`;
+  } catch {
+    return rawUrl
+      .replace(/(?:\/index(?:\.html)?)?\.md(?:[?#].*)?$/i, "")
+      .replace(/\/+$/, "");
+  }
+}
+
+function findMarkdownMirrorDuplicate(text) {
+  const resultUrls = [...text.matchAll(/^Result \d+:\s+(\S+)\s*$/gim)].map(
+    (match) => match[1],
+  );
+  const seen = new Map();
+
+  for (const resultUrl of resultUrls) {
+    const identity = markdownMirrorIdentity(resultUrl);
+    const previousUrl = seen.get(identity);
+    if (
+      previousUrl &&
+      previousUrl !== resultUrl &&
+      (/\.md(?:[?#]|$)/i.test(previousUrl) ||
+        /\.md(?:[?#]|$)/i.test(resultUrl))
+    ) {
+      return [previousUrl, resultUrl];
+    }
+    seen.set(identity, resultUrl);
+  }
+
+  return null;
+}
+
 function validateSearch(payload, search) {
   if (payload.result?.isError) {
     throw new Error("search_docs returned isError=true");
@@ -256,11 +301,15 @@ function validateSearch(payload, search) {
       `search_docs did not contain expected text ${JSON.stringify(search.expectedText)}`,
     );
   }
-  if (
-    search.rejectMarkdownMirror &&
-    /Result \d+:\s+\S+\.md(?:[?#]\S*)?(?:\r?\n|$)/i.test(text)
-  ) {
-    throw new Error("search_docs returned a duplicate .md mirror result");
+  const markdownMirrorDuplicate = search.rejectMarkdownMirror
+    ? findMarkdownMirrorDuplicate(text)
+    : null;
+  if (markdownMirrorDuplicate) {
+    throw new Error(
+      `search_docs returned duplicate HTML/Markdown mirror results: ${markdownMirrorDuplicate.join(
+        " and ",
+      )}`,
+    );
   }
   if (
     search.rejectUndefinedMetadata &&

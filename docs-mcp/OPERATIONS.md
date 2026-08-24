@@ -49,8 +49,11 @@ and allows the two serving replicas to run on different nodes. The previous
 EBS PVC is intentionally retained, unmounted, for short-term rollback evidence;
 it is not part of the active data path.
 
-Rendered pages and their `.md` mirrors contain the same content. The scraper
-excludes `.md` URLs so each canonical page is indexed once.
+Rendered pages and their `.md` mirrors contain the same content. Direct `.md`
+links are excluded so each canonical page is indexed once. The v3 scraper may
+still use a Markdown representation discovered through `llms.txt`; the canary
+therefore rejects an HTML/Markdown pair for the same page, not a lone Markdown
+source URL.
 
 ## Health checks
 
