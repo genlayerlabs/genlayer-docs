@@ -7,17 +7,68 @@ on:
 
 permissions:
   contents: read
+  issues: write
 
 concurrency:
   group: docs-mcp-production-health
   cancel-in-progress: true
 
 jobs:
-  mcp-handshake:
+  mcp-canary:
     runs-on: ubuntu-latest
     timeout-minutes: 3
     steps:
       - uses: actions/checkout@v4
 
-      - name: Initialize MCP and list tools
+      - name: Validate stateless HTTP and Docs search quality
+        id: docs
+        continue-on-error: true
+        run: node docs-mcp/smoke-test.mjs https://docs-mcp.genlayer.com/mcp
+
+      - name: Validate SDK search quality
+        id: sdk
+        continue-on-error: true
+        env:
+          DOCS_MCP_SEARCH_LIBRARY: genlayer-sdk
+          DOCS_MCP_SEARCH_QUERY: manager socket protocol
+          DOCS_MCP_SEARCH_EXPECTED_TEXT: Manager Socket Protocol
+        run: node docs-mcp/smoke-test.mjs https://docs-mcp.genlayer.com/mcp
+
+      - name: Validate legacy SSE compatibility
+        id: legacy
+        continue-on-error: true
+        env:
+          DOCS_MCP_SKIP_SEARCH: "true"
         run: node docs-mcp/smoke-test.mjs https://docs-mcp.genlayer.com/sse
+
+      - name: Open or update incident issue
+        if: steps.docs.outcome == 'failure' || steps.sdk.outcome == 'failure' || steps.legacy.outcome == 'failure'
+        env:
+          GH_TOKEN: ${{ github.token }}
+          RUN_URL: https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}
+        run: |
+          set -euo pipefail
+          title="Docs MCP production canary is failing"
+          issue="$(gh issue list --state open --search "${title} in:title" --json number --jq '.[0].number // empty')"
+          body="The production protocol canary failed. Docs search: ${{ steps.docs.outcome }}. SDK search: ${{ steps.sdk.outcome }}. Legacy SSE: ${{ steps.legacy.outcome }}. Run: ${RUN_URL}"
+          if [[ -n "$issue" ]]; then
+            gh issue comment "$issue" --body "$body"
+          else
+            gh issue create --title "$title" --body "$body"
+          fi
+
+      - name: Close recovered incident issue
+        if: steps.docs.outcome == 'success' && steps.sdk.outcome == 'success' && steps.legacy.outcome == 'success'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          title="Docs MCP production canary is failing"
+          issue="$(gh issue list --state open --search "${title} in:title" --json number --jq '.[0].number // empty')"
+          if [[ -n "$issue" ]]; then
+            gh issue close "$issue" --comment "Recovered in workflow run ${{ github.run_id }}."
+          fi
+
+      - name: Fail unhealthy canary
+        if: steps.docs.outcome == 'failure' || steps.sdk.outcome == 'failure' || steps.legacy.outcome == 'failure'
+        run: exit 1

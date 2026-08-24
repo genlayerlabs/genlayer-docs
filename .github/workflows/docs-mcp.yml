@@ -43,10 +43,24 @@ jobs:
           password: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Build and push
+        id: build
         uses: docker/build-push-action@v6
         with:
           context: ./docs-mcp
           push: ${{ github.event_name == 'push' }}
+          build-args: |
+            DOCS_REVISION=${{ github.sha }}
           tags: |
             ${{ env.IMAGE }}:latest
             ${{ env.IMAGE }}:sha-${{ github.sha }}
+
+      - name: Record published release
+        if: github.event_name == 'push'
+        run: |
+          {
+            echo "### Docs MCP image published"
+            echo
+            echo "- Source: \`${{ github.sha }}\`"
+            echo "- Digest: \`${{ steps.build.outputs.digest }}\`"
+            echo "- GitOps: \`genlayerlabs/devexp-argocd-apps\` polls the labeled \`latest\` image and promotes this digest"
+          } >> "$GITHUB_STEP_SUMMARY"

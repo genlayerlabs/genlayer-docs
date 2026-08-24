@@ -340,11 +340,21 @@ claude mcp add genlayer npx -- -y genlayer-mcp
 The **GenLayer Docs MCP Server** gives your AI agent searchable access to the full GenLayer documentation and SDK reference — so it can look up APIs, patterns, and examples while writing code:
 
 ```bash
-# Add to Claude Code
+# Codex uses the stateless Streamable HTTP endpoint
+codex mcp add genlayer-docs --url https://docs-mcp.genlayer.com/mcp
+
+# Claude Code can use the legacy SSE compatibility endpoint
 claude mcp add genlayer-docs --transport sse https://docs-mcp.genlayer.com/sse
 ```
 
-This is a hosted service — no local setup required. It provides a `search_docs` tool that searches across both the [GenLayer documentation](https://docs.genlayer.com) and the [GenLayer SDK reference](https://sdk.genlayer.com). Compatible with any MCP client (Claude Code, Cursor, Windsurf, etc.).
+This is a hosted service — no local setup required. It provides a `search_docs` tool that searches across both the [GenLayer documentation](https://docs.genlayer.com) and the [GenLayer SDK reference](https://sdk.genlayer.com). Use `https://docs-mcp.genlayer.com/mcp` for clients that support Streamable HTTP; `/sse` remains available for legacy SSE clients.
+
+<Callout emoji="🩺">
+  A plain HTTP status check does not prove that MCP search works. If the hosted
+  server is unavailable, use [docs.genlayer.com](https://docs.genlayer.com), the
+  [SDK reference](https://sdk.genlayer.com), or the GenLayer Skills plugin as a
+  temporary fallback and retry later.
+</Callout>
 
 The boilerplate also includes a `CLAUDE.md` file pre-configured with commands, architecture context, and testing patterns — so agents understand the project structure immediately.
 
