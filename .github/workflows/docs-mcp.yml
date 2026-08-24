@@ -31,8 +31,8 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: Test MCP handshake canary
-        run: node --test docs-mcp/smoke-test.test.mjs
+      - name: Test MCP canaries
+        run: node --test docs-mcp/*.test.mjs
 
       - name: Log in to GitHub Container Registry
         if: github.event_name == 'push'

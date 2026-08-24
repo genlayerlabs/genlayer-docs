@@ -23,6 +23,7 @@ index_docs() {
     --max-pages "$MAX_PAGES" \
     --max-depth "$MAX_DEPTH" \
     --max-concurrency "$MAX_CONCURRENCY" \
+    --header 'Accept: text/html' \
     --exclude-pattern '/full-documentation\.txt/' \
     --exclude-pattern '/\.md(?:\?.*)?$/' \
     --exclude-pattern '/developers/intelligent-contracts/?$/' \

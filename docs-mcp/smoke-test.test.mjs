@@ -184,7 +184,91 @@ test("rejects duplicate Markdown mirror search results", async () => {
 
   await assert.rejects(
     runSmokeTest({ endpoint: `${baseUrl}/mcp`, timeoutMs: 2_000, search }),
-    /duplicate \.md mirror result/,
+    /duplicate HTML\/Markdown mirror results/,
+  );
+});
+
+test("allows a Markdown source when no HTML mirror is also returned", async () => {
+  const baseUrl = await listen(async (request, response) => {
+    const payload = await readJson(request);
+    if (payload.id === undefined) {
+      response.writeHead(202).end();
+      return;
+    }
+
+    response.writeHead(200, { "Content-Type": "application/json" });
+    response.end(
+      JSON.stringify({
+        jsonrpc: "2.0",
+        id: payload.id,
+        result: resultFor(
+          payload,
+          "Result 1: https://docs.genlayer.com/equivalence-principle/index.html.md\nEquivalence Principle",
+        ),
+      }),
+    );
+  });
+
+  const result = await runSmokeTest({
+    endpoint: `${baseUrl}/mcp`,
+    timeoutMs: 2_000,
+    search,
+  });
+
+  assert.equal(result.searchValidated, true);
+});
+
+test("rejects a canonical URL paired with the v3 Markdown variant", async () => {
+  const baseUrl = await listen(async (request, response) => {
+    const payload = await readJson(request);
+    if (payload.id === undefined) {
+      response.writeHead(202).end();
+      return;
+    }
+
+    response.writeHead(200, { "Content-Type": "application/json" });
+    response.end(
+      JSON.stringify({
+        jsonrpc: "2.0",
+        id: payload.id,
+        result: resultFor(
+          payload,
+          "Result 1: https://docs.genlayer.com/equivalence-principle\nEquivalence Principle\nResult 2: https://docs.genlayer.com/equivalence-principle/index.html.md\nEquivalence Principle",
+        ),
+      }),
+    );
+  });
+
+  await assert.rejects(
+    runSmokeTest({ endpoint: `${baseUrl}/mcp`, timeoutMs: 2_000, search }),
+    /duplicate HTML\/Markdown mirror results/,
+  );
+});
+
+test("rejects a root URL paired with index.md", async () => {
+  const baseUrl = await listen(async (request, response) => {
+    const payload = await readJson(request);
+    if (payload.id === undefined) {
+      response.writeHead(202).end();
+      return;
+    }
+
+    response.writeHead(200, { "Content-Type": "application/json" });
+    response.end(
+      JSON.stringify({
+        jsonrpc: "2.0",
+        id: payload.id,
+        result: resultFor(
+          payload,
+          "Result 1: https://docs.genlayer.com/\nEquivalence Principle\nResult 2: https://docs.genlayer.com/index.md\nEquivalence Principle",
+        ),
+      }),
+    );
+  });
+
+  await assert.rejects(
+    runSmokeTest({ endpoint: baseUrl + "/mcp", timeoutMs: 2_000, search }),
+    /duplicate HTML\/Markdown mirror results/,
   );
 });
 
