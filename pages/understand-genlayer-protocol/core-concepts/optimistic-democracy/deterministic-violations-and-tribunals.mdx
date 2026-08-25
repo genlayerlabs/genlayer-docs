@@ -1,0 +1,107 @@
+---
+description: "Deterministic Violations and Tribunals explains how GenLayer detects a validator that produced a provably-wrong deterministic result, how that differs from idleness, and how a tribunal adjudicates the dispute and applies slashing."
+---
+
+import { Callout } from 'nextra-theme-docs'
+
+# Deterministic Violations & Tribunals
+
+GenLayer transactions mix two kinds of work. **Non-deterministic** operations — calling a language model, reading the web — can legitimately differ between validators and are reconciled through the [Equivalence Principle](/understand-genlayer-protocol/core-concepts/optimistic-democracy/equivalence-principle) and [appeals](/understand-genlayer-protocol/core-concepts/optimistic-democracy/appeal-process). **Deterministic** operations — ordinary contract computation — must produce the *same* result for everyone who runs them. When a validator reports a deterministic result that disagrees with everyone else's, that is a different and more serious matter: a **deterministic violation**.
+
+This page explains what a deterministic violation is, how the protocol tells it apart from a validator that simply went idle, how a **tribunal** adjudicates the dispute, and what the consequences are.
+
+## What Is a Deterministic Violation?
+
+A deterministic violation is a validator (often the round leader) reporting a deterministic execution result that is provably inconsistent with the result the rest of the committee computed.
+
+Because deterministic execution is reproducible, every validator that runs a transaction should arrive at the same result, and therefore the same result hash. During the normal commit-and-reveal flow, validators reveal a hash of their execution result. The protocol compares the leader's reported execution hash against each validator's revealed result hash:
+
+- **Hashes match** — the validator agrees with the leader; this counts toward the majority-agree tally.
+- **Hashes disagree** — the mismatch is recorded as a deterministic violation.
+
+If a majority of the committee disagrees with the leader's deterministic result, the round's outcome is classified as a deterministic violation and the dispute is escalated to a tribunal.
+
+<Callout type="info">
+"Provably wrong" here means *inconsistent with the on-chain majority of validators' result hashes* — not the product of an on-chain re-execution. The consensus contracts compare hashes that validators computed off-chain and committed; they do not re-run the program themselves. The guarantee comes from agreement among independently-executing validators.
+</Callout>
+
+## Violations vs. Idleness
+
+The protocol draws a sharp line between two categories of fault, and handles them on separate paths with different consequences:
+
+| | **Idleness** (liveness fault) | **Deterministic violation** (safety fault) |
+|:--|:--|:--|
+| **What happened** | A validator failed to act within its phase timeout | A validator actively reported a wrong deterministic result |
+| **Nature** | Missing participation | Provably incorrect participation |
+| **Detected by** | The idleness module tracking who acted in time | Result-hash comparison during voting |
+| **Immediate consequence** | A strike is recorded; a per-strike slash applies | The result is escalated to a tribunal; the accused leader is quarantined for the tribunal's duration |
+| **Escalated outcome** | Temporary quarantine once strikes cross a threshold | Slashing of the parties the tribunal finds at fault |
+
+The distinction matters: idleness is about *availability*, and its penalties are designed to be recoverable — a validator that misses windows is temporarily sidelined and can return. A deterministic violation is about *correctness*, and it is adjudicated more heavily because a validator that reports wrong deterministic results undermines the integrity of the chain.
+
+### How Idleness Is Handled
+
+When a validator misses a required action within a phase, the idleness module records a **strike** for that validator in the current epoch, and applies a slash for that strike. Strikes accumulate over the epoch; when a validator's strike count crosses the configured maximum, the validator is placed into a **temporary quarantine** and excluded from selection for a bounded number of epochs, after which it can be reinstated. The strike threshold is a governance parameter (set via `setStrikesMax`), so the exact number of missed actions tolerated per epoch is configurable rather than fixed by the protocol.
+
+This is the ordinary, self-correcting side of validator discipline. For the full penalty mechanics, see [Slashing](/understand-genlayer-protocol/core-concepts/optimistic-democracy/slashing).
+
+## The Tribunal Process
+
+A tribunal is the mechanism that adjudicates a suspected deterministic violation. Unlike a user-initiated appeal, a tribunal is triggered **automatically by the protocol** when a consensus round's majority result is a deterministic violation.
+
+The process runs roughly as follows:
+
+1. **Trigger.** When a round resolves to a deterministic violation, the protocol prepares a tribunal for that transaction and immediately places the accused leader under a temporary quarantine for the duration of the adjudication.
+
+2. **Assembly.** The tribunal considers the votes already cast in the original round and opens participation to a broader set of eligible validators, so that more of the validator set weighs in on whether the leader's deterministic result was actually wrong.
+
+3. **Commit and reveal.** Participating validators adjudicate by committing and then revealing a vote over the execution result — the same commit-reveal discipline used elsewhere in consensus, which prevents validators from copying one another. Each revealed vote is reduced to a result hash and compared against the leader's result hash to classify the voter as agreeing or disagreeing with the leader.
+
+4. **Verdict.** Once the reveal window closes, the tribunal is finalized into one of three outcomes:
+   - **Majority disagree** — the violation is *upheld*: the committee confirms the leader's deterministic result was wrong.
+   - **Majority agree** — the leader is *vindicated*: the accusation does not hold, and the leader's temporary quarantine is lifted.
+   - **No majority** — the tribunal is inconclusive, the quarantine is lifted, and no slashing is applied.
+
+<Callout type="warning">
+The precise rule for what constitutes a tribunal "majority" — in particular how non-voting validators are counted — is an area where the current implementation and the design intent diverge. Treat the outcomes above as the shape of the mechanism rather than an exact quorum specification, and consult the protocol's design records for the authoritative rule.
+</Callout>
+
+## Consequences
+
+The consequences of a tribunal fall into two parts: **slashing**, which is implemented and applied today, and a **permanent ban**, which is the designed end-state for a proven violation.
+
+### Slashing
+
+When a violation is upheld (majority disagree), the protocol slashes the parties at fault:
+
+- The **leader** who reported the wrong deterministic result is slashed at the leader rate.
+- **Validators who sided with the wrong result** (or who failed to weigh in) are slashed at the validator rate.
+
+Conversely, if the leader is vindicated (majority agree), the validators who *wrongly accused* the leader are the ones slashed, and the leader is left untouched. This symmetry discourages both dishonest leaders and frivolous accusations.
+
+The slash amounts are expressed as percentages of stake and are governance-configurable, with a cap on how much a validator can be slashed in a single epoch. As currently configured, a leader's deterministic-violation slash is several times larger than a validator's, reflecting the leader's greater responsibility for the reported result. Slashes do not take effect instantly: they are scheduled and only become final after a short delay measured in epochs, which leaves room for the outcome to settle before stake is actually removed.
+
+### Permanent Ban (Designed Consequence)
+
+By design, a validator whose deterministic violation is upheld is intended to be **permanently removed** from the validator set — a permanent quarantine, in contrast to the temporary, recoverable quarantine used for idleness. This reflects the principle that producing provably-wrong deterministic results is a safety fault that should not be forgiven the way a missed window is.
+
+<Callout type="warning">
+Permanent banning of a leader on an upheld deterministic violation is the **intended** consequence described in the protocol's design records, and the underlying banning mechanism exists in the staking contracts. In the current consensus code it is **not yet wired into the tribunal outcome**: an upheld violation applies slashing and leaves the accused leader's temporary quarantine in place (it is simply not lifted), but the permanent-ban call is not invoked automatically. Describe permanent removal as the design target, and verify the live behavior against the deployed contracts before relying on it.
+</Callout>
+
+## Relationship to Appeals
+
+GenLayer has two distinct escalation mechanisms, and it is worth keeping them separate:
+
+- The **[appeals process](/understand-genlayer-protocol/core-concepts/optimistic-democracy/appeal-process)** is a permissionless, bond-backed way for anyone to challenge a transaction's outcome and pull in additional validators to reassess a *disputed* decision (for example, a contested non-deterministic result or a timeout).
+- A **tribunal** is an automatic, protocol-initiated adjudication that fires specifically when a round's majority result is a *deterministic violation*. No user bond initiates it; it is a built-in response to the violation itself, and its job is to confirm or overturn the violation finding and apply the resulting slashing.
+
+Both draw on a wider pool of validators to increase confidence in the result, but they are triggered differently and serve different purposes.
+
+## Related Concepts
+
+- [Appeals Process](/understand-genlayer-protocol/core-concepts/optimistic-democracy/appeal-process) — the bond-backed challenge mechanism for disputed outcomes.
+- [Slashing](/understand-genlayer-protocol/core-concepts/optimistic-democracy/slashing) — how stake penalties are calculated and finalized.
+- [Staking Penalties](/understand-genlayer-protocol/core-concepts/optimistic-democracy/staking-penalties) — the broader catalog of penalties applied to staked validators.
+- [Protocol Randomness](/understand-genlayer-protocol/core-concepts/optimistic-democracy/protocol-randomness) — how the validators and leaders in these committees are selected.
+- [Equivalence Principle](/understand-genlayer-protocol/core-concepts/optimistic-democracy/equivalence-principle) — how legitimate non-deterministic differences are reconciled.

@@ -1,0 +1,122 @@
+# Transaction Kit Integration
+
+`@genlayer/transaction-kit` is the frontend layer for GenLayer fee approval and transaction tracking. It turns a transaction plus optional developer fee profile into a quote, shows the user what they are funding, submits through an EIP-1193 wallet provider and tracks the result.
+
+## Install
+
+```jsonc
+{
+  "dependencies": {
+    "@genlayer/transaction-kit": "github:genlayerlabs/genlayer-transaction-kit#pkg/core",
+    "@genlayer/transaction-kit-react": "github:genlayerlabs/genlayer-transaction-kit#pkg/react"
+  }
+}
+```
+
+Vue apps use `#pkg/vue`. The adapters are thin UI packages around the same core flow.
+
+## Create the kit
+
+The kit depends on an injected [EIP-1193](https://eips.ethereum.org/EIPS/eip-1193) provider. MetaMask, Privy embedded wallets, external Privy wallets, WalletConnect and similar wallets work as long as they expose `request()`.
+
+```typescript
+import { createTransactionKit } from '@genlayer/transaction-kit';
+import { testnetAsimov } from 'genlayer-js/chains';
+import feeProfile from './fee-profile.json';
+
+const kit = createTransactionKit({
+  chain: testnetAsimov,
+  provider: window.ethereum,
+  account: userAddress,
+  suggestions: feeProfile,
+});
+```
+
+`suggestions` is optional. Without it, the kit falls back to network defaults. With it, matching methods are quoted from your measured developer fee profile while prices and caps still come from live network reads.
+
+## Use the React panel
+
+```tsx
+import { GenLayerTransactionPanel } from '@genlayer/transaction-kit-react';
+import '@genlayer/transaction-kit-react/styles.css';
+
+<GenLayerTransactionPanel
+  kit={kit}
+  tx={{ kind: 'write', address: contract, method: 'place_bet', args: [42] }}
+  network="testnet-asimov"
+  trackUntil="decided"
+  onDone={(status) => refetchAppState()}
+/>
+```
+
+The panel owns the normal flow:
+
+1. estimate the fee policy
+2. show an itemized fee receipt
+3. let the user choose `low`, `standard` or `high` appeal posture
+4. show price-protection caps
+5. ask the wallet to sign
+6. track the transaction
+7. surface success, failure or an unresolved outcome
+
+Deploys use the same panel shape:
+
+```tsx
+<GenLayerTransactionPanel
+  kit={kit}
+  tx={{ kind: 'deploy', code, args }}
+  network="testnet-asimov"
+/>
+```
+
+## Use the headless flow
+
+Use the headless API when you need a custom UI:
+
+```typescript
+const quote = await kit.estimate(
+  { preset: 'standard' },
+  { kind: 'write', address: contract, method: 'place_bet', args: [42] },
+);
+
+const { genlayerTxId } = await kit.submit(quote, {
+  kind: 'write',
+  address: contract,
+  method: 'place_bet',
+  args: [42],
+});
+
+const final = await kit.track(genlayerTxId, (status) => {
+  console.log(status.phase, status.statusName, status.executionResultName);
+});
+```
+
+The same flow is also exposed through framework hooks/composables where available.
+
+## Presets, profiles and overrides
+
+The kit builds fee options in this order:
+
+1. user preset: `low`, `standard` or `high`
+2. developer profile: measured method or deploy suggestions
+3. explicit caller overrides
+
+Use the preset for the user's appeal posture. Use the profile for method-specific allocations, message budget and rotations. Use overrides only when the app deliberately knows more than the default profile for a specific flow.
+
+```typescript
+await kit.estimate(
+  {
+    preset: 'high',
+    overrides: {
+      totalMessageFees: 10_000_000_000_000_000n,
+    },
+  },
+  { kind: 'write', address: contract, method: 'register_and_claim', args },
+);
+```
+
+Overrides are useful for advanced apps that can distinguish modes before submission. For example, if a method has a rare expensive branch and the app can prove the current user cannot hit it, the app may override a lower message budget. The default committed profile should still be conservative.
+
+## Long-running transactions
+
+Do not force users to stare at a modal for minutes. Transactions that call LLMs, fetch web data or wait through appeals can take time. Use the panel timeline for immediate feedback, but track the transaction in your backend or application state as well. A user should be able to navigate away and come back to the outcome.
