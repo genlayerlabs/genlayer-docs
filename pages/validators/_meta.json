@@ -1,5 +1,6 @@
 {
   "setup-guide": "Setup Guide",
+  "epoch-zero": "Epoch Zero (Bootstrap)",
   "monitoring": "Monitoring & Telemetry",
   "system-requirements": "System Requirements",
   "genvm-configuration": "GenVM Configuration",
