@@ -1,0 +1,159 @@
+---
+description: "Staking penalties and the validator lifecycle in GenLayer: idleness strikes, quarantine, temporary and permanent bans, slashing, and how monitoring status maps to on-chain protocol states."
+---
+
+import { Callout } from "nextra-theme-docs";
+
+# Staking Mechanics: Penalties & Validator Lifecycle
+
+This page explains what happens to a validator that misbehaves or goes offline: the **idleness strike system**, **quarantine**, **temporary and permanent bans**, and **slashing**. It also maps the status labels you see while monitoring to the underlying protocol states, so an operator watching a dashboard can tell exactly what the network thinks of their validator.
+
+If your validator is already flagged and you just need the fix, jump straight to the [Quarantine Recovery runbook](/validators/quarantine-recovery). For everyday setup and operation, see the [Setup Guide](/validators/setup-guide).
+
+<Callout type="info">
+  All values on this page (strike thresholds, slash percentages, minimum stake, epoch length) are governance parameters or testnet defaults. Treat them as **reference/default** values — final mainnet values are still to be determined and several can be changed by on-chain governance without a code change.
+</Callout>
+
+## The Validator Lifecycle at a Glance
+
+A validator moves between a small number of states. Only one of them — **active** — earns rewards and gets selected for transactions.
+
+| State | Selected for transactions? | Earning rewards? | How you got here | How you leave |
+|-------|:--------------------------:|:----------------:|------------------|---------------|
+| **Active** | Yes | Yes | Stake ≥ minimum, primed each epoch | Miss priming, drop below minimum, or get quarantined/banned |
+| **Not active** (below minimum) | No | No | Stake fell **below the minimum** | Top up stake to the minimum, then re-prime |
+| **Not participating** (not primed) | No | No | `validatorPrime()` was **not called** for the upcoming epoch | Ensure your node primes each epoch |
+| **Quarantined / temporarily banned** | No | No | **Idleness strikes** reached the threshold, or a deterministic-violation tribunal is in progress | Wait out the epoch(s); reactivation is automatic |
+| **Permanently banned** | No | No | Convicted of a **deterministic violation** (provable fraud) | Does not auto-recover — a new validator is required |
+
+<Callout type="info">
+  "Active" is defined as being eligible for **selection in the current epoch**. A validator is inactive if it is below the minimum stake threshold, banned, or not primed. Being inactive is not the same as being penalized — a validator that simply forgot to prime loses selection but is not slashed.
+</Callout>
+
+## Idleness and Strikes
+
+**Idleness** means a validator was **selected for a transaction but did not respond in time** — it failed to commit or reveal its vote within the phase timeout. Idleness is about liveness: the validator was asked to do work and didn't.
+
+GenLayer tracks idleness with a **strike system**:
+
+- Each time a selected validator fails to respond, it accumulates **one strike**.
+- Strikes are counted **per epoch** and **reset at every epoch boundary** — a fresh epoch starts you back at zero.
+- When strikes reach the **strike threshold**, the validator is banned for the **current and next epoch**, then reactivated automatically.
+
+<Callout type="info">
+  The strike threshold is a **governance parameter** (`setStrikesMax()`), so the exact number can change. The current network setting is **5 strikes** within a single epoch. Because strikes reset each epoch, an occasional single miss will not accumulate into a ban — sustained idleness within one epoch does.
+</Callout>
+
+**Failure to reveal a vote** is treated the same way: if a validator commits a vote but never reveals it within the timeout, that counts as **one strike** toward the ban threshold (in addition to being slashed — see [Slashing](#slashing)).
+
+<Callout type="warning">
+  A consensus **timeout** decided by the validators (leader timeout / validator timeout) is a system-level determination and is **not** the same as idleness. Idleness is a validator failing to participate when it was selected — that is what earns strikes and slashing.
+</Callout>
+
+## Quarantine vs. Ban
+
+At the protocol level, GenLayer distinguishes **why** a validator is excluded, but exposes both through a single on-chain "excluded validators" query surface. For an operator, the important split is **temporary vs. permanent**.
+
+### Temporary: Quarantine / Idleness Ban
+
+Both of these are **temporary exclusions that recover automatically**:
+
+- **Idleness ban** — reaching the strike threshold bans the validator for the **current and next epoch**. It then reactivates on its own; no manual action is needed beyond continuing to prime.
+- **Quarantine** — applied automatically when the consensus system detects a **deterministic violation** (validators with identical votes producing mismatched execution result hashes). Quarantine takes effect immediately and lasts **until the tribunal appeal process completes**, regardless of the outcome. While quarantined, the validator is not selected for new rounds and the leader is rotated to another validator so the transaction keeps moving.
+
+On-chain, temporary exclusions carry an **end epoch** and expire at the beginning of that epoch. Quarantine and (temporary) ban are, for query purposes, the same excluded-validator state — a monitoring tool will surface them together.
+
+<Callout type="info">
+  A quarantine that arises from an in-progress tribunal cannot be manually cleared — it resolves when the tribunal does. An **idleness** ban simply waits out its 1–2 epoch window. See the [Recovery runbook](/validators/quarantine-recovery) for how to tell which one you are in.
+</Callout>
+
+### Permanent Ban
+
+A **permanent ban** is the terminal state. It is applied after a **tribunal conviction** for a deterministic violation — for example, a leader found not to be in the majority after appeal, i.e. provable fraud (censorship or a forged receipt). A permanently banned validator is excluded from current, future, and (if not yet finalized) previous epochs, and **does not auto-recover**.
+
+<Callout type="error">
+  Permanent ban is reserved for provable, deterministic misbehavior — not for going offline. On testnet, no validator has reached permanent ban. If you believe your validator was permanently banned, it almost always indicates a genuine deterministic-violation conviction and should be escalated (see the [Recovery runbook](/validators/quarantine-recovery#when-to-escalate)) rather than waited out.
+</Callout>
+
+### Governance Delay Before a Ban Takes Effect
+
+Bans carry a **2-epoch governance delay** (`delayInEpochs = 2`) before execution, which gives governance a window to intervene and reverse an incorrect ban before it is enforced.
+
+<Callout type="info">
+  **Timestamp-based exclusion:** A banned validator is excluded from transactions **created after** the quarantine timestamp. For transactions that already existed **before** the ban, the validator may still be selected and **must keep participating**, or it risks additional slashing. This keeps in-flight transactions deterministic without disrupting them.
+</Callout>
+
+## Slashing
+
+**Slashing** is the economic penalty — GEN is removed from the validator's stake (and, for percentage-based slashes, partly from delegated stake). It is separate from banning: banning stops you from being *selected*, slashing reduces your *stake*.
+
+### When It Is Applied (Lazy + Time-Locked)
+
+Slashing does **not** hit your balance the instant the infraction happens. Two gates control it:
+
+1. **2-epoch delay** — a recorded penalty (idleness, failure-to-reveal, deterministic violation) becomes **enactable only ~2 epochs later** (`delayInEpochs = 2` in the slashing logic). At the ~1-day minimum epoch length, that is roughly a two-day window in which governance can reverse an incorrect slash.
+2. **Lazy application at priming** — the deduction is actually applied the next time the validator is processed by **`validatorPrime()`** (the same call that rolls stake forward for the upcoming epoch). Slashing is "pull-based": it takes effect on the next prime, not on a fixed clock.
+
+Because priming is **permissionless**, anyone can trigger a pending slash. Whoever primes a validator that has a pending slash receives **1% of the slashed amount** immediately (deducted before the remainder is burned) — this pays third parties to enforce slashing even if the validator never primes itself.
+
+### Slashing Schedule
+
+The percentages below are the documented testnet schedule. Percentage-based slashes (idleness, failure-to-reveal, deterministic violation) split the slashed amount **80% from the validator's self-stake and 20% from delegated stake**.
+
+| Trigger | What is slashed | Self / delegated split |
+|---------|-----------------|:----------------------:|
+| **Idleness** (selected but did not respond in time) | ~1% of stake | 80% / 20% |
+| **Failure to reveal vote** | ~1% of stake | 80% / 20% |
+| **Deterministic violation** (provable fraud) | Leader ~5%, other minority validators ~1%, capped at ~10% per epoch | 80% / 20% |
+| **Incorrect result** (voted with the losing side after appeal) | Negative fee charge to stake (burned) **plus** forfeited reward | Pro-rata to stake |
+| **Failed appeal** | 100% of the appeal bond (forfeited to the round's validators — **not** burned) | — |
+
+<Callout type="info">
+  Slashed tokens from percentage-based penalties are **burned** (permanently removed from supply). Incorrect-result penalties are deducted pro-rata across self-stake and delegated stake in proportion to their share of the validator's total stake at priming time. A **failed appeal** forfeits the bond to the round's validators rather than burning it.
+</Callout>
+
+<Callout type="warning">
+  **Slash-evasion caveat (known limitation):** because enactment is lazy, a validator that **exits before it is next primed** can avoid a pending slash — the deduction is only computed at priming. The 2-epoch delay bounds the window and the 1% caller incentive pays others to prime-and-slash first, but the gap is only partially mitigated.
+</Callout>
+
+## Mapping Monitoring Labels to Protocol States
+
+When you watch a validator — via `genlayer staking validator-info`, the banned/quarantined lists, or a Grafana dashboard fed by node metrics — the status you see corresponds to one of the protocol states above. Use this table to cross-reference what the monitoring surface reports against what the network is actually doing:
+
+| What you observe | Protocol state | What it means | First action |
+|------------------|----------------|---------------|--------------|
+| Validator absent from the **active set** (`active-validators`) but not in any ban/quarantine list | **Not participating** (not primed) or **not active** (below minimum) | Node isn't being selected; either priming stopped or stake dropped below the minimum | Check priming and stake — see [recovery](/validators/quarantine-recovery#diagnose-the-cause) |
+| Validator appears in the **quarantined** list (`quarantined-validators`) | **Quarantined** | Excluded due to idleness strikes or an in-progress deterministic-violation tribunal | Identify which; usually **wait** — see [recovery](/validators/quarantine-recovery) |
+| Validator appears in the **banned** list (`banned-validators`) with an **end epoch** | **Temporary ban** | Idleness/temporal ban that expires automatically at the listed epoch | Wait out the window, keep priming |
+| Validator appears in the **banned** list flagged **permanent** | **Permanent ban** | Deterministic-violation conviction; does not auto-recover | [Escalate](/validators/quarantine-recovery#when-to-escalate) |
+| Stake reported **below the minimum** in `validator-info` | **Not active** (below minimum) | Fell under the 42,000 GEN reference minimum | Top up, then re-prime |
+
+<Callout type="info">
+  The on-chain excluded-validator query returns, per validator, an **end epoch** ("banned until") and a **permanent** flag. A temporary quarantine or ban shows a concrete end epoch and clears at the start of that epoch; a permanent ban is marked accordingly and never expires on its own. Query these with `genlayer staking banned-validators` and `genlayer staking quarantined-validators`.
+</Callout>
+
+## Reference Parameters
+
+| Parameter | Reference / default value | Notes |
+|-----------|---------------------------|-------|
+| Epoch length | ~24 hours (minimum 1 day) | Can extend past 24h due to finalization constraints |
+| Validator minimum self-stake | 42,000 GEN | Governance-configurable; below this the validator is **not active** |
+| Delegator minimum stake | 42 GEN | Per validator |
+| Idleness strike threshold | 5 strikes per epoch (current network setting) | Governance parameter (`setStrikesMax()`); strikes reset each epoch |
+| Idleness ban duration | Current + next epoch | Then auto-reactivates |
+| Slash enactment delay | ~2 epochs | Applied lazily at the next `validatorPrime()` |
+| Unbonding period (exit) | 7 epochs | Applies to voluntary exits, unrelated to penalties |
+
+<Callout type="warning">
+  These are **reference/default** values for testnet. Minimum-stake figures, strike thresholds, and slash percentages are all subject to change — final mainnet values are TBD and several are adjustable by governance.
+</Callout>
+
+## Related Resources
+
+- [Quarantine Recovery](/validators/quarantine-recovery) — operator runbook for a quarantined or not-active validator
+- [Setup Guide](/validators/setup-guide) — validator installation, staking, and priming
+- [Monitoring & Telemetry](/validators/monitoring) — metrics, dashboards, and alerting
+- [Staking Contract Guide](/developers/staking-guide) — direct Solidity interactions, including [Genesis Epoch 0](/developers/staking-guide#genesis-epoch-0)
+- [Slashing (concept)](/understand-genlayer-protocol/core-concepts/optimistic-democracy/slashing) — protocol-level rationale for slashing
+- [Staking (concept)](/understand-genlayer-protocol/core-concepts/optimistic-democracy/staking) — epochs, shares, weights, and rewards
+- [`genlayer staking validator-info`](/api-references/genlayer-cli/staking/staking/validator-info) · [`banned-validators`](/api-references/genlayer-cli/staking/staking/banned-validators) · [`quarantined-validators`](/api-references/genlayer-cli/staking/staking/quarantined-validators)

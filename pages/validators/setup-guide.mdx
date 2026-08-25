@@ -12,6 +12,8 @@ Validators require both a staking deposit and a validator priming transaction to
 
 For a deeper understanding of how staking works in GenLayer, see the [Staking documentation](/understand-genlayer-protocol/core-concepts/optimistic-democracy/staking).
 
+Once your validator is running, see [Staking Penalties & Validator Lifecycle](/validators/staking-penalties) to understand idleness strikes, quarantine, and bans — and the [Quarantine Recovery runbook](/validators/quarantine-recovery) if your validator ever shows as quarantined or not active.
+
 ## System Requirements
 
 | Resource | Requirement |
@@ -172,6 +174,10 @@ genlayer staking validator-claim
 # Update identity
 genlayer staking set-identity --validator 0x... --moniker "New Name"
 ```
+
+<Callout type="info">
+  If your validator shows as **quarantined**, **banned**, or **not active**, follow the [Quarantine Recovery runbook](/validators/quarantine-recovery) to diagnose the cause and recover. For the mechanics behind those states — idleness strikes, bans, and slashing — see [Staking Penalties & Validator Lifecycle](/validators/staking-penalties).
+</Callout>
 
 ---
 

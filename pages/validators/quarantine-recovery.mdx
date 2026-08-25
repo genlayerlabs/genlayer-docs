@@ -1,0 +1,165 @@
+---
+description: "Operator runbook for recovering a GenLayer validator that is quarantined, banned, or not active: diagnose the cause, follow the recovery path, and know when to escalate."
+---
+
+import { Callout } from "nextra-theme-docs";
+
+# Quarantine Recovery
+
+Your validator shows as **quarantined**, **banned**, or **not active**, and you need it earning again. This runbook takes you from symptom to fix: diagnose the cause, apply the recovery path for that cause, and escalate only when you actually need to.
+
+For the full model behind these states — strikes, quarantine, bans, and slashing — see [Staking Mechanics: Penalties & Validator Lifecycle](/validators/staking-penalties).
+
+<Callout type="info">
+  **The short version:** most exclusions are temporary and recover on their own. Idleness bans clear after the current + next epoch. Below-minimum validators need a top-up. A validator that simply stopped priming just needs its node priming again. Permanent bans are the only state that does not self-heal — and on testnet, none have occurred.
+</Callout>
+
+## Diagnose the Cause
+
+Before doing anything, find out **which** state you are in. Run these against your validator wallet address:
+
+```bash copy
+# Is my validator in the active set at all?
+genlayer staking active-validators
+
+# What does the network think of my validator (stake, status, pending ops)?
+genlayer staking validator-info 0xYourValidatorWallet...
+
+# Am I quarantined?
+genlayer staking quarantined-validators
+
+# Am I banned — and is it temporary (has an end epoch) or permanent?
+genlayer staking banned-validators
+
+# What epoch are we in? (needed to know when a temporary ban clears)
+genlayer staking epoch-info
+```
+
+Match what you find to one of these causes:
+
+| Symptom | Likely cause | Go to |
+|---------|--------------|-------|
+| In `banned-validators` with an **end epoch**, or in `quarantined-validators` | **Idleness strikes** → temporary ban/quarantine | [Strikes](#cause-1-idleness-strikes-quarantine--temporary-ban) |
+| `validator-info` shows stake **below 42,000 GEN** | **Below minimum** → not active | [Below minimum](#cause-2-below-minimum-stake-not-active) |
+| Absent from `active-validators`, **not** in any ban/quarantine list, stake is fine | **Not primed**, or a version / RPC problem | [Not primed](#cause-3-not-primed--version--rpc) |
+| In `banned-validators` flagged **permanent** | **Deterministic-violation conviction** | [Escalate](#when-to-escalate) |
+
+<Callout type="warning">
+  Do not top up stake or restart your node blindly. Topping up will not clear an **idleness** ban, and restarting will not fix a **below-minimum** stake. Diagnose first, then apply the matching path below.
+</Callout>
+
+## Cause 1: Idleness Strikes (Quarantine / Temporary Ban)
+
+**How you got here:** your validator was selected for transactions but didn't respond (commit/reveal) in time, accumulated strikes within one epoch, and hit the strike threshold. That bans it for the **current and next epoch**. A quarantine tied to a deterministic-violation tribunal behaves similarly but resolves when the tribunal does.
+
+**Recovery path — wait one epoch, then confirm priming:**
+
+1. **Confirm it is idleness-based**, not a tribunal quarantine: `banned-validators` will list an **end epoch** for an idleness ban. Note that epoch.
+2. **Fix the root cause of the misses** so it does not immediately recur — see [Prevent idleness strikes](#prevent-idleness-strikes) below. Recovering only to be re-banned next epoch helps no one.
+3. **Wait for the ban window to pass.** Idleness bans clear automatically at the start of the end epoch — there is no "unban" you need to call. Use `epoch-info` to watch the current epoch advance past the end epoch.
+4. **Ensure your node primes** for the upcoming epoch so it re-enters the active set the moment the ban lifts:
+
+   ```bash copy
+   genlayer staking validator-info 0xYourValidatorWallet...   # verify priming / pending state
+   ```
+
+   Priming is normally automatic — your node calls `validatorPrime()` each epoch. If it isn't happening, treat it as a [not-primed](#cause-3-not-primed--version--rpc) problem in parallel.
+
+<Callout type="info">
+  You cannot manually clear an idleness ban early — it is timed to the epoch boundary. Your job is to (a) stop the misses and (b) make sure the node primes so it rejoins selection automatically. Because strikes **reset every epoch**, once you fix the underlying cause the counter starts fresh.
+</Callout>
+
+### Prevent Idleness Strikes
+
+Idleness almost always traces back to the node not answering in time when selected. Check, in rough order of likelihood:
+
+- **Node health / uptime** — the node was down, restarting, or unreachable during a round it was selected for. Keep it running under a supervisor (`systemd`, `screen`/`tmux`, or the Docker `restart: unless-stopped` policy from the [Setup Guide](/validators/setup-guide)).
+- **LLM provider reachability** — Intelligent Contract execution needs your configured LLM. If the provider is slow, rate-limited, or the API key expired, the node can miss its response window. Verify with `./bin/genlayernode doctor`.
+- **GenVM modules** — the `web` and `llm` modules must be running (or `genvm.manage_modules: true`). If they are down, execution stalls.
+- **ZKSync full node / RPC** — a lagging or unreachable GenLayer-chain RPC means the node can't read state or submit votes in time. Confirm the RPC and WebSocket URLs in `config.yaml` are healthy.
+- **Clock / sync** — a node behind on sync may act on stale slot information and miss phase deadlines.
+
+## Cause 2: Below-Minimum Stake (Not Active)
+
+**How you got here:** "not active" (or "not participating" in the sense of not being in the active set) because your **self-stake fell below the minimum** — the 42,000 GEN reference minimum for validators. This is **distinct from quarantine**: you were not penalized, you simply no longer meet the bar for selection. It shows up as a low stake figure in `validator-info`, and the validator will **not** appear in any ban or quarantine list.
+
+**Recovery path — top up, then re-prime:**
+
+1. **Deposit enough to get back above the minimum:**
+
+   ```bash copy
+   genlayer staking validator-deposit --amount <amount>gen
+   ```
+
+2. **Let the deposit activate.** Deposits follow the **epoch +2 activation rule** — staged one epoch, active the next, and only if `validatorPrime()` runs in between. Watch it with:
+
+   ```bash copy
+   genlayer staking validator-info 0xYourValidatorWallet...
+   ```
+
+3. **Confirm priming happens** across the activation window so the topped-up stake is committed and the validator re-enters the active set.
+
+<Callout type="warning">
+  A top-up is **not** instant — plan for the +2 epoch activation delay before the validator is selectable again. Depositing does nothing for an **idleness** ban; only use this path when the diagnosis is genuinely below-minimum stake.
+</Callout>
+
+## Cause 3: Not Primed / Version / RPC
+
+**How you got here:** the validator meets the minimum and isn't banned, but it's missing from the active set because `validatorPrime()` wasn't called for the upcoming epoch — or the node can't do its job because of a version mismatch or a broken RPC connection. If priming stops, the validator is **excluded from the next epoch** (no rewards), though its stake is untouched.
+
+**Recovery path — restore priming:**
+
+1. **Verify the node is actually running as a validator**, not silently as a full node. This happens when the operator key or validator wallet address is missing from the config — the [Setup Guide](/validators/setup-guide#running-the-node) calls this out explicitly. Both must be set.
+2. **Run diagnostics:**
+
+   ```bash copy
+   ./bin/genlayernode doctor
+   ```
+
+   This checks consensus-contract accessibility, GenVM module health, LLM connectivity, and ZKSync node reachability — the usual reasons priming silently fails.
+3. **Check version.** Running an outdated node can cause it to fall out of step with the network. List available versions and upgrade if you are behind (see the [Upgrade Guide](/validators/upgrade) and the [Setup Guide download steps](/validators/setup-guide#download-the-node-software)).
+4. **Confirm RPC / WebSocket connectivity.** A lagging or unreachable GenLayer-chain RPC prevents the node from priming on time. Verify the `genlayerchainrpcurl` and `genlayerchainwebsocketurl` values in `config.yaml`.
+5. **If priming must be nudged manually**, it is permissionless — anyone can prime a validator:
+
+   ```bash copy
+   genlayer staking validator-prime --validator 0xYourValidatorWallet...
+   ```
+
+   Longer term, your node should prime automatically every epoch; a manual prime is a stopgap, not a fix for a node that has stopped priming on its own.
+
+<Callout type="info">
+  Priming is **permissionless and incentivized** — anyone can call it, and whoever primes a validator with a pending slash earns 1% of the slashed amount. This means a healthy validator is normally kept primed by its own node, but the network can also prime it. If yours consistently needs manual priming, the underlying node problem still needs fixing.
+</Callout>
+
+## When to Escalate
+
+Most states above are self-service. Escalate — rather than wait — when:
+
+- **`banned-validators` flags your validator as permanent.** A permanent ban comes from a **deterministic-violation conviction** (provable fraud), not from downtime, and it **does not auto-recover**. On testnet, no validator has hit permanent ban, so seeing this is unexpected and worth raising with the team. Recovery generally means standing up a **new** validator; the banned wallet will not come back on its own.
+- **A temporary ban does not clear after its end epoch.** If `epoch-info` shows the current epoch has passed the end epoch reported in `banned-validators` but the validator is still excluded, something is off beyond a normal idleness ban.
+- **You've corrected the root cause and still can't re-enter the active set** after a full activation window — for example, priming succeeds, stake is above minimum, `doctor` is clean, yet the validator never rejoins `active-validators`.
+- **You suspect an incorrect slash or ban.** Bans and slashes carry a **2-epoch governance delay** specifically so an incorrect penalty can be reversed before it takes effect. If you believe a penalty is wrong, raise it within that window rather than waiting for it to enact.
+
+<Callout type="error">
+  A **permanent ban** is the one state this runbook cannot walk you out of. If you are genuinely permanently banned, do not wait for a recovery that will not come — escalate, and plan to redeploy a fresh validator. Everything else on this page recovers with patience plus the right fix.
+</Callout>
+
+## Quick Reference
+
+| Diagnosis | Recovery | Auto-recovers? |
+|-----------|----------|:--------------:|
+| Idleness strikes (temporary ban / quarantine) | Fix the cause of the misses, **wait** out current + next epoch, keep priming | Yes |
+| Deterministic-violation tribunal quarantine | Wait for tribunal to resolve | Yes (on resolution) |
+| Below-minimum stake (not active) | **Top up** with `validator-deposit`, wait +2 epochs, re-prime | After top-up |
+| Not primed | Restore automatic priming; `doctor`; nudge with `validator-prime` if needed | Once priming resumes |
+| Version / RPC problem | Upgrade node, fix RPC/WebSocket URLs, re-run `doctor` | Once fixed |
+| Permanent ban | **Escalate**; redeploy a new validator | No |
+
+## Related Resources
+
+- [Staking Mechanics: Penalties & Validator Lifecycle](/validators/staking-penalties) — the full model behind these states
+- [Setup Guide](/validators/setup-guide) — installation, staking, priming, and running the node
+- [Upgrade Guide](/validators/upgrade) — keeping your node version current
+- [Monitoring & Telemetry](/validators/monitoring) — dashboards and alerting to catch idleness early
+- [Slashing (concept)](/understand-genlayer-protocol/core-concepts/optimistic-democracy/slashing) — protocol-level slashing rationale
+- [`genlayer staking validator-info`](/api-references/genlayer-cli/staking/staking/validator-info) · [`banned-validators`](/api-references/genlayer-cli/staking/staking/banned-validators) · [`quarantined-validators`](/api-references/genlayer-cli/staking/staking/quarantined-validators) · [`validator-deposit`](/api-references/genlayer-cli/staking/staking/validator-deposit) · [`validator-prime`](/api-references/genlayer-cli/staking/staking/validator-prime) · [`epoch-info`](/api-references/genlayer-cli/staking/staking/epoch-info)

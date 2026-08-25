@@ -378,6 +378,10 @@ A: Yes, if you meet the minimum requirements. Stakes from epoch 0 carry forward 
 **Q: What happens to my stake if I joined in epoch 0 but my node doesn't call validatorPrime() in epoch 2?**
 A: You'll be excluded from validator selection in epoch 4, but your stake remains. Once priming resumes, you'll be eligible for selection again.
 
+<Callout type="info">
+  Once the network is operational (epoch 2+), validators are subject to idleness strikes, quarantine, and bans. See [Staking Penalties & Validator Lifecycle](/validators/staking-penalties) for the full model, and [Quarantine Recovery](/validators/quarantine-recovery) if your validator is ever excluded.
+</Callout>
+
 ---
 
 ## Common Scenarios
@@ -469,4 +473,6 @@ genStaking.validatorClaim(validatorWallet);
 - [Staking Concepts](/understand-genlayer-protocol/core-concepts/optimistic-democracy/staking) - How staking works in GenLayer
 - [Unstaking](/understand-genlayer-protocol/core-concepts/optimistic-democracy/unstaking) - Unstaking process details
 - [Slashing](/understand-genlayer-protocol/core-concepts/optimistic-democracy/slashing) - Slashing penalties and conditions
+- [Staking Penalties & Validator Lifecycle](/validators/staking-penalties) - Idleness strikes, quarantine, bans, and the slashing schedule
+- [Quarantine Recovery](/validators/quarantine-recovery) - Operator runbook for a quarantined or not-active validator
 - [GenLayer CLI Staking Commands](/api-references/genlayer-cli#staking-operations-testnet) - CLI reference for staking

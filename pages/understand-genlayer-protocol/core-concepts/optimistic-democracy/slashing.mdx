@@ -27,3 +27,15 @@ Validators in GenLayer can be slashed for several reasons:
 ### Amount Slashed
 
 The amount slashed varies based on the severity of the violation and the specific rules set by the GenLayer platform. The slashing amount is designed to be substantial enough to deter malicious or negligent behavior while not being excessively punitive for honest mistakes.
+
+## Slashing, Idleness, Quarantine, and Bans
+
+Slashing is the **economic** penalty (stake is reduced). It works alongside the **operational** penalties that stop a validator from being selected:
+
+- **Idleness** — a validator selected for a transaction that does not respond (commit/reveal) in time. Repeated idleness within an epoch accumulates **strikes**.
+- **Quarantine / temporary ban** — a temporary exclusion (from idleness strikes or an in-progress deterministic-violation tribunal) that **recovers automatically** after the affected epoch(s).
+- **Permanent ban** — a terminal exclusion applied after a deterministic-violation conviction (provable fraud), which does not auto-recover.
+
+Slashing is applied lazily at quarantine/ban enforcement — a recorded penalty becomes enactable roughly two epochs after the event and is deducted the next time the validator is primed.
+
+For the full lifecycle, strike thresholds, the slashing schedule, and how monitoring status maps to these states, see [Staking Penalties & Validator Lifecycle](/validators/staking-penalties). For a hands-on recovery runbook, see [Quarantine Recovery](/validators/quarantine-recovery).

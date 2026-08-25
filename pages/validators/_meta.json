@@ -1,5 +1,7 @@
 {
   "setup-guide": "Setup Guide",
+  "staking-penalties": "Staking Penalties & Lifecycle",
+  "quarantine-recovery": "Quarantine Recovery",
   "monitoring": "Monitoring & Telemetry",
   "system-requirements": "System Requirements",
   "genvm-configuration": "GenVM Configuration",
