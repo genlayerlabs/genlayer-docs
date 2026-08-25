@@ -18,9 +18,13 @@ Merges to `main` that change `docs-mcp/**` or `pages/**` publish `latest` and
 `org.opencontainers.image.revision` label, so a docs-only change produces a new
 image digest even when the server files are unchanged.
 
-`devexp-argocd-apps` polls that labeled release, resolves its immutable digest,
-opens and auto-merges a one-line-or-two-line workload bump PR, and lets ArgoCD
-roll the StatefulSet. The deployment is complete only after:
+`devexp-argocd-apps` reads the current `genlayer-docs` `main` revision, waits
+for its matching `sha-<commit>` image, validates the image's embedded source
+provenance through its immutable digest, opens and auto-merges the workload
+bump PR, and lets ArgoCD roll the StatefulSet. The promoter remains active
+until production verification finishes, so a later release cannot enter the
+lane while the current one is still being verified. The deployment is complete
+only after:
 
 1. ArgoCD reports the exact GitOps revision synced and healthy;
 2. the workload is running the expected immutable digest;
@@ -30,8 +34,11 @@ roll the StatefulSet. The deployment is complete only after:
 4. the legacy `/sse` compatibility handshake still succeeds.
 
 The GitOps verification workflow restores the previous `docs-mcp` manifests
-when a rollout or public canary fails. Scheduled canary failures create or
-update an incident issue in this repository and close it after recovery.
+when a rollout or its public canaries fail. Those deployment incidents are
+owned and tracked in `devexp-argocd-apps`. Separately,
+`docs-mcp-health.yml` runs the three public canaries every 15 minutes; ongoing
+service-health incidents are owned and tracked in this repository. Each
+workflow closes only the incident type it owns after recovery.
 
 ## Index lifecycle
 
@@ -120,7 +127,8 @@ The production workload must continue to:
 5. make readiness and ingress health depend on the MCP process;
 6. wait for ArgoCD convergence and run both public protocol canaries;
 7. restore the previous manifests automatically when verification fails; and
-8. open an incident issue when the scheduled production canary fails.
+8. track rollout-verification incidents in `devexp-argocd-apps` and scheduled
+   production-health incidents in `genlayer-docs`.
 
 Do not restore the removed `POST /web/jobs/scrape` workflow call. That route is
 not exposed by the read-only `docs-mcp-server mcp` runtime.

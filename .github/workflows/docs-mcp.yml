@@ -62,5 +62,5 @@ jobs:
             echo
             echo "- Source: \`${{ github.sha }}\`"
             echo "- Digest: \`${{ steps.build.outputs.digest }}\`"
-            echo "- GitOps: \`genlayerlabs/devexp-argocd-apps\` polls the labeled \`latest\` image and promotes this digest"
+            echo "- GitOps: \`genlayerlabs/devexp-argocd-apps\` promotes \`sha-${{ github.sha }}\` by immutable digest and waits for production verification"
           } >> "$GITHUB_STEP_SUMMARY"
