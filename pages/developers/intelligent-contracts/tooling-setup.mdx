@@ -397,3 +397,51 @@ const receipt = await client.waitForTransactionReceipt({
     status: "FINALIZED",
 });
 ```
+
+
+## Troubleshooting
+
+### Common Setup Errors
+
+#### ModuleNotFoundError: No module named genlayer
+
+Make sure you installed dependencies:
+
+```bash
+pip install -r requirements.txt
+```
+
+If using a virtual environment, activate it first:
+
+```bash
+source .venv/bin/activate  # Linux/macOS
+.venv\Scripts\activate     # Windows
+```
+
+#### Docker daemon is not running
+
+GenLayer Studio requires Docker. Start Docker Desktop and verify:
+
+```bash
+docker info
+```
+
+#### Port 4000 already in use
+
+```bash
+# Linux/macOS
+lsof -i :4000
+# Windows
+netstat -aon | findstr 4000
+```
+
+#### gltest command not found
+
+```bash
+pip install genlayer-test
+```
+
+### Getting Help
+
+- Discord: discord.gg/8Jm4v89VAu
+- GitHub Issues: github.com/genlayerlabs/genlayer-studio/issues
