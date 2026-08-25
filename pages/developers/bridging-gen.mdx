@@ -1,0 +1,100 @@
+---
+description: "How to bridge GEN between Ethereum (L1) and the GenLayer Chain (L2): deposit L1 to L2, withdraw L2 to L1, understand finalization timing, and track a transfer."
+---
+
+import { Callout } from "nextra-theme-docs";
+import { Card, Cards } from "nextra-theme-docs";
+
+# Bridging GEN (L1 ↔ L2)
+
+GenLayer runs as an **L2 on the zkSync Elastic Chain**, anchored to Ethereum for security. "Bridging" moves GEN between the two layers: a **deposit** brings GEN from Ethereum (L1) onto the GenLayer Chain (L2) so you can use it on GenLayer, and a **withdrawal** sends GEN from L2 back to L1.
+
+This is a practical how-to for token holders. It covers what to expect at each step, the timing that surprises people (withdrawals are not instant), and how to track a transfer while it settles.
+
+<Callout type="warning">
+  **Exact bridge routes and contract addresses are network-specific and are not duplicated here.** Always start from the official [Networks](/developers/networks) page for the RPC endpoints, chain IDs, and explorer links of the network you're using, and use the bridge entry point published for that network. Do not send funds to an address you found in a guide, chat, or search result — verify it against the canonical network information first.
+</Callout>
+
+## Before you start
+
+Bridging touches two chains, so you need both set up:
+
+- **The GenLayer Chain (L2) in your wallet.** Add it from the [GenLayer Chain (L2)](/developers/networks#genlayer-chain-l2) section on the Networks page (it includes an "add to wallet" control). GEN is the **native** token on this chain — balances are denominated in wei (1 GEN = 10¹⁸ wei).
+- **The corresponding L1 (Ethereum) network** in the same wallet, holding the GEN you want to deposit plus a little of the L1 gas token to pay for the deposit transaction.
+- **Gas on both sides.** A deposit costs L1 gas; a withdrawal costs L2 gas to initiate and then L1 gas to finalize/claim on Ethereum.
+
+<Callout type="info">
+  GenLayer is built on the zkSync Elastic Chain, so bridging behaves like a standard zkSync-stack L2 bridge. If you've bridged on a zkSync-based rollup before, the mental model here is the same. The specifics — which L1, which bridge UI, which addresses — depend entirely on the network you're connecting to.
+</Callout>
+
+---
+
+## Deposit: L1 → L2
+
+Deposits are the fast direction. Bringing GEN from Ethereum onto the GenLayer Chain follows the standard rollup deposit flow:
+
+1. **Connect to the bridge** entry point for your target network (linked from the [Networks](/developers/networks) page) with the wallet that holds your L1 GEN.
+2. **Select the deposit direction** (L1 → GenLayer Chain) and the amount of GEN.
+3. **Approve and submit the L1 transaction.** Your wallet signs a transaction on Ethereum that locks/handles the GEN on L1 and instructs the rollup to credit it on L2.
+4. **Wait for the L2 credit.** After the L1 transaction is included, the deposit is relayed to L2 and your L2 GEN balance updates. This direction typically completes on the order of minutes — far faster than a withdrawal — but the exact timing depends on L1 inclusion and the network's relay.
+
+<Callout type="info">
+  Once the deposit lands on L2, your GEN is the native currency of the GenLayer Chain — you can transfer it, pay fees with it, or [delegate it to a validator](/developers/delegating-gen).
+</Callout>
+
+---
+
+## Withdraw: L2 → L1
+
+Withdrawals are the slow direction, and the reason is fundamental to how zkSync-style rollups secure L2 → L1 messages. A withdrawal is a **two-phase** process:
+
+1. **Initiate on L2.** Submit the withdrawal transaction on the GenLayer Chain. This burns/locks the GEN on L2 and emits an L2 → L1 message.
+2. **Finalize on L1.** After the L2 batch containing your withdrawal has been **committed, proven, and finalized on Ethereum**, you (or a relayer) submit a finalization/claim transaction on L1 that proves the withdrawal message and releases the GEN on Ethereum.
+
+<Callout type="warning">
+  **A withdrawal cannot be proved on L1 until the L2 batch that includes it has finalized on Ethereum.** On real networks this settlement takes **on the order of an hour** (sometimes longer), because it depends on the rollup batching your transaction, submitting it to Ethereum, and the validity proof being verified there. The exact duration is network- and load-dependent — treat "about an hour" as a rough expectation, not a guarantee, and don't assume a withdrawal is stuck just because it hasn't finalized within a few minutes.
+</Callout>
+
+<Callout type="info">
+  **This is different from GenLayer transaction finality.** GenLayer's [Finality Window](/understand-genlayer-protocol/core-concepts/optimistic-democracy/finality) governs when an Intelligent Contract transaction's *result* is settled and no longer appealable — a consensus-layer concept. The withdrawal timing above is about the **L2 batch settling on Ethereum L1** so the bridge message can be proven. They are separate mechanisms with separate clocks; don't conflate the two.
+</Callout>
+
+Depending on the network's tooling, the L1 finalization step may be automatic (a relayer submits it for you) or manual (you return to the bridge and click "finalize/claim" once the batch has settled). Check the withdrawal instructions for your specific network.
+
+---
+
+## Track a transfer
+
+Because a transfer spans two chains, you follow it on both:
+
+- **L2 side (GenLayer Chain).** Look up your deposit or withdrawal transaction on the **GenLayer Chain explorer** for your network — for the testnet that's the *Chain Explorer* linked on the [Networks](/developers/networks) page ([explorer.testnet-chain.genlayer.com](https://explorer.testnet-chain.genlayer.com/)). This confirms the L2 transaction was included and, for withdrawals, that the L2 → L1 message was emitted.
+- **L1 side (Ethereum).** For a **deposit**, watch the L2 balance credit after your L1 transaction confirms. For a **withdrawal**, watch for the batch to finalize and then for your finalization/claim transaction on the L1 explorer — the GEN arrives on L1 only after that claim succeeds.
+- **Bridge status page.** If the network's bridge UI shows a transfer/withdrawal status (e.g. "ready to finalize"), that is usually the clearest signal for when a withdrawal's L1 claim step becomes available.
+
+<Callout type="info">
+  Keep your transaction hashes. For a withdrawal you may need the L2 transaction hash to submit or look up the L1 finalization step later, especially if you close the bridge UI and come back after the batch settles.
+</Callout>
+
+---
+
+## Common pitfalls
+
+| Pitfall | What to do |
+|---|---|
+| Expecting a withdrawal to arrive on L1 in minutes | Plan for the L2 batch to finalize on Ethereum first — on the order of an hour on real networks. The GEN is not lost; it's waiting to be provable. |
+| Forgetting the L1 finalization step | A withdrawal is not complete until the L1 claim/finalize transaction succeeds. If your network's bridge doesn't auto-finalize, you must return and complete it. |
+| No L1 gas to finalize | Keep some L1 gas token available to pay for the withdrawal's finalization transaction. |
+| Using an address from an unofficial source | Only use the bridge entry point and addresses published for your network via the [Networks](/developers/networks) page. |
+| Confusing GenLayer finality with L2→L1 settlement | GenLayer's appeal/Finality Window and the L2 batch's L1 finalization are different things with different timing. |
+
+---
+
+## Related resources
+
+<Cards>
+<Card title="🌐 Networks & RPCs" href="/developers/networks" />
+<Card title="🧱 GenLayer Chain (L2)" href="/developers/networks#genlayer-chain-l2" />
+<Card title="🔗 Rollup Integration" href="/understand-genlayer-protocol/core-concepts/rollup-integration" />
+<Card title="⏱️ Finality" href="/understand-genlayer-protocol/core-concepts/optimistic-democracy/finality" />
+<Card title="💸 Value Transfers (GEN)" href="/developers/intelligent-contracts/features/value-transfers" />
+</Cards>

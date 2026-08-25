@@ -1,0 +1,120 @@
+---
+description: "Integrator guide for exchanges, wallets, and indexers onboarding GenLayer: chain IDs, RPC/WS endpoints, address formats, L1/L2 GEN, deposit detection, and finality guidance."
+---
+
+import { Callout } from "nextra-theme-docs";
+import { Card, Cards } from "nextra-theme-docs";
+
+# Exchange & Wallet Integrator Guide
+
+This guide is for teams **onboarding GenLayer into existing infrastructure** — exchanges listing GEN, wallets adding the network, and indexers or custodians tracking balances and transfers. It orients you to the chain model, the endpoints and formats you'll integrate against, and the finality considerations that matter for crediting deposits.
+
+<Callout type="warning">
+  **This page points at the canonical sources for concrete values rather than duplicating them.** Network IDs, RPC endpoints, and contract addresses change per network and over time. Always read the live values from the [Networks](/developers/networks) page and the validator [Setup Guide](/validators/setup-guide) before wiring anything up, and re-verify after network upgrades.
+</Callout>
+
+## Chain model
+
+GenLayer presents as **two layers**, and which one you integrate against depends on what you're doing:
+
+- **GenLayer RPC** — handles Intelligent Contract operations (`gen_*` methods) and also **passes through standard Ethereum (`eth_*`) calls** to the underlying chain. This is what wallets connect to for a unified experience.
+- **GenLayer Chain (L2)** — the underlying **EVM-compatible zkSync Elastic Chain** that holds account balances and handles standard Ethereum operations. For exchange/custody workflows (balance tracking, native GEN transfers, deposit detection at the EVM level), this is the layer you'll typically index.
+
+The GenLayer Chain is a zkSync-stack L2 anchored to Ethereum (L1) for security. Because it's EVM-compatible, most existing Ethereum tooling and address handling applies directly.
+
+For the full method surface, see the [GenLayer Node API](/api-references/genlayer-node), which documents the supported `eth_*` methods (Ethereum compatibility) and the `zksync_`-prefixed methods proxied to the underlying zkSync infrastructure.
+
+---
+
+## Endpoints, chain IDs, and currency
+
+Read the exact values from the [Networks](/developers/networks) page — do not hardcode them from this guide. For quick orientation, GenLayer exposes distinct environments, each with its own chain ID and RPC:
+
+- **Testnet Bradbury** and **Testnet Asimov** — see [Networks](/developers/networks#testnet-bradbury). Both currently share the same GenLayer **Chain** RPC and chain ID.
+- **Studionet** (hosted dev) and **Localnet** (local dev) — separate chain IDs, useful for staging your integration before pointing at a testnet.
+- **GenLayer Chain (L2)** — the underlying chain you'll index for balances/transfers; its RPC, chain ID, currency (**GEN**, 18 decimals), and chain explorer are in the [GenLayer Chain (L2)](/developers/networks#genlayer-chain-l2) section, which also provides an "add to wallet" control that emits the correct hex chain ID and native-currency metadata.
+
+<Callout type="info">
+  **WebSocket access.** The GenLayer Chain supports a WebSocket RPC in addition to HTTP (validator node config exposes it as `genlayerchainwebsocketurl`). If your indexer relies on subscriptions, confirm the current WS endpoint for your network from the canonical network information rather than assuming a URL.
+</Callout>
+
+<Callout type="warning">
+  Both current testnets map to a **single shared GenLayer Chain ID**. If you key any internal routing or address-derivation on chain ID, account for the fact that Bradbury and Asimov are not distinguished by chain ID alone — distinguish them by the **GenLayer RPC endpoint** you connect to.
+</Callout>
+
+---
+
+## Addresses
+
+GenLayer uses **Ethereum-style accounts**: addresses are `0x`-prefixed hexadecimal strings, and the account model has **Externally Owned Accounts** (controlled by private keys) and **Contract Accounts** (Intelligent Contracts). Standard Ethereum address handling — hex parsing, checksumming, key management — applies. See [Accounts and Addressing](/understand-genlayer-protocol/core-concepts/accounts-and-addresses) for the account model.
+
+<Callout type="info">
+  **Same address across both layers.** An Intelligent Contract's GEN balance is held by its "ghost contract" on the chain layer at the **same address**, so a given address refers to the same account whether you view it via the GenLayer RPC or directly on the GenLayer Chain. This simplifies balance tracking — you index one address space.
+</Callout>
+
+---
+
+## The GEN token
+
+**GEN is the native token of the GenLayer Chain** (analogous to ETH on Ethereum), not an ERC-20 on that chain. Balances are denominated in **wei** (1 GEN = 10¹⁸ wei), and you read a balance with standard `eth_getBalance` against the chain RPC.
+
+<Callout type="warning">
+  **On L1 vs L2.** GEN on the **GenLayer Chain (L2)** is the native currency, tracked via native-balance calls — there is no L2 ERC-20 token contract for it. For the **L1 (Ethereum) representation** of GEN and the bridge used to move it between layers, the relevant addresses and routes are **network-specific and published with the network's setup/bridge information — not in this guide**. Do not assume or reuse a token or bridge address from any other source; confirm it against the canonical network information before crediting or moving funds. See [Bridging GEN (L1 ↔ L2)](/developers/bridging-gen) for how transfers between layers work.
+</Callout>
+
+---
+
+## Deposit detection
+
+For crediting user deposits of native GEN on the GenLayer Chain, the pattern mirrors any EVM chain:
+
+1. **Assign per-user deposit addresses** (or use a memo/tagging scheme if your custody model requires it) in the standard `0x` hex format.
+2. **Follow new blocks** via the chain RPC (HTTP polling `eth_blockNumber` / `eth_getBlockByNumber`, or WebSocket subscriptions if available for your network).
+3. **Match incoming native transfers** to your deposit addresses and read balances with `eth_getBalance`. Because GEN is native, watch native value transfers rather than ERC-20 `Transfer` logs.
+4. **Wait for finality before crediting** (see below) — don't credit on first inclusion.
+
+<Callout type="info">
+  Because the GenLayer RPC passes through `eth_*` calls to the underlying chain, you can use standard Ethereum JSON-RPC clients. Point balance and block queries at the **GenLayer Chain** RPC for the cleanest view of native GEN movements at the EVM level.
+</Callout>
+
+---
+
+## Finality guidance
+
+Frame confirmations **conservatively** — GenLayer has two distinct notions of "final," and crediting logic should respect the stronger one for your use case:
+
+- **L2 chain finality (settlement on Ethereum).** The GenLayer Chain is a zkSync-stack rollup: its blocks are batched, submitted to Ethereum L1, and finalized there via validity proofs. A transfer is only irreversibly settled once its batch has finalized on L1. For anything requiring L1-grade settlement (large deposits, withdrawals leaving the system), wait for L1 finalization rather than L2 inclusion alone.
+- **GenLayer transaction finality (consensus).** For Intelligent Contract *results*, GenLayer uses a [Finality Window](/understand-genlayer-protocol/core-concepts/optimistic-democracy/finality) during which a transaction can be appealed; the result is only settled and irreversible after that window (see [transaction statuses](/understand-genlayer-protocol/core-concepts/transactions/transaction-statuses) — the terminal state is `finalized`). This matters if you're reacting to contract outcomes, not just native transfers.
+
+<Callout type="warning">
+  The documentation does not publish a fixed block-confirmation count or a guaranteed L2→L1 settlement duration, and timing is network- and load-dependent. On real networks, L2→L1 settlement is on the **order of an hour**; treat that as an expectation to design around, not a contract. Choose a confirmation policy with margin, and verify current behavior against the network you're integrating before going live.
+</Callout>
+
+<Callout type="info">
+  Withdrawals off GenLayer inherit the rollup's L2→L1 timing — a withdrawal can't be proven on L1 until its L2 batch finalizes there. If your product exposes withdrawals to L1, surface this delay to users. See the withdrawal walkthrough in [Bridging GEN (L1 ↔ L2)](/developers/bridging-gen).
+</Callout>
+
+---
+
+## Integration checklist
+
+- [ ] Pull chain IDs, RPC (HTTP + WS), currency, and explorer URLs from the [Networks](/developers/networks) page for **each** environment you support.
+- [ ] Distinguish Bradbury vs. Asimov by **RPC endpoint**, not chain ID (they share one).
+- [ ] Confirm the **L1 GEN representation and bridge route** from the network's canonical setup/bridge info — never hardcode a token or bridge address from a third-party source.
+- [ ] Track native GEN via `eth_getBalance` and native transfers (not ERC-20 logs) on the GenLayer Chain.
+- [ ] Set a **conservative confirmation/finality policy**; wait for L1 finalization for settlement-critical flows.
+- [ ] Verify the current method surface and any `zksync_` proxying against the [GenLayer Node API](/api-references/genlayer-node).
+- [ ] Re-validate all endpoints and addresses **after every network upgrade**.
+
+---
+
+## Related resources
+
+<Cards>
+<Card title="🌐 Networks & RPCs" href="/developers/networks" />
+<Card title="🖥️ GenLayer Node API" href="/api-references/genlayer-node" />
+<Card title="👤 Accounts & Addressing" href="/understand-genlayer-protocol/core-concepts/accounts-and-addresses" />
+<Card title="🌉 Bridging GEN (L1 ↔ L2)" href="/developers/bridging-gen" />
+<Card title="⏱️ Finality" href="/understand-genlayer-protocol/core-concepts/optimistic-democracy/finality" />
+<Card title="⚙️ Validator Setup Guide" href="/validators/setup-guide" />
+</Cards>
