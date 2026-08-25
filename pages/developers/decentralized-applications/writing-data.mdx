@@ -135,6 +135,7 @@ import { TransactionStatus } from "genlayer-js/types";
 const client = createClient({
   chain: studionet,
   account: walletAddress as `0x${string}`,
+  provider: window.ethereum,
 });
 
 // Switch the wallet to the correct network — must be called before writing
@@ -157,6 +158,8 @@ const receipt = await client.waitForTransactionReceipt({
 Available networks: `"localnet"`, `"studionet"`, `"testnetAsimov"`, `"testnetBradbury"`.
 
 > **Important:** If the wallet is on the wrong chain, the SDK will throw an error telling you which chain the wallet is on vs. which chain the client expects. Always call `client.connect()` before sending transactions.
+
+> **Wallet provider note:** The standard GenLayerJS browser flow uses the selected wallet's EIP-1193 provider, such as `window.ethereum`; it does not require a MetaMask Snap by itself. If your dApp asks users to install a GenLayer wallet plugin or Snap, that requirement comes from the wallet integration you chose, so document it in your app UI and make sure you pass the intended provider when multiple wallet extensions are installed.
 
 ## Error Handling
 
