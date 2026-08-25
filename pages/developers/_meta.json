@@ -2,5 +2,6 @@
   "networks": "Networks & RPCs",
   "intelligent-contracts": "Intelligent Contracts",
   "decentralized-applications": "Frontend & SDK Integration",
-  "staking-guide": "Staking Contract Guide"
+  "staking-guide": "Staking Contract Guide",
+  "error-reference": "Error & Revert Reference"
 }

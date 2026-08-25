@@ -1,0 +1,351 @@
+---
+description: "A reference catalog of the GenLayer consensus protocol's custom Solidity errors: each error's 4-byte selector, its meaning, and the common cause or fix, organized by area, plus common encoding pitfalls."
+---
+
+import { Callout } from 'nextra-theme-docs'
+
+# Error & Revert Reference
+
+When a GenLayer protocol contract rejects a call, it reverts with a **custom error** rather than a plain string. Tooling that does not have the contract ABI shows you only the raw revert data — a 4-byte **selector** such as `0x632be5a1`, sometimes followed by ABI-encoded arguments. This page lets you translate that selector back into a named error, understand what it means, and see the most common cause or fix.
+
+## How to Look Up a Selector
+
+The first four bytes of a revert payload identify the error. For example, a revert that begins `0x632be5a1` corresponds to `FeeValueMustBeNonZero(uint256)` — a required fee field was left at zero.
+
+- If you have the full revert data, take the first four bytes (the leading `0x` plus eight hex characters) and find it in the tables below.
+- The selector is derived as the first four bytes of `keccak256("ErrorName(type1,type2,...)")`, using the argument **types only** — no parameter names, no spaces. Any tool that computes function/error selectors (for instance, `cast 4byte-decode` or `cast sig`) uses the same rule.
+- Errors that carry arguments (for example `BatchSizeExceeded(uint256,uint256)`) encode those values immediately after the selector; the parenthesized note in the **Meaning** column tells you what each argument is.
+
+<Callout type="info">
+Selectors are computed from the exact error signature. `FeeValueMustBeNonZero(uint256)` and a hypothetical `FeeValueMustBeNonZero()` are *different* selectors. When computing a selector yourself, always use the canonical, type-only signature and omit parameter names — hashing a signature that still contains parameter names produces a wrong selector.
+</Callout>
+
+## Common Encoding Pitfalls
+
+Some reverts you hit while integrating are not protocol errors at all, but encoding mistakes in the request you sent. A few recurring ones:
+
+- **Write-transaction calldata must be wrapped.** The `data` for a write (state-changing) transaction is not the raw contract calldata. It must be `rlp.encode([calldata, leader_only])` — the calldata together with the leader-only flag. Passing the raw calldata directly typically surfaces as an RLP decoding error like **`RLP string ends with superfluous bytes`**. If you see that message, wrap your calldata as an RLP list rather than sending it bare.
+- **Selector present but arguments missing or misaligned.** If a selector matches an error that takes arguments but the payload is only four bytes long (or the wrong length), the sending code likely built the error data by hand. Decode the arguments against the signature shown in the tables.
+- **Wrong signature when decoding.** If a selector does not appear in these tables, double-check that you are hashing the type-only signature. A mismatch between your assumed signature and the real one yields a selector that will never resolve here.
+
+## How This Catalog Was Generated
+
+The error signatures are taken directly from the consensus repository's canonical list (`scripts/utils/errorSelectors.ts` on the `v0.6-dev` line), and each 4-byte selector is computed from the type-only signature with `keccak256`. The list was validated against the known anchor `FeeValueMustBeNonZero(uint256)` = `0x632be5a1`, and checked to contain no selector collisions. The meanings and fixes are derived from the errors' definitions and revert sites in the contracts; where a name did not permit a confident gloss, the entry is deliberately conservative.
+
+<Callout type="warning">
+This reference reflects a development snapshot of the consensus contracts and is intended for orientation, not as a compatibility guarantee. Error names, selectors, and especially the exact conditions that trigger them can change between protocol versions. For a definitive decode, always match against the ABI of the specific deployed contract you are calling. Entries noted as "(test mock)" originate from test-only contracts and should not be expected on a production network.
+</Callout>
+
+## Error Tables
+
+The catalog is grouped by protocol area and sorted alphabetically within each group for lookup. Every entry lists the error signature, its 4-byte selector, a one-line meaning, and the most common cause or fix.
+
+### Fees (39)
+
+| Error | Selector | Meaning | Common cause / fix |
+|:--|:--|:--|:--|
+| `AllocationCommitmentMissing()` | `0xbe77b500` | Expected fee-allocation commitment is not present | Include the commitment |
+| `AllocationDuplicateKey()` | `0xbb598087` | Two sibling allocations share (messageType, recipient, callKey) | Deduplicate allocation keys |
+| `AllocationLifecycleBudgetInsufficient()` | `0x00583b33` | Budget below minPrimary times (appealRounds+1) for on-acceptance | Raise on-acceptance budget |
+| `AllocationRestrictedTxCannotAcceptMessageFees()` | `0x35ebdf50` | A restricted-allocation tx illegally accepted message fees | Do not accept message fees here |
+| `AllocationSubtreeHashMismatch()` | `0xdda17044` | Provided subtree hash differs from committed hash | Provide the committed subtree |
+| `AllocationSubtreeRequired()` | `0x47db53f3` | Leader must carry subtree under HashCommitments but did not | Include required subtree |
+| `AllocationTreeBudgetInconsistent()` | `0x328bfb08` | Allocation-tree node budgets do not sum consistently | Fix tree budget sums |
+| `AllocationTreeMalformed()` | `0x7fecd5b1` | Fee allocation tree is structurally invalid | Rebuild a valid tree |
+| `AllocationTreeTooDeep()` | `0x48668d66` | Allocation tree exceeds maximum depth | Flatten/reduce tree depth |
+| `AlreadyClaimed()` | `0x646cf558` | Fee or reward already claimed | No double claim |
+| `AlreadySettled()` | `0x560ff900` | Fees or transaction already settled | No re-settlement |
+| `BudgetTooLow()` | `0x305e533c` | Provided budget is below the minimum required | Increase the budget |
+| `ExecutionBudgetExceeded(uint256,uint256)` | `0x57df8523` | Execution gas consumption exceeded the tx budget (attempted, budget) | Raise execution budget |
+| `ExternalBudgetInvalid()` | `0x8b434eea` | External message budget is invalid | Ensure budget >= gasLimit*price |
+| `ExternalGasLimitBelowMinimum()` | `0xf5963b64` | External message gas limit below minimum | Raise external gas limit |
+| `ExternalGasLimitOrPriceZero()` | `0xbf35c24e` | External message gas limit or price is zero | Provide non-zero limit and price |
+| `ExternalMessageFreezeExceeded(bytes32,uint256,uint256)` | `0x05684868` | External message froze more value than allowed (txId, declaredValue, availableLimit) | Reduce declared value |
+| `ExternalOnAcceptanceNotSupported()` | `0xa54ce0b6` | On-acceptance semantics not supported for external messages | Do not use on-acceptance externally |
+| `FailedFeeTransfer()` | `0x24a8ac13` | Fee ETH transfer failed | Check recipient/balance |
+| `FeeSettlementNotCompleted()` | `0x1432a761` | Operation requires fee settlement to complete first | Settle fees before proceeding |
+| `FeeValueMustBeNonZero(uint256)` | `0x632be5a1` | A required fee field was zero (field index) | Provide a non-zero fee value |
+| `InsufficientFees()` | `0x8d53e553` | Total fees provided do not cover the operation | Provide more fees |
+| `InsufficientFeesForRound()` | `0x0c35bf69` | Fees insufficient to fund a specific consensus round | Increase per-round fees |
+| `InsufficientGasForInternalMessageCreation(uint256,uint256,uint256,address)` | `0xb2c9bc63` | Outer tx lacks gas to forward per-child floor under EIP-150 (floor, required, available, recipient) | Raise outer gas limit |
+| `InsufficientValue()` | `0x11011294` | msg.value is less than fees owed | Send more value |
+| `MaxPriceExceeded(uint256,uint256)` | `0xb4132db3` | Global gas price exceeds the user's max-price cap (globalPrice, userMax) | Raise max price or retry cheaper |
+| `MessageAllocationBudgetInsufficient()` | `0x67d6a6b3` | Allocation's budget is too low for the message | Increase allocation budget |
+| `MessageAllocationsNotEqualBudget()` | `0x9659e275` | Sum of message allocations does not equal declared budget | Make allocations sum to budget |
+| `MessageBudgetExceeded(uint256,uint256)` | `0xd67553bd` | Internal message consumed more than its budget (attempted, budget) | Raise message budget |
+| `MessageDeclaredBudgetInsufficient()` | `0x7f295162` | Declared message budget is below required | Increase declared budget |
+| `MessageEmissionPhaseMismatch()` | `0x5ca1f1d8` | message.onAcceptance differs from allocation.onAcceptance | Align emission phase flags |
+| `MessageFeeParamsMismatch()` | `0x67b02b3b` | Message fee parameters do not match allocation/commitment | Align fee params |
+| `MessageFeesReportMismatch()` | `0x86515990` | Reported per-message fees differ from expected | Correct the fee report |
+| `MessageFeesTotalMustBeNonZero()` | `0xf79991cb` | Sum of message fees is zero when it must be positive | Provide non-zero message fees |
+| `MessageNoMatchingAllocation()` | `0x4e4b3c38` | An emitted message has no matching fee allocation | Add a matching allocation |
+| `OnlyConsensusCanCall()` | `0x6c6fe28a` | Fee-management function callable only by consensus | Only consensus may call |
+| `OnlyFeeManager()` | `0x8f1dbd6c` | Caller is not the fee manager | Only fee manager may call |
+| `RollupBudgetBelowFloor()` | `0xa70732ee` | Rollup/L1 gas budget is below the enforced floor | Increase rollup budget |
+| `TooManyMessages()` | `0x1ec0b2f7` | Number of messages exceeds the allowed maximum | Emit fewer messages |
+
+### Staking (114)
+
+| Error | Selector | Meaning | Common cause / fix |
+|:--|:--|:--|:--|
+| `AccountsArrayEmpty()` | `0xb1d0b181` | GEN distribution accounts array is empty | Provide at least one account |
+| `AllValidatorsConsumed()` | `0x54055ab9` | All validators have been consumed (test mock) | Wait for next selection |
+| `AlreadyRevoked()` | `0x905e7107` | Vesting already revoked | No re-revocation |
+| `AlreadyUnlocked()` | `0x5090d6c6` | Vesting tokens already unlocked | No re-unlock |
+| `AmountMustBeGreaterThan0()` | `0x35f61689` | Amount must be greater than zero | Send a positive amount |
+| `BurnTransferFailed()` | `0xaac1169b` | Burn transfer failed | Check burn path/balance |
+| `CanOnlyTriggerInflationMaxEpochsInFuture()` | `0xdfaaa5b2` | Inflation trigger is too far in the future | Trigger within the allowed horizon |
+| `CanOnlyTriggerInflationMaxTenEpochsInFuture()` | `0xa9f9ed6c` | Inflation trigger limited to at most ten epochs ahead | Trigger within ten epochs |
+| `DeepthoughtCallFailed()` | `0xbd5ac82f` | Call to the Deepthought contract failed | Check Deepthought address/target |
+| `DelegatorBelowMinimumStake()` | `0x944516fc` | Delegator stake is below the minimum | Increase delegation |
+| `DelegatorExitExceedsShares()` | `0x64d3ea58` | Exit amount exceeds the delegator's shares | Exit at most held shares |
+| `DelegatorExitWouldBeBelowMinimum()` | `0x5f9ff6b2` | Partial exit would drop stake below minimum | Exit fully or less |
+| `DelegatorMayNotExitWithZeroShares()` | `0x161fa299` | Cannot exit with zero shares | Hold shares before exiting |
+| `DelegatorMayNotJoinTwoValidatorsSimultaneously()` | `0x48a6b5ba` | Delegator may back only one validator at a time | Exit current validator first |
+| `DelegatorMayNotJoinWithZeroValue()` | `0xba5cb6d8` | Delegation requires non-zero value | Send a non-zero amount |
+| `DelegatorMustExitAllWhenBelowMinimum()` | `0x44d4da44` | Must fully exit when below minimum stake | Perform a full exit |
+| `DeveloperAlreadyHasNFT()` | `0xa74b28d1` | Developer already holds a reward NFT | One NFT per developer |
+| `DeveloperCannotBeZeroAddress()` | `0x7e3f46bd` | Developer address is the zero address | Provide a valid developer |
+| `DeveloperHasNoNFT()` | `0x70849322` | Developer holds no reward NFT | Mint/assign an NFT first |
+| `DeveloperHasNoRewards()` | `0xdf6b47b0` | Developer has no claimable rewards | Nothing to claim |
+| `EpochAdvanceNotReady()` | `0xe7295fed` | Conditions to advance the epoch are not met | Wait until advance conditions hold |
+| `EpochAlreadyFinalized()` | `0x3366263c` | Epoch is already finalized | No re-finalization |
+| `EpochNotFinalized()` | `0x8cf75707` | Epoch is not finalized | Finalize the epoch first |
+| `EpochNotFinished()` | `0xec766557` | Epoch has not finished yet | Wait for epoch end |
+| `FacetCallFailed(bytes)` | `0xcf582143` | Diamond facet delegatecall failed (reason) | Inspect returned reason |
+| `FailedTransfer(address)` | `0x3f32e1dd` | Token/ETH transfer to a validator failed (validator) | Check recipient/balance |
+| `FailedTransferCall()` | `0x3825f587` | Reward/transfer call failed | Check recipient/balance |
+| `FunctionNotFound(bytes4)` | `0x5416eb98` | No diamond facet implements this selector | Add/register the facet |
+| `FundingMismatch()` | `0xb84a1afb` | Funding amount does not match expected | Fund the exact expected amount |
+| `GhostAlreadyHasNFT()` | `0x36bd0868` | Ghost contract already has an NFT | One NFT per ghost |
+| `GhostCannotBeZeroAddress()` | `0x4d8d14c5` | Ghost contract address is zero | Provide a valid ghost address |
+| `IncentivePercentageTooHigh()` | `0xaf188845` | Incentive percentage exceeds the allowed cap | Lower the incentive percentage |
+| `InflationAlreadyInitialized()` | `0x9ded3b15` | Inflation already initialized | Initialize once only |
+| `InflationAlreadyReceived()` | `0x719a0d39` | Inflation for this period already received | No double receipt |
+| `InflationInitialized()` | `0x067f34cf` | Inflation-initialized guard tripped | Operation not allowed post-init |
+| `InflationInvalidAmount()` | `0x3c1f1f16` | Inflation amount is invalid | Provide a valid amount |
+| `InflationNotReadyToBeRealized()` | `0x7d8fa225` | Inflation is not ready to be realized | Wait until realizable |
+| `InflationRequestFailed()` | `0xced05c45` | Cross-layer inflation request failed | Check bridge/L2 path |
+| `InitialMintAlreadyCalled()` | `0xacf9028d` | GEN initial mint already executed | Mint once only |
+| `InsufficientBondCustody()` | `0xebab1869` | Bond custody balance is insufficient | Ensure sufficient bond custody |
+| `InsufficientContractBalance()` | `0x786e0a99` | Vesting contract lacks sufficient balance | Fund the contract |
+| `InsufficientInflationFunds()` | `0x58d77d2a` | Not enough funds to pay inflation | Fund inflation reserve |
+| `InvalidAtEpoch()` | `0x90dce792` | Operation is invalid at the current epoch | Retry at an allowed epoch |
+| `InvalidBanPeriod()` | `0xa2fc7bbd` | Ban period parameter is invalid | Provide a valid ban period |
+| `InvalidCliffUnlockBps()` | `0x7f2d8c3d` | Vesting cliff unlock basis points invalid | Use bps within 0..10000 |
+| `InvalidInflationThresholds()` | `0x4774d828` | Inflation threshold config is invalid | Fix inflation thresholds |
+| `InvalidL2GasParams()` | `0x21e1b5c9` | L2 gas parameters are invalid | Provide valid L2 gas params |
+| `InvalidNumberOfEpochsToClaim()` | `0xb9a8ce44` | NFT reward epoch-count to claim is invalid | Use a valid epoch count |
+| `InvalidOperatorAddress()` | `0xeb32d3bf` | Operator address is invalid or zero | Provide a valid operator |
+| `InvalidPeriodDuration()` | `0x9e11b5e6` | Vesting period duration is invalid | Provide a valid duration |
+| `InvalidRecipient()` | `0x9c8d2cd2` | Reward/transfer recipient is invalid | Provide a valid recipient |
+| `InvalidSlashPercentage()` | `0x37814740` | Slash percentage is invalid | Use a valid slash percentage |
+| `L2BaseGasCostQueryFailed()` | `0x7dc9c5e2` | Failed to query L2 base gas cost | Check L2 gas oracle/bridge |
+| `L2MessageAlreadyInvoked()` | `0x21d83750` | L2 message already invoked (replay guard) | Do not re-invoke |
+| `L2MessageProvenFailed()` | `0xfd0ae327` | L2 message proof verification failed | Provide a valid proof |
+| `L2TransactionRequestFailed()` | `0x1efae811` | L2 transaction request failed | Check L2 bridge/params |
+| `ManualUnlockNotRequired()` | `0x90173285` | Manual unlock is not required here | Use standard vesting flow |
+| `MaxNumberOfValidatorsReached()` | `0x9ce3911d` | Validator set is at capacity | Cannot add more validators |
+| `MaxValidatorsCannotBeZero()` | `0x83c27a2d` | maxValidators config cannot be zero | Set a positive maxValidators |
+| `NFTMinterCallFailed()` | `0x64c31e4b` | Call to the NFT minter failed | Check NFT minter address/target |
+| `NFTMinterNotConfigured()` | `0xa0c98f30` | NFT minter address is not configured | Configure the NFT minter |
+| `NoBurning()` | `0x96191d45` | Burning is not enabled or not applicable | Burning disabled in this config |
+| `NoPendingOperator()` | `0x9c2af11f` | No pending operator transfer to finalize | Initiate a transfer first |
+| `NoPreviousEpoch()` | `0x9fa56a5b` | No previous epoch exists (test mock) | Only valid after epoch 0 |
+| `NotBeneficiary()` | `0x644d871f` | Caller is not the vesting beneficiary | Call from the beneficiary address |
+| `NotCreator()` | `0x93687c0b` | Caller is not the vesting schedule creator | Call from the creator address |
+| `NotEnoughValidators()` | `0xae575a88` | Not enough validators available (test mock) | Register more validators |
+| `NotNFTOwner()` | `0x4088c61c` | Caller does not own the NFT | Call from the NFT owner |
+| `NotRevocable()` | `0x9414820d` | Vesting schedule is not revocable | Cannot revoke this schedule |
+| `NotRevoked()` | `0x73f7ab1e` | Vesting is not revoked but operation requires revoked state | Revoke first |
+| `NotRevoker()` | `0x2ad3d44f` | Caller is not the vesting revoker | Call from the revoker address |
+| `NoValidatorsAvailable()` | `0xc4e41c46` | No validators are available (test mock) | Register/activate validators |
+| `NumberOfValidatorsExceedsAvailable()` | `0x9c637db9` | Requested count exceeds available validators | Request no more than available |
+| `OnlyGEN()` | `0x6a10007b` | Callable only by the GEN token contract | Only GEN may call |
+| `OnlyIdleness()` | `0xf2c0764c` | Callable only by the idleness module | Only idleness may call |
+| `OnlyIdlenessOrTribunal()` | `0xfcde63e9` | Callable only by idleness or tribunal | Restricted to idleness/tribunal |
+| `OnlyStakingContract()` | `0xd807afce` | Callable only by the staking contract | Only staking may call |
+| `OnlyTransactions()` | `0x516257a3` | Callable only by the transactions module | Only transactions may call |
+| `OnlyTransactionsOrTribunal()` | `0x6c4db06b` | Callable only by transactions or tribunal | Restricted to transactions/tribunal |
+| `OnlyTribunal()` | `0x811befe9` | Callable only by the tribunal | Only tribunal may call |
+| `OperatorAlreadyAssigned()` | `0x5acd21ba` | Operator address already assigned to a validator | Use a free operator address |
+| `OperatorTransferNotReady()` | `0xde4e791a` | Operator transfer timelock not yet elapsed | Wait for the transfer window |
+| `PendingTribunals(uint256)` | `0x773c68a6` | Epoch has unresolved tribunals blocking finalization (epoch) | Resolve tribunals first |
+| `PreviousEpochNotFinalizable()` | `0x93b7eb86` | Previous epoch cannot be finalized yet | Finalize prior epoch prerequisites |
+| `ReductionFactorCannotBeZero()` | `0x2e980407` | Burn/inflation reduction factor is zero | Set a non-zero factor |
+| `SlashGovernanceDelayPassed()` | `0x06de1175` | Governance slash delay window has passed | Act within the slash window |
+| `SlashPercentageTooHigh()` | `0x0edf5154` | Slash percentage exceeds the cap | Lower the slash percentage |
+| `SlashRevokedToRemoveTooHigh(uint256,uint256)` | `0x217f3b2e` | Amount to remove exceeds revoked stake (revoked, toRemove) | Remove at most revoked amount |
+| `TotalDistributionMustBe100()` | `0x16904932` | GEN distribution percentages must sum to 100 | Fix distribution to total 100 |
+| `TransferFailed()` | `0x90b8ec18` | Token or ETH transfer failed | Check recipient/balance |
+| `UnauthorizedDelegatorClaim()` | `0xdcc541d1` | Caller not authorized to claim delegator rewards | Claim from the entitled address |
+| `UnauthorizedInflationRequest()` | `0x7d8f3b9e` | Caller not authorized to request inflation | Only authorized caller may request |
+| `UnknownGenAction()` | `0xe43351e0` | Unknown GEN cross-layer action code | Use a recognized action code |
+| `ValidatorAlreadyInTree()` | `0x45be71b6` | Validator is already in the selection tree | Do not re-insert |
+| `ValidatorAlreadyJoined()` | `0x71d16bc6` | Validator has already joined | No re-join |
+| `ValidatorBelowMinimumStake()` | `0x0b294dc3` | Validator stake is below the minimum | Top up validator stake |
+| `ValidatorDoesNotExist()` | `0xe51315d2` | No such validator | Reference an existing validator |
+| `ValidatorExitExceedsShares()` | `0xfddb7740` | Exit amount exceeds the validator's shares | Exit at most held shares |
+| `ValidatorMayNotBeDelegator()` | `0x359b3ac0` | A validator may not also be a delegator | Separate the roles |
+| `ValidatorMayNotDepositZeroValue()` | `0xffb117c5` | Validator deposit requires non-zero value | Deposit a positive amount |
+| `ValidatorMayNotJoinWithZeroValue()` | `0xd25ef26f` | Validator join requires non-zero stake | Join with a positive stake |
+| `ValidatorMustNotBeDelegator()` | `0x85d35a02` | An address cannot be both validator and delegator | Separate the roles |
+| `ValidatorNotActive()` | `0xa6ce15f6` | Validator exists but is not active this epoch | Wait until validator is active |
+| `ValidatorNotInTree()` | `0x8ee72f3f` | Validator is not in the selection tree | Insert validator first |
+| `ValidatorNotJoined()` | `0xffc673e8` | Validator has not joined | Join before this action |
+| `ValidatorsConsumed()` | `0xeae94a56` | All validators for this round already consumed | Wait for next round/selection |
+| `ValidatorsUnavailable()` | `0xd0b5c3bb` | Validators are temporarily unavailable | Retry when validators are available |
+| `ValidatorWithdrawalExceedsStake()` | `0xfb7f2a7f` | Withdrawal exceeds the staked amount | Withdraw at most staked |
+| `VestingAlreadyExists()` | `0xe7075d2a` | A vesting schedule already exists for the target | Do not recreate the schedule |
+| `VestingAlreadyStopped()` | `0xd731022d` | Vesting is already stopped | No re-stop |
+| `VestingDeploymentFailed()` | `0x0f5cc9de` | Vesting contract deployment failed | Check beacon/factory params |
+| `VestingNotStopped()` | `0x6e32bb06` | Vesting is not stopped but operation requires stopped state | Stop vesting first |
+| `WithdrawExceedsVested()` | `0x8b6a4865` | Withdrawal exceeds the vested amount | Withdraw at most vested |
+| `ZeroAmount()` | `0x1f2a2005` | Amount is zero | Provide a non-zero amount |
+
+### Consensus (100)
+
+| Error | Selector | Meaning | Common cause / fix |
+|:--|:--|:--|:--|
+| `AddingTransactionToUndeterminedQueueFailed()` | `0x5bd3cd8c` | Failed to add tx to the undetermined queue | Internal queue operation failed |
+| `AllValidatorsCommitted()` | `0xb467acd8` | All validators have committed (none left) | No further commits expected |
+| `AppealBondTooLow()` | `0xb44cda7b` | Appeal bond is below the required amount | Increase appeal bond |
+| `AppealNotActive()` | `0x6565b6bf` | No appeal is currently active | Only valid during an active appeal |
+| `AppealNotAllowed()` | `0xb94e4c42` | Appeal not permitted in the current state | Tx/round not appealable now |
+| `AppealRoundAlreadyExists()` | `0x93a19b27` | An appeal round already exists | Do not re-create the round |
+| `AppealRoundNotPermitted()` | `0x6ecc8d59` | This appeal round is not permitted | Round count/config disallows it |
+| `BeaconAlreadyDeployed()` | `0xa1900dfe` | Beacon proxy already deployed | Do not redeploy the beacon |
+| `BeaconNotDeployed()` | `0x261438ca` | Beacon proxy not deployed yet | Deploy the beacon first |
+| `CallerNotActivator()` | `0xb56aa94e` | Caller is not the activator | Call from the activator |
+| `CallerNotConsensus()` | `0x47820187` | Caller is not the consensus contract | Only consensus may call |
+| `CallerNotGenConsensus()` | `0xf8beed7d` | Caller is not GenConsensus | Only GenConsensus may call |
+| `CallerNotLeader(address,address)` | `0x3558c9da` | Caller is not the round leader (leader, caller) | Only the current leader may call |
+| `CallerNotMessages()` | `0x7e3d1f98` | Caller is not the messages module | Only messages module may call |
+| `CallerNotSender()` | `0xf5963d65` | Caller is not the original tx sender | Only the sender may call |
+| `CallerNotTransactions()` | `0xae49b478` | Caller is not the transactions module | Only transactions module may call |
+| `CanNotAppeal()` | `0xb39cdfbe` | The transaction/state cannot be appealed | Not eligible for appeal |
+| `EmptyTransaction()` | `0x260c9d62` | Transaction payload is empty | Provide a non-empty tx |
+| `FinalizationNotAllowed()` | `0xe1b3b3b7` | Finalization is not allowed at this time | Wait until finalization is permitted |
+| `FinalizationWindowForRevealingNotOpened()` | `0xabc07e66` | Reveal finalization window is not open | Wait for the reveal window |
+| `FinalizedCountExceedsIssued()` | `0x34bffaee` | Finalized count exceeds issued count | Internal accounting invariant broke |
+| `IdlenessError()` | `0xc35cc440` | Generic idleness-module error | — |
+| `InsufficientActiveValidators(uint256,uint256)` | `0xb5e5b936` | Not enough active validators for the request (numValidators, availableValidators) | Wait for more active validators |
+| `InvalidAppealBond()` | `0xc59a6168` | Appeal bond value is invalid | Provide a valid bond |
+| `InvalidAppealRounds()` | `0x2b4f0027` | Configured appeal-rounds value is invalid | Set a valid rounds value |
+| `InvalidCommitHash()` | `0x173d238e` | Commit hash is invalid | Provide a valid commit hash |
+| `InvalidCommittedValidators()` | `0xcbf18bce` | Committed-validators set is invalid | Correct committed validators |
+| `InvalidDeploymentWithSalt()` | `0xaceab4a1` | CREATE2 deployment-with-salt is invalid | Fix salt/init params |
+| `InvalidGhostContract()` | `0x1d41354d` | Ghost contract is invalid | Target a valid ghost contract |
+| `InvalidIdleReplacementIndex(address,uint256,uint256)` | `0x4424217a` | Idle-replacement index mismatch (validator, expected, provided) | Provide the expected index |
+| `InvalidNumOfValidators()` | `0xc4be27c5` | Validator count is invalid | Provide a valid count |
+| `InvalidPhaseTimeoutBounds()` | `0x7cee0061` | Phase timeout bounds are invalid | Fix min/max bounds |
+| `InvalidProcessingBlock()` | `0xd1ba0787` | Processing block is invalid | Use a valid processing block |
+| `InvalidRevealData()` | `0xbc03c4b4` | Reveal payload is invalid | Provide valid reveal data |
+| `InvalidRevealLeaderData()` | `0x92c313ee` | Leader reveal payload is invalid | Provide valid leader reveal data |
+| `InvalidSender()` | `0xddb5de5e` | Sender is invalid | Provide a valid sender |
+| `InvalidTimestampType()` | `0x099d113d` | Timestamp type is invalid | Provide a valid timestamp type |
+| `InvalidTransactionStatus()` | `0xf8062102` | Tx status is invalid for this operation | Act only in the required status |
+| `InvalidTribunalAppealStatus()` | `0x37c1c7d4` | Tribunal appeal status invalid for this action | Act only in the required status |
+| `InvalidTxExecutionHash()` | `0x22a529c0` | Tx execution hash is invalid | Provide the correct execution hash |
+| `InvalidValidator()` | `0x682a6e7c` | Validator is invalid | Provide a valid validator |
+| `InvalidValidatorsLength()` | `0x5d67a037` | Validators array length is invalid | Provide correct array length |
+| `InvalidVote()` | `0xd5dd0c66` | Vote value is invalid | Provide a valid vote |
+| `InvalidVoteType()` | `0x8eed55d1` | Vote type is invalid | Provide a valid vote type |
+| `LeaderResultHashAlreadySet()` | `0x584764ae` | Leader result hash has already been set | Set the leader result once |
+| `MaxNumOfIterationsInPendingQueueReached()` | `0x357bf18b` | Pending-queue iteration cap reached | Retry/continue processing later |
+| `MaxNumOfMessagesExceeded(uint256,uint256)` | `0x3838b192` | Message count exceeds allocation (numOfMessages, maxAllocatedMessages) | Emit fewer messages |
+| `MockZkSyncBridgeCallFailedToL2()` | `0x9a245636` | Mock zkSync L2 bridge call failed (test) | Test/mock harness failure |
+| `NoIdleValidator()` | `0xede1b7ce` | No idle validator is available | Wait for an idle validator |
+| `NonGenVMContract()` | `0xc1ba7c94` | Target is not a GenVM (ghost) contract | Target a GenVM contract |
+| `NoPendingRefund()` | `0xfb093898` | No pending refund to process | Nothing to refund |
+| `NoRotationsLeft()` | `0xe0bf2581` | No leader rotations remaining | Rotation budget exhausted |
+| `NoSenderForTransaction()` | `0xa0b18673` | Transaction has no sender | Provide a valid sender |
+| `NotConsensus()` | `0x70f64de5` | Caller is not the consensus contract | Only consensus may call |
+| `NotConsensusOrIdleness()` | `0xa82180be` | Caller is not consensus or idleness module | Restricted to consensus/idleness |
+| `NotConsensusOrIdlenessOrTransactions()` | `0x1e3f968f` | Caller is not consensus, idleness, or transactions module | Restricted to those three modules |
+| `NotConsensusOrTransactions()` | `0xe6533a27` | Caller is not consensus or transactions module | Restricted to consensus/transactions |
+| `NotGenConsensus()` | `0xfd9abcdc` | Caller is not GenConsensus | Only GenConsensus may call |
+| `NotIdleness()` | `0x878f6816` | Caller is not the idleness module | Only idleness may call |
+| `NoValidatorsFound()` | `0x9b7fa1e5` | No validators were found | Ensure validators exist |
+| `NumOfMessagesIssuedTooHigh()` | `0x5013bc2a` | Number of issued messages is too high | Reduce issued messages |
+| `OutOfGas()` | `0x77ebef4d` | Out-of-gas surfaced as a typed revert | Increase gas limit |
+| `PendingQueueFull(address,uint256)` | `0xd48a82a3` | Recipient's pending message queue is full (recipient, max) | Drain queue or wait |
+| `PhaseTimeoutOutOfBounds(uint256,uint256,uint256)` | `0xdb0c8dfe` | Phase timeout is outside allowed bounds (value, minBound, maxBound) | Use a timeout within bounds |
+| `QueueHeadExceedsTail()` | `0x698f39ad` | Queue head index exceeds tail (corruption guard) | Internal queue invariant broke |
+| `RandomSeedAlreadySet()` | `0x7d6b9724` | Random seed has already been set | Set the seed once only |
+| `ReconcileBeyondTail()` | `0x34cf41dd` | Reconcile index is past the queue tail | Reconcile within valid range |
+| `ReconcileNotAdvancing()` | `0x3a1a617c` | Reconcile made no progress | Nothing to reconcile |
+| `RecoverRangeBeyondIssued()` | `0x82eacf35` | recoverRecipient range is past the issued count | Use a range within issued |
+| `RecoverRangeInvalid()` | `0xd1402d7e` | recoverRecipient range is invalid | Provide a valid range |
+| `RemovingTransactionFromPendingQueueFailed()` | `0x866b818f` | Failed to remove tx from the pending queue | Internal queue operation failed |
+| `TransactionAlreadyAccepted()` | `0x7bdaa2b4` | Transaction has already been accepted | No re-acceptance |
+| `TransactionCanNotBeAddedToAcceptedQueue()` | `0xcdcfa366` | Tx cannot be added to the accepted queue | State disallows enqueue |
+| `TransactionCanNotBeAddedToPendingQueue()` | `0x406a3bbb` | Tx cannot be added to the pending queue | State disallows enqueue |
+| `TransactionCanNotBeAddedToUndeterminedQueue()` | `0x69842b0a` | Tx cannot be added to the undetermined queue | State disallows enqueue |
+| `TransactionCanNotBeFinalized()` | `0xd9be37ca` | Transaction is not eligible for finalization | Not in a finalizable state |
+| `TransactionInRecomputation()` | `0x00ebaa7c` | Transaction is currently under recomputation | Wait for recomputation to finish |
+| `TransactionNotAcceptedNorUndetermined()` | `0x90cb8b61` | Transaction is neither accepted nor undetermined | Only valid in those states |
+| `TransactionNotAtAcceptedQueueHead()` | `0x3e714edf` | Tx is not at the head of the accepted queue | Process the head tx first |
+| `TransactionNotAtPendingQueueHead()` | `0x0844056a` | Tx is not at the head of the pending queue | Process the head tx first |
+| `TransactionNotAtUndeterminedQueueHead()` | `0x3d40531f` | Tx is not at the head of the undetermined queue | Process the head tx first |
+| `TransactionNotFinalized()` | `0xe4e81f79` | Transaction is not finalized | Finalize the tx first |
+| `TransactionNotFound()` | `0x31fb878f` | Transaction not found | Reference a valid tx |
+| `TransactionNotInPendingQueue()` | `0x7b9ea34f` | Tx is not in the pending queue | Only valid for queued txs |
+| `TransactionNotTerminal()` | `0x1d3a409a` | Transaction is not in a terminal state | Only valid for terminal txs |
+| `TransactionStillValid()` | `0xc4afd8fa` | Transaction is still valid (cannot treat as expired) | Wait until it is no longer valid |
+| `TribunalAlreadyFinalized()` | `0x6cb27c0f` | Tribunal has already been finalized | No re-finalization |
+| `TribunalNotFound()` | `0x609bbfa8` | Referenced tribunal does not exist | Reference a valid tribunal |
+| `UnfinishedTransactions()` | `0xf082b82d` | Unfinished transactions block the operation | Finish pending txs first |
+| `UnfinishedTxCounterUnderflow()` | `0x8894ba94` | Unfinished-transaction counter underflowed | Internal accounting invariant broke |
+| `ValidatorAlreadyCommitted()` | `0xf8961aee` | Validator has already committed | Commit once per round |
+| `ValidatorAlreadyRevealed()` | `0x00d6a91b` | Validator has already revealed | Reveal once per round |
+| `ValidatorAlreadyVoted()` | `0x6e271ebe` | Validator has already voted | Vote once per round |
+| `ValidatorSelectionFailed()` | `0x1f90236d` | Validator selection algorithm failed | Check validator set/seed |
+| `ValidatorWalletAlreadyDeployed()` | `0xb9ceb484` | Validator wallet already deployed | Do not redeploy the wallet |
+| `ValidValidatorNotFound()` | `0x1c177f6c` | No valid validator was found | Ensure eligible validators exist |
+| `VoteAlreadyCommitted()` | `0xcf1c5b9c` | Vote has already been committed | Commit vote once |
+| `VoteAlreadyRevealed()` | `0x3246ac36` | Vote has already been revealed | Reveal vote once |
+| `WalletDeploymentFailed()` | `0x6e09c9eb` | Validator wallet deployment failed | Check factory/CREATE2 params |
+| `WrongRecomputationTransaction()` | `0x4d1fe80e` | Recomputation targeted the wrong transaction | Target the correct tx |
+
+### Governance (9)
+
+| Error | Selector | Meaning | Common cause / fix |
+|:--|:--|:--|:--|
+| `CallerNotGovernance()` | `0xf2be30fb` | Caller is not the governance contract | Route via governance |
+| `GovernanceInsufficientValue(uint256,uint256)` | `0xf498db0c` | msg.value insufficient for the operation (provided, required) | Send the required value |
+| `GovernanceInvalidDelay()` | `0xd1132ebc` | Configured timelock delay is invalid | Set a valid delay |
+| `GovernanceOperationExpired(address,bytes4,bytes,uint256,uint256)` | `0x11515806` | Queued operation expired past its window (target, selector, args, value, expiry) | Re-queue the operation |
+| `GovernanceOperationNotFound(address,bytes4,bytes,uint256)` | `0x8ff7bbe1` | Operation not found in the queue (target, selector, args, value) | Queue it first |
+| `GovernanceOperationPending(address,bytes4,bytes,uint256)` | `0xc7eef27f` | Operation is already queued/pending (target, selector, args, value) | Do not re-queue |
+| `GovernanceTargetIsNotAContract(address)` | `0x83e02672` | Governance target address has no code (target) | Target a deployed contract |
+| `GovernanceTimelockPending(address,bytes4,bytes,uint256,uint256)` | `0x2189e680` | Timelock not yet elapsed (target, selector, args, value, eta) | Wait until ETA |
+| `ZeroValue()` | `0x7c946ed7` | Value or parameter is zero | Provide a non-zero value |
+
+### Access (7)
+
+| Error | Selector | Meaning | Common cause / fix |
+|:--|:--|:--|:--|
+| `CallerNotAuthorized()` | `0xc183bcef` | Caller is not authorized for this action | Use an authorized address |
+| `CallerNotOwner()` | `0x5cd83192` | Caller is not the owner | Call from the owner |
+| `NotAppealsContract()` | `0xa5a4297b` | Caller is not the appeals contract | Only the appeals contract may call |
+| `NotOperator()` | `0x7c214f04` | Caller is not an operator | Call from an operator address |
+| `NotStaking()` | `0x890fec52` | Caller is not the staking contract | Only staking may call |
+| `Unauthorized()` | `0x82b42900` | Generic unauthorized caller | Use an authorized caller |
+| `ZeroAddress(string)` | `0xeac0d389` | A named address is the zero address (key) | Provide a non-zero address |
+
+### Other (11)
+
+| Error | Selector | Meaning | Common cause / fix |
+|:--|:--|:--|:--|
+| `ArrayLengthMismatch()` | `0xa24a13a6` | Two input arrays have different lengths | Match array lengths |
+| `BatchSizeExceeded(uint256,uint256)` | `0xf80a4845` | Batch size exceeds the allowed maximum (provided, maximum) | Reduce batch size |
+| `IndexOutOfBounds()` | `0x4e23d035` | Array index is out of bounds | Use a valid index |
+| `InvalidAddress()` | `0xe6c4247b` | Address parameter is invalid or zero | Provide a valid address |
+| `InvalidNonce()` | `0x756688fe` | Nonce is invalid or out of order | Use the correct nonce |
+| `InvalidNumber(uint256)` | `0xc5d83cde` | Generic numeric-validation failure (number) | Provide a value in range |
+| `InvalidOffset()` | `0x01da1572` | Pagination offset is invalid | Use a valid offset |
+| `InvalidPageSize()` | `0xe5b7db2e` | Pagination page size is invalid | Use a valid page size |
+| `InvalidVersion()` | `0xa9146eeb` | Version mismatch | Match the expected version |
+| `PercentageOutOfRange(uint256)` | `0xafd5d0b0` | Percentage value is out of the allowed range (value) | Provide a valid percentage |
+| `ZeroTotalWeight()` | `0x098404de` | Total weight is zero (test mock) | Ensure non-zero total weight |

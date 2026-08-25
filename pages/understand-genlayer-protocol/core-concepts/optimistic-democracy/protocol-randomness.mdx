@@ -1,0 +1,64 @@
+---
+description: "Protocol Randomness explains how GenLayer derives the seed used for validator and leader selection, how the seed advances each round, and the unpredictability and anti-grinding properties of the mechanism."
+---
+
+import { Callout } from 'nextra-theme-docs'
+
+# Protocol Randomness
+
+Every transaction in GenLayer is validated by a committee of validators, one of whom acts as the leader. To keep the network fair and censorship-resistant, the protocol must decide *which* validators serve on each committee in a way that no single operator can predict far in advance or bias in their own favor. That decision is driven by an on-chain source of randomness that is derived fresh for every round of consensus.
+
+This page describes, conceptually, how that randomness is produced, how it is consumed for selection, and what unpredictability guarantees it does — and does not — provide.
+
+## The Randomness Mechanism
+
+GenLayer's randomness is **seed-chained**: the protocol maintains a numeric *seed*, and each round advances that seed to a new value that feeds the next selection. The advance is driven by a participant's signature over the current seed.
+
+Concretely, the mechanism combines two standard primitives:
+
+- **An ECDSA signature over the current seed.** To advance the seed, a participant signs the current seed value with their validator key. The protocol recovers the signer's address from the signature and requires it to match the expected participant, so only the designated participant can advance the seed for their step.
+
+- **A keccak256 hash to produce the next seed.** The new seed is the keccak256 hash of the signature combined with the previous seed. Because the signature is unpredictable until it is produced, and hashing is one-way, the resulting seed is effectively unpredictable to anyone who does not yet hold that signature.
+
+<Callout type="warning">
+This is a signature-driven, hash-chained randomness scheme — **not** a verifiable random function. The "proof" that advances the seed is an ordinary ECDSA signature over the seed, and the next seed is simply a keccak256 hash. It provides freshness and replay-resistance, but it does not carry the formal, independently verifiable unbiasability guarantees of a dedicated cryptographic random-function construction. The known limitations are described in [Known Limitations](#known-limitations) below.
+</Callout>
+
+### From Seed to Selection
+
+Selecting a committee member from a set of candidates is a separate step that consumes seeds. The protocol derives an index into the candidate set by hashing a combination of seeds together and reducing the result over the size of the set. Repeating this with the advancing seed yields the successive members of a committee.
+
+Selection is **stake-weighted**: a validator's chance of being chosen scales with the stake it has at risk, rather than every validator being equally likely. Higher-staked validators are therefore selected more often, which ties influence over consensus to economic commitment. The randomness supplies the unpredictable input; the stake weighting supplies the distribution.
+
+### Per-Recipient Chains and Per-Round Freshness
+
+The evolving seed is maintained **per recipient** — that is, per target contract address — rather than as a single global value. Each time a transaction to that recipient is activated or proposed, the recipient's seed advances. Because it advances every time it is used, each selection draws on a different seed than the last: a committee assembled for one transaction does not reuse the randomness of a previous one, and the seed that fixes a given transaction's committee is captured at activation time. This rotation is what makes committee membership a moving target rather than a fixed schedule an operator could plan around.
+
+## Why Selection Cannot Be Gamed
+
+The design goal is that an operator cannot arrange to be selected (or to avoid selection) for a particular transaction. Several properties work together toward that goal:
+
+- **The seed depends on inputs the operator does not fully control.** Advancing the seed requires a signature from a specific participant, and the resulting value is hashed. An operator cannot freely choose the next seed; they can only contribute their prescribed signature at their prescribed step.
+
+- **The seed is consumed as it advances.** Selection and seed advancement are bound together in the consensus flow: the seed used for a transaction's committee is fixed at activation and read from there, so it cannot be re-derived mid-transaction to fabricate a favorable outcome. Once the seed advances, a signature that was valid against the old seed no longer verifies against the new one, so past proofs cannot be replayed to roll the seed back.
+
+- **Selection is fresh per round.** Even a participant who learns the current seed only learns it for the round at hand; the next round's seed depends on a signature that does not yet exist.
+
+Together these mean that, in the normal case, a validator learns whether it was selected at the moment selection happens — not early enough to reposition stake or otherwise engineer the outcome.
+
+## Known Limitations
+
+GenLayer documents the properties of this mechanism plainly, including where it is weaker than an idealized random beacon:
+
+- **Grinding at the margins.** Because a participant produces the signature that advances the seed, a participant who is willing to withhold or choose *when* to submit has some limited ability to influence the resulting value — a "grinding" surface. The scheme constrains this (the signer is fixed and the output is hashed), but it does not offer the formal grinding-resistance of a construction whose output no single party can compute alone.
+
+- **Initial-seed predictability.** Each recipient's seed chain has to start somewhere, and it is derived in part from block data (block hash, timestamp, number) that a block producer has bounded influence over. In principle this means the *first-ever* selection for a brand-new recipient could be weakly predicted by an actor able to influence block production. The impact is limited and self-correcting: only that first selection is affected, and every subsequent signature-driven advance restores full unpredictability.
+
+These are acknowledged characteristics of the current design rather than latent bugs. They are called out here so that integrators reason about validator selection with an accurate model of its guarantees.
+
+## Related Concepts
+
+- [Validators and Validator Roles](/understand-genlayer-protocol/core-concepts/validators-and-validator-roles) — the roles (leader, validator) that selection assigns.
+- [Optimistic Democracy](/understand-genlayer-protocol/core-concepts/optimistic-democracy) — how selected committees reach consensus.
+- [Appeals Process](/understand-genlayer-protocol/core-concepts/optimistic-democracy/appeal-process) — how additional validators are drawn when a decision is challenged.
+- [Staking](/understand-genlayer-protocol/core-concepts/optimistic-democracy/staking) — the stake that weights selection.
