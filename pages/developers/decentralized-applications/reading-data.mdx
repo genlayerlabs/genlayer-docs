@@ -108,6 +108,45 @@ try {
 
 ## Best Practices
 
-1. **Cache Results**: For frequently accessed data that doesn't change often, consider caching the results.
-2. **Batch Readings**: When possible, use functions that return multiple values instead of making multiple separate calls.
-3. **Type Safety**: Use TypeScript interfaces to ensure type safety when handling returned data:
+1. **Batch Readings**: When possible, use functions that return multiple values instead of making many separate calls.
+2. **Type Safety**: Use TypeScript interfaces to ensure type safety when handling returned data.
+3. **Cache Shared Reads**: Treat public RPC endpoints as shared infrastructure. Browser traffic can multiply `gen_call` requests quickly, so production DApps should avoid polling the chain independently from every tab or visitor.
+
+## Building Read-Heavy DApps
+
+`readContract` calls are convenient for account pages, dashboards, and dispute views, but they still consume RPC capacity. If a frontend calls `gen_call` repeatedly from every browser session, the app can hit rate limits even though the operation is read-only and gasless.
+
+For read-heavy DApps, use a layered pattern:
+
+- **On-chain source of truth**: keep the Intelligent Contract as the authoritative state machine.
+- **Backend cache or sidecar**: poll the contract at a controlled interval and serve many frontend users from the cached response.
+- **Batch view functions**: expose view methods that return the full page state needed by the UI, instead of requiring many small reads.
+- **HTTP cache semantics**: use `ETag`, `Cache-Control`, or stale-while-revalidate behavior so clients do not refetch unchanged data.
+- **Verify-on-chain fallback**: keep a UI path that can re-read the contract directly for users who need to verify the cached value.
+
+A minimal backend route can centralize reads like this:
+
+```typescript
+let cachedPageState: unknown;
+let cachedAt = 0;
+const CACHE_TTL_MS = 12_000;
+
+export async function getPageState() {
+  const now = Date.now();
+
+  if (cachedPageState && now - cachedAt < CACHE_TTL_MS) {
+    return cachedPageState;
+  }
+
+  cachedPageState = await client.readContract({
+    address: contractAddress,
+    functionName: 'get_page_state',
+    args: [],
+  });
+  cachedAt = now;
+
+  return cachedPageState;
+}
+```
+
+This does not replace on-chain verification. It reduces duplicate read load for normal browsing while preserving GenLayer as the source of truth.
