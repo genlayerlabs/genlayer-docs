@@ -1,0 +1,256 @@
+---
+description: "Recover a GenLayer validator that has fallen behind or lost state: seed a new node from a snapshot, or trustlessly rebuild the chain database from genesis by re-executing history through GenVM."
+---
+
+import { Callout } from "nextra-theme-docs";
+
+# Node State Recovery & Re-sync
+
+This runbook covers a validator whose local chain database is behind, corrupted, or gone — a wiped disk, a restore onto new hardware, a database that fell too far behind the chain tip, or a node stuck after an interrupted upgrade. There are two ways to bring a node back to a usable state:
+
+| Path | What it does | When to use it | Trust model |
+|---|---|---|---|
+| **Snapshot seeding** (fast) | Populate a new node's data directory from a snapshot captured on a node you already run | You operate more than one node, or you took a snapshot before the incident | Trusts the source node's state |
+| **Full re-sync from genesis** (trustless) | Start with an empty database; the node re-scans the rollup and re-executes all history through GenVM | You have no snapshot, or you want an independently verified state | Trustless — re-derives state from the chain |
+
+<Callout type="info" emoji="💡">
+  Both paths preserve your on-chain identity. Your validator wallet, stake, and operator key live on the rollup and in your keystore — they are **not** part of the chain database. Recovery only rebuilds local state; it never re-stakes. See [Backing Up Your Operator Key](/validators/setup-guide#backing-up-your-operator-key).
+</Callout>
+
+<Callout type="warning" emoji="⚠️">
+  **Tooling is thin on the restore side.** The node exposes a first-class endpoint to **create** a snapshot, but there is no `restore` / `import` command or endpoint that consumes one. Seeding from a snapshot is a manual filesystem operation performed while the node is stopped, described below. If you have no snapshot, the supported recovery is a full re-sync from genesis.
+</Callout>
+
+---
+
+## First: Diagnose How Far Behind You Are
+
+Before choosing a path, confirm the symptom. A node that is merely catching up will recover on its own — you may not need to do anything.
+
+### Check GenVM sync status
+
+The `gen_syncing` RPC method reports how far the node's local state is behind the chain tip:
+
+```bash copy
+curl -s -X POST http://localhost:9151 \
+  -H "Content-Type: application/json" \
+  -d '{"jsonrpc":"2.0","method":"gen_syncing","params":[],"id":1}'
+```
+
+```json
+{
+  "jsonrpc": "2.0",
+  "result": {
+    "syncedBlock": "0x151e00",
+    "latestBlock": "0x151ec5",
+    "blocksBehind": 197
+  },
+  "id": 1
+}
+```
+
+`blocksBehind == 0` means fully synced. A large, **steadily shrinking** `blocksBehind` means the node is catching up normally — let it run. A value that is stuck or growing means the node cannot make progress and needs intervention.
+
+### Check health and run diagnostics
+
+```bash copy
+# Ops health endpoint (default ops port 9153)
+curl -s http://localhost:9153/health
+
+# Full configuration and connectivity check
+./bin/genlayernode doctor
+```
+
+`doctor` validates consensus contract configuration, GenVM module health, LLM provider connectivity, and rollup (ZKSync) node accessibility — a stuck sync is often an upstream problem (unreachable rollup RPC, dead GenVM modules) rather than a corrupt database. If the rollup itself is unreachable, this is a different incident — see [Rollup / Sequencer Outage](/validators/rollup-outage).
+
+<Callout type="info">
+  A node that falls far enough behind (thousands of blocks, or no sync progress for several minutes) enters a **hopelessly-behind** state: it skips consensus duties and pauses its sync pipeline rather than voting on stale state. This is expected protective behavior. It leaves that state automatically once it makes forward progress, and an internal stall-watchdog restarts the sync pipeline if it wedges — but a node that can *never* catch up (for example, replay is slower than the chain advances, or a dependency is down) is the case this runbook addresses. If a node stays stuck with the pipeline paused, a **process restart** is the historical remedy of last resort.
+</Callout>
+
+---
+
+## Path A — Seed a New Node From a Snapshot (Fast)
+
+Use this when you run more than one node, or you captured a snapshot before the incident. It restores a node in minutes instead of the hours a full replay can take, at the cost of trusting the source node's state.
+
+### Step 1 — Create a snapshot on a healthy node
+
+On a node that is fully synced, call the operations-port `POST /snapshot` endpoint. This produces a consistent snapshot of the chain database at the current block. Full details, authentication, and all modes are documented in the node repository's [snapshot API reference](https://github.com/genlayerlabs/genlayer-node/blob/main/docs/api/ops/snapshot.md).
+
+The endpoint requires the operator token (`GENLAYERNODE_NODE_OPERATOR_TOKEN`) and is intended for in-host or in-cluster access. From the healthy node, stream the snapshot to a file:
+
+```bash copy
+curl -X POST http://127.0.0.1:9153/snapshot \
+  -H "X-Admin-Auth: $GENLAYERNODE_NODE_OPERATOR_TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{}' \
+  -o snapshot.tar.gz
+```
+
+<Callout type="warning" emoji="🚨">
+  The endpoint returns `401` to every caller when `GENLAYERNODE_NODE_OPERATOR_TOKEN` is unset on the node (default-deny). If you have never set this variable, set it and restart the node before you can take a snapshot. Treat the token and the resulting archive as sensitive — anyone holding the archive can reconstruct the node's state.
+</Callout>
+
+The snapshot is a gzipped tar of the chain database at the moment of capture: the SSTables, `MANIFEST`, and write-ahead log (WAL). It can be several gigabytes, so the connection stays open for the duration — configure any reverse proxy with a generous read timeout and disable response buffering.
+
+<Callout type="info">
+  If your snapshot-taking node and target node share a filesystem (for example a mounted volume), the endpoint can also write the snapshot directly to a path inside the configured snapshot directory (`node.admin.snapshot_dir`, default `<datadir>/snapshots`) instead of streaming it. See the [snapshot API reference](https://github.com/genlayerlabs/genlayer-node/blob/main/docs/api/ops/snapshot.md) for write-to-path mode.
+</Callout>
+
+### Step 2 — Stop the target node
+
+Seeding is an offline operation. The database must not be written while you replace it.
+
+```bash copy
+# If running via docker-compose
+docker compose --profile node down
+
+# If running the binary directly, stop the genlayernode process
+```
+
+### Step 3 — Place the snapshot into the data directory
+
+The snapshot archive is a consistent checkpoint of the node's Pebble chain database (`node.genlayerdb`, default `data/node/genlayer.db`) — the SSTables, `MANIFEST`, and WAL. Extract it back into place under the target node's `datadir`.
+
+<Callout type="warning" emoji="🚨">
+  **Inspect before you extract.** Because there is no `restore` command that validates the archive, extract to a scratch directory first and confirm the layout matches what your `config.yaml` expects before copying it into `datadir`. Never overwrite `data/node/keystore/` — that is your own operator key.
+</Callout>
+
+```bash copy
+# 1. Inspect the archive so you know its internal layout
+tar -tzvf snapshot.tar.gz | head
+
+# 2. Back up the current (behind/corrupt) chain DB so you can roll back
+mv ./data/node/genlayer.db ./data/node/genlayer.db.bak 2>/dev/null || true
+
+# 3. Extract the checkpoint into the datadir, matching node.genlayerdb
+tar -xzvf snapshot.tar.gz -C ./data/node
+```
+
+<Callout type="info">
+  The archive checkpoints the **Pebble chain DB**. The `merkleforest` / `merkletree` stores are separate paths under `datadir`; if your snapshot workflow does not carry them, the node rebuilds any missing derived state on start and then syncs the remaining gap. Confirm the extracted directory name matches `node.genlayerdb` in your `config.yaml`, and that the `datadir` you extracted into is the one the node runs against.
+</Callout>
+
+### Step 4 — Start the node and confirm it converges
+
+```bash copy
+./bin/genlayernode doctor
+./bin/genlayernode run -c $(pwd)/configs/node/config.yaml --password "your secret password"
+```
+
+The node starts from the snapshot's block and syncs the gap to the current tip. Poll `gen_syncing` until `blocksBehind` reaches 0:
+
+```bash copy
+watch -n 5 'curl -s -X POST http://localhost:9151 \
+  -H "Content-Type: application/json" \
+  -d "{\"jsonrpc\":\"2.0\",\"method\":\"gen_syncing\",\"params\":[],\"id\":1}"'
+```
+
+Once caught up, verify the validator is participating in [monitoring](/validators/monitoring) and, if it had been excluded from selection while down, that it is being primed again (see [Re-entering the Validator Set](#re-entering-the-validator-set-after-downtime)).
+
+---
+
+## Path B — Full Re-sync From Genesis (Trustless)
+
+Use this when you have no snapshot, or when you want a state you derived yourself rather than one you accepted from another node. The node starts with an empty database, **scans the rollup for the accepted-transaction history, and re-executes every transaction through GenVM**, rebuilding local state block by block. History comes from the GenLayer Chain rollup itself (the node filters the consensus contract's logs) — not from a separate data-availability layer or from peers. This is the same process a brand-new validator goes through on first start, and the same one a breaking upgrade forces (see [Breaking Change Upgrade](/validators/upgrade#breaking-change-upgrade)).
+
+Because every result is recomputed locally rather than trusted, this path is trustless — but it is bounded by how fast your node can replay history, which is dominated by GenVM execution and your LLM provider's throughput.
+
+### Step 1 — Stop the node and clear the chain database
+
+```bash copy
+# Stop the node first (docker compose --profile node down, or stop the binary)
+
+# Remove the chain database so the node rebuilds it from genesis.
+# The chain state is the Pebble DB (node.genlayerdb, default data/node/genlayer.db)
+# plus the Merkle forest/tree stores under data/node/merkle/.
+# Keep configs/ and data/node/keystore/ — only the chain state goes.
+rm -rf ./data/node/genlayer.db ./data/node/merkle
+```
+
+<Callout type="info">
+  These are the example-config defaults. Confirm against your own `config.yaml`: the chain database is `node.genlayerdb` under `datadir`, and the Merkle stores are `merkleforest.dbpath`, `merkleforest.indexdbpath`, and `merkletree.dbpath`. Remove exactly those, and nothing else under `datadir`.
+</Callout>
+
+<Callout type="warning" emoji="🚨">
+  **Never delete `data/node/keystore/`.** That is your operator key. If you lose it you must set up a new operator and update your validator configuration. Back it up first — see [Backing Up Your Operator Key](/validators/setup-guide#backing-up-your-operator-key).
+</Callout>
+
+### Step 2 — Set the genesis block to bound the scan
+
+Confirm your `config.yaml` sets `consensus.genesis` for your network. This tells the node the first block of the consensus deployment so it does not scan the settlement chain from block 0.
+
+```yaml copy
+consensus:
+  # Testnet Asimov
+  consensusaddress: "0xe66B434bc83805f380509642429eC8e43AE9874a"
+  genesis: 17326
+```
+
+<Callout type="info" emoji="💡">
+  If `genesis` is omitted the node auto-detects it by searching for the first log from the consensus contract, which is slower. Setting it explicitly is the single biggest win for re-sync time. Use the value for **your** network — see [Network-Specific Consensus Configuration](/validators/setup-guide#network-specific-consensus-configuration).
+</Callout>
+
+### Step 3 — (Optional) Raise replay throughput
+
+During re-sync the node is doing bulk GenVM replay, which is more parallel than steady-state operation. The `genvm.sync_permits` setting controls how many GenVM permits are used while the node is not yet synced; it defaults to the steady-state `permits` value if left empty.
+
+```yaml copy
+genvm:
+  permits: 8         # steady-state concurrency
+  sync_permits: 64   # concurrency during bulk replay (while not synced)
+  sync_wait_timeout: "20s"
+```
+
+Raising `sync_permits` speeds up replay only as far as your LLM provider's rate limits and your CPU allow. See [GenVM Configuration](/validators/genvm-configuration) for provider throughput and the greybox fallback.
+
+### Step 4 — Start the node and monitor replay
+
+```bash copy
+./bin/genlayernode doctor
+./bin/genlayernode run -c $(pwd)/configs/node/config.yaml --password "your secret password"
+```
+
+Watch `gen_syncing` and your logs. `blocksBehind` should fall steadily. Because replay re-runs Intelligent Contracts through your LLM provider, expect this to take significantly longer than a snapshot seed, and to consume LLM credits.
+
+<Callout type="warning" emoji="⚠️">
+  If `blocksBehind` is **not** shrinking, the node is not making progress. Re-run `doctor` and check that the rollup RPC is reachable, the GenVM modules are running, and your LLM provider is not rate-limiting you. A stalled replay is almost always an upstream dependency, not the database.
+</Callout>
+
+---
+
+## Re-entering the Validator Set After Downtime
+
+Recovering the database restores the node — but if your validator was down long enough to miss its per-epoch **priming**, it may have been dropped from validator selection while it was offline. Rebuilding local state does not itself re-select you.
+
+- Validators must be **primed** each epoch (`validatorPrime()`) to remain eligible for selection. Missing priming does **not** lose your stake or rewards, but it excludes you from selection until priming resumes. See [Validator Priming](/understand-genlayer-protocol/core-concepts/optimistic-democracy/staking#validator-priming).
+- A validator that missed activity windows may appear in the **quarantined** set rather than the **active** set. Quarantine is an on-chain consensus mechanism, not a node-side flag — check your status with the CLI:
+
+```bash copy
+# Is my validator active, or quarantined?
+genlayer staking active-validators
+genlayer staking quarantined-validators
+genlayer staking validator-info --validator 0xYourValidatorWallet...
+```
+
+<Callout type="info">
+  If you were offline because the **rollup itself** was down (not just your node), see [Rollup / Sequencer Outage: Incident Response](/validators/rollup-outage) — in that scenario the whole network waits, and re-activation is coordinated rather than something you fix unilaterally.
+</Callout>
+
+---
+
+## Quick Troubleshooting
+
+- **`gen_syncing` shows `blocksBehind` stuck or growing** — The node cannot keep up or cannot progress. Run `doctor`; check rollup RPC reachability, GenVM module health, and LLM rate limits before assuming database corruption.
+- **Node won't start after seeding a snapshot** — The extracted directory layout does not match your `config.yaml` paths. Confirm `merkleforest.dbpath`, `merkletree.dbpath`, and index paths, and that you extracted into the correct `datadir`.
+- **`POST /snapshot` returns 401** — `GENLAYERNODE_NODE_OPERATOR_TOKEN` is unset or the header is wrong. Set the token on the node and restart; it is read once at startup and not hot-reloaded.
+- **Re-sync is extremely slow** — Expected for a full genesis replay: every historical Intelligent Contract is re-executed through GenVM. Confirm `consensus.genesis` is set, raise `genvm.sync_permits`, and check your LLM provider is not the bottleneck.
+- **Recovered node runs but isn't selected for consensus** — You likely missed priming while down. Verify with `genlayer staking active-validators` / `quarantined-validators` and see [Validator Priming](/understand-genlayer-protocol/core-concepts/optimistic-democracy/staking#validator-priming).
+
+## Related
+
+- [Setup Guide](/validators/setup-guide) — installation, configuration, and operator-key backup/restore
+- [Upgrade Guide](/validators/upgrade) — breaking upgrades also require a fresh sync from genesis
+- [Monitoring & Telemetry](/validators/monitoring) — confirm the recovered node is healthy and participating
+- [Rollup / Sequencer Outage](/validators/rollup-outage) — when the failure is upstream, not local
+- [Staking](/understand-genlayer-protocol/core-concepts/optimistic-democracy/staking) — priming, active set, and quarantine

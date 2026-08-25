@@ -4,5 +4,7 @@
   "system-requirements": "System Requirements",
   "genvm-configuration": "GenVM Configuration",
   "upgrade": "Upgrade Guide",
+  "state-recovery": "State Recovery & Re-sync",
+  "rollup-outage": "Rollup / Sequencer Outage",
   "changelog": "Changelog"
 }

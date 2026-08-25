@@ -65,4 +65,4 @@ Breaking changes involve a new consensus deployment. The old database is incompa
 - **Node won't start** — Run `./bin/genlayernode doctor`. If it reports unknown config fields, reconfigure from the new example.
 - **Not participating in consensus** — Verify the consensus contract address, `validatorWalletAddress`, and `operatorAddress` are correct.
 - **Key errors** — Your operator key wasn't imported. See [restoring your operator key](/validators/setup-guide#restoring-your-operator-key).
-- **Slow sync after breaking upgrade** — Expected. Ensure `genesis` is set in `config.yaml` to avoid scanning from block 0.
+- **Slow sync after breaking upgrade** — Expected. Ensure `genesis` is set in `config.yaml` to avoid scanning from block 0. A breaking upgrade rebuilds the database from genesis exactly like a full re-sync — see [State Recovery & Re-sync](/validators/state-recovery) for how to speed up replay and confirm the node converges.

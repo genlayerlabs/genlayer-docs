@@ -1,0 +1,194 @@
+---
+description: "Incident-response runbook for GenLayer validator operators when the underlying rollup or sequencer is unreachable: detect the outage, understand why validators are not falsely slashed, communicate status, verify, and resume."
+---
+
+import { Callout } from "nextra-theme-docs";
+
+# Rollup / Sequencer Outage: Incident Response
+
+A GenLayer validator reads chain state from and submits its votes and receipts to the underlying rollup — the GenLayer Chain (a ZKSync-based L2). When that rollup or its sequencer becomes unreachable, your node cannot read the head or land transactions, and consensus across the whole network stalls. This is fundamentally different from your own node being sick: **the fault is upstream and shared by every validator**, so the correct response is coordinated, not unilateral.
+
+<Callout type="info" emoji="💡">
+  **The one thing to internalize:** when the rollup is down, validators are **not** falsely slashed for it. Slashing and quarantine are decided and enacted **on-chain** by the consensus contracts — the node has no code path that penalizes itself, and when it cannot reach the chain it **skips its duties rather than casting a bad vote**. If the chain can't finalize epochs, no penalty can be enacted at all. Your node's job during an outage is to **wait and retry**. Do not wipe your database or re-stake in a panic.
+</Callout>
+
+This runbook follows the incident lifecycle: **detect → communicate → wait & verify → resume → post-incident.**
+
+---
+
+## Precedent: the Bradbury outage (2026-07-01)
+
+On 2026-07-01 the rollup underlying the **testnet-bradbury** network went down around 14:00 UTC. Validators could no longer reach the L2, so they stopped participating in consensus and showed as **not-active** / quarantined; because no epochs could finalize, no one was penalized, and the network waited for the rollup to be restored before participation resumed. The steps below generalize that response into a repeatable procedure.
+
+<Callout type="info">
+  Two distinct things happen and it helps to keep them apart. **Not-active** is a **node-side** state: a node that cannot reach the chain stops being "synced" and voluntarily skips its duties (it will not vote on stale state). **Quarantine** is an **on-chain** consensus state, driven by missed activity windows (idleness) or appeal outcomes — mechanisms that require the chain to be *advancing*. In a total rollup outage the chain is frozen, so the outage window itself does not manufacture fresh quarantines; the exposure comes at the **edges** — as the chain resumes and idleness is assessed — and from **asymmetric** failures where your node is unreachable while the chain keeps moving.
+</Callout>
+
+<Callout type="warning" emoji="⚠️">
+  Whether your validator shows as not-active or quarantined, it is a **holding state**, not a punishment — it reflects that the validator was not participating because it *could not*. Re-activation after the rollup returns is coordinated (see [Resume](#4-resume)) and happens through normal priming, not something you force by re-staking.
+</Callout>
+
+---
+
+## 1. Detect
+
+The signature of a rollup outage is that **every path to the L2 fails at once** — RPC and WebSocket both — while your node process itself is otherwise healthy (GenVM up, disk fine, LLM reachable).
+
+### Run doctor
+
+`doctor` connects to the configured GenLayer Chain RPC and WebSocket URLs with a short timeout and reports each explicitly:
+
+```bash copy
+./bin/genlayernode doctor
+```
+
+During an outage you will see failures like:
+
+```
+  ✗ GenLayer Chain RPC: Failed to connect to <your-rpc-url>
+    Error: <dial/connection error>
+    Fix: Ensure GenLayer Chain is running and accessible at the configured URL
+  ✗ GenLayer Chain WebSocket: Failed to connect to <your-ws-url>
+    ...
+  Some GenLayer Chain checks failed!
+```
+
+The tell that this is an **outage** and not a **misconfiguration**: the URLs are the same ones that worked before, and the error is a connection/dial failure (connection refused, timeout) rather than "Not configured".
+
+### Check the health endpoint
+
+The node's `/health` endpoint (default ops port 9153) includes a named `zksync-connectivity` check that runs the same connection probe the keep-alive loop uses. When the rollup is unreachable, that check fails:
+
+```bash copy
+curl -s http://localhost:9153/health
+```
+
+Wire this into your alerting (see [Monitoring & Telemetry](/validators/monitoring)) so a rollup outage pages you rather than being discovered by hand.
+
+### Read the logs
+
+The node's rollup transport classifies connection/timeout failures as **transient** and retries them with backoff rather than crashing. During an outage the recurring log lines are about the connection, not consensus:
+
+- `Error checking zksync connection` and `Failed to reconnect zksync.` from the WebSocket keep-alive loop, which probes on a ~1-minute cadence.
+- `redialed ws rpc client` / `ws rpc redial failed` as the WebSocket RPC client re-dials a stale connection.
+- `retrying RPC request due to timeout` (with `attempt` / `max_attempts`) from the HTTP RPC retry path.
+- `[TRANSACT] Gas bump retry hit transient RPC error, retaining budget` when a pending submission cannot land — the node backs off and **keeps** its replacement budget rather than burning it.
+
+<Callout type="info">
+  Timeouts, connection failures, and provider degradation are treated as **transient**: they are retried, they do **not** burn the transaction replacement budget, and they do **not** create nonce gaps. Blockchain reverts and client-side mistakes are classified separately and never trip the breaker — so a rollup outage is handled as "wait for the endpoint to come back," exactly as intended.
+</Callout>
+
+<Callout type="info" emoji="📊">
+  The transport-layer **circuit breaker** is observable through **metrics, not logs**. Watch `genlayer_rollup_rpc_circuit_state` (0 = closed, 1 = half-open, 2 = open) and `genlayer_rollup_rpc_circuit_transitions_total` on your metrics endpoint. When gated, calls return a `transport circuit breaker is open` transient error internally. Its thresholds are currently compiled-in constants and cannot be retuned from `config.yaml`.
+</Callout>
+
+### How the node protects itself while the L2 is down
+
+You do not need to intervene to prevent damage — the transport layer already backs off intelligently:
+
+| Mechanism | Behavior during an outage |
+|---|---|
+| **Retry classification** | Connection/timeout errors are marked transient and retried with backoff; they do not exhaust the replacement budget or leave nonce gaps. |
+| **Adaptive throughput** | As the failure rate climbs, request concurrency is cut and delays grow (near-full speed → moderate backoff → one-at-a-time with long waits), so the node stops hammering a dead or degraded endpoint. |
+| **Circuit breaker** | After consecutive provider failures the breaker **opens** and gates calls, moves to **half-open** to probe, and **closes** again on success. A write-only fault gates only submissions but keeps reads flowing; a total fault gates everything because the endpoint is presumed dead. |
+| **Duty gating** | When the node can no longer track the chain head it stops being "synced," **skips its consensus duties, and pauses its sync pipeline** — it will not vote on stale state. This is the node going *not-active*; it is protective, not a fault. |
+| **Keep-alive / reconnect** | The WebSocket connection and RPC client are monitored and automatically re-established when the endpoint returns. |
+
+<Callout type="warning" emoji="🚨">
+  **Do not treat a rollup outage as a local-node problem.** Deleting your chain database, re-running the wizard, or re-staking will not help — the L2 is down for everyone — and a needless database wipe forces a slow [full re-sync](/validators/state-recovery#path-b--full-re-sync-from-genesis-trustless) once the network returns. Confirm the outage is upstream first.
+</Callout>
+
+---
+
+## 2. Communicate
+
+A rollup outage is a network event. Coordinated communication prevents every operator from independently debugging the same shared failure.
+
+- **Confirm scope.** Check whether other validators are seeing the same connection failures. If your node's process is healthy (`/health` fails **only** on `zksync-connectivity`) and the RPC/WS URLs are unchanged, the outage is upstream.
+- **Report in the operator channel.** Post in the network's operator channel (for testnet, `#testnet-asimov` / `#testnet-bradbury`) with: the UTC time you first saw failures, your node version, and the exact `doctor` / log error strings. This helps the Foundation confirm and triage.
+- **Watch for a status update.** The Foundation team coordinates the rollup restart. Expect an acknowledgement of the outage, and later a resume signal. Do not act on rumors — wait for the coordinated all-clear.
+
+<Callout type="info">
+  If your node is forwarding telemetry to the Foundation Grafana Cloud (see [Centralized Push](/validators/monitoring#centralized-push-to-genlayer-foundation-grafana-cloud-using-alloy)), your `zksync-connectivity` failures are already visible in aggregate — another reason to enable it.
+</Callout>
+
+---
+
+## 3. Wait & Verify
+
+While the rollup is down there is no useful consensus work to do. The goal of this phase is to keep the node **ready** so it rejoins cleanly the moment the L2 returns.
+
+- **Leave the node running.** Its transport keeps retrying and reconnecting automatically. Stopping it gains nothing and risks a cold start later.
+- **Do not modify the database, config, or stake.** Nothing about your node caused the outage; changing things now only adds a second variable to debug.
+- **Keep watching detection signals.** `curl http://localhost:9153/health` and `./bin/genlayernode doctor` are your readiness probes — they flip back to healthy the moment the rollup is reachable again.
+- **Confirm the outage is genuinely upstream, not you.** If *other* validators recover and you do not, re-check your own RPC/WS URLs, firewall, and DNS — at that point it may be a local connectivity problem masquerading as an outage. See [Node State Recovery & Re-sync](/validators/state-recovery) if your node fell behind but the network is up.
+
+---
+
+## 4. Resume
+
+Recovery is designed to be **hands-off on the node side**.
+
+### The node reconnects on its own
+
+Once the rollup RPC and WebSocket are reachable again:
+
+1. The keep-alive loop re-establishes the WebSocket subscription.
+2. The transport circuit breaker probes (**half-open**) and, on a successful call, returns to **closed** — normal request flow resumes.
+3. The node catches up any blocks it missed during the outage. Track progress with `gen_syncing`:
+
+```bash copy
+curl -s -X POST http://localhost:9151 \
+  -H "Content-Type: application/json" \
+  -d '{"jsonrpc":"2.0","method":"gen_syncing","params":[],"id":1}'
+```
+
+Wait for `blocksBehind` to return to `0`. If the outage was long and your node fell far behind, follow [Node State Recovery & Re-sync](/validators/state-recovery) to bring it back to the tip.
+
+### Re-entering the active set
+
+Validators that were moved to **quarantined / not-active** during the outage rejoin through the network's normal activation path — **priming**, not re-staking. Your stake and identity are untouched.
+
+```bash copy
+# Where does my validator stand after the outage?
+genlayer staking active-validators
+genlayer staking quarantined-validators
+genlayer staking validator-info --validator 0xYourValidatorWallet...
+```
+
+- Validators must be **primed** each epoch (`validatorPrime()`) to be eligible for selection. Your node **retries priming on its own** until it succeeds — while the chain is down you will see log lines like `Validator could not prime for current epoch. It will not validate until primed. Retrying prime.`, and once the chain is back and the previous epoch has finalized, priming lands and duties resume automatically. See [Validator Priming](/understand-genlayer-protocol/core-concepts/optimistic-democracy/staking#validator-priming).
+- Quarantine is managed **on-chain by the consensus contracts**, not by a node-side flag you can clear. A temporary idleness quarantine has an on-chain end epoch and lifts by itself once that epoch passes; lifting one early is an administrative / tribunal action, **not** an operator self-service command. Follow the Foundation's coordinated resume — do not try to force re-activation unilaterally.
+
+<Callout type="warning" emoji="⚠️">
+  Because re-activation is coordinated across the whole validator set, resume the way the Foundation directs. Independently re-staking or wiping state does not speed up your return and can leave you worse off (a needless full re-sync).
+</Callout>
+
+---
+
+## 5. Post-Incident
+
+- **Verify participation.** Confirm the node is producing the expected consensus activity in [monitoring](/validators/monitoring) and that `gen_syncing` reports `blocksBehind: 0`.
+- **Confirm you are in the active set.** `genlayer staking active-validators` should list your validator again; it should no longer appear in `quarantined-validators`.
+- **Improve detection.** If the outage surprised you, add an alert on the `/health` `zksync-connectivity` check and on `gen_syncing` `blocksBehind`, so the next rollup outage pages you within seconds.
+- **Keep a timeline.** Record when you detected the outage, what the errors were, and when you recovered — it shortens triage next time and helps the Foundation correlate reports.
+
+---
+
+## Quick Reference
+
+| Situation | Action |
+|---|---|
+| `doctor` shows RPC **and** WebSocket connection failures, URLs unchanged | Rollup outage — proceed with this runbook |
+| `doctor` shows "Not configured" | Configuration problem, not an outage — fix the URL |
+| Only your node fails; others are fine | Local connectivity issue — check your firewall/DNS/RPC, then [State Recovery](/validators/state-recovery) |
+| Rollup back, `blocksBehind` shrinking | Normal — the node is catching up; wait |
+| Rollup back, `blocksBehind` stuck/large | Node fell too far behind — see [State Recovery](/validators/state-recovery) |
+| Validator shows as not-active / quarantined after outage | Expected — rejoin via automatic priming on the coordinated resume, **not** re-staking |
+
+## Related
+
+- [Monitoring & Telemetry](/validators/monitoring) — alert on `/health` and sync lag so outages page you
+- [Node State Recovery & Re-sync](/validators/state-recovery) — bring a node that fell behind back to the tip
+- [Setup Guide](/validators/setup-guide) — network RPC/WebSocket and consensus configuration
+- [Slashing](/understand-genlayer-protocol/core-concepts/optimistic-democracy/slashing) — what slashing actually penalizes (and why an outage does not)
+- [Staking](/understand-genlayer-protocol/core-concepts/optimistic-democracy/staking) — priming, the active set, and quarantine
