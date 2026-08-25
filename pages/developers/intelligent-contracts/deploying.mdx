@@ -88,6 +88,21 @@ Follow this recommended progression:
   Start with CLI deployment for simple contracts, then graduate to deploy scripts as your projects become more complex.
 </Callout>
 
+## Contract Size and Packaging Notes
+
+Intelligent Contracts are Python contracts executed by GenVM; they are not compiled to EVM bytecode. That means the usual EVM contract bytecode-size limit is not the right model when planning a GenLayer deployment.
+
+Still keep deployed contracts reviewable and lightweight:
+
+- Split large applications into focused Python modules or cooperating contracts instead of one generated monolith.
+- Keep prompts, schemas, and fixtures concise; put bulky off-chain data behind stable URLs or content hashes when possible.
+- Use deploy scripts for multi-contract or multi-step deployments so addresses and constructor arguments are recorded repeatably.
+- If a contract is large because it contains mostly deterministic business logic, consider moving deterministic reads, indexing, caching, or UI-only aggregation outside consensus and only call GenLayer for decisions that require subjective or web-aware validation.
+
+<Callout emoji="⚠️">
+  If a deployment fails with a payload-size, package, or RPC error, treat it as a tooling or network-specific limit and reduce the deployment artifact before retrying. Do not assume Solidity patterns such as diamond proxies are required unless you are separately interacting with EVM contracts.
+</Callout>
+
 ## What's Next?
 
 After deploying your contracts:
