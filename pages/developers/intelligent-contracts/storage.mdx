@@ -14,6 +14,18 @@ Usual data structures aren't suitable for representing blockchain persistent sto
 
 Intelligent Contracts store data publicly on chain, attached to their account's address. The storage starts zero-initialized until a contract is deployed and initializes a state.
 
+## Storage budgets and design guidelines
+
+Persistent contract storage is replicated and retained by the network, so design it as a scarce resource instead of an unbounded application database. On public Studio, contracts have a **256 MiB daily storage budget**; contracts that write unusually large amounts of data may receive quota errors. Existing contracts are not permanently locked when they hit the budget: the first write each UTC day is allowed.
+
+To keep contracts reliable and portable to future networks:
+
+- Keep histories bounded and retain only recent or essential entries.
+- Store large reports, logs, documents, or raw datasets off-chain, and keep hashes or references on-chain.
+- Update existing records when possible instead of appending indefinitely.
+- Use compact data structures and avoid duplicated JSON or text blobs.
+- Batch related updates where practical.
+
 For storage declaration GenLayer uses contract class fields.
 
 <Callout emoji="🚫">
