@@ -69,11 +69,10 @@ const client = createClient({
 });
 
 const result = await client.readContract({
-  // account: account, Account is optional when reading from contracts
+  // account is optional when reading from contracts
   address: contractAddress,
   functionName: 'get_complete_storage',
-  args: []
-  stateStatus: "accepted",
+  args: [],
 })
 ```
 
@@ -81,24 +80,25 @@ const result = await client.readContract({
 ```typescript
 import { localnet } from 'genlayer-js/chains';
 import { createClient, createAccount } from "genlayer-js";
+import { TransactionStatus } from "genlayer-js/types";
 
 const client = createClient({
-  network: localnet,
+  chain: localnet,
 });
 
 const account = createAccount();
 const transactionHash = await client.writeContract({
-  account: account, // using this account for this transaction
+  account, // using this account for this transaction
   address: contractAddress,
-  functionName: 'account',
+  functionName: 'update_storage',
   args: ['new_storage'],
-  value: 0, // value is optional, if you want to send some native token to the contract
+  value: BigInt(0), // native token value to send with the transaction
 });
 
 const receipt = await client.waitForTransactionReceipt({
-  hash: txHash,
+  hash: transactionHash,
   status: TransactionStatus.FINALIZED, // or ACCEPTED
-  fullTransaction: false // False by default - returns simplified receipt for better readability
+  fullTransaction: false, // False by default - returns simplified receipt for better readability
 })
 
 ```

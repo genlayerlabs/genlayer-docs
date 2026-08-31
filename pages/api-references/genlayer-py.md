@@ -79,8 +79,9 @@ result = client.read_contract(
 
 ### Writing a transaction
 ```python
-from genlayer_py.chains import localnet
 from genlayer_py import create_client, create_account
+from genlayer_py.chains import localnet
+from genlayer_py.types import TransactionStatus
 
 client = create_client(
     chain=localnet,
@@ -90,16 +91,15 @@ account = create_account()
 
 transaction_hash = client.write_contract(
     account=account,
-    transaction=transaction,
     address=contract_address,
-    function_name='account',
+    function_name='update_storage',
     args=['new_storage'],
-    value=0, // value is optional, if you want to send some native token to the contract
+    value=0,  # native token value to send with the transaction
 )
 receipt = client.wait_for_transaction_receipt(
-    hash=transaction_hash,
-    status=TransactionStatus.FINALIZED, // or ACCEPTED
-    full_transaction=False  // False by default - returns simplified receipt for better readability
+    transaction_hash=transaction_hash,
+    status=TransactionStatus.FINALIZED,  # or ACCEPTED
+    full_transaction=False,  # False by default - returns simplified receipt for better readability
 )
 ```
 
