@@ -1,159 +1,100 @@
 ---
-description: "Querying a Transaction shows how to fetch GenLayer transaction details by hash with GenLayerJS and monitor status."
+description: "Read, track, and interpret GenLayer transaction state with the v2 lifecycle APIs."
 ---
 
 # Querying a Transaction
 
-Querying a transaction in GenLayer means reading a submitted network transaction by its hash to inspect its details. Use transaction queries to monitor transaction status, debug behavior, and verify transaction details.
+GenLayerJS exposes a simple stored transaction view for applications, wait helpers for common completion points, and an advanced lifecycle projection for protocol operators.
 
-## Basic Transaction Reading
-
-Here's the simplest way to read a transaction:
+## Read stored state
 
 ```typescript
-import { simulator } from 'genlayer-js/chains';
-import { createClient } from 'genlayer-js';
+import { createClient, isSuccessful } from 'genlayer-js';
+import { localnet } from 'genlayer-js/chains';
 
-const client = createClient({
-  chain: simulator,
-});
-
-const transactionHash = "0x...";
-
-const transaction = await client.getTransaction({ 
-  hash: transactionHash 
-});
-```
-{/* 
-## Transaction Data Structure
-
-When you read a transaction, you get access to its complete data structure:
-
-```typescript
-interface Transaction {
-  hash: `0x${string}`           // The unique transaction hash
-  from: `0x${string}`          // Address of the sender
-  to: `0x${string}` | null     // Address of the recipient (null for contract deployments)
-  nonce: number                // Transaction sequence number
-  value: bigint                // Amount of native tokens transferred
-  data: `0x${string}`         // Transaction input data
-  timestamp: number           // Block timestamp when transaction was included
-  status: 'success' | 'failure' | 'pending'  // Current transaction status
-  blockNumber: bigint | null  // Block number where transaction was included
-  blockHash: `0x${string}` | null  // Hash of the block
-  // ... additional fields
-}
-```
-
-## Reading Different Transaction Types
-
-### Basic Transfer Transaction
-```typescript
-const transferTx = await client.getTransaction({
-  hash: "0x123...",
-});
+const client = createClient({ chain: localnet });
+const transaction = await client.getTransaction({ hash: txId });
 
 console.log({
-  from: transferTx.from,
-  to: transferTx.to,
-  value: transferTx.value,
-  status: transferTx.status
+  status: transaction.statusName,
+  execution: transaction.txExecutionResultName,
+  lifecycle: transaction.lifecycle,
+  queuePosition: transaction.queuePosition,
+  successful: isSuccessful(transaction),
 });
 ```
 
-### Contract Interaction Transaction
-```typescript
-const contractTx = await client.getTransaction({
-  hash: "0x456...",
-});
+`getTransaction` reports the persisted transaction and derives `lifecycle` only from that stored state. It does not silently project timeouts or claim that a transaction has finalized before the corresponding state change is stored.
 
-// Decode the transaction input data
-const decodedInput = client.decodeTransactionInput({
-  data: contractTx.data,
-  abi: contractABI, // You need the contract's ABI
+Common fields include:
+
+| Field | Meaning |
+|:--|:--|
+| `hash` / `txId` | GenLayer transaction identifier. |
+| `statusName` | Exact persisted consensus status. |
+| `txExecutionResultName` | Contract execution outcome, such as `FINISHED_WITH_RETURN` or `FINISHED_WITH_ERROR`. |
+| `lifecycle` | Normalized `processing`, `decided`, `finalized`, or `canceled` view derived from stored state. |
+| `queuePosition` | Position while waiting in the recipient contract's queue, when available. |
+| `txDataDecoded` | Decoded deploy or call payload. |
+| `recipient` | Target contract; for a deployment, the created contract address. |
+
+## Wait for a decision or finalization
+
+```typescript
+const decided = await client.waitForDecision({ hash: txId });
+const finalized = await client.waitForFinalization({ hash: txId });
+```
+
+Use `waitForDecision` when the UI can continue after the transaction has a materialized decision. Use `waitForFinalization` when you need final fee consumption, refunds, or durable completion.
+
+The generic helper is equivalent:
+
+```typescript
+const transaction = await client.waitForTransactionReceipt({
+  hash: txId,
+  waitUntil: 'finalized',
+  interval: 5_000,
+  retries: 100,
 });
+```
+
+The older `status` option is deprecated. More importantly, reaching an accepted or finalized status does not by itself prove successful execution; call `isSuccessful(transaction)` as well.
+
+## Read the protocol projection
+
+Keepers, debuggers, and other protocol-aware tools can ask for the action implied by the current deadlines and active decision:
+
+```typescript
+const lifecycle = await client.advanced.getTransactionLifecycle({ hash: txId });
 
 console.log({
-  contractAddress: contractTx.to,
-  functionName: decodedInput.functionName,
-  arguments: decodedInput.args
+  stored: lifecycle.storedStatus,
+  projected: lifecycle.projectedStatus,
+  action: lifecycle.resolutionAction,
+  source: lifecycle.resolutionSource,
+  decisionId: lifecycle.decisionId,
+  decisionActive: lifecycle.decisionActive,
 });
 ```
 
-### Contract Deployment Transaction
-```typescript
-const deployTx = await client.getTransaction({
-  hash: "0x789...",
-});
+`resolutionAction === 'Finalize'` is a protocol action, not another transaction status or an independent boolean readiness flag. On an older Studio backend without the lifecycle RPC, the SDK degrades to the stored state it can prove instead of inventing a projected transition.
 
-console.log({
-  deployer: deployTx.from,
-  contractAddress: deployTx.creates, // Address of deployed contract
-  deploymentData: deployTx.data
-});
-``` */}
-
-## Error Handling
+## Child transactions and traces
 
 ```typescript
-async function getTransactionWithRetry(
-  client: GenLayerClient,
-  hash: string,
-  maxAttempts = 3
-): Promise<Transaction> {
-  for (let attempt = 1; attempt <= maxAttempts; attempt++) {
-    try {
-      const tx = await client.getTransaction({ hash });
-      if (!tx) throw new Error('Transaction not found');
-      return tx;
-    } catch (error) {
-      if (attempt === maxAttempts) throw error;
-      if (error.message.includes('not found')) {
-        // Wait longer between retries for not found errors
-        await new Promise(resolve => setTimeout(resolve, 2000 * attempt));
-        continue;
-      }
-      throw error; // Rethrow other errors immediately
-    }
-  }
-  throw new Error('Failed to fetch transaction after max retries');
-}
+const children = await client.getTriggeredTransactionIds({ hash: txId });
+const trace = await client.debugTraceTransaction({ hash: txId, round: 0 });
 ```
 
+Use triggered transaction IDs to follow messages emitted by an Intelligent Contract. Use the trace for return data, stdout, stderr, GenVM logs, and round-level execution debugging.
 
-## Monitoring Transaction Status
+## Polling and process restarts
 
-```typescript
-async function monitorTransaction(
-  client: GenLayerClient,
-  hash: string,
-  interval = 1000
-): Promise<Transaction> {
-  return new Promise((resolve, reject) => {
-    const checkStatus = async () => {
-      try {
-        const tx = await client.getTransaction({ hash });
-        
-        if (!tx) {
-          setTimeout(checkStatus, interval);
-          return;
-        }
+Persist the transaction ID as soon as submission succeeds. If the application process restarts or a wait times out, resume `getTransaction` / `waitForFinalization` for that ID. Do not infer that the write was never submitted and send it again.
 
-        if (tx.status === 'pending') {
-          setTimeout(checkStatus, interval);
-          return;
-        }
+## Related
 
-        resolve(tx);
-      } catch (error) {
-        reject(error);
-      }
-    };
-
-    checkStatus();
-  });
-}
-
-// Usage
-const finalTx = await monitorTransaction(client, "0x...");
-```
+- [Writing to Intelligent Contracts](./writing-data)
+- [Fee Outcomes and Debugging](./fee-outcomes-and-debugging)
+- [Transaction and lifecycle API reference](/api-references/genlayer-js/transactions)
+- [Transaction Statuses](/understand-genlayer-protocol/core-concepts/transactions/transaction-statuses)

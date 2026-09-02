@@ -374,10 +374,11 @@ For building a frontend from scratch:
 npm install genlayer-js
 ```
 
-```javascript
-import { createClient } from 'genlayer-js';
+```typescript
+import { createAccount, createClient } from 'genlayer-js';
+import { localnet } from 'genlayer-js/chains';
 
-const client = createClient({ endpoint: 'http://localhost:4000/api' });
+const client = createClient({ chain: localnet, account: createAccount() });
 
 // Read from a contract
 const value = await client.readContract({
@@ -386,14 +387,21 @@ const value = await client.readContract({
     args: [],
 });
 
-// Write to a contract
-const txHash = await client.writeContract({
-    address: contractAddress,
-    functionName: "set_data",
-    args: [newValue],
+// Estimate, then write to a fee-charging deployment
+const write = {
+  address: contractAddress,
+  functionName: 'set_data',
+  args: [newValue],
+};
+const estimate = await client.estimateTransactionFeesForWrite(write);
+const txId = await client.writeContract({
+  ...write,
+  fees: {
+    distribution: estimate.distribution,
+    feeValue: estimate.feeValue,
+  },
 });
-const receipt = await client.waitForTransactionReceipt({
-    hash: txHash,
-    status: "FINALIZED",
-});
+const transaction = await client.waitForFinalization({ hash: txId });
 ```
+
+For production application flows, use a measured fee profile instead of simulating every click. See [Writing to Intelligent Contracts](/developers/decentralized-applications/writing-data) and [Fee Profiling and Estimation](/developers/decentralized-applications/fee-profiling-and-estimation).

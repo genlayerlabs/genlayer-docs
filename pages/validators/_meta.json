@@ -1,6 +1,7 @@
 {
   "setup-guide": "Setup Guide",
   "monitoring": "Monitoring & Telemetry",
+  "network-keeper-roles": "Network Keeper Roles",
   "system-requirements": "System Requirements",
   "genvm-configuration": "GenVM Configuration",
   "upgrade": "Upgrade Guide",

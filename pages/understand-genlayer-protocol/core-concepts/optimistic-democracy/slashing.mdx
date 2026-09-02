@@ -14,13 +14,15 @@ GenLayer uses several penalties to protect liveness and punish provable protocol
 | Repeated idleness or failure to reveal | Add epoch strikes and ban the validator after the configured threshold. |
 | Failure to reveal a committed vote | Record a percentage-based stake slash and a strike. |
 | Vote that loses after an appeal | Forfeit the applicable reward or receive a negative fee adjustment; this alone is not a deterministic-violation slash. |
-| Provable deterministic execution violation | Quarantine the accused validator and open a tribunal that can impose a larger slash or clear the quarantine. |
+| Recorded deterministic-result violation | Apply a judicial selection restriction and open a tribunal that can convict and slash the accused leader or release the restriction. |
 
 ## Bans and quarantine
 
 A **ban** temporarily excludes a validator after it accumulates the configured number of idleness strikes. Current defaults use three strikes in an epoch and exclude the validator for the current and following epoch.
 
-A **quarantine** immediately excludes a validator selected for a deterministic-violation tribunal. The tribunal uses the active validator network to decide punishment. It runs separately from the transaction's outcome: the transaction continues through rotation or its ordinary appeal path.
+A deterministic-violation tribunal immediately applies a **judicial selection restriction** to the accused leader. The tribunal's electorate and participation target are frozen from creation-time validator state; later validators cannot join merely because they become active, and later live-set movement cannot change the saved quorum. The tribunal runs separately from the transaction's outcome: the transaction continues through rotation or its ordinary appeal path.
+
+Other protocol paths still use time-bounded **quarantine** records. Both quarantine and judicial restrictions prevent new selection, but they have different creation and release rules. See [Deterministic Violations & Tribunals](./deterministic-violations-and-tribunals) for the v0.6 judicial lifecycle.
 
 ## Current slash parameters
 

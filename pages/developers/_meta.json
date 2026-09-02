@@ -1,6 +1,8 @@
 {
   "networks": "Networks & RPCs",
+  "consensus-v06-migration": "Consensus v0.6 Migration",
   "intelligent-contracts": "Intelligent Contracts",
   "decentralized-applications": "Frontend & SDK Integration",
+  "error-reference": "Error & Revert Reference",
   "staking-guide": "Staking Contract Guide"
 }

@@ -1,113 +1,84 @@
 ---
-description: "Reading from Intelligent Contracts uses view functions to query state with GenLayerJS without transactions, gas, or state changes."
+description: "Read Intelligent Contract state at the latest final or latest non-final snapshot with GenLayerJS."
 ---
 
 # Reading from Intelligent Contracts
 
-Reading from Intelligent Contracts means querying contract state or executing view functions without modifying blockchain state. These read-only operations are free, require no fees, and provide immediate access to contract data.
+Public view methods read Intelligent Contract state without submitting a consensus transaction. They do not need a transaction fee or signing account.
 
-## Understanding View Operations
-
-In GenLayer, functions marked with the `@gl.public.view` decorator are read-only operations that:
-- Don't modify the contract's state
-- Can be executed without requiring a transaction
-- Return data immediately
-- Don't consume gas
-- Can be called by any account
-
-## Basic Contract Reading
-
-Here's how to read from an Intelligent Contract:
+## Basic read
 
 ```typescript
-import { simulator } from 'genlayer-js/chains';
-import { createClient, createAccount } from 'genlayer-js';
+import { createClient } from 'genlayer-js';
+import { localnet } from 'genlayer-js/chains';
+import { TransactionHashVariant } from 'genlayer-js/types';
 
-const account = createAccount();
-const client = createClient({
-  chain: simulator,
-  account: account,
-});
+const client = createClient({ chain: localnet });
 
 const result = await client.readContract({
   address: contractAddress,
   functionName: 'get_complete_storage',
   args: [],
+  transactionHashVariant: TransactionHashVariant.LATEST_FINAL,
 });
 ```
 
-### Parameters Explained
+## Choose the state snapshot
 
-- `address`: The deployed contract's address on the GenLayer network
-- `functionName`: The name of the view function you want to call
-- `args`: An array of arguments that the function accepts (empty if none required)
+| Variant | Use it for |
+|:--|:--|
+| `LATEST_FINAL` | Durable application state after finalization. This is the conservative default for accounting and irreversible UI decisions. |
+| `LATEST_NONFINAL` | The newest available non-final state. Use it for responsive interfaces that can tolerate an appeal or recomputation changing the result. |
 
-## Common View Operations
+Omit `transactionHashVariant` when the chain's default is appropriate. Be explicit when an application depends on finality semantics.
 
-Intelligent Contracts typically include several types of view functions:
+## Arguments and return formats
 
-### State Queries
 ```typescript
-// Reading a single value
-const balance = await client.readContract({
-  address: contractAddress,
-  functionName: 'get_balance',
-  args: [accountAddress],
-});
-
-// Reading multiple values
 const userInfo = await client.readContract({
   address: contractAddress,
   functionName: 'get_user_info',
   args: [userId],
+  transactionHashVariant: TransactionHashVariant.LATEST_FINAL,
 });
 ```
 
-### Computed Values
+Use `kwargs` instead of `args` when the contract API is clearer with named arguments. The default result is decoded into GenLayer calldata values. Advanced consumers can request `rawReturn: true` for raw bytes or `jsonSafeReturn: true` where supported by the selected client surface.
+
+## Reads after a write
+
+Waiting for a decision and reading the latest non-final state is faster, but that state can still move. Waiting for finalization and reading `LATEST_FINAL` gives a durable pair:
+
 ```typescript
-// Getting calculated results
-const totalSupply = await client.readContract({
+await client.waitForFinalization({ hash: txId });
+
+const value = await client.readContract({
   address: contractAddress,
-  functionName: 'calculate_total_supply',
+  functionName: 'get_storage',
   args: [],
+  transactionHashVariant: TransactionHashVariant.LATEST_FINAL,
 });
 ```
 
-### Validation Checks
-```typescript
-// Checking permissions
-const hasAccess = await client.readContract({
-  address: contractAddress,
-  functionName: 'check_user_permission',
-  args: [userId, 'ADMIN_ROLE'],
-});
-```
-
-## Error Handling
-
-When reading from contracts, you should handle potential errors:
+## Error handling
 
 ```typescript
 try {
-  const result = await client.readContract({
+  const value = await client.readContract({
     address: contractAddress,
     functionName: 'get_data',
     args: [],
   });
-  console.log('Data retrieved:', result);
+  console.log(value);
 } catch (error) {
-  if (error.message.includes('Contract not found')) {
-    console.error('Invalid contract address');
-  } else if (error.message.includes('Function not found')) {
-    console.error('Invalid function name');
-  } else {
-    console.error('Error reading contract:', error);
-  }
+  console.error('Contract read failed', error);
 }
 ```
 
-## Best Practices
+Do not classify errors only by matching an English message. Preserve the RPC error data so the application can decode a custom error with the deployment's matching ABI and the [Error & Revert Reference](/developers/error-reference).
 
-1. **Cache Results**: For frequently accessed data that doesn't change often, consider caching the results.
-2. **Batch Readings**: When possible, use functions that return multiple values instead of making multiple separate calls.
-3. **Type Safety**: Use TypeScript interfaces to ensure type safety when handling returned data:
+## Related
+
+- [Writing to Intelligent Contracts](./writing-data)
+- [Querying a Transaction](./querying-a-transaction)
+- [GenLayerJS contract API](/api-references/genlayer-js/contracts)

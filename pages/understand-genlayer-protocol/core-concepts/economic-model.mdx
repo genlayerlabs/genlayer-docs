@@ -20,7 +20,7 @@ The budget can cover:
 
 The sender also sets price ceilings. Prices lock when the transaction activates so a later governance change cannot silently charge more than the sender authorized. Unused budget is refunded according to the protocol's contributor accounting.
 
-Appeal bonds are separate from the primary transaction budget. The bond funds the additional committee or proposal round and is returned or forfeited according to the appeal result.
+Appeal bonds are separate economic stake. The authoritative appeal charge contains both the bond and the induced-work funding needed by the new round. The work funding pays validators and execution costs; the bond is returned with profit or forfeited according to the appeal result.
 
 ## Validator selection and stake
 
@@ -41,18 +41,30 @@ These are governance or deployment parameters, not constants applications should
 
 ## Reward sources and routing
 
-Rewards come from transaction fees and protocol inflation. Under the current distribution, the combined pool is routed as follows:
+Rewards come from transaction fees and protocol inflation, but the two sources do **not** use one common percentage split.
 
-| Recipient | Share |
+For the time-unit fee pool, the v0.6 defaults are:
+
+| Recipient | Share of gross time-unit fees |
+| --- | ---: |
+| Validator/staking distribution | 85% |
+| Intelligent Contract developer | 10% |
+| DeepThought DAO treasury | 5% |
+
+The developer and DAO shares are an overlay on the time-unit work pool. Storage, receipt, and message-fee buckets are not included in that 10%/5% split. Developer fees accrue only when the recipient contract is linked to a Developer NFT; otherwise the unused developer reserve is refunded.
+
+Protocol inflation uses a different default allocation:
+
+| Recipient | Share of inflation |
 | --- | ---: |
 | Stake pools, including self-stake and delegation | 75% |
-| Validator owners for operations | 10% |
+| Validator owners for operations | 15% |
 | Intelligent Contract developers | 10% |
-| DeepThought DAO treasury | 5% |
+| DeepThought DAO treasury | 0% |
 
 Stake-pool rewards are assigned according to selection weight, then shared between a validator's owner and delegators according to their stake in that pool. Stake uses share accounting, so rewards compound by increasing the GEN value represented by each share.
 
-Protocol inflation starts from a configured bootstrap rate and declines toward a configured floor. Treat current rates and splits as protocol parameters when presenting estimates.
+Protocol inflation starts from a configured bootstrap rate and declines toward a configured floor. Fee and inflation parameters are governance or deployment values; applications should read or quote them rather than hardcode them.
 
 ## Negative incentives
 

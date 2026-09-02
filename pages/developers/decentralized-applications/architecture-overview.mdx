@@ -14,6 +14,9 @@ The user interface of the DApp is typically built with web technologies like HTM
 ### GenLayerJS SDK
 A TypeScript/JavaScript library that abstracts the complexities of blockchain interactions. The SDK provides APIs to read from and write to Intelligent Contracts, manages accounts and queries transactions, and acts as the bridge between the frontend and GenLayer's protocol.
 
+### Transaction policy and fee profile
+Fee-charging writes carry an explicit policy for consensus time units, execution, child messages, appeals, rotations, and price ceilings. Applications normally measure that policy in contract tests, commit a `fee-profile.json`, and combine it with current network prices at signing time. [Transaction Kit](./transaction-kit-integration) adds quote review, policy verification, wallet submission, and lifecycle tracking on top of GenLayerJS.
+
 ### Consensus Layer
 The consensus layer implements GenLayer's Optimistic Democracy mechanism to ensure reliable and secure execution of transactions using a validator-driven commit-reveal scheme. It also handles appeals and transaction finality to maintain integrity and fairness.
 

@@ -9,7 +9,8 @@ Polls until a transaction reaches the specified status. Returns the transaction 
 | Parameter | Type | Required | Description |
 |-----------|------|----------|-------------|
 | hash | `TransactionHash` | yes |  |
-| status | `TransactionStatus` | yes |  |
+| status | `TransactionStatus` | no |  |
+| waitUntil | `TransactionReceiptWaitUntil` | no |  |
 | interval | `number` | no |  |
 | retries | `number` | no |  |
 | fullTransaction | `boolean` | no |  |
@@ -18,9 +19,59 @@ Polls until a transaction reaches the specified status. Returns the transaction 
 
 ---
 
+### waitForDecision
+
+Polls until the stored transaction state contains a materialized decision.
+
+| Parameter | Type | Required | Description |
+|-----------|------|----------|-------------|
+| hash | `TransactionHash` | yes |  |
+| interval | `number` | no |  |
+| retries | `number` | no |  |
+| fullTransaction | `boolean` | no |  |
+
+**Returns:** `GenLayerTransaction`
+
+---
+
+### waitForFinalization
+
+Polls until the stored transaction state is finalized.
+
+| Parameter | Type | Required | Description |
+|-----------|------|----------|-------------|
+| hash | `TransactionHash` | yes |  |
+| interval | `number` | no |  |
+| retries | `number` | no |  |
+| fullTransaction | `boolean` | no |  |
+
+**Returns:** `GenLayerTransaction`
+
+---
+
+### getTransactionLifecycle
+
+`advanced.getTransactionLifecycle` exposes stored/projected status,
+resolution action/source, and active decision identity. Contract networks
+use one fixed-block lifecycle read. `Finalize` is an action, not a status
+or separate readiness field.
+A Studio deployment that does not yet serve `gen_getTransactionLifecycle`
+degrades to the stored status its consumer surface does prove, rather
+than failing the whole read.
+
+| Parameter | Type | Required | Description |
+|-----------|------|----------|-------------|
+| hash | `TransactionHash` | yes |  |
+| timestamp | `number` | no |  |
+
+**Returns:** `TransactionProtocolLifecycle`
+
+---
+
 ### getTransaction
 
-Fetches transaction data including status, execution result, and consensus details.
+Fetches a transaction with a simple stored lifecycle and split round data.
+Use advanced.getTransactionLifecycle for protocol projection/action details.
 
 | Parameter | Type | Required | Description |
 |-----------|------|----------|-------------|
@@ -93,4 +144,3 @@ Estimates gas required for a transaction.
 **Returns:** `bigint`
 
 ---
-
