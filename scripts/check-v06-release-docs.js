@@ -30,11 +30,18 @@ const releaseDocs = [
   "pages/developers/decentralized-applications/writing-data.mdx",
   "pages/understand-genlayer-protocol/core-concepts/optimistic-democracy/appeal-process.mdx",
   "pages/understand-genlayer-protocol/core-concepts/economic-model.mdx",
+  "pages/understand-genlayer-protocol/core-concepts/optimistic-democracy/finality.mdx",
   "pages/understand-genlayer-protocol/core-concepts/optimistic-democracy/slashing.mdx",
   "pages/understand-genlayer-protocol/core-concepts/optimistic-democracy/deterministic-violations-and-tribunals.mdx",
   "pages/understand-genlayer-protocol/core-concepts/optimistic-democracy/protocol-randomness.mdx",
+  "pages/understand-genlayer-protocol/core-concepts/transactions/transaction-execution.mdx",
+  "pages/understand-genlayer-protocol/core-concepts/transactions/transaction-statuses.mdx",
   "pages/validators/network-keeper-roles.mdx",
+  "pages/api-references/genlayer-cli/transactions/receipt.mdx",
   "pages/api-references/genlayer-js.md",
+  "pages/api-references/genlayer-node/gen/gen_getTransactionLifecycle.mdx",
+  "pages/api-references/genlayer-node/gen/gen_getTransactionReceipt.mdx",
+  "pages/api-references/genlayer-node/gen/gen_getTransactionStatus.mdx",
   "pages/api-references/genlayer-py.md",
 ];
 
@@ -244,6 +251,36 @@ forbidText(
   "pages/api-references/genlayer-cli/transactions/appeal-bond.mdx",
   "Show minimum appeal bond required",
   "minimum-bond-only CLI description",
+);
+
+const statusConcept =
+  "pages/understand-genlayer-protocol/core-concepts/transactions/transaction-statuses.mdx";
+requireText(statusConcept, "define 14 numeric status values", "v0.6 status count");
+requireText(statusConcept, "`resolutionAction` is `Finalize`", "action-based finalization readiness");
+forbidText(statusConcept, "| 11 | `ReadyToFinalize` |", "removed ReadyToFinalize status row");
+
+const nodeStatus = "pages/api-references/genlayer-node/gen/gen_getTransactionStatus.mdx";
+requireText(nodeStatus, "| 11 | ValidatorsTimeout |", "renumbered ValidatorsTimeout status");
+requireText(nodeStatus, "| 13 | LeaderRevealing |", "renumbered LeaderRevealing status");
+forbidText(nodeStatus, "READY_TO_FINALIZE", "removed ReadyToFinalize API status");
+forbidText(nodeStatus, "`timestamp` (integer, optional)", "removed status timestamp projection");
+
+const nodeLifecycle = "pages/api-references/genlayer-node/gen/gen_getTransactionLifecycle.mdx";
+requireText(nodeLifecycle, "`resolutionAction`", "lifecycle resolution action");
+requireText(nodeLifecycle, "`decisionActive`", "lifecycle decision binding");
+requireText(nodeLifecycle, "no `ReadyToFinalize` status", "removed synthetic finalization status");
+
+const nodeReceipt = "pages/api-references/genlayer-node/gen/gen_getTransactionReceipt.mdx";
+requireText(nodeReceipt, "`previousStatus` (`null`)", "v0.6 absent previous status");
+requireText(nodeReceipt, "`fees` (`object|null`)", "v0.6 fee receipt echo");
+requireText(nodeReceipt, "`5` DeterministicViolation", "complete execution vote enum");
+requireText(nodeReceipt, '"status": 13', "LeaderRevealing example ordinal");
+forbidText(nodeReceipt, '"status": 14', "pre-train LeaderRevealing ordinal");
+
+forbidText(
+  "pages/api-references/genlayer-cli/transactions/receipt.mdx",
+  "READY_TO_FINALIZE",
+  "removed CLI ReadyToFinalize choice",
 );
 
 const jsApi = "pages/api-references/genlayer-js/contracts.md";

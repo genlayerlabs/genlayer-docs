@@ -13,7 +13,7 @@ flowchart TD
     Propose -->|"leader submits receipt"| Vote["Committing → LeaderRevealing → Revealing"]
     Vote --> Decision{"Decided<br/>outcome"}
     Decision --> Window["Appeal window"]
-    Window -->|"window elapses"| Ready["ReadyToFinalize"]
+    Window -->|"window elapses"| Ready["Resolution action: Finalize"]
     Ready --> Final(["Finalized"])
     Pending -. "cancel or expire" .-> Canceled(["Canceled"])
 
@@ -50,7 +50,7 @@ Accepted, ValidatorsTimeout, Undetermined, and LeaderTimeout are decided outcome
 %%{init: {"flowchart": {"curve": "basis", "nodeSpacing": 40, "rankSpacing": 46, "htmlLabels": true}}}%%
 flowchart TB
     Decision["Decided outcome"] --> Window["Appeal window"]
-    Window -->|"no appeal"| Ready["Ready to finalize"]
+    Window -->|"no appeal"| Ready["Resolution action: Finalize"]
     Window -->|"validator appeal"| Review["Fresh committee review"]
     Review -->|"confirmed"| Window
     Review -->|"overturned"| Round["New proposal round"]
@@ -67,6 +67,6 @@ flowchart TB
 
 ## Finalization
 
-When the effective appeal window has elapsed, the transaction is ready to finalize. The finalization call records the terminal status, settles remaining fees and refunds, emits finalization messages, and advances the recipient's queues.
+When the appeal window has elapsed, the advanced lifecycle read exposes the `Finalize` resolution action while retaining the stored decided status. The decision-bound finalization call records the terminal `Finalized` status, settles remaining fees and refunds, emits finalization messages, and advances the recipient's queues.
 
-An EVM submission receipt is not a substitute for this lifecycle. Poll [`gen_getTransactionStatus`](/api-references/genlayer-node/gen/gen_getTransactionStatus) or retrieve the full [`gen_getTransactionReceipt`](/api-references/genlayer-node/gen/gen_getTransactionReceipt).
+An EVM submission receipt is not a substitute for this lifecycle. Poll [`gen_getTransactionStatus`](/api-references/genlayer-node/gen/gen_getTransactionStatus), inspect projection and actions with [`gen_getTransactionLifecycle`](/api-references/genlayer-node/gen/gen_getTransactionLifecycle), or retrieve the full [`gen_getTransactionReceipt`](/api-references/genlayer-node/gen/gen_getTransactionReceipt).
