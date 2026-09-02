@@ -22,16 +22,17 @@ This design makes phase deadlines and the order of consensus actions objectively
 %%{init: {"flowchart": {"curve": "basis", "nodeSpacing": 42, "rankSpacing": 48, "htmlLabels": true}}}%%
 flowchart TB
     Pending(["Pending"])
-    Round["Proposal and<br/>commit–reveal round"]
-    Decision{"Decided<br/>outcome"}
-    Window["Appeal window"]
-    Review["Funded appeal<br/>fresh review"]
-    Ready["Ready to finalize"]
+    Round["Proposing → Committing →<br/>LeaderRevealing → Revealing"]
+    Decision{"Accepted, Undetermined,<br/>ValidatorsTimeout, or LeaderTimeout"}
+    Window["Decision pending finalization"]
+    Review["AppealCommitting →<br/>AppealRevealing"]
+    Ready["Finalization action eligible"]
     Final(["Finalized"])
 
     Pending --> Round --> Decision --> Window
     Window -->|"window elapses"| Ready --> Final
-    Window -->|"appeal"| Review
+    Window -->|"validator appeal"| Review
+    Window -->|"leader appeal"| Round
     Review -->|"decision confirmed"| Window
     Review -->|"decision overturned"| Round
 

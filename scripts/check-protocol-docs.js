@@ -16,6 +16,14 @@ function relative(file) {
   return path.relative(ROOT, file);
 }
 
+function hasUsefulAlt(imageTag) {
+  const match = imageTag.match(/\balt\s*=\s*(?:"([^"]*)"|'([^']*)'|\{([^}]*)\})/);
+  if (!match) return false;
+
+  const value = (match[1] ?? match[2] ?? match[3] ?? "").trim();
+  return value.replace(/^(['"])(.*)\1$/, "$2").trim().length > 0;
+}
+
 const landingPage = path.join(ROOT, "pages", "understand-genlayer-protocol.mdx");
 const pages = [landingPage, ...walk(UNDERSTAND).filter((file) => file.endsWith(".mdx"))];
 
@@ -26,13 +34,13 @@ for (const file of pages) {
     failures.push(`${relative(file)}: missing frontmatter`);
   }
 
-  if (/!\[\]\(/.test(content)) {
+  if (/!\[\s*\]\(/.test(content)) {
     failures.push(`${relative(file)}: Markdown image has empty alternative text`);
   }
 
   for (const imageTag of content.match(/<Image\b[\s\S]*?\/>/g) || []) {
-    if (!/\balt=/.test(imageTag)) {
-      failures.push(`${relative(file)}: Image component is missing alt`);
+    if (!hasUsefulAlt(imageTag)) {
+      failures.push(`${relative(file)}: Image component has empty or missing alt`);
     }
   }
 
