@@ -83,29 +83,29 @@ class LogIndexer(gl.contract.Contract):
     def add_log(self, log: str, log_id: int) -> None:
         key = log_id
         if key in self.log_vector_ids:
-            self.vector_store.get_by_id(self.log_vector_ids[key]).value = StoreValue(
-                text=log, log_id=key
-            )
-            self.removed_log_ids[key] = False
-            return
+            # VecDBElement.key (the stored vector used by knn()) is
+            # read-only - only .value can be updated in place. Re-embedding
+            # requires removing the stale entry and inserting a fresh one,
+            # otherwise a changed log stays ranked by its old embedding.
+            self.vector_store.get_by_id(self.log_vector_ids[key]).remove()
 
         emb = self.get_embedding(log)
         vector_id = self.vector_store.insert(emb, StoreValue(text=log, log_id=key))
         self.log_vector_ids[key] = vector_id
+        self.removed_log_ids[key] = False
 
     @gl.public.write
     def update_log(self, log_id: int, log: str) -> None:
         key = log_id
         if key in self.log_vector_ids:
-            self.vector_store.get_by_id(self.log_vector_ids[key]).value = StoreValue(
-                text=log, log_id=key
-            )
-            self.removed_log_ids[key] = False
-            return
+            # See add_log: .key is read-only, must remove+reinsert to
+            # actually re-embed rather than leaving the stale vector.
+            self.vector_store.get_by_id(self.log_vector_ids[key]).remove()
 
         emb = self.get_embedding(log)
         vector_id = self.vector_store.insert(emb, StoreValue(text=log, log_id=key))
         self.log_vector_ids[key] = vector_id
+        self.removed_log_ids[key] = False
 
     @gl.public.write
     def remove_log(self, id: int) -> None:
@@ -119,7 +119,7 @@ class LogIndexer(gl.contract.Contract):
 - **Data Structure**: Uses `StoreValue` dataclass to store log ID and text.
 - **Vector Store**: Initializes a `VecDB` with 384-dimensional float32 vectors and `EuclideanDistance` as the metric.
 - **Embedding Generation**: Uses `gle.SentenceTransformer` for text embedding — this returns a plain `str -> np.ndarray` callable, not a class instance.
-- **Duplicate protection**: `log_vector_ids` maps each `log_id` to its `VecDB` element id, so `add_log`/`update_log` overwrite the existing entry's `.value` in place instead of inserting a duplicate vector when a `log_id` is reused. This branch also clears any `removed_log_ids` tombstone, so a previously-removed `log_id` becomes findable again once re-added.
+- **Duplicate protection**: `log_vector_ids` maps each `log_id` to its `VecDB` element id. When `add_log`/`update_log` see an existing `log_id`, they remove the old `VecDB` entry and insert a freshly-embedded one — `VecDBElement.key` (the stored vector) is read-only, so re-embedding on update requires remove+reinsert rather than an in-place `.value` update. This also clears any `removed_log_ids` tombstone, so a previously-removed `log_id` becomes findable again once re-added.
 - **Tombstones instead of hard deletes**: `remove_log` marks the id in `removed_log_ids` rather than calling `.remove()` on the `VecDB` element — `get_closest_vector` filters tombstoned and orphaned entries out of the `knn()` results.
 - **`"similarity"` is a rough rank, not a normalized score**: `str(1 - result.distance)` is not bounded to `[0, 1]` for `EuclideanDistance` — distance is unbounded, so this can go negative for distant results. Treat it as "higher means closer," not a percentage.
 - **Methods**:
