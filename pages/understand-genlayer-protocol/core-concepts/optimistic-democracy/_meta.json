@@ -1,8 +1,8 @@
 {
-    "equivalence-principle": "",
-    "appeal-process": "",
-    "finality": "",
-    "staking": "",
-    "slashing": "",
-    "unstaking": ""
-  }
+  "equivalence-principle": "Equivalence Principle",
+  "appeal-process": "Appeals",
+  "finality": "Finality",
+  "staking": "Staking",
+  "slashing": "Slashing",
+  "unstaking": "Unstaking"
+}

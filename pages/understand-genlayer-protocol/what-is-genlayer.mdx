@@ -1,123 +1,90 @@
 ---
-description: "GenLayer is the first Intelligent Blockchain: smart contracts that natively access the web, call LLMs, and reach consensus on subjective, judgment-based decisions."
+description: "GenLayer is an intelligent blockchain for applications that need consensus on subjective, web-connected decisions."
 ---
 
-import { Callout } from "nextra-theme-docs";
+import { Card, Cards } from "nextra-theme-docs";
 
-# What is GenLayer
+# What is GenLayer?
 
-## The Adjudication Layer for the Agentic Economy
+GenLayer is a blockchain for applications that need to make decisions from natural language, live web data, or other inputs that do not have one mechanically reproducible answer.
 
-GenLayer uses decentralized AI-validator consensus to resolve contracts that require judgment, not just code.
+Traditional smart contracts require every node to calculate exactly the same result. An **Intelligent Contract** can instead ask a group of validators whether a proposed result is acceptable. This lets applications put judgment-based rules onchain without trusting one AI model, data provider, or operator.
 
-Intelligent Contracts interpret language, process unstructured data, and pull live web inputs. No oracles, no intermediaries.
+## What GenLayer adds
 
-- **Bitcoin** — Trustless Money
-- **Ethereum** — Trustless Computation
-- **GenLayer** — Trustless Adjudication
+Intelligent Contracts can:
 
-Where Bitcoin reached consensus on the *order* of transactions and Ethereum on the *execution* of code, GenLayer reaches consensus on the **meaning** of transactions. The technical primitive that makes this possible is the [Equivalence Principle](/developers/intelligent-contracts/features/non-determinism): two answers can be different in form yet equivalent in meaning, and a network of independent AI validators can agree on that.
+- retrieve and interpret web content;
+- use large language models (LLMs) to evaluate natural-language criteria;
+- process unstructured inputs, such as text and images; and
+- commit an accepted result to shared state.
 
-## The Missing Layer
+Different validators can receive different raw answers. The contract defines how validators judge whether the leader's answer is acceptable through the [Equivalence Principle](/understand-genlayer-protocol/core-concepts/optimistic-democracy/equivalence-principle).
 
-The agentic-commerce stack is being built in the open — and every layer of it stops at the happy path.
+## How the protocol fits together
 
-| Layer | Standard | What it handles | Dispute resolution |
-|---|---|---|---|
-| Payments | [x402](https://www.x402.org/) (Coinbase) | Internet-native, agent-friendly payments | Not specified |
-| Identity & reputation | [ERC-8004](https://eips.ethereum.org/EIPS/eip-8004) (Ethereum) | Trustless agent identity | Delegated to external validation protocols |
-| Agent interoperability | [A2A](https://a2a-protocol.org) (Linux Foundation / Google) | How agents discover each other and exchange tasks | Not defined within the protocol |
+GenLayer has three cooperating components:
 
-Other players are stacking in alongside them — Stripe + OpenAI's ACP (already powering ChatGPT checkout), Visa's Trusted Agent Protocol, Google's AP2, Mastercard's Agent Pay + BVNK, and Tempo (Stripe / Paradigm L1). The shape is the same in every case: the payment goes through, the job is accepted, the reputation is updated — and the moment a single material dispute appears, the stack reaches for a function it does not have.
+```mermaid
+%%{init: {"flowchart": {"curve": "basis", "nodeSpacing": 44, "rankSpacing": 52, "htmlLabels": true}}}%%
+flowchart TB
+    User(["User or application"])
+    Ghost["Ghost contract<br/>EVM entry point"]
+    Consensus["Consensus contracts<br/>order and assign work"]
+    Node["Validator node<br/>observe and coordinate"]
+    VM["GenVM<br/>execute or validate"]
+    State(["Consensus state updated"])
 
-That function is **adjudication**. Not a sovereign court. A credible, machine-speed mechanism for evaluating contested commitments, weighing evidence, interpreting language, reaching a verdict, and attaching consequences to it.
+    User -->|"submit transaction"| Ghost
+    Ghost --> Consensus
+    Consensus -->|"publish assignment"| Node
+    Node -->|"run contract"| VM
+    VM -->|"proposal or vote"| State
 
-GenLayer is that layer.
-
-## What Intelligent Contracts Can Do
-
-### Subjective Decisions
-Evaluate context and nuance. Turn judgment calls into enforceable on-chain outcomes — content moderation, claim assessment, quality evaluation.
-
-### Internet Access
-Fetch live web data directly on-chain. Contracts can read websites, call APIs, and verify real-world information without oracles or intermediaries.
-
-### Natural Language Processing
-Interpret human-readable inputs via LLMs. Contracts can analyze text, extract meaning, and make decisions based on qualitative criteria.
-
-### Image & Visual Processing
-Pass images to LLMs for analysis — screenshot a webpage and verify its content, check visual evidence for claims, analyze receipts or documents. Contracts can capture screenshots via `gl.nondet.web.render()` and send them to LLMs via `gl.nondet.exec_prompt(images=[...])`.
-
-### Unstructured Data
-Process text, images, audio transcripts, and qualitative evidence. Handle real-world complexity that traditional smart contracts cannot.
-
-## How It Compares
-
-| Feature | Traditional Smart Contracts | Intelligent Contracts |
-|---|---|---|
-| **Language** | Solidity, Rust | Python |
-| **Data sources** | On-chain only (or oracles) | On-chain + live web data |
-| **Decision logic** | Deterministic only | Deterministic + subjective |
-| **AI integration** | Not possible | Native LLM access (text + images) |
-| **Consensus** | All nodes must agree on exact output | Validators assess equivalence of results |
-
-## Architecture: Two Layers
-
-GenLayer operates as two integrated layers:
-
-**GenLayer Chain** — an EVM-compatible L2 (zkSync Elastic Chain). Holds account balances via ghost contracts, handles standard Ethereum operations (`eth_*` methods), and anchors to Ethereum's security model.
-
-**GenVM** — the execution environment for Intelligent Contracts. A WebAssembly-based VM (built on [Wasmtime](https://wasmtime.dev)) that runs a Python interpreter with native access to LLMs, web data, and non-deterministic operations. Can also execute compiled native code.
-
-Every Intelligent Contract has a corresponding **ghost contract** on the chain layer at the same address. Ghost contracts hold the contract's GEN balance, relay transactions to consensus, and execute external messages. See [Messages](/developers/intelligent-contracts/features/messages#ghost-contracts) for details.
-
-Transactions enter via `addTransaction` on the chain layer. GenVM executes the contract logic. Results settle back on-chain.
-
-## Develop in Python
-
-Intelligent Contracts are Python classes extending `gl.Contract`:
-
-```python
-# { "Depends": "py-genlayer:1jb45aa8ynh2a9c9xn3b7qqh8sm5q93hwfp7jqmwsfhh8jpz09h6" }
-from genlayer import *
-import json
-
-class WizardOfCoin(gl.Contract):
-    has_coin: bool
-
-    def __init__(self):
-        self.has_coin = True
-
-    @gl.public.write
-    def ask_for_coin(self, request: str) -> None:
-        if not self.has_coin:
-            raise gl.vm.UserError("I don't have a coin!")
-
-        prompt = f"""
-        You are a wizard guarding a gold coin.
-        An adventurer says: {request}
-        Should you give them the coin?
-        Respond as JSON: {{"give_coin": true/false}}
-        """
-
-        def leader_fn():
-            return gl.nondet.exec_prompt(prompt, response_format="json")
-
-        def validator_fn(leaders_res) -> bool:
-            if not isinstance(leaders_res, gl.vm.Return):
-                return False
-            my_result = leader_fn()
-            return my_result["give_coin"] == leaders_res.calldata["give_coin"]
-
-        result = gl.vm.run_nondet_unsafe(leader_fn, validator_fn)
-        if result["give_coin"]:
-            self.has_coin = False
-
-    @gl.public.view
-    def get_has_coin(self) -> bool:
-        return self.has_coin
+    classDef actor fill:#F7F8FC,stroke:#8B95A7,color:#202536,stroke-width:1.5px;
+    classDef chain fill:#EFEDFF,stroke:#6D5DF5,color:#251E63,stroke-width:2px;
+    classDef compute fill:#EAF7FF,stroke:#2686C4,color:#113F59,stroke-width:2px;
+    class User actor;
+    class Ghost,Consensus,State chain;
+    class Node,VM compute;
+    linkStyle default stroke:#7C879C,stroke-width:1.8px;
 ```
 
-Full SDK available: [genlayer-js](/api-references/genlayer-js) (TypeScript), [genlayer-py](/api-references/genlayer-py) (Python), [CLI](/api-references/genlayer-cli).
+### GenLayer Chain
 
-[Get started →](/developers/intelligent-contracts/first-contract)
+GenLayer Chain is an EVM-compatible ZK Stack chain. Solidity consensus contracts record transaction order, committee assignments, votes, appeals, and final outcomes. For the consensus process, this onchain state is authoritative.
+
+### Validator nodes
+
+Validator nodes watch the chain, perform their assigned duties, execute Intelligent Contracts in GenVM, and submit proposals or votes as EVM transactions. Validators do not run a separate peer-to-peer consensus network for Intelligent Contract outcomes.
+
+### GenVM
+
+GenVM is a WebAssembly-based sandbox for Intelligent Contracts. It keeps ordinary contract execution reproducible and runs web or LLM operations in isolated non-deterministic blocks. The leader proposes a result, and the selected validators apply the contract's validation rule to that proposal.
+
+Each Intelligent Contract has a **Ghost contract** at the same address on GenLayer Chain. The Ghost receives EVM transactions, holds the contract's native-token balance, and routes messages between the EVM and GenVM sides.
+
+## From submission to finality
+
+1. A user sends an EVM transaction to an Intelligent Contract's Ghost.
+2. The consensus contracts queue the transaction and select an activator, leader, and validator committee.
+3. The leader executes the Intelligent Contract in GenVM and proposes a receipt.
+4. The committee executes the validator path, commits encrypted votes, and then reveals them.
+5. The protocol records the decision and opens an appeal window.
+6. If nobody successfully appeals, the transaction becomes final.
+
+An **Accepted** transaction is one whose proposed outcome reached consensus. It does not necessarily mean the contract returned successfully: validators can agree that an error is the correct execution result.
+
+<Cards>
+  <Card title="How GenLayer works" href="/understand-genlayer-protocol/optimistic-democracy-how-genlayer-works" />
+  <Card title="Explore core concepts" href="/understand-genlayer-protocol/core-concepts" />
+  <Card title="Build an Intelligent Contract" href="/developers/intelligent-contracts/first-contract" />
+</Cards>
+
+## When to use GenLayer
+
+GenLayer is a fit when an outcome must be shared and enforceable, but determining it requires interpreting evidence or criteria. Examples include resolving a prediction market, assessing whether work meets a specification, or evaluating a claim from public sources.
+
+Use a conventional smart contract for rules that can be expressed entirely as deterministic computation. Use a conventional backend when no shared, adversarially verifiable outcome is needed.
+
+See [common use cases](/understand-genlayer-protocol/typical-use-cases) and the [builder fit checklist](/developers/intelligent-contracts/when-to-use-genlayer).

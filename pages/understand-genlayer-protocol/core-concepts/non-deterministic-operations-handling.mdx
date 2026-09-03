@@ -1,26 +1,34 @@
 ---
-description: "Non-deterministic operations handling in GenLayer explains how Intelligent Contracts use equivalence and consensus for variable outputs."
+description: "Learn how GenLayer contains variable web and LLM outputs and reaches consensus on their meaning."
 ---
 
-# Non-Deterministic Operations Handling
+# Non-deterministic operations
 
-Non-deterministic operations handling in GenLayer is the process of maintaining network consensus when Intelligent Contracts produce variable results from actions such as interacting with Large Language Models (LLMs) or accessing web data. GenLayer addresses this variability through the Equivalence Principle, where validators assess whether different outputs are equivalent based on predefined criteria, and Optimistic Democracy, which supports provisional transaction acceptance with an appeals process.
+A non-deterministic operation can return different raw output when two validators run it. LLM responses, live web content, time-sensitive APIs, and rendered pages are common examples.
 
-## Overview
+GenLayer does not require these outputs to become identical. It contains the variability in a non-deterministic block, then asks validators to judge the leader's proposed output under a rule defined by the Intelligent Contract.
 
-GenLayer extends traditional smart contracts by allowing Intelligent Contracts to perform non-deterministic operations, such as interacting with Large Language Models (LLMs) and accessing web data. Handling the variability inherent in these operations is crucial for maintaining consensus across the network.
+## Leader and validator paths
 
-## Challenges
+Each non-deterministic block has two logical paths:
 
-- **Variability of Outputs**: Non-deterministic operations can produce different outputs when executed by different validators.
-- **Consensus Difficulty**: Achieving consensus on varying outputs requires specialized mechanisms.
+- The **leader function** obtains or produces a candidate output.
+- The **validator function** receives that output and decides whether it is acceptable.
 
-## Solutions in GenLayer
+The validator can reproduce the operation and compare results, inspect the proposed output against objective constraints, or use another LLM judgment. The best choice depends on what a correct result means for the application.
 
-- **Equivalence Principle**: Validators assess whether different outputs are equivalent based on predefined criteria, allowing for consensus despite variability.
-- **Optimistic Democracy**: The consensus mechanism accommodates non-deterministic operations by allowing provisional acceptance of transactions and providing an appeals process.
+## What remains deterministic
 
-## Developer Considerations
+Code outside the non-deterministic block must produce the same result from the same inputs and accepted block outputs. In particular:
 
-- **Defining Equivalence Criteria**: Developers must specify what constitutes equivalent outputs in their Intelligent Contracts.
-- **Testing and Validation**: Thorough testing is essential to ensure that non-deterministic operations behave as expected in the consensus process.
+- contract state is read and written on the deterministic path;
+- validators must reproduce deterministic computation exactly; and
+- only a returned value crosses from a non-deterministic block into the surrounding execution.
+
+If validators detect a provable mismatch in deterministic execution, they can report a deterministic violation. That is different from legitimately disagreeing about a subjective output.
+
+## Designing for consensus
+
+Use the narrowest validation rule that captures the application's real requirement. Prefer structured outputs and check objective properties before asking an LLM for a qualitative judgment. Account for unavailable sources, timeouts, malformed data, and adversarial content.
+
+See the [Equivalence Principle](/understand-genlayer-protocol/core-concepts/optimistic-democracy/equivalence-principle) for the conceptual model and [implement non-determinism](/developers/intelligent-contracts/features/non-determinism) for current APIs and code restrictions.

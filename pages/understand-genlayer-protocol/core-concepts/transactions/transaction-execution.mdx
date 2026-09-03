@@ -1,41 +1,72 @@
 ---
-description: "Transaction execution in GenLayer: how submitted transactions move from pending through validator consensus to finalization"
+description: "Follow a GenLayer transaction through activation, leader execution, commit-reveal voting, appeals, and finalization."
 ---
 
 # Transaction execution
-Transaction execution in GenLayer is the process that starts after `eth_sendRawTransaction` receives and verifies a transaction, stores it with a PENDING status, and returns its hash as the RPC response. At that point, the transaction has been validated for authenticity and format, but it has not yet been executed; it enters the GenLayer consensus mechanism, where the network's validators pick it up for execution according to the consensus rules.
 
-As the transaction progresses through stages such as proposing, committing, and revealing, its status is updated accordingly. Users can query the current status and output of the transaction by calling the `eth_getTransactionByHash` method on the RPC server, which retrieves the transaction's details based on its unique hash. This method lets users track the transaction's journey from submission to finalization, providing transparency and helping them monitor transaction outcomes in real time.
-
-## Transaction Status Transitions
-
-In the journey of a transaction within the GenLayer protocol, it begins its life when an Externally Owned Account (EOA) submits it, entering the `Pending` state. Here, it awaits further processing unless it encounters an `OutOfFee` state due to insufficient fees. If the fees are topped up, it returns to `Pending`. Alternatively, the user can cancel the transaction, moving it to the `Canceled` state.
-
-From `Pending`, the transaction progresses to the `Proposing` stage, where a leader is selected to propose a receipt. Upon successful proposal, it advances to the `Committing` stage, where all validators must commit to the transaction. If all validators commit, the transaction moves to the `Revealing` stage.
-
-In the `Revealing` stage, the transaction's fate is determined. If a majority agrees, it is `Accepted`. However, if there is no majority agreement, it returns to `Proposing`. If all leaders are rotated without agreement, it becomes `Undetermined`. In cases of disagreement, a successful appeal can revert it to `Pending`, while a failed appeal results in `Accepted`.
-
-Once `Accepted`, the transaction awaits the passing of the appeal window to become `Finalized`. An `Undetermined` transaction also becomes `Finalized` after the appeal window passes. However, an appeal can initiate a return to `Committing` from `Accepted`, or automatically revert an `Undetermined` transaction to `Pending`.
+After an EVM submission creates a GenLayer transaction, the consensus contracts coordinate execution as an onchain state machine. Validator nodes observe the current phase, perform work in GenVM, and submit the next signed consensus action.
 
 ```mermaid
-graph TD;
-    Start(( )) -->|EOA submits| Pending(Pending)
-    Start -->|Insufficient fee| OutOfFee(OutOfFee)
-    OutOfFee -->|Fee topped up| Pending
-    Pending -->|User cancels| Canceled(Canceled)
+%%{init: {"flowchart": {"curve": "basis", "nodeSpacing": 40, "rankSpacing": 44, "htmlLabels": true}}}%%
+flowchart TD
+    Pending(["Pending"]) -->|"activate and select committee"| Propose["Proposing"]
+    Propose -->|"leader submits receipt"| Vote["Committing → LeaderRevealing → Revealing"]
+    Vote --> Decision{"Decided<br/>outcome"}
+    Decision --> Window["Appeal window"]
+    Window -->|"window elapses"| Ready["ReadyToFinalize"]
+    Ready --> Final(["Finalized"])
+    Pending -. "cancel or expire" .-> Canceled(["Canceled"])
 
-    Pending -->|Select leader| Proposing(Proposing)
-    Proposing -->|Leader proposes receipt| Committing(Committing)
-    Committing -->|All validators commit| Revealing(Revealing)
-
-    Revealing -->|Majority agrees| Accepted(Accepted)
-    Revealing -->|No majority agreement| Proposing
-    Revealing -->|All leaders rotated| Undetermined(Undetermined)
-    Revealing -.->|Disagreement, appeal successful| Pending
-    Revealing -.->|Agreement, appeal failed| Accepted
-
-    Accepted -->|Appeal window passes| Finalized(Finalized)
-    Undetermined -->|Appeal window passes| Finalized
-    Accepted -.->|Appeal initiated| Committing
-    Undetermined -->|Appeal automatically| Pending
+    classDef phase fill:#EFEDFF,stroke:#6D5DF5,color:#251E63,stroke-width:2px;
+    classDef success fill:#E9F8F0,stroke:#23966B,color:#123F30,stroke-width:2px;
+    classDef inactive fill:#F3F4F6,stroke:#9CA3AF,color:#374151,stroke-width:1.5px;
+    class Pending,Propose,Vote,Decision,Window phase;
+    class Ready,Final success;
+    class Canceled inactive;
+    linkStyle default stroke:#7C879C,stroke-width:1.8px;
 ```
+
+## Pending and activation
+
+Transactions enter the recipient Intelligent Contract's pending queue. The assigned activator advances the transaction when it reaches the queue head. Activation fixes the selection seed, locks applicable fee prices, selects the stake-weighted committee, and chooses a leader.
+
+## Proposal
+
+The leader executes the call in GenVM and submits a receipt with the proposed execution result and state changes. It also executes the validator path so it can vote with the committee.
+
+If the leader cannot finish within its allocated execution time, it can report a leader timeout. If the leader is idle, a permissionless timeout action can rotate it when the transaction has funded rotations available.
+
+## Commit, leader reveal, and vote reveal
+
+Committee members validate deterministic execution and apply the contract's equivalence rules to non-deterministic outputs. They commit encrypted votes and result hashes before seeing the other revealed votes.
+
+The leader reveals its execution data and decryption keys in `LeaderRevealing`. Committee members then reveal their votes in `Revealing`. The consensus contracts calculate the majority from the revealed votes.
+
+## Decision and appeals
+
+Accepted, ValidatorsTimeout, Undetermined, and LeaderTimeout are decided outcomes that enter an appeal window. Validator appeals use a fresh committee to check the existing proposal. Leader appeals begin another proposal round. See [appeals](/understand-genlayer-protocol/core-concepts/optimistic-democracy/appeal-process).
+
+```mermaid
+%%{init: {"flowchart": {"curve": "basis", "nodeSpacing": 40, "rankSpacing": 46, "htmlLabels": true}}}%%
+flowchart TB
+    Decision["Decided outcome"] --> Window["Appeal window"]
+    Window -->|"no appeal"| Ready["Ready to finalize"]
+    Window -->|"validator appeal"| Review["Fresh committee review"]
+    Review -->|"confirmed"| Window
+    Review -->|"overturned"| Round["New proposal round"]
+    Window -->|"leader appeal"| Round
+
+    classDef phase fill:#EFEDFF,stroke:#6D5DF5,color:#251E63,stroke-width:2px;
+    classDef challenge fill:#FFF4E5,stroke:#D58A16,color:#583705,stroke-width:2px;
+    classDef success fill:#E9F8F0,stroke:#23966B,color:#123F30,stroke-width:2px;
+    class Decision,Window,Round phase;
+    class Review challenge;
+    class Ready success;
+    linkStyle default stroke:#7C879C,stroke-width:1.8px;
+```
+
+## Finalization
+
+When the effective appeal window has elapsed, the transaction is ready to finalize. The finalization call records the terminal status, settles remaining fees and refunds, emits finalization messages, and advances the recipient's queues.
+
+An EVM submission receipt is not a substitute for this lifecycle. Poll [`gen_getTransactionStatus`](/api-references/genlayer-node/gen/gen_getTransactionStatus) or retrieve the full [`gen_getTransactionReceipt`](/api-references/genlayer-node/gen/gen_getTransactionReceipt).

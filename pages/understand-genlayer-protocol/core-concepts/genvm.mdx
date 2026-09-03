@@ -1,38 +1,56 @@
 ---
-description: "GenVM is GenLayer's virtual machine for executing Python Intelligent Contracts with web and LLM access."
+description: "GenVM is GenLayer's WebAssembly sandbox for deterministic and non-deterministic Intelligent Contract execution."
 ---
 
-# GenVM (GenLayer Virtual Machine)
+# GenVM
 
-GenVM is the execution environment for Intelligent Contracts in the GenLayer protocol, processing and managing contract operations across the GenLayer ecosystem. GenVM executes Intelligent Contracts that may use non-deterministic code while preserving blockchain security and consistency.
+GenVM is the execution environment for Intelligent Contracts. It runs contract code in a WebAssembly sandbox and exposes controlled host functions for contract state, messages, web access, and LLM calls.
 
-[Source code at GitHub](https://github.com/genlayerlabs/genvm)
+[View the GenVM source code](https://github.com/genlayerlabs/genvm).
 
-## Purpose of GenVM
+## Execution model
 
-The only purpose of the GenVM is to execute Intelligent Contracts, which can have non-deterministic code while maintaining blockchain security and consistency.
+GenVM separates reproducible execution from operations that can vary across validators.
 
-In summary, the GenVM plays a crucial role in enabling GenLayer's unique features, bridging the gap between traditional smart contracts and AI-powered, web-connected Intelligent Contracts.
+```mermaid
+%%{init: {"flowchart": {"curve": "basis", "nodeSpacing": 42, "rankSpacing": 50, "htmlLabels": true}}}%%
+flowchart TD
+    Call(["Intelligent Contract call"]) --> Deterministic["Deterministic execution"]
+    Deterministic --> Block{"Enter a<br/>non-deterministic block?"}
+    Block -->|"no"| Receipt(["Execution receipt"])
 
-## Key Features That Make the GenVM Different
+    subgraph Isolated["Isolated GenVM instance"]
+        direction LR
+        Sandbox["Non-deterministic code"] --> Host["Web or LLM<br/>host function"] --> Result["Candidate output or<br/>validator decision"]
+    end
 
-Unlike traditional blockchain virtual machines such as Ethereum Virtual Machine (EVM), the GenVM has some advanced features.
+    Block -->|"yes"| Sandbox
+    Result -->|"return value only"| Deterministic
 
-- **Integration with LLMs**: the GenVM facilitates seamless interaction between Intelligent Contracts and Large Language Models
-- **Web access**: the GenVM provides access to the Internet
-- **User friendliness**: Intelligent Contracts can be written in Python, which makes the learning curve much more shallow
+    classDef boundary fill:#F7F8FC,stroke:#8B95A7,color:#202536,stroke-width:1.5px;
+    classDef deterministic fill:#EFEDFF,stroke:#6D5DF5,color:#251E63,stroke-width:2px;
+    classDef nondeterministic fill:#EAF7FF,stroke:#2686C4,color:#113F59,stroke-width:2px;
+    classDef output fill:#E9F8F0,stroke:#23966B,color:#123F30,stroke-width:2px;
+    class Call boundary;
+    class Deterministic,Block deterministic;
+    class Sandbox,Host,Result nondeterministic;
+    class Receipt output;
+    style Isolated fill:#F5FBFF,stroke:#A8D7F2,stroke-width:1px
+    linkStyle default stroke:#7C879C,stroke-width:1.8px;
+```
 
-## How the GenVM Works
+The top-level contract path must be deterministic. A non-deterministic block runs in a separate VM instance so that its transient memory and side effects cannot leak directly into deterministic state. Only the block's returned value crosses the boundary.
 
-1. **Contract Deployment**: When an Intelligent Contract is deployed, the GenVM compiles and executes the contract code.
+In leader mode, the block produces the candidate value used by the transaction. In validator mode, it evaluates the leader's value and returns whether it is acceptable. Consensus, not GenVM alone, decides whether the receipt is accepted.
 
-2. **Transaction Processing**: As transactions are submitted to the network, the GenVM executes the relevant contract functions and produces the contract's next state.
+## Runners and languages
 
-## Developer Considerations
+GenVM executes WebAssembly contracts through **runners**. A runner packages the language runtime or other support code a contract needs and identifies that package by a human-readable name and content hash. Pinning the runner makes the execution environment explicit and reproducible across nodes.
 
-When developing Intelligent Contracts for the GenVM:
+The standard developer experience uses Python on a CPython WebAssembly runner. The runtime boundary is WebAssembly/WASI, so the architecture can support other compatible runners and compiled languages as they become available.
 
-- Utilize Python's robust libraries and features
-- Consider potential non-deterministic outcomes when integrating LLMs
-- Implement proper error handling for web data access
-- Optimize code for efficient execution within the rollup environment
+## Security boundary
+
+GenVM constrains contract capabilities through its WebAssembly runtime and host interface. Intelligent Contracts do not receive unrestricted access to the validator machine. Web and LLM functions are available through the non-deterministic interface, where their output is subject to the contract's [equivalence rule](/understand-genlayer-protocol/core-concepts/optimistic-democracy/equivalence-principle).
+
+For code and API details, see [your first Intelligent Contract](/developers/intelligent-contracts/first-contract) and [non-determinism](/developers/intelligent-contracts/features/non-determinism).

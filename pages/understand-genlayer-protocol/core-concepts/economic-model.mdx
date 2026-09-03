@@ -1,28 +1,61 @@
 ---
-description: "Economic Model explains GenLayer validator staking, rewards, transaction fees, slashing, and economic security."
+description: "Learn how GenLayer fees, appeal bonds, staking rewards, and penalties fund consensus and align participants."
 ---
 
-# Economic Model
+# Economic model
 
-GenLayer's Economic Model defines how staking, rewards, transaction fees, and slashing incentivize participants to maintain the network's security and functionality. Validators stake tokens to participate in validation, earn rewards for correctly validating transactions, receive fees from transaction processing, and risk penalties if they act maliciously or incompetently.
+GenLayer's economic model pays for Intelligent Contract execution and makes validators accountable for timely, honest work. Its main mechanisms are transaction fee budgets, appeal bonds, staking rewards, and penalties.
 
-## Overview
+## Transaction budgets
 
-GenLayer's economic model is designed to incentivize participants to maintain the network's security and functionality. It involves staking, rewards, transaction fees, and penalties.
+An Intelligent Contract transaction can require several EVM transactions and many GenVM executions. The sender therefore funds a protocol budget rather than paying only for the submission transaction.
 
-## Key Components
+The budget can cover:
 
-- **Staking**: Validators must stake tokens to participate in the validation process, aligning their interests with the network's health.
-- **Rewards**: Validators receive rewards for correctly validating transactions.
-- **Transaction Fees**: Users pay fees for transaction processing, which are partly used to reward validators.
-- **Slashing**: Validators acting maliciously or incompetently can have their staked tokens slashed as a penalty.
+- leader and validator execution time;
+- normal rounds and funded leader rotations;
+- GenVM storage and receipt data;
+- messages created by the Intelligent Contract; and
+- any appeal capacity the sender chooses to pre-fund.
 
-## Incentive Mechanisms
+The sender also sets price ceilings. Prices lock when the transaction activates so a later governance change cannot silently charge more than the sender authorized. Unused budget is refunded according to the protocol's contributor accounting.
 
-- **Positive Incentives**: Rewards and fees motivate validators to act in the network's best interest.
-- **Negative Incentives**: Slashing and penalties deter malicious behavior.
+Appeal bonds are separate from the primary transaction budget. The bond funds the additional committee or proposal round and is returned or forfeited according to the appeal result.
 
-## Economic Security
+## Validator selection and stake
 
-- **Stake-Based Security**: The amount staked by validators serves as a deterrent against attacks, as they risk losing their stake.
-- **Balancing Supply and Demand**: The economic model aims to balance the supply of validation services with demand from users.
+Validators provide self-stake, and token holders can delegate stake to them. Selection weight combines both amounts and applies a sublinear exponent. This gives larger pools more selection probability while reducing the advantage of concentrating all stake in one validator.
+
+Current default parameters include:
+
+| Parameter | Default |
+| --- | ---: |
+| Minimum validator self-stake | 42,000 GEN |
+| Minimum delegation | 42 GEN |
+| Maximum active validators | 1,000 |
+| Self-stake weight (`alpha`) | 0.6 |
+| Weight exponent (`beta`) | 0.5 |
+| Unbonding period | 7 epochs |
+
+These are governance or deployment parameters, not constants applications should hardcode.
+
+## Reward sources and routing
+
+Rewards come from transaction fees and protocol inflation. Under the current distribution, the combined pool is routed as follows:
+
+| Recipient | Share |
+| --- | ---: |
+| Stake pools, including self-stake and delegation | 75% |
+| Validator owners for operations | 10% |
+| Intelligent Contract developers | 10% |
+| DeepThought DAO treasury | 5% |
+
+Stake-pool rewards are assigned according to selection weight, then shared between a validator's owner and delegators according to their stake in that pool. Stake uses share accounting, so rewards compound by increasing the GEN value represented by each share.
+
+Protocol inflation starts from a configured bootstrap rate and declines toward a configured floor. Treat current rates and splits as protocol parameters when presenting estimates.
+
+## Negative incentives
+
+The protocol can reduce rewards, ban validators from selection, quarantine them during an investigation, slash stake for specified faults, and forfeit unsuccessful appeal bonds. Different faults use different mechanisms; a vote on the eventual losing side is not automatically proof of misconduct.
+
+See [staking](/understand-genlayer-protocol/core-concepts/optimistic-democracy/staking), [slashing](/understand-genlayer-protocol/core-concepts/optimistic-democracy/slashing), and [appeals](/understand-genlayer-protocol/core-concepts/optimistic-democracy/appeal-process).

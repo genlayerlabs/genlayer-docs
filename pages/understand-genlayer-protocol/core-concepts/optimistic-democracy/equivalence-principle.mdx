@@ -1,54 +1,71 @@
 ---
-description: "The Equivalence Principle is how GenLayer validators reach consensus on non-deterministic outputs such as LLM responses and live web data."
+description: "The Equivalence Principle lets validators accept non-identical outputs when they satisfy an Intelligent Contract's validation rule."
 ---
 
-# Equivalence Principle Mechanism
+# Equivalence Principle
 
-The Equivalence Principle mechanism is a cornerstone in ensuring that Intelligent Contracts function consistently across various validators when handling non-deterministic outputs like responses from Large Language Models (LLMs) or data retrieved through web browsing. It plays a crucial role in how validators assess and agree on the outcomes proposed by the Leader.
+The Equivalence Principle is the rule an Intelligent Contract uses to decide whether a leader's non-deterministic output is acceptable. It allows validators to agree on meaning or required properties even when their raw LLM or web results are not byte-for-byte identical.
 
-The Equivalence Principle protects the network from manipulations or errors by ensuring that only suitable, equivalent outcomes influence the blockchain state.
+The principle is implemented as contract code. It is not a network-wide similarity threshold, and it does not mean that validators trust the leader.
 
-## Key Features of the Equivalence Principle
+## Leader and validator responsibilities
 
-The Equivalence Principle is fundamental to how Intelligent Contracts operate, ensuring they work reliably across different network validators.
+```mermaid
+%%{init: {"flowchart": {"curve": "basis", "nodeSpacing": 46, "rankSpacing": 48, "htmlLabels": true}}}%%
+flowchart TB
+    L["Leader function"] -->|"candidate output"| P["Proposed receipt"]
 
-- **Consistency in Decentralized Outputs:** The Equivalence Principle allows outputs from various sources, such as LLMs or web data, to be different yet still considered valid as long as they meet predefined standards. This is essential to maintain fairness and uniform decision-making across the blockchain, despite the natural differences in AI-generated responses or web-sourced information.
+    V1["Validator 1<br/>independent check"]
+    V2["Validator 2<br/>independent check"]
+    V3["Validator 3<br/>independent check"]
 
-- **Security Enhancement:** To protect the integrity of transactions, the Equivalence Principle requires that all validators check each other’s work. This mutual verification helps prevent errors and manipulation, ensuring that only accurate and agreed-upon data affects the blockchain.
+    P --> V1
+    P --> V2
+    P --> V3
+    V1 --> M{"Majority<br/>accepts?"}
+    V2 --> M
+    V3 --> M
+    M -->|"yes"| A(["Accept proposal"])
+    M -->|"no"| R(["Reject or rotate"])
 
-- **Output Validation Flexibility:** Intelligent Contracts often need to handle complex and varied data. This part of the principle allows developers to set specific rules for what counts as "equivalent" or acceptable outputs. This flexibility helps developers tailor the validation process to suit different needs, optimizing either for accuracy or efficiency depending on the contract's requirements.
+    classDef leader fill:#EFEDFF,stroke:#6D5DF5,color:#251E63,stroke-width:2px;
+    classDef validator fill:#EAF7FF,stroke:#2686C4,color:#113F59,stroke-width:2px;
+    classDef success fill:#E9F8F0,stroke:#23966B,color:#123F30,stroke-width:2px;
+    classDef challenge fill:#FFF4E5,stroke:#D58A16,color:#583705,stroke-width:2px;
+    class L,P,M leader;
+    class V1,V2,V3 validator;
+    class A success;
+    class R challenge;
+    linkStyle default stroke:#7C879C,stroke-width:1.8px;
+```
 
-## Types of Equivalence Principles
+The leader function produces the value that the surrounding deterministic code can use. Each validator function receives that value and independently returns an accept or reject decision. Intermediate validator results do not automatically become contract state.
 
-Validators work to reach a consensus on whether the result set by the Leader is acceptable, which might involve direct comparison or qualitative evaluation, depending on the contract’s design. If the validators do not reach a consensus due to differing data interpretations or an error in data processing, the result might be challenged or an appeal process might be initiated.
+## Validation patterns
 
-### Comparative Equivalence Principle
+### Strict equality
 
-In the Comparative Equivalence Principle, both the Leader and the validators perform identical tasks and then directly compare their respective results with the predefined criteria in the Equivalence Principle to ensure consistency and accuracy. This method uses an acceptable margin of error to handle slight variations in results between validators and is suitable for quantifiable outputs. However, since multiple validators perform the same tasks as the Leader, it increases computational demands and associated costs.
+Use strict equality when validators can normalize an operation to exactly the same bytes. Examples include stable structured data with canonical serialization. Strict equality is usually unsuitable for open-ended LLM responses or time-varying data.
 
-For example, if an Intelligent Contract is tasked with calculating the average rating of a product based on user reviews, the Equivalence Principle specifies that the average ratings should not differ by more than 0.1 points. Here's how it works:
+### Independent comparison
 
-1. **Leader Calculation**: The Leader validator calculates the average rating from the user reviews and arrives at a rating of 4.5.
-2. **Validators' Calculations**: Each validator independently calculates the average rating using the same set of user reviews. Suppose one validator calculates an average rating of 4.6.
-3. **Comparison**: The validators compare their calculated average (4.6) with the Leader's average (4.5). According to the Equivalence Principle, the ratings should not differ by more than 0.1 points.
-4. **Decision**: Since the difference (0.1) is within the acceptable margin of error, the validators accept the Leader's result as valid.
+The validator repeats the task and compares the decision-bearing fields. It can require exact labels, allow a numeric tolerance, or use an LLM to compare two complex outputs against explicit criteria.
 
-### Non-Comparative Equivalence Principle
+### Independent assessment
 
-In contrast, the Non-Comparative Equivalence Principle does not require validators to replicate the Leader's output, which makes the validation process faster and less costly. Instead, validators assess the accuracy of the Leader’s result against the criteria defined in the Equivalence Principle. This method is particularly useful for qualitative outputs like text summaries.
+The validator evaluates the leader's output directly against the original evidence and criteria without producing a second candidate answer. This can reduce duplicated work, but the validator must still consult independent evidence. Checking only that the leader returned valid JSON or an allowed enum does not verify the answer.
 
-For example, in an Intelligent Contract designed to summarize news articles, the process works as follows:
+### Custom validation
 
-1. **Leader Summary**: The Leader validator generates a summary of a news article.
-2. **Evaluation Criteria**: The Equivalence Principle defines criteria for an acceptable summary, such as accuracy, relevance, and length.
-3. **Validators' Assessment**: Instead of generating their own summaries, validators review the Leader’s summary and check if it meets the predefined criteria.
-   - **Accuracy**: Does the summary accurately reflect the main points of the article?
-   - **Relevance**: Is the summary relevant to the content of the article?
-   - **Length**: Is the summary within the acceptable length?
-4. **Decision**: If the Leader’s summary meets all the criteria, it is accepted by the validators.
+Most contracts use a custom leader/validator pair because it can combine objective checks, source retrieval, tolerances, and qualitative judgment. Convenience wrappers exist for common strict, comparative, and non-comparative cases.
 
-## Key Points for Developers
+## Design principles
 
-- **Setting Equivalence Criteria:** Developers must define what 'equivalent' means for each non-deterministic operation in their Intelligent Contract. This guideline helps validators judge if different outcomes are close enough to be treated as the same.
+- Define what must agree and what may vary.
+- Compare structured decision fields instead of incidental prose.
+- Give validators the same source evidence and explicit criteria.
+- Reject malformed outputs before applying subjective checks.
+- Define behavior for source failures, model errors, and timeouts.
+- Keep side effects outside the non-deterministic block so state changes use only the accepted value.
 
-- **Ensuring Contract Reliability:** By clearly defining equivalence, developers help maintain the reliability and predictability of their contracts, even when those contracts interact with the unpredictable web or complex AI models.
+For current APIs, security guidance, and examples, use the canonical developer guide: [Implement the Equivalence Principle](/developers/intelligent-contracts/equivalence-principle).

@@ -1,6 +1,6 @@
 {
-  "types-of-transactions": "",
-  "transaction-statuses": "",
-  "transaction-execution": "",
-  "transaction-encoding-serialization-and-signing": ""
+  "types-of-transactions": "Transaction Types",
+  "transaction-execution": "Transaction Execution",
+  "transaction-statuses": "Transaction Statuses",
+  "transaction-encoding-serialization-and-signing": "Encoding and Signing"
 }

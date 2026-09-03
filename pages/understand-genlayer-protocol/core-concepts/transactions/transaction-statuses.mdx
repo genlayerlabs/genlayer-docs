@@ -1,30 +1,37 @@
 ---
-description: "Transaction Processing explains GenLayer transaction statuses from pending queue to finalized, undetermined, or canceled outcomes."
+description: "Reference all GenLayer Intelligent Contract transaction statuses and their numeric codes."
 ---
 
-# Transaction Processing
-GenLayer transaction processing is the account-based queue flow that moves each transaction through network statuses from submission to execution outcome. Transactions are queued per account to preserve the order in which they were submitted, then transition through pending, proposing, committing, revealing, accepted, finalized, undetermined, or canceled states.
+# Transaction statuses
 
-## 1. Pending
-When a transaction is first submitted, it enters the pending state. This means it has been received by the network but is waiting to be processed. Transactions are queued per account, ensuring that each account's transactions are processed in the order they were submitted.
+The consensus contracts define 15 numeric status values. APIs can return the stored status or an effective status calculated from the current time, such as `ReadyToFinalize` after an appeal window expires.
 
-## 2. Proposing
-In this stage, the transaction is moved from the pending queue to the proposing stage. A leader and a set of voters are selected from the validator set via a weighted random selection based on total stake. The leader proposes a receipt for the transaction, which is then committed to by the validators.
+| Code | Status | Meaning |
+| ---: | --- | --- |
+| 0 | `Uninitialized` | No transaction is initialized for this ID. |
+| 1 | `Pending` | The transaction is queued and waiting for activation. |
+| 2 | `Proposing` | A leader is assigned and must propose an execution receipt. |
+| 3 | `Committing` | The committee is submitting encrypted vote commitments. |
+| 4 | `Revealing` | Committee members are revealing their committed votes. |
+| 5 | `Accepted` | The committee accepted the proposed receipt; the appeal window is open. |
+| 6 | `Undetermined` | The round did not reach a result and no funded rotation remained; a leader appeal is possible. |
+| 7 | `Finalized` | The appeal process is complete and finalization was recorded. |
+| 8 | `Canceled` | The transaction was canceled before completing consensus. |
+| 9 | `AppealRevealing` | A fresh validator-appeal committee is revealing votes. |
+| 10 | `AppealCommitting` | A fresh validator-appeal committee is committing votes. |
+| 11 | `ReadyToFinalize` | The effective appeal window elapsed and the transaction can be finalized. |
+| 12 | `ValidatorsTimeout` | A validator majority reported that validation timed out; the appeal window is open. |
+| 13 | `LeaderTimeout` | The leader reported an execution timeout; the appeal window is open. |
+| 14 | `LeaderRevealing` | The leader must reveal execution data and keys before committee vote reveals. |
 
-## 3. Committing
-The transaction enters the committing stage, where validators commit their votes and cost estimates for processing the transaction. This stage is crucial for reaching consensus on the transaction's execution.
+## Status is not execution success
 
-## 4. Revealing
-After the committing stage, validators reveal their votes and cost estimates, allowing the network to finalize the transaction's execution cost and validate the consensus.
+`Accepted` means the validator committee reached consensus on the receipt. The receipt itself can represent a successful return, a user error, a GenVM error, or a timeout. Inspect the receipt's execution result in addition to its consensus status.
 
-## 5. Accepted
-Once the majority of validators agree on the transaction's validity and cost, the transaction is marked as accepted. This status indicates that the transaction has passed through the initial validation process successfully.
+Similarly, `Finalized` means the decided receipt is no longer appealable. It does not convert an error result into a successful contract call.
 
-## 6. Finalized
-After all validations are completed and any potential appeals have been resolved, the transaction is finalized. In this state, the transaction is considered irreversible and is permanently recorded in the blockchain.
+## Stored and effective status
 
-## 7. Undetermined
-If the transaction fails to reach consensus after all voting rounds, it enters the undetermined state. This status indicates that the transaction's outcome is unresolved, and it may require further validation or be subject to an appeal process.
+Some view functions accept a timestamp and derive the status that applies after a deadline. A transaction whose stored decision is `Accepted`, for example, can be reported as `ReadyToFinalize` after its appeal window elapses even before a finalization transaction updates storage to `Finalized`.
 
-## 8. Canceled
-A transaction can be canceled by the user or by the system if it fails to meet certain criteria (e.g., insufficient funds). Once canceled, the transaction is removed from the processing queue and will not be executed.
+Use the numeric codes for program logic and display the names to users. See [`gen_getTransactionStatus`](/api-references/genlayer-node/gen/gen_getTransactionStatus).

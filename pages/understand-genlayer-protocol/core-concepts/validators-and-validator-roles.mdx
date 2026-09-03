@@ -1,29 +1,46 @@
 ---
-description: "Validators in GenLayer validate transactions, vote in Optimistic Democracy, stake tokens, and serve leader or consensus roles."
+description: "Learn how GenLayer selects activators, leaders, and committee validators for each Intelligent Contract transaction."
 ---
 
-# Validators and Validator Roles
+# Validators and roles
 
-Validators are GenLayer network participants that validate transactions, help maintain blockchain integrity and security, and participate in Optimistic Democracy consensus. They verify deterministic and non-deterministic transactions, use the Equivalence Principle for non-deterministic operations, take part in leader selection, vote on proposed outcomes, and stake tokens to earn validation rights and rewards.
+Validators run GenLayer nodes, stake GEN, execute Intelligent Contracts, and submit consensus actions to GenLayer Chain. A validator can receive different roles for different transactions.
 
-## Overview
+## Roles in a transaction
 
-Validators are essential participants in the GenLayer network. They are responsible for validating transactions and maintaining the integrity and security of the blockchain. Validators play a crucial role in the Optimistic Democracy consensus mechanism, ensuring that both deterministic and non-deterministic transactions are processed correctly.
+| Role | Main responsibility | Selection |
+| --- | --- | --- |
+| Activator | Advances the next queued transaction and fixes the seed used for committee selection. | Uniformly from the active validator set. |
+| Leader | Executes the Intelligent Contract, proposes a receipt, and participates in voting. | Randomly from the selected committee, using stake-weighted selection. |
+| Committee member | Evaluates the leader's receipt, commits an encrypted vote, and reveals it. | Randomly from the active set, weighted by validator selection weight. |
 
-## Key Responsibilities
+The leader is part of the committee. It runs both the leader path and the validator path, then commits and reveals its own vote. This keeps the voting set odd in a normal round.
 
-- **Transaction Validation**: Validators verify the correctness of transactions proposed by the leader, using mechanisms like the Equivalence Principle for non-deterministic operations.
-- **Leader Selection**: Validators participate in the process of randomly selecting a leader for each transaction, ensuring fairness and decentralization.
-- **Consensus Participation**: Validators cast votes on proposed transaction outcomes, contributing to the consensus process.
-- **Staking and Incentives**: Validators stake tokens to earn the right to validate transactions and receive rewards based on their participation and correctness.
+The activator is a coordination role, not a proposer. When the activator is also selected for the committee, the protocol excludes it from leader selection.
 
-## Validator Selection and Roles
+## What a validator node does
 
-- **Leader Validator**: For each transaction, a leader is randomly selected among the validators. The leader is responsible for executing the transaction and proposing the result to other validators.
-- **Consensus Validators**: Other validators assess the leader's proposed result and vote to accept or reject it based on predefined criteria.
+A node follows GenLayer Chain events and reads the consensus contracts to learn its assignments. It then:
 
-## Becoming a Validator
+1. reconstructs the relevant Intelligent Contract state;
+2. executes the leader or validator path in GenVM;
+3. signs and sends the required proposal, commit, or reveal transaction; and
+4. monitors deadlines, appeals, epoch changes, and staking duties.
 
-- **Staking Requirement**: Participants must stake a certain amount of tokens to become validators.
-- **Validator Configuration**: Validators must configure their nodes with the appropriate LLM providers and models, depending on the network's requirements.
-- **Reputation and Slashing**: Validators must act honestly to avoid penalties such as slashing of their staked tokens.
+Consensus actions are recorded on GenLayer Chain. Validators do not exchange offchain votes through a separate peer-to-peer consensus protocol.
+
+## Selection weight
+
+Committee selection is stake-weighted, but it is not directly proportional to raw stake. The protocol calculates a governance-configurable weight from self-stake and delegated stake:
+
+```text
+weight = (alpha × self-stake + (1 - alpha) × delegated stake) ^ beta
+```
+
+Current defaults give self-stake more influence and apply sublinear damping so that selection probability grows more slowly than stake. See [staking](/understand-genlayer-protocol/core-concepts/optimistic-democracy/staking) for the current defaults and activation rules.
+
+## Liveness and accountability
+
+Each phase has an onchain timeout. If an assigned participant does not act, a permissionless idleness call can replace it, rotate the leader, or move the transaction to a timeout or undetermined decision. Repeated idleness, failure to reveal, or proven deterministic violations can cause exclusion and [slashing](/understand-genlayer-protocol/core-concepts/optimistic-democracy/slashing).
+
+To operate a node, use the [validator setup guide](/validators/setup-guide).

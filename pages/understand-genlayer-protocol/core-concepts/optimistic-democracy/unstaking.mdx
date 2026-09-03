@@ -1,33 +1,49 @@
 ---
-description: "Unstaking in GenLayer explains how validators exit active duties, wait for finality, and withdraw stake and rewards."
+description: "Learn how GenLayer validator and delegator exits move through epoch processing and the unbonding period."
 ---
 
-# Unstaking in GenLayer
-Unstaking in GenLayer is the process by which validators disengage their staked tokens from the network and end active participation as validators. Validators initiate unstaking with a transaction, are removed from the active validator pool, and wait through a cooldown period so all transactions they participated in can reach full finality. After pending obligations and issues are resolved, validators and their delegators can withdraw staked tokens and any accrued rewards while preserving network integrity and platform security.
+# Unstaking
 
-## How Unstaking Works
+Unstaking converts validator or delegator shares into a scheduled GEN withdrawal. An exit is processed through epoch accounting, stops earning after the exited stake leaves the active record, and becomes claimable after the unbonding period.
 
-The unstaking process includes several key steps:
+It does not wait for every transaction in which the validator participated to finalize.
 
-1. **Initiating Unstaking**: Validators initiate their exit from active duties by submitting an unstaking transaction, signaling their intention to cease participation in validating transactions.
+## Exit lifecycle
 
-2. **Validator Removal**: Once the unstaking request is made, the validator is promptly removed from the pool of active validators, meaning they will no longer receive new transactions or be called upon for appeal validations.
+```mermaid
+%%{init: {"flowchart": {"curve": "basis", "nodeSpacing": 42, "rankSpacing": 44, "htmlLabels": true}}}%%
+flowchart TB
+    A(["Request exit<br/>burn shares"]) --> B["Pending epoch<br/>processing"]
+    B --> C["Remove stake from<br/>active position"]
+    C --> D["Unbonding<br/>current default: 7 epochs"]
+    D --> E(["Claimable GEN"])
 
-3. **Finality Period**: During this period, validators must wait for all transactions they have participated in to reach full finality. This is crucial to ensure that validators do not exit while still having potential influence over unresolved transactions. This cooldown period helps prevent the situation where new transactions with new finality windows could prevent them from ever achieving full finality on all transactions they were involved in.
+    classDef action fill:#F7F8FC,stroke:#8B95A7,color:#202536,stroke-width:1.5px;
+    classDef pending fill:#FFF4E5,stroke:#D58A16,color:#583705,stroke-width:2px;
+    classDef success fill:#E9F8F0,stroke:#23966B,color:#123F30,stroke-width:2px;
+    class A action;
+    class B,C,D pending;
+    class E success;
+    linkStyle default stroke:#7C879C,stroke-width:1.8px;
+```
 
-4. **Withdrawing Stake**: After all transactions have achieved finality and no outstanding issues remain, validators and their delegators can safely withdraw their staked tokens and any accrued rewards.
+1. The validator owner or delegator chooses a positive number of shares and submits an exit.
+2. The protocol stages the withdrawal and processes it through the validator's epoch records and `validatorPrime()`.
+3. Once removed from active stake, those shares no longer contribute to selection weight or earn rewards.
+4. After the unbonding period, anyone can trigger the claim for the beneficiary. Funds go to the owner or delegator, not the caller.
 
+Under the current rules, the exit epoch still earns its normal rewards, and the unbonding period is seven epochs measured from the exit request. These values are protocol parameters.
 
-## Purpose of Unstaking
+## Validator exits
 
-The unstaking process is designed to:
+A validator can exit part of its shares and remain eligible if the resulting self-stake still meets the active minimum. A full exit, or a partial exit below the minimum, removes it from new consensus selection after the staged update takes effect.
 
-- **Ensure Accountability**: By enforcing a Finality Window, validators are held accountable for their actions until all transactions they influenced are fully resolved. This prevents premature exit from the network and ensures that all potential disputes are settled.
-  
-- **Align Incentives**: The requirement for validators to wait through the Finality Window aligns their incentives with the long-term security and reliability of the network, promoting responsible participation.
+The owner key controls validator exits and claims. The node's operator key cannot withdraw stake.
 
-- **Maintain Network Security**: The unstaking process discourages abrupt departures and ensures that validators address any possible security concerns related to their past validations before leaving.
+## Delegator exits
 
-## Implications for Validators and Delegators
+A delegator exits shares separately for each validator pool. Multiple matured withdrawals can be claimed together according to the staking contract's accounting. During unbonding, exited stake earns no rewards and remains subject to the protocol rules attached to the withdrawal record.
 
-For validators, this process mandates careful planning regarding their exit strategy from the network, considering the need to wait out the Finality Window. Delegators must also be patient, understanding that their assets will remain locked until their validator has cleared all responsibilities, safeguarding their investments from potential liabilities caused by unresolved validations.
+Use current contract views or the SDK to calculate shares and claimability; do not convert a desired GEN amount to shares using a stale exchange rate.
+
+For step-by-step commands, see the [staking guide](/developers/staking-guide).
