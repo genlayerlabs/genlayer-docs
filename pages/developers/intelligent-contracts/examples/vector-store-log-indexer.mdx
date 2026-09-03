@@ -2,11 +2,17 @@
 description: "LogIndexer Contract demonstrates VecDB log storage, CRUD operations, and vector similarity search in GenVM."
 ---
 
+import { Callout } from "nextra-theme-docs";
+
 # LogIndexer Contract
 
 The LogIndexer contract is an Intelligent Contract example that uses the Vector Store database (VecDB) provided by the `genlayer_embeddings` package to index text logs with vector embeddings. The contract demonstrates how to store, retrieve, update, and remove logs, then search them by similarity.
 
 This is the same contract used in GenLayer's own test suite — a complete, verified, copy-pasteable example. See the Vector Store feature page for the full `VecDB`/`VecDBElement` API reference.
+
+<Callout type="info" emoji="ℹ️">
+  This includes a small fix over the original example: `add_log`/`update_log` now reset `removed_log_ids[key] = False` when reusing an existing entry, so a `log_id` you `remove_log()` and then re-add becomes visible to `get_closest_vector()` again. See [genlayer-studio#1755](https://github.com/genlayerlabs/genlayer-studio/pull/1755).
+</Callout>
 
 ```python
 # v0.3.0
@@ -80,6 +86,7 @@ class LogIndexer(gl.contract.Contract):
             self.vector_store.get_by_id(self.log_vector_ids[key]).value = StoreValue(
                 text=log, log_id=key
             )
+            self.removed_log_ids[key] = False
             return
 
         emb = self.get_embedding(log)
@@ -93,6 +100,7 @@ class LogIndexer(gl.contract.Contract):
             self.vector_store.get_by_id(self.log_vector_ids[key]).value = StoreValue(
                 text=log, log_id=key
             )
+            self.removed_log_ids[key] = False
             return
 
         emb = self.get_embedding(log)
@@ -111,8 +119,9 @@ class LogIndexer(gl.contract.Contract):
 - **Data Structure**: Uses `StoreValue` dataclass to store log ID and text.
 - **Vector Store**: Initializes a `VecDB` with 384-dimensional float32 vectors and `EuclideanDistance` as the metric.
 - **Embedding Generation**: Uses `gle.SentenceTransformer` for text embedding — this returns a plain `str -> np.ndarray` callable, not a class instance.
-- **Duplicate protection**: `log_vector_ids` maps each `log_id` to its `VecDB` element id, so `add_log`/`update_log` overwrite the existing entry's `.value` in place instead of inserting a duplicate vector when a `log_id` is reused.
+- **Duplicate protection**: `log_vector_ids` maps each `log_id` to its `VecDB` element id, so `add_log`/`update_log` overwrite the existing entry's `.value` in place instead of inserting a duplicate vector when a `log_id` is reused. This branch also clears any `removed_log_ids` tombstone, so a previously-removed `log_id` becomes findable again once re-added.
 - **Tombstones instead of hard deletes**: `remove_log` marks the id in `removed_log_ids` rather than calling `.remove()` on the `VecDB` element — `get_closest_vector` filters tombstoned and orphaned entries out of the `knn()` results.
+- **`"similarity"` is a rough rank, not a normalized score**: `str(1 - result.distance)` is not bounded to `[0, 1]` for `EuclideanDistance` — distance is unbounded, so this can go negative for distant results. Treat it as "higher means closer," not a percentage.
 - **Methods**:
   - `get_closest_vector()`: Finds the closest non-removed log entry, scanning `knn()` results nearest-first.
   - `add_log()`: Adds a new log with its embedding (or overwrites if `log_id` already exists).

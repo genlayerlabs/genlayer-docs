@@ -14,7 +14,7 @@ The Vector Store provides several powerful features for managing text data:
 You can store text data as vector embeddings, which are mathematical representations of the text, allowing for efficient similarity comparisons. Each stored text is associated with a vector and metadata.
 
 #### 2. Similarity Calculation
-The Vector Store lets you find the nearest neighbors of a query vector via `knn()`, using a configurable distance metric (Euclidean by default). This is useful for finding the most semantically similar texts, enabling applications like recommendation systems or text-based search.
+The Vector Store lets you find the nearest neighbors of a query vector via `knn()`. You must choose a distance metric as part of `VecDB`'s type parameters — `gle.EuclideanDistance` is the common choice — since there's no default. This is useful for finding the most semantically similar texts, enabling applications like recommendation systems or text-based search.
 
 #### 3. Metadata Management
 Along with the text and vectors, you can store additional metadata (any data type) associated with each text entry. This allows developers to link additional information (e.g., IDs or tags) to the text for retrieval.
@@ -74,6 +74,10 @@ import genlayer_embeddings as gle
 
 #### Creating a Contract with Vector Store
 Here's a complete, verified example — the same `LogIndexer` contract used in GenLayer's own test suite — indexing and searching text logs by semantic similarity:
+
+<Callout type="info" emoji="ℹ️">
+  This includes a small fix over the original example: `add_log`/`update_log` now reset `removed_log_ids[key] = False` when reusing an existing entry, so a `log_id` you `remove_log()` and then re-add becomes visible to `get_closest_vector()` again. Without it, a removed-then-re-added entry stays permanently hidden — see [genlayer-studio#1755](https://github.com/genlayerlabs/genlayer-studio/pull/1755).
+</Callout>
 
 ```python
 # v0.3.0
@@ -147,6 +151,7 @@ class LogIndexer(gl.contract.Contract):
             self.vector_store.get_by_id(self.log_vector_ids[key]).value = StoreValue(
                 text=log, log_id=key
             )
+            self.removed_log_ids[key] = False
             return
 
         emb = self.get_embedding(log)
@@ -160,6 +165,7 @@ class LogIndexer(gl.contract.Contract):
             self.vector_store.get_by_id(self.log_vector_ids[key]).value = StoreValue(
                 text=log, log_id=key
             )
+            self.removed_log_ids[key] = False
             return
 
         emb = self.get_embedding(log)
@@ -174,6 +180,10 @@ class LogIndexer(gl.contract.Contract):
 ```
 
 `SentenceTransformer(model_name)` returns a plain callable (`str -> np.ndarray`), not a class instance — call it directly as `self.get_embedding_generator()(txt)` like the example above. It caches the loaded model internally, so repeated calls with the same model name are cheap.
+
+<Callout type="warning" emoji="⚠️">
+  `"similarity": str(1 - result.distance)` in the example above is **not** a normalized `[0, 1]` similarity score for `EuclideanDistance` — Euclidean distance is unbounded, so `1 - distance` can go negative for distant results. Treat it as a rough inverse-distance rank (higher still means closer), not a percentage or a bounded score.
+</Callout>
 
 ## Debugging a Could not load contract schema error
 
