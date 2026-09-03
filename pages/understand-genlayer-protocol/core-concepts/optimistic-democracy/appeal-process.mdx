@@ -2,9 +2,11 @@
 description: "Learn how validator appeals and leader appeals challenge GenLayer consensus decisions."
 ---
 
+import { Callout } from 'nextra-theme-docs'
+
 # Appeals
 
-An appeal challenges a decided Intelligent Contract transaction before finalization. Anyone can appeal an eligible transaction during its appeal window by posting the bond quoted by the consensus contracts.
+An appeal challenges a decided Intelligent Contract transaction before finalization. Anyone can appeal an eligible transaction during its appeal window by paying the exact appeal charge quoted by the consensus contracts.
 
 GenLayer has two appeal paths because a disputed committee decision and a round that failed to produce a decision require different remedies.
 
@@ -32,15 +34,36 @@ The new round's outcome determines whether the appeal was economically successfu
 
 Normal execution and validator-appeal committees follow interleaved growth schedules. The first normal round currently uses 5 validators, its validator appeal uses 7 fresh validators, and the next expanded normal round uses 11. Later rounds continue growing. These values are protocol parameters and can change through a protocol upgrade.
 
+## Appeal charge and safe submission
+
+The authoritative `getAppealCharge` quote has two parts:
+
+- **bond** — the amount at risk, which discourages frivolous challenges; and
+- **funding** — the induced-work reserve needed to schedule the next appeal or execution round.
+
+The payable charge is at least `bond + funding`. Clients should read the current quote immediately before submitting instead of hardcoding either component.
+
+The public SDK operations are `appealTransaction` in JavaScript and `appeal_transaction` in Python. The CLI equivalent is `genlayer appeal`. These operations bind the appeal to the transaction's active decision and use the schedule-extending `topUpAndSubmitAppeal` selector, so a caller can fund and start an otherwise unfunded next round atomically.
+
+```typescript
+const charge = await client.getAppealCharge({ txId });
+await client.appealTransaction({ txId, value: charge });
+```
+
+```python
+charge = client.get_appeal_charge(tx_id)
+client.appeal_transaction(tx_id, value=charge)
+```
+
+<Callout type="warning">
+`submitAppeal` is a low-level conformance surface for a next round that is already funded. It can revert with `AppealRoundNotPermitted` when an ordinary caller has only paid the newly quoted charge. Use the public SDK or CLI appeal operation unless you are deliberately testing that pre-funded path.
+</Callout>
+
 ## Bonds and incentives
 
-The appeal bond covers the additional validation work and discourages frivolous challenges. The consensus contracts calculate the required amount from the appeal type and round size.
-
-- A successful appellant recovers the bond and receives the configured reward.
+- A successful appellant receives the bond principal plus a profit equal to **1.5× the bond**, for **2.5× the bond in total**. The separate induced-work funding is consumed by the scheduled consensus work rather than multiplied as appellant profit.
 - A failed validator appeal forfeits its bond to the majority-aligned validators in that appeal round.
 - Leader-appeal bond handling depends on the prior status and the result of the new round.
-
-Clients should request the current bond quote instead of hardcoding an amount.
 
 ## Appeal windows and dependent transactions
 
@@ -48,4 +71,4 @@ The appeal-window duration and its reduction after an unsuccessful validator app
 
 Because transactions for one Intelligent Contract depend on earlier state, a successful appeal can return later non-finalized transactions in that contract's queues for recomputation. Appeals on those dependent transactions are canceled and their bonds refunded when necessary.
 
-Deterministic-violation tribunals are separate. They decide penalties for provable execution fraud but do not change the transaction outcome. See [slashing](/understand-genlayer-protocol/core-concepts/optimistic-democracy/slashing).
+Deterministic-violation tribunals are separate. They decide judicial restrictions and penalties for recorded deterministic-result disagreement but do not change the transaction outcome. See [Deterministic Violations & Tribunals](/understand-genlayer-protocol/core-concepts/optimistic-democracy/deterministic-violations-and-tribunals).

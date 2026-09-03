@@ -4,7 +4,7 @@ description: "Reference all GenLayer Intelligent Contract transaction statuses a
 
 # Transaction statuses
 
-The consensus contracts define 15 numeric status values. APIs can return the stored status or an effective status calculated from the current time, such as `ReadyToFinalize` after an appeal window expires.
+The Consensus v0.6 contracts define 14 numeric status values. A transaction has one stored, materialized status. Time-dependent lifecycle projection and the next resolution action are separate fields; finalization readiness is never synthesized as another status.
 
 | Code | Status | Meaning |
 | ---: | --- | --- |
@@ -19,10 +19,9 @@ The consensus contracts define 15 numeric status values. APIs can return the sto
 | 8 | `Canceled` | The transaction was canceled before completing consensus. |
 | 9 | `AppealRevealing` | A fresh validator-appeal committee is revealing votes. |
 | 10 | `AppealCommitting` | A fresh validator-appeal committee is committing votes. |
-| 11 | `ReadyToFinalize` | The effective appeal window elapsed and the transaction can be finalized. |
-| 12 | `ValidatorsTimeout` | A validator majority reported that validation timed out; the appeal window is open. |
-| 13 | `LeaderTimeout` | The leader reported an execution timeout; the appeal window is open. |
-| 14 | `LeaderRevealing` | The leader must reveal execution data and keys before committee vote reveals. |
+| 11 | `ValidatorsTimeout` | A validator majority reported that validation timed out; the appeal window is open. |
+| 12 | `LeaderTimeout` | The leader reported an execution timeout; the appeal window is open. |
+| 13 | `LeaderRevealing` | The leader must reveal execution data and keys before committee vote reveals. |
 
 ## Status is not execution success
 
@@ -30,8 +29,10 @@ The consensus contracts define 15 numeric status values. APIs can return the sto
 
 Similarly, `Finalized` means the decided receipt is no longer appealable. It does not convert an error result into a successful contract call.
 
-## Stored and effective status
+## Stored status and lifecycle projection
 
-Some view functions accept a timestamp and derive the status that applies after a deadline. A transaction whose stored decision is `Accepted`, for example, can be reported as `ReadyToFinalize` after its appeal window elapses even before a finalization transaction updates storage to `Finalized`.
+[`gen_getTransactionStatus`](/api-references/genlayer-node/gen/gen_getTransactionStatus) returns only the exact stored status. A deadline passing does not change that response until a protocol action materializes a transition.
 
-Use the numeric codes for program logic and display the names to users. See [`gen_getTransactionStatus`](/api-references/genlayer-node/gen/gen_getTransactionStatus).
+Advanced tooling can use [`gen_getTransactionLifecycle`](/api-references/genlayer-node/gen/gen_getTransactionLifecycle) to read the stored status, its time-dependent projection, the active decision, and the resolution kernel's next action from one snapshot. When an appeal window has elapsed, the stored and projected statuses can both remain `Accepted` while `resolutionAction` is `Finalize`. There is deliberately no `ReadyToFinalize` status and no parallel `canFinalize` boolean.
+
+Use the numeric codes for program logic and display the names to users. Bind decision-scoped actions only when the lifecycle response reports an active, non-null `decisionId`.

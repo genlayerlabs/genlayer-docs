@@ -12,7 +12,7 @@ An Intelligent Contract transaction is final when the consensus decision can no 
 %%{init: {"flowchart": {"curve": "basis", "nodeSpacing": 42, "rankSpacing": 48, "htmlLabels": true}}}%%
 flowchart TB
     D["Decided outcome"] --> W["Appeal window"]
-    W -->|"window elapses"| R["Ready to finalize"] --> F(["Finalized"])
+    W -->|"window elapses"| R["Resolution action: Finalize"] --> F(["Finalized"])
     W -->|"valid appeal"| A["Appeal processing"]
     A -->|"confirmed or recomputed"| W
 
@@ -25,9 +25,9 @@ flowchart TB
     linkStyle default stroke:#7C879C,stroke-width:1.8px;
 ```
 
-The appeal window starts after a decided outcome such as Accepted, Undetermined, ValidatorsTimeout, or LeaderTimeout. Its duration is governed by the protocol configuration. Applications should read the effective transaction status rather than assume a fixed number of seconds.
+The appeal window starts after a decided outcome such as Accepted, Undetermined, ValidatorsTimeout, or LeaderTimeout. Its duration is governed by the protocol configuration. Applications should read the lifecycle projection rather than assume a fixed number of seconds.
 
-After the window expires, the transaction can report `ReadyToFinalize`. Anyone can then submit the onchain finalization action. `ReadyToFinalize` means the deadline has passed; `Finalized` means the state transition has been recorded.
+After the window expires, the advanced lifecycle read reports `resolutionAction: "Finalize"`. Anyone can then submit the decision-bound onchain finalization action. The stored status remains the decided status until finalization is recorded as `Finalized`; finalization readiness is not a transaction status.
 
 ## Accepted is not final
 
@@ -48,4 +48,4 @@ The EVM transaction that submitted an Intelligent Contract call can be included 
 - an EVM receipt confirms that the submission was included; and
 - the GenLayer transaction status confirms the Intelligent Contract outcome.
 
-Use [`gen_getTransactionStatus`](/api-references/genlayer-node/gen/gen_getTransactionStatus) for lightweight polling or [`gen_getTransactionReceipt`](/api-references/genlayer-node/gen/gen_getTransactionReceipt) for the full consensus receipt.
+Use [`gen_getTransactionStatus`](/api-references/genlayer-node/gen/gen_getTransactionStatus) for lightweight stored-status polling, [`gen_getTransactionLifecycle`](/api-references/genlayer-node/gen/gen_getTransactionLifecycle) for projection and available resolution actions, or [`gen_getTransactionReceipt`](/api-references/genlayer-node/gen/gen_getTransactionReceipt) for the full consensus receipt.

@@ -1,313 +1,130 @@
+---
+description: "Create GenLayer JavaScript clients, estimate and submit fee-funded transactions, wait for outcomes, and appeal decisions."
+---
+
 # GenLayerJS
 
+`genlayer-js` is the TypeScript client for GenLayer RPC, Intelligent Contracts, transaction lifecycle, fees, appeals, wallets, staking, and developer rewards. It builds on Viem-compatible accounts and EIP-1193 browser providers.
 
-## About
+## Install
 
-GenLayerJS SDK is a TypeScript library designed for developers building decentralized applications (Dapps) on the GenLayer protocol. This SDK provides a comprehensive set of tools to interact with the GenLayer network, including client creation, transaction handling, event subscriptions, and more, all while leveraging the power of Viem as the underlying blockchain client.
-
-## Prerequisites
-
-Before installing GenLayerJS SDK, ensure you have the following prerequisites installed:
-
-- Node.js (>= 16.x)
-- npm (>= 7.x)
-
-## ️ Installation and Usage
-
-To install the GenLayerJS SDK, use the following command:
 ```bash
-$ npm install genlayer-js
-```
-Here’s how to initialize the client and connect to the GenLayer Simulator:
-
-### Reading a Transaction
-```typescript
-import { localnet } from 'genlayer-js/chains';
-import { createClient } from "genlayer-js";
-
-const client = createClient({
-  chain: localnet,
-});
-
-const transactionHash = "0x...";
-
-const transaction = await client.getTransaction({ hash: transactionHash })
+npm install genlayer-js
 ```
 
-### Waiting for Transaction Receipt
+For the Consensus v0.6 preview, install the explicit v2.0 release candidate published in the release notes. Do not rely on the default npm tag to select a prerelease.
+
+## Create a client
+
 ```typescript
+import { createAccount, createClient } from 'genlayer-js';
 import { localnet } from 'genlayer-js/chains';
-import { createClient } from "genlayer-js";
-import { TransactionStatus } from "genlayer-js/types";
-
-const client = createClient({
-  chain: localnet,
-});
-
-// Get simplified receipt (default - removes binary data, keeps execution results)
-const receipt = await client.waitForTransactionReceipt({
-  hash: "0x...",
-  status: TransactionStatus.FINALIZED,
-  fullTransaction: false // Default - simplified for readability
-});
-
-// Get complete receipt with all fields
-const fullReceipt = await client.waitForTransactionReceipt({
-  hash: "0x...",
-  status: TransactionStatus.FINALIZED,
-  fullTransaction: true // Complete receipt with all internal data
-});
-```
-
-### Reading a contract
-```typescript
-import { localnet } from 'genlayer-js/chains';
-import { createClient } from "genlayer-js";
-
-const client = createClient({
-  chain: localnet,
-});
-
-const result = await client.readContract({
-  // account: account, Account is optional when reading from contracts
-  address: contractAddress,
-  functionName: 'get_complete_storage',
-  args: []
-  stateStatus: "accepted",
-})
-```
-
-### Writing a transaction
-```typescript
-import { localnet } from 'genlayer-js/chains';
-import { createClient, createAccount } from "genlayer-js";
-
-const client = createClient({
-  network: localnet,
-});
+import { TransactionHashVariant } from 'genlayer-js/types';
 
 const account = createAccount();
-const transactionHash = await client.writeContract({
-  account: account, // using this account for this transaction
-  address: contractAddress,
-  functionName: 'account',
-  args: ['new_storage'],
-  value: 0, // value is optional, if you want to send some native token to the contract
+const client = createClient({
+  chain: localnet,
+  account,
 });
-
-const receipt = await client.waitForTransactionReceipt({
-  hash: txHash,
-  status: TransactionStatus.FINALIZED, // or ACCEPTED
-  fullTransaction: false // False by default - returns simplified receipt for better readability
-})
-
 ```
 
-### Checking execution results
+Use `testnetBradbury`, `testnetAsimov`, or `studionet` for the corresponding hosted network. The v0.123 preview uses the matching RC's `studioDevnet` definition, which binds chain ID 61997, its RPC, and its consensus deployment together.
 
-A transaction can be finalized by consensus but still have a failed execution. Always check `txExecutionResult` before reading contract state:
+## Read a contract
 
 ```typescript
-import { ExecutionResult, TransactionStatus } from "genlayer-js/types";
+const value = await client.readContract({
+  address: contractAddress,
+  functionName: 'get_storage',
+  args: [],
+  transactionHashVariant: TransactionHashVariant.LATEST_FINAL,
+});
+```
 
-const receipt = await client.waitForTransactionReceipt({
-  hash: txHash,
-  status: TransactionStatus.FINALIZED,
+## Estimate and submit a write
+
+Build the allocation from a measured contract profile, then let the SDK apply current network prices and caps:
+
+```typescript
+const estimate = await client.estimateTransactionFees({
+  leaderTimeunitsAllocation: 125n,
+  validatorTimeunitsAllocation: 250n,
+  executionBudgetPerRound: 786_500n,
+  totalMessageFees: 0n,
+  appealRounds: 1n,
+  rotations: [1n, 1n],
 });
 
-if (receipt.txExecutionResultName === ExecutionResult.FINISHED_WITH_RETURN) {
-  // Execution succeeded — safe to read state
-  const result = await client.readContract({
-    address: contractAddress,
-    functionName: "get_storage",
-    args: [],
-  });
-} else if (receipt.txExecutionResultName === ExecutionResult.FINISHED_WITH_ERROR) {
-  // Execution failed — contract state was not modified
-  console.error("Contract execution failed");
-} else {
-  // NOT_VOTED — execution hasn't completed
-  console.warn("Execution result not yet available");
+const txId = await client.writeContract({
+  address: contractAddress,
+  functionName: 'update_storage',
+  args: ['new value'],
+  fees: {
+    distribution: estimate.distribution,
+    feeValue: estimate.feeValue,
+  },
+});
+```
+
+When `rotations` is omitted, the estimator funds the chain's configured maximum for every leader round. Pass an explicit array, including `[0n]`, when the transaction should use a smaller posture.
+
+For applications, prefer a checked-in [`fee-profile.json`](/developers/decentralized-applications/fee-profiling-and-estimation) or [Transaction Kit](/developers/decentralized-applications/transaction-kit-integration) over hand-maintained allocation constants.
+
+## Simulate and derive a preset
+
+Studio can return fee accounting with a write simulation. The one-step helper turns the observed execution and message use into a transaction estimate:
+
+```typescript
+const recommended = await client.estimateTransactionFeesForWrite({
+  address: contractAddress,
+  functionName: 'update_storage',
+  args: ['new value'],
+});
+```
+
+Use this during profiling and development, not as a slow simulation before every production click.
+
+## Wait for the right outcome
+
+```typescript
+import { isSuccessful } from 'genlayer-js';
+
+const receipt = await client.waitForFinalization({ hash: txId });
+if (!isSuccessful(receipt)) {
+  throw new Error(
+    `Transaction did not succeed: ${receipt.statusName} / ${receipt.txExecutionResultName}`,
+  );
 }
 ```
 
-### Fetching emitted messages and triggered transactions
+`waitForDecision` waits for a materialized decision; `waitForFinalization` also waits for final fee settlement and refunds. Advanced protocol consumers can call `client.advanced.getTransactionLifecycle({ hash })` to read the stored and projected status, resolution action, and active decision identity.
 
-Transactions can emit messages to other contracts. These messages create new child transactions when processed:
+## Appeal a decision
 
 ```typescript
-const tx = await client.getTransaction({ hash: txHash });
-
-// Messages emitted by the contract during execution
-console.log(tx.messages);
-// [{messageType, recipient, value, data, onAcceptance, saltNonce}, ...]
-
-// Child transaction IDs created from those messages (separate call)
-const childTxIds = await client.getTriggeredTransactionIds({ hash: txHash });
-console.log(childTxIds);
-// ["0xabc...", "0xdef..."]
+const charge = await client.getAppealCharge({ txId });
+await client.appealTransaction({ txId, value: charge });
 ```
 
-### Debugging transaction execution
+`getAppealCharge` returns the bond plus induced-work funding. `appealTransaction` binds the current decision and uses `topUpAndSubmitAppeal`, which is safe whether or not the next round was pre-funded. The old `getMinAppealBond` name remains as a deprecated compatibility alias and also returns the complete charge.
 
-Use `debugTraceTransaction` to inspect the full execution trace of a transaction, including return data, errors, and GenVM logs:
-
-```typescript
-const trace = await client.debugTraceTransaction({
-  hash: txHash,
-  round: 0, // optional, defaults to 0
-});
-
-console.log(trace.result_code);  // 0=success, 1=user error, 2=VM error
-console.log(trace.return_data);  // hex-encoded contract return data
-console.log(trace.stderr);       // standard error output
-console.log(trace.genvm_log);    // detailed GenVM execution logs
-```
-
-### Using with a wallet provider (MetaMask)
-
-When building a browser dApp, create two clients: one for reads (no wallet needed) and one for writes (signed by the wallet). This follows the standard viem pattern and keeps concerns separated.
+## Browser wallets
 
 ```typescript
-import { createClient } from "genlayer-js";
-import { testnetBradbury } from "genlayer-js/chains";
-import { TransactionStatus } from "genlayer-js/types";
-
-// Read client — talks directly to GenLayer RPC, no wallet needed
-const readClient = createClient({
+const walletClient = createClient({
   chain: testnetBradbury,
+  account: walletAddress,
+  provider: window.ethereum,
 });
 
-// Write client — signs transactions through the wallet
-const writeClient = createClient({
-  chain: testnetBradbury,
-  account: address as `0x${string}`, // from wallet connection
-  provider: window.ethereum,          // or from a wallet SDK
-});
-
-// Use readClient for all reads
-const result = await readClient.readContract({
-  address: contractAddress,
-  functionName: "get_storage",
-  args: [],
-});
-
-const tx = await readClient.getTransaction({ hash: txHash });
-
-// Use writeClient for transactions (MetaMask popup)
-const txHash = await writeClient.writeContract({
-  address: contractAddress,
-  functionName: "update_storage",
-  args: ["new_value"],
-  value: BigInt(0),
-});
-
-// Either client can wait for receipts
-const receipt = await readClient.waitForTransactionReceipt({
-  hash: txHash,
-  status: TransactionStatus.ACCEPTED,
-});
+await walletClient.connect('testnetBradbury');
 ```
 
-### Switching the wallet to the correct network
+Create an account-free client for reads and a provider-backed client for writes. Before signing, connect the wallet to the exact chain object used by the write client.
 
-When using MetaMask or another browser wallet, the wallet may be connected to a different chain than what your client is configured for. Use `client.connect()` to switch the wallet to the correct GenLayer network before sending transactions:
+## API reference
 
-```typescript
-import { createClient } from "genlayer-js";
-import { studionet } from "genlayer-js/chains";
-
-const client = createClient({
-  chain: studionet,
-  account: address as `0x${string}`,
-});
-
-// Switch MetaMask to the correct chain (adds the network if not present)
-await client.connect("studionet");
-
-// Now transactions will go to the right network
-const txHash = await client.writeContract({
-  address: contractAddress,
-  functionName: "create_profile",
-  args: ["alice", "Hello world"],
-  value: BigInt(0),
-});
-```
-
-Available networks: `"localnet"`, `"studionet"`, `"testnetAsimov"`, `"testnetBradbury"`.
-
-> **Note:** If the wallet is on the wrong chain when you call `writeContract`, the SDK will throw a clear error telling you which chain the wallet is on vs. which chain the client expects. Call `client.connect()` to resolve this.
-
-### Staking Operations
-
-The SDK provides staking functionality for validators and delegators on testnet-bradbury (and testnet-asimov).
-
-```typescript
-import { testnetBradbury } from 'genlayer-js/chains';
-import { createClient, createAccount } from "genlayer-js";
-
-const account = createAccount();
-const client = createClient({
-  chain: testnetBradbury,
-  account,
-});
-
-// Get epoch info (includes timing estimates and inflation data)
-const epochInfo = await client.getEpochInfo();
-// {
-//   currentEpoch: 2n,
-//   epochMinDuration: 86400n,        // 1 day in seconds
-//   currentEpochStart: Date,
-//   currentEpochEnd: Date | null,
-//   nextEpochEstimate: Date | null,
-//   validatorMinStake: "0.01 GEN",
-//   delegatorMinStake: "42 GEN",
-//   activeValidatorsCount: 6n,
-//   inflation: "1000 GEN",           // Total inflation for current epoch
-//   inflationRaw: 1000000000000000000000n,
-//   totalWeight: 500000000000000000000000n,  // Total stake weight
-//   totalClaimed: "500 GEN",         // Total claimed rewards
-// }
-
-// Get active validators
-const validators = await client.getActiveValidators();
-
-// Check if address is a validator
-const isValidator = await client.isValidator("0x...");
-
-// Get validator info
-const validatorInfo = await client.getValidatorInfo("0x...");
-
-// Join as validator (requires account with funds)
-const result = await client.validatorJoin({ amount: "42000gen" });
-
-// Join as delegator
-const delegateResult = await client.delegatorJoin({
-  validator: "0x...",
-  amount: "42gen",
-});
-```
-
-## Key Features
-
-* **Client Creation**: Easily create and configure a client to connect to GenLayer's network.
-* **Transaction Handling**: Send and manage transactions on the GenLayer network.
-* **Staking**: Full staking support for validators and delegators on testnet-bradbury and testnet-asimov.
-* **Wallet Integration***: Seamless integration with MetaMask for managing user accounts.
-* **Gas Estimation***: Estimate gas fees for executing transactions on GenLayer.
-
-_* under development_
-
-## Documentation
-
-For detailed information on how to use GenLayerJS SDK, please refer to our [documentation](https://docs.genlayer.com/).
-
-
-
-## Contributing
-
-We welcome contributions to GenLayerJS SDK! Whether it's new features, improved infrastructure, or better documentation, your input is valuable. Please read our [CONTRIBUTING](https://github.com/genlayerlabs/genlayer-js/blob/main/CONTRIBUTING.md) guide for guidelines on how to submit your contributions.
-
-## License
-
-This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
+- [Contract, fee, appeal, and developer-reward methods](./genlayer-js/contracts)
+- [Transaction and lifecycle methods](./genlayer-js/transactions)
+- [Staking methods](./genlayer-js/staking)
+- [Consensus v0.6 migration guide](/developers/consensus-v06-migration)

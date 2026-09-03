@@ -94,7 +94,6 @@ const statuses = [
   "Canceled",
   "AppealRevealing",
   "AppealCommitting",
-  "ReadyToFinalize",
   "ValidatorsTimeout",
   "LeaderTimeout",
   "LeaderRevealing",
@@ -109,9 +108,45 @@ for (const statusTable of statusTables) {
     const readableName = status.replace(/([a-z])([A-Z])/g, "$1_$2").toUpperCase();
     const conceptRow = `| ${code} | \`${status}\` |`;
     const apiRow = `| ${code} | ${readableName} |`;
-    if (!content.includes(conceptRow) && !content.includes(apiRow)) {
+    const camelApiRow = `| ${code} | ${status} |`;
+    if (!content.includes(conceptRow) && !content.includes(apiRow) && !content.includes(camelApiRow)) {
       failures.push(`${relative(statusTable)}: missing status ${code} ${status}`);
     }
+  }
+}
+
+for (const file of [
+  path.join(UNDERSTAND, "core-concepts", "transactions", "transaction-statuses.mdx"),
+  path.join(UNDERSTAND, "core-concepts", "transactions", "transaction-execution.mdx"),
+  path.join(UNDERSTAND, "core-concepts", "optimistic-democracy", "finality.mdx"),
+  path.join(ROOT, "pages", "api-references", "genlayer-node", "gen", "gen_getTransactionStatus.mdx"),
+]) {
+  const content = fs.readFileSync(file, "utf8");
+  if (content.includes("| 11 | `ReadyToFinalize` |") || content.includes("| 11 | READY_TO_FINALIZE |")) {
+    failures.push(`${relative(file)}: carries removed ReadyToFinalize status at ordinal 11`);
+  }
+}
+
+const lifecycleApi = path.join(
+  ROOT,
+  "pages",
+  "api-references",
+  "genlayer-node",
+  "gen",
+  "gen_getTransactionLifecycle.mdx",
+);
+const lifecycleContent = fs.readFileSync(lifecycleApi, "utf8");
+for (const field of [
+  "storedStatus",
+  "projectedStatus",
+  "resolutionAction",
+  "resolutionSource",
+  "decisionId",
+  "decisionActive",
+  "evaluatedAt",
+]) {
+  if (!lifecycleContent.includes(`\`${field}\``)) {
+    failures.push(`${relative(lifecycleApi)}: missing lifecycle field ${field}`);
   }
 }
 

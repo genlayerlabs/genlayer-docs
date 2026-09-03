@@ -234,7 +234,7 @@ Large numbers that exceed JavaScript's safe integer range are automatically hand
 USAGE:
    genlayer receipt <txId>                Get transaction receipt
    genlayer appeal <txId>                 Appeal a transaction
-   genlayer appeal-bond <txId>            Show minimum appeal bond required
+   genlayer appeal-bond <txId>            Show full appeal charge (bond + induced-work funding)
 
 OPTIONS (receipt):
    --status <status>       Status to wait for (default: FINALIZED)
@@ -244,17 +244,17 @@ OPTIONS (receipt):
    --stderr                Print only stderr from the receipt
 
 OPTIONS (appeal):
-   --bond <amount>         Appeal bond amount (e.g. 500gen, 0.5gen). Auto-calculated if omitted
+   --bond <amount>         Total appeal charge: bond + induced-work funding. Auto-calculated if omitted
    --rpc <rpcUrl>          RPC URL override
 
 EXAMPLES:
-   # Check the minimum bond required to appeal
+   # Check the full charge required to appeal
    genlayer appeal-bond 0x1234...
 
-   # Appeal with auto-calculated bond
+   # Appeal with an authoritative, auto-calculated charge
    genlayer appeal 0x1234...
 
-   # Appeal with explicit bond
+   # Appeal with an explicit total charge
    genlayer appeal 0x1234... --bond 500gen
 ```
 
@@ -522,4 +522,3 @@ We welcome contributions to GenLayerJS SDK! Whether it's new features, improved 
 ## License
 
 This project is licensed under the ... License - see the [LICENSE](LICENSE) file for details.
-

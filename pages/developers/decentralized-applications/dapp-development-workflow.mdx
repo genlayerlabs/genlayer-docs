@@ -17,8 +17,8 @@ It provides an interactive environment that serves as a comprehensive sandbox fo
 The platform runs a simulated network with customizable validators that accurately mirror the GenLayer consensus mechanism. This feature allows developers to test their contracts under conditions that closely resemble the actual blockchain environment, ensuring reliable deployment outcomes.
 
 ### Getting Started:
-1. **Set Up the Studio**: Developers initialize the Studio using `genlayer cli` command `genlayer init` which configures the environment and spawns a local validator network. GenLayer Studio is also available as a hosted instace at [studio.genlayer.com](https://studio.genlayer.com/).
-2. **Write Your First Contract**: Intelligent Contracts in GenLayer are written in Python, utilizing its extensive libraries and GenVM capabilities like LLM calls and web integration. Refer to [Your First Contract](/developers/intelligent-contracts/your-first-contract) guide for more information.
+1. **Set Up the Studio**: Run `genlayer init` and `genlayer up` for a local validator network, or use hosted [Studionet](https://studio.genlayer.com/). Use [Studio-dev](https://studio-dev.genlayer.com/) with matching release-candidate tooling when validating the next stack.
+2. **Write Your First Contract**: Intelligent Contracts in GenLayer are written in Python and can use GenVM capabilities such as LLM calls and web integration. See [Your First Intelligent Contract](/developers/intelligent-contracts/first-intelligent-contract).
 3. **Deploy and Test**: Deploy your Intelligent Contracts through the Studio interface and test them in the simulated network.
 
 ---
@@ -35,7 +35,7 @@ As projects transforms to real-world applications, developers should migrate to 
 ### Workflow Steps:
 1. **Set Up Your Local Environment**: Developers can start with the GenLayer boilerplate project, which includes pre-configured templates for local testing.
 2. **Write Tests**: Tests are written in Python, focusing on validating contract functionality and ensuring consensus integrity. The boilerplate includes sample tests to accelerate development.
-3. **Simulate Transactions**: Run detailed simulations to observe how contracts behave under various network conditions, ensuring robust performance.
+3. **Profile Transaction Paths**: Cover normal, expensive, message-emitting, and failure branches in tests, then generate a `fee-profile.json` for application submissions.
 
 ---
 
@@ -59,11 +59,15 @@ Refer to [GenLayerJS](/developers/decentralized-applications/genlayer-js) guide 
 Use the SDK's high-level APIs to interact with deployed contracts. For instance, retrieve user balances or update contract state seamlessly.
 Refer to [Reading Data](/developers/decentralized-applications/reading-data) and [Writing Data](/developers/decentralized-applications/writing-data) guides for more information.
 
-3. **Monitor Transactions**:
+3. **Estimate and Review Fees**:
 
-Developers can subscribe to events or query transaction statuses, ensuring users are kept informed of transaction progress and outcomes.
+Use the measured profile plus current network prices to show a quote before signing. [Transaction Kit](/developers/decentralized-applications/transaction-kit-integration) supplies the fee-review and wallet flow for React, Vue, or a headless frontend.
 
-4. **Build the User Interface**:
+4. **Monitor Transactions**:
+
+Track the returned transaction ID to a decision or finalization. Treat the operation as successful only when its status and execution result both indicate success.
+
+5. **Build the User Interface**:
 
 Combine GenLayerJS with popular frontend frameworks (like React or Angular) to create intuitive interfaces.
 

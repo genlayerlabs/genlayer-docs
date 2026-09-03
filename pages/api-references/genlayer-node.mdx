@@ -527,7 +527,8 @@ A `Transaction` object which contains the details of the transaction. The struct
 - `recipient` (`address`): The destination address of the transaction.
 - `activator` (`address`): The address of the validator that activated the transaction.
 - `status` (`uint8`): The current status of the transaction.
-- `previousStatus` (`uint8`): The previous status of the transaction.
+- `statusName` (`string`): The ABI transaction status name for `status` (`Uninitialized`, `Pending`, `Proposing`, `Committing`, `Revealing`, `Accepted`, `Undetermined`, `Finalized`, `Canceled`, `AppealRevealing`, `AppealCommitting`, `ValidatorsTimeout`, `LeaderTimeout`, or `LeaderRevealing`).
+- `previousStatus` (`null`): **Always null.** The contract dropped this field from `ITransactions.Transaction` (26 → 25 tuple components), so the node has nothing to report. It is `null` rather than `0` because `0` decodes as `Uninitialized`, which would be a wrong answer rather than an absent one. The field is removed in a v2 receipt.
 - `txSlot` (`uint256`): The transaction slot number.
 - `initialRotations` (`uint256`): The initial number of rotations.
 - `numOfInitialValidators` (`uint256`): The number of initial validators.
@@ -544,7 +545,44 @@ A `Transaction` object which contains the details of the transaction. The struct
   - `LastVote` (`uint256`): When the last vote was cast.
   - `AppealSubmitted` (`uint256`): When an appeal was submitted.
   - `LeaderRevealed` (`uint256`): When the leader was revealed.
-- `result` (`uint256`): The result of the transaction execution.
+- `result` (`uint8`): The result of the transaction execution.
+- `txExecutionResult` (`uint8`): The execution vote result (`0` NotVoted, `1` FinishedWithReturn, `2` FinishedWithError, `3` Timeout, `4` NondetDisagree, `5` DeterministicViolation).
+- `txExecutionResultName` (`string`): The ABI vote type name for `txExecutionResult`.
+- `epoch` (`uint256`): The epoch the transaction belongs to.
+- `resultHash` (`string`): The transaction result hash as a hex string.
+- `validUntil` (`uint256`): The timestamp until which the transaction is valid.
+- `fees` (`object|null`): Fee accounting echo. `null` when fee accounting is disabled or the FeeManager binding/address is not available. All numeric values in this object are decimal strings.
+  - `deposit` (`string`): Submission-time fee custody sum, from `transactionFeesBudget(txId) + transactionDeveloperFeesBudget(txId)`.
+  - `userValue` (`string`): User value carried by the transaction.
+  - `distribution` (`object`): Effective fee distribution for the transaction:
+    - `leaderTimeunitsAllocation` (`string`)
+    - `validatorTimeunitsAllocation` (`string`)
+    - `appealRounds` (`string`)
+    - `executionBudgetPerRound` (`string`)
+    - `totalMessageFees` (`string`)
+    - `rotations` (`string[]`)
+    - `maxPriceGenPerTimeUnit` (`string`)
+    - `storageFeeMaxGasPrice` (`string`)
+    - `receiptFeeMaxGasPrice` (`string`)
+  - `locked` (`object|null`): Activation-locked prices, or `null` before activation when no locked prices exist:
+    - `genPerTimeUnit` (`string`)
+    - `storageUnitPrice` (`string`)
+    - `receiptGasPrice` (`string`)
+  - `consumed` (`object`): On-chain consumption counters:
+    - `executionConsumed` (`string`)
+    - `storageFeeUsed` (`string`): Storage fee charged on-chain for the transaction, equal to the storage pages it consumed multiplied by the locked `storageUnitPrice`.
+    - `messageFeesConsumed` (`string`)
+    - `messageFeesBudgetTotal` (`string`)
+  - `hasAllocations` (`boolean`): `true` when the transaction locked a pinned per-message fee allocation tree at submission; `false` for an open bucket (global message-fee bucket) or fee-less transactions.
+  - `allocations` (`array`): The pinned per-message fee allocation tree, one entry per locked allocation (empty for an open bucket). Budget comes from the on-chain allocation tree; `consumed` is read from the separate `allocationConsumed(txId, key)` mapping, keyed by `keccak256(abi.encode(messageType, recipient, callKey))`. Each entry:
+    - `messageType` (`number`): `0` = external, `1` = internal.
+    - `onAcceptance` (`boolean`): Emission phase the allocation is pinned to (`true` = on acceptance, `false` = on finalization).
+    - `parentIndex` (`string`): Index of the parent allocation in the flat tree, or the root sentinel (`2^256 - 1`) for a root-layer allocation.
+    - `recipient` (`string`): Target contract address the allocation funds, or the zero address for a recipient wildcard.
+    - `callKey` (`string`): 32-byte call key (hex) the allocation matches, or the `keccak256("")` call-key wildcard.
+    - `budget` (`string`): Maximum message-fee budget locked for this allocation.
+    - `consumed` (`string`): Amount consumed against this allocation so far.
+    - `feeParams` (`string`): ABI-encoded per-message fee params (hex), decoded per `messageType`.
 - `readStateBlockRanges` (`array`): Array of block range objects, each containing:
   - `ActivationBlock` (`uint256`): The activation block number.
   - `ProcessingBlock` (`uint256`): The processing block number.
@@ -589,8 +627,9 @@ A `Transaction` object which contains the details of the transaction. The struct
     "sender": "0x5b70759760a85d92bf972b67ee8558e8e8da87d4",
     "recipient": "0x73ca5a2b51edf506ceaf110a41780ec51294d89f",
     "activator": "0xf27b07d36ff5b9dcd37fd3a09811d6456dd4483a",
-    "status": 14,
-    "previousStatus": 0,
+    "status": 13,
+    "statusName": "LeaderRevealing",
+    "previousStatus": null,
     "txSlot": 1,
     "initialRotations": 1,
     "numOfInitialValidators": 5,
@@ -609,6 +648,39 @@ A `Transaction` object which contains the details of the transaction. The struct
       "LeaderRevealed": 0
     },
     "result": 0,
+    "txExecutionResult": 3,
+    "txExecutionResultName": "Timeout",
+    "epoch": 12,
+    "resultHash": "0x0000000000000000000000000000000000000000000000000000000000000000",
+    "validUntil": 0,
+    "fees": {
+      "deposit": "1234500000000000",
+      "userValue": "0",
+      "distribution": {
+        "leaderTimeunitsAllocation": "100",
+        "validatorTimeunitsAllocation": "200",
+        "appealRounds": "0",
+        "executionBudgetPerRound": "20000000000000000",
+        "totalMessageFees": "0",
+        "rotations": ["0"],
+        "maxPriceGenPerTimeUnit": "1200000000000000",
+        "storageFeeMaxGasPrice": "12",
+        "receiptFeeMaxGasPrice": "300000000"
+      },
+      "locked": {
+        "genPerTimeUnit": "0",
+        "storageUnitPrice": "10",
+        "receiptGasPrice": "250000000"
+      },
+      "consumed": {
+        "executionConsumed": "0",
+        "storageFeeUsed": "250",
+        "messageFeesConsumed": "0",
+        "messageFeesBudgetTotal": "0"
+      },
+      "hasAllocations": false,
+      "allocations": []
+    },
     "readStateBlockRanges": [
       {
         "ActivationBlock": 1377797,
@@ -655,7 +727,7 @@ A `Transaction` object which contains the details of the transaction. The struct
 
 ### gen_getTransactionStatus
 
-Returns the current consensus status of a transaction. This is a lightweight endpoint that returns only the status without full receipt data — use it for polling transaction progress.
+Returns the transaction's current materialized consensus status. This is the lightweight polling surface: it does not project deadlines or turn protocol actions into synthetic statuses.
 
 **Method:** `gen_getTransactionStatus`
 
@@ -663,7 +735,6 @@ Returns the current consensus status of a transaction. This is a lightweight end
 
 - `request` (object, required):
   - `txId` (string, required): The transaction hash (hex-encoded with `0x` prefix)
-  - `timestamp` (integer, optional): Unix timestamp for the query. If not provided, uses current time
 
 **Returns:** Object with status string and numeric code
 
@@ -671,28 +742,27 @@ Returns the current consensus status of a transaction. This is a lightweight end
 
 | Field | Type | Description |
 |-------|------|-------------|
-| `status` | string | Human-readable status name (e.g., "FINALIZED", "ACCEPTED", "PENDING") |
+| `status` | string | Human-readable status name (e.g., "Finalized", "Accepted", "Pending") |
 | `statusCode` | uint8 | Numeric status code |
 
 **Status Codes:**
 
 | Code | Status |
 |------|--------|
-| 0 | UNINITIALIZED |
-| 1 | PENDING |
-| 2 | PROPOSING |
-| 3 | COMMITTING |
-| 4 | REVEALING |
-| 5 | ACCEPTED |
-| 6 | UNDETERMINED |
-| 7 | FINALIZED |
-| 8 | CANCELED |
-| 9 | APPEAL_REVEALING |
-| 10 | APPEAL_COMMITTING |
-| 11 | READY_TO_FINALIZE |
-| 12 | VALIDATORS_TIMEOUT |
-| 13 | LEADER_TIMEOUT |
-| 14 | LEADER_REVEALING |
+| 0 | Uninitialized |
+| 1 | Pending |
+| 2 | Proposing |
+| 3 | Committing |
+| 4 | Revealing |
+| 5 | Accepted |
+| 6 | Undetermined |
+| 7 | Finalized |
+| 8 | Canceled |
+| 9 | AppealRevealing |
+| 10 | AppealCommitting |
+| 11 | ValidatorsTimeout |
+| 12 | LeaderTimeout |
+| 13 | LeaderRevealing |
 
 **Example Request:**
 
@@ -715,7 +785,7 @@ Returns the current consensus status of a transaction. This is a lightweight end
 {
   "jsonrpc": "2.0",
   "result": {
-    "status": "FINALIZED",
+    "status": "Finalized",
     "statusCode": 7
   },
   "id": 1
@@ -724,9 +794,84 @@ Returns the current consensus status of a transaction. This is a lightweight end
 
 **Notes:**
 
-- This endpoint queries the consensus contract on-chain via `getTransactionData`
+- This endpoint reads the stored status directly. A deadline passing does not change this response until the corresponding protocol transition is materialized.
 - Use this for polling — it's cheaper than `gen_getTransactionReceipt` which returns the full receipt
-- The `timestamp` parameter is passed to the on-chain call and affects how the contract reports the status
+- `Finalize` is an action, not a status. Explorers and operator tooling that need projected state or recovery actions should use `gen_getTransactionLifecycle`.
+
+### gen_getTransactionLifecycle
+
+Returns one advanced protocol lifecycle snapshot for a transaction. This endpoint is intended for explorers, operator tooling, and debugging; ordinary applications should prefer `gen_getTransactionStatus` or their SDK's simplified lifecycle model.
+
+**Method:** `gen_getTransactionLifecycle`
+
+**Parameters:**
+
+- `request` (object, required):
+  - `txId` (string, required): The transaction hash (hex-encoded with `0x` prefix)
+  - `timestamp` (integer, optional): Unix timestamp used for projection. Defaults to the node clock.
+
+**Returns:** The stored state, its projection at `evaluatedAt`, and the resolution kernel's next action from one contract read.
+
+**Response Fields:**
+
+| Field | Type | Description |
+|-------|------|-------------|
+| `storedStatus` | string | Materialized on-chain status |
+| `storedStatusCode` | uint8 | Materialized status code |
+| `projectedStatus` | string | Status projected at `evaluatedAt`; projection does not write state |
+| `projectedStatusCode` | uint8 | Projected status code |
+| `resolutionAction` | string | Kernel action available from this snapshot, such as `NoOp`, `ResolveAppeal`, or `Finalize` |
+| `resolutionActionCode` | uint8 | Resolution action code |
+| `resolutionSource` | string | Resolution-plan source/reason |
+| `resolutionSourceCode` | uint8 | Resolution source code |
+| `decisionId` | string or null | Decimal decision identity used by decision-scoped protocol commands |
+| `decisionActive` | boolean | Whether `decisionId` still identifies the active decision |
+| `evaluatedAt` | integer | Unix timestamp used for the projection |
+
+**Example Request:**
+
+```json
+{
+  "jsonrpc": "2.0",
+  "method": "gen_getTransactionLifecycle",
+  "params": [
+    {
+      "txId": "0x563f046c187d711127c51213ca62e2e4fee52009a98f0989a73a0a0382d21890",
+      "timestamp": 1787868000
+    }
+  ],
+  "id": 1
+}
+```
+
+**Example Response:**
+
+```json
+{
+  "jsonrpc": "2.0",
+  "result": {
+    "storedStatus": "Accepted",
+    "storedStatusCode": 5,
+    "projectedStatus": "Accepted",
+    "projectedStatusCode": 5,
+    "resolutionAction": "Finalize",
+    "resolutionActionCode": 6,
+    "resolutionSource": "FullReveal",
+    "resolutionSourceCode": 6,
+    "decisionId": "42",
+    "decisionActive": true,
+    "evaluatedAt": 1787868000
+  },
+  "id": 1
+}
+```
+
+**Notes:**
+
+- Every response field comes from one lifecycle read at one pinned head and one timestamp.
+- `storedStatus` is the protocol state. `projectedStatus` describes what the kernel computes at `evaluatedAt`; it is not independently materialized.
+- `resolutionAction: "Finalize"` is the authoritative finalization capability. There is deliberately no `ReadyToFinalize` status and no redundant `canFinalize` field.
+- A client must not submit a decision-scoped command unless `decisionActive` is true and `decisionId` is non-null.
 
 ### gen_syncing
 

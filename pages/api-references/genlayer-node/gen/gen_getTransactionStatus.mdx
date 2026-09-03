@@ -1,6 +1,6 @@
 ### gen_getTransactionStatus
 
-Returns the current consensus status of a transaction. This is a lightweight endpoint that returns only the status without full receipt data — use it for polling transaction progress.
+Returns the transaction's current materialized consensus status. This is the lightweight polling surface: it does not project deadlines or turn protocol actions into synthetic statuses.
 
 **Method:** `gen_getTransactionStatus`
 
@@ -8,7 +8,6 @@ Returns the current consensus status of a transaction. This is a lightweight end
 
 - `request` (object, required):
   - `txId` (string, required): The transaction hash (hex-encoded with `0x` prefix)
-  - `timestamp` (integer, optional): Unix timestamp for the query. If not provided, uses current time
 
 **Returns:** Object with status string and numeric code
 
@@ -16,28 +15,27 @@ Returns the current consensus status of a transaction. This is a lightweight end
 
 | Field | Type | Description |
 |-------|------|-------------|
-| `status` | string | Human-readable status name (e.g., "FINALIZED", "ACCEPTED", "PENDING") |
+| `status` | string | Human-readable status name (e.g., "Finalized", "Accepted", "Pending") |
 | `statusCode` | uint8 | Numeric status code |
 
 **Status Codes:**
 
 | Code | Status |
 |------|--------|
-| 0 | UNINITIALIZED |
-| 1 | PENDING |
-| 2 | PROPOSING |
-| 3 | COMMITTING |
-| 4 | REVEALING |
-| 5 | ACCEPTED |
-| 6 | UNDETERMINED |
-| 7 | FINALIZED |
-| 8 | CANCELED |
-| 9 | APPEAL_REVEALING |
-| 10 | APPEAL_COMMITTING |
-| 11 | READY_TO_FINALIZE |
-| 12 | VALIDATORS_TIMEOUT |
-| 13 | LEADER_TIMEOUT |
-| 14 | LEADER_REVEALING |
+| 0 | Uninitialized |
+| 1 | Pending |
+| 2 | Proposing |
+| 3 | Committing |
+| 4 | Revealing |
+| 5 | Accepted |
+| 6 | Undetermined |
+| 7 | Finalized |
+| 8 | Canceled |
+| 9 | AppealRevealing |
+| 10 | AppealCommitting |
+| 11 | ValidatorsTimeout |
+| 12 | LeaderTimeout |
+| 13 | LeaderRevealing |
 
 **Example Request:**
 
@@ -60,7 +58,7 @@ Returns the current consensus status of a transaction. This is a lightweight end
 {
   "jsonrpc": "2.0",
   "result": {
-    "status": "FINALIZED",
+    "status": "Finalized",
     "statusCode": 7
   },
   "id": 1
@@ -69,6 +67,6 @@ Returns the current consensus status of a transaction. This is a lightweight end
 
 **Notes:**
 
-- This endpoint queries the consensus contract on-chain via `getTransactionData`
+- This endpoint reads the stored status directly. A deadline passing does not change this response until the corresponding protocol transition is materialized.
 - Use this for polling — it's cheaper than `gen_getTransactionReceipt` which returns the full receipt
-- The `timestamp` parameter is passed to the on-chain call and affects how the contract reports the status
+- `Finalize` is an action, not a status. Explorers and operator tooling that need projected state or recovery actions should use `gen_getTransactionLifecycle`.

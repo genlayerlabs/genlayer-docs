@@ -1,0 +1,74 @@
+### gen_getTransactionLifecycle
+
+Returns one advanced protocol lifecycle snapshot for a transaction. This endpoint is intended for explorers, operator tooling, and debugging; ordinary applications should prefer `gen_getTransactionStatus` or their SDK's simplified lifecycle model.
+
+**Method:** `gen_getTransactionLifecycle`
+
+**Parameters:**
+
+- `request` (object, required):
+  - `txId` (string, required): The transaction hash (hex-encoded with `0x` prefix)
+  - `timestamp` (integer, optional): Unix timestamp used for projection. Defaults to the node clock.
+
+**Returns:** The stored state, its projection at `evaluatedAt`, and the resolution kernel's next action from one contract read.
+
+**Response Fields:**
+
+| Field | Type | Description |
+|-------|------|-------------|
+| `storedStatus` | string | Materialized on-chain status |
+| `storedStatusCode` | uint8 | Materialized status code |
+| `projectedStatus` | string | Status projected at `evaluatedAt`; projection does not write state |
+| `projectedStatusCode` | uint8 | Projected status code |
+| `resolutionAction` | string | Kernel action available from this snapshot, such as `NoOp`, `ResolveAppeal`, or `Finalize` |
+| `resolutionActionCode` | uint8 | Resolution action code |
+| `resolutionSource` | string | Resolution-plan source/reason |
+| `resolutionSourceCode` | uint8 | Resolution source code |
+| `decisionId` | string or null | Decimal decision identity used by decision-scoped protocol commands |
+| `decisionActive` | boolean | Whether `decisionId` still identifies the active decision |
+| `evaluatedAt` | integer | Unix timestamp used for the projection |
+
+**Example Request:**
+
+```json
+{
+  "jsonrpc": "2.0",
+  "method": "gen_getTransactionLifecycle",
+  "params": [
+    {
+      "txId": "0x563f046c187d711127c51213ca62e2e4fee52009a98f0989a73a0a0382d21890",
+      "timestamp": 1787868000
+    }
+  ],
+  "id": 1
+}
+```
+
+**Example Response:**
+
+```json
+{
+  "jsonrpc": "2.0",
+  "result": {
+    "storedStatus": "Accepted",
+    "storedStatusCode": 5,
+    "projectedStatus": "Accepted",
+    "projectedStatusCode": 5,
+    "resolutionAction": "Finalize",
+    "resolutionActionCode": 6,
+    "resolutionSource": "FullReveal",
+    "resolutionSourceCode": 6,
+    "decisionId": "42",
+    "decisionActive": true,
+    "evaluatedAt": 1787868000
+  },
+  "id": 1
+}
+```
+
+**Notes:**
+
+- Every response field comes from one lifecycle read at one pinned head and one timestamp.
+- `storedStatus` is the protocol state. `projectedStatus` describes what the kernel computes at `evaluatedAt`; it is not independently materialized.
+- `resolutionAction: "Finalize"` is the authoritative finalization capability. There is deliberately no `ReadyToFinalize` status and no redundant `canFinalize` field.
+- A client must not submit a decision-scoped command unless `decisionActive` is true and `decisionId` is non-null.

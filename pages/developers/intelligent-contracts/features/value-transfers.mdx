@@ -157,6 +157,7 @@ graph TD
 |---|---|
 | Studio (Localnet) | Built-in faucet — 💧 button in the account selector |
 | Studionet | Built-in faucet — 💧 button in the account selector |
+| Studio development preview | Built-in faucet — 💧 button in the account selector |
 | Testnet Asimov | [testnet-faucet.genlayer.foundation](https://testnet-faucet.genlayer.foundation/) |
 | Testnet Bradbury | [testnet-faucet.genlayer.foundation](https://testnet-faucet.genlayer.foundation/) |
 
@@ -164,7 +165,7 @@ See [Networks](/developers/networks) for full details on each environment.
 
 ## Calling Payable Methods from JavaScript
 
-Use the `value` parameter in `writeContract()` to send GEN:
+Use the `value` parameter in `writeContract()` to send GEN. On a fee-charging deployment, estimate and submit the protocol fee separately:
 
 ```typescript
 import { createClient, createAccount } from 'genlayer-js';
@@ -175,10 +176,21 @@ const client = createClient({
   account: createAccount(),
 });
 
-const txHash = await client.writeContract({
+const write = {
   address: contractAddress,
   functionName: 'tip',
   args: [],
-  value: BigInt(5) * BigInt(10 ** 18), // 5 GEN in wei
+  value: 5n * 10n ** 18n, // 5 GEN sent to the contract
+};
+const estimate = await client.estimateTransactionFeesForWrite(write);
+
+const txId = await client.writeContract({
+  ...write,
+  fees: {
+    distribution: estimate.distribution,
+    feeValue: estimate.feeValue,
+  },
 });
 ```
+
+The wallet must cover `value + feeValue`. See [Writing to Intelligent Contracts](/developers/decentralized-applications/writing-data) for lifecycle and duplicate-submission guidance.
