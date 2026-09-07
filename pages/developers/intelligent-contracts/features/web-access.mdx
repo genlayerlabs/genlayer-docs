@@ -18,10 +18,12 @@ def post_request():
         method='POST',
         body={}
     )
-    return response.status_code
+    return response.status
 
 status_code = gl.eq_principle.strict_eq(post_request)
 ```
+
+The response exposes the HTTP `status`, `headers`, and `body` returned to the contract.
 
 ## Web Rendering
 
@@ -58,12 +60,25 @@ External APIs can return error responses. Consider checking the status code:
 ```python
 def fetch_data():
     response = gl.nondet.web.request(api_url, method='GET')
-    if response.status_code >= 400 and response.status_code < 500:
-        raise gl.UserError(f"API returned client error: {response.status_code}")
-    elif response.status_code >= 500:
-        raise gl.UserError(f"API temporarily unavailable: {response.status_code}")
+    if response.status >= 400 and response.status < 500:
+        raise gl.UserError(f"API returned client error: {response.status}")
+    elif response.status >= 500:
+        raise gl.UserError(f"API temporarily unavailable: {response.status}")
     return json.loads(response.body.decode("utf-8"))
 ```
+
+## Redirects and evidence origin
+
+`gl.nondet.web.request()` may follow HTTP redirects before returning the response body. Today, the response object does not expose the final or effective URL, and the request API does not provide a switch to disable redirects.
+
+That means an allowlist check on the requested URL is not, by itself, proof that the response body came from that same host. If your contract depends on the origin of external evidence, prefer sources that provide one of these guarantees:
+
+- a canonical API endpoint that does not redirect across origins;
+- signed or verifiable payloads that include the source identity;
+- response fields whose issuer or origin can be validated in the payload itself; or
+- an application-level check against trusted metadata returned by the source.
+
+Avoid treating the requested host as sufficient evidence-origin verification when redirects could change where the data is fetched from.
 
 ## Consensus-Friendly Web Requests
 
