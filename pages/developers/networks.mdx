@@ -7,11 +7,11 @@ import AddToWallet from '../../components/AddToWallet'
 
 # Networks
 
-GenLayer operates as two layers: the **GenLayer RPC** handles intelligent contract operations (`gen_*` methods), while the **GenLayer Chain** is the underlying L2 (zkSync Elastic Chain) that handles standard Ethereum operations (`eth_*` methods). The GenLayer RPC also passes through all `eth_*` and `zks_*` calls to the underlying chain, so you can use either endpoint for standard wallet operations.
+GenLayer operates as two layers: the **GenLayer RPC** handles intelligent contract operations (`gen_*` methods), while the **GenLayer Chain** is the underlying L2 (zkSync Elastic Chain) that handles standard Ethereum operations (`eth_*` methods). The GenLayer RPC also passes through all `eth_*` and `zks_*` calls to the underlying chain — but wallets like MetaMask validate a new network by calling `net_version`, which the GenLayer RPC does not implement (only `eth_chainId`), so **adding the network to a wallet only works against the GenLayer Chain RPC**, not the GenLayer RPC.
 
 For the full RPC reference, see [GenLayer Node API](/api-references/genlayer-node).
 
-Your wallet connects to the **GenLayer RPC** — it handles both intelligent contract calls and standard Ethereum methods.
+Use the **GenLayer Chain RPC** to add the network to a wallet like MetaMask (below) — use the **GenLayer RPC** for the CLI, SDKs, and any tooling that calls intelligent-contract (`gen_*`) methods.
 
 ---
 
@@ -29,7 +29,7 @@ Production-like testnet with real AI/LLM workloads.
 | **Chain Explorer** | [explorer.testnet-chain.genlayer.com](https://explorer.testnet-chain.genlayer.com/) |
 | **Faucet** | [testnet-faucet.genlayer.foundation](https://testnet-faucet.genlayer.foundation) |
 
-<AddToWallet chain={{chainId: "0x107d", chainName: "GenLayer Bradbury", rpcUrls: ["https://rpc-bradbury.genlayer.com"], nativeCurrency: {name: "GEN Token", symbol: "GEN", decimals: 18}, blockExplorerUrls: ["https://explorer-bradbury.genlayer.com"]}} />
+<AddToWallet chain={{chainId: "0x107d", chainName: "GenLayer Bradbury", rpcUrls: ["https://rpc.testnet-chain.genlayer.com"], nativeCurrency: {name: "GEN Token", symbol: "GEN", decimals: 18}, blockExplorerUrls: ["https://explorer-bradbury.genlayer.com"]}} />
 
 ---
 
@@ -47,7 +47,7 @@ Infrastructure and stress testing.
 | **Chain Explorer** | [explorer.testnet-chain.genlayer.com](https://explorer.testnet-chain.genlayer.com/) |
 | **Faucet** | [testnet-faucet.genlayer.foundation](https://testnet-faucet.genlayer.foundation) |
 
-<AddToWallet chain={{chainId: "0x107d", chainName: "GenLayer Asimov", rpcUrls: ["https://rpc-asimov.genlayer.com"], nativeCurrency: {name: "GEN Token", symbol: "GEN", decimals: 18}, blockExplorerUrls: ["https://explorer-asimov.genlayer.com"]}} />
+<AddToWallet chain={{chainId: "0x107d", chainName: "GenLayer Asimov", rpcUrls: ["https://rpc.testnet-chain.genlayer.com"], nativeCurrency: {name: "GEN Token", symbol: "GEN", decimals: 18}, blockExplorerUrls: ["https://explorer-asimov.genlayer.com"]}} />
 
 ---
 
@@ -104,7 +104,7 @@ Local development with full control. Requires [GenLayer Studio](/developers/inte
 
 ## GenLayer Chain (L2)
 
-The underlying zkSync Elastic Chain that GenLayer runs on. You typically don't need to interact with this directly — the GenLayer RPC passes through all `eth_*` calls. But if you need direct L2 access (e.g., token transfers, contract debugging at the EVM level), you can add this chain to your wallet.
+The underlying zkSync Elastic Chain that GenLayer runs on — the same endpoint used by the Bradbury and Asimov "Add to wallet" buttons above, since it's what wallets like MetaMask need for network validation. You typically don't need to call it directly for development — the GenLayer RPC passes through all `eth_*` calls — but it's the one to point a wallet at, and it's useful for direct L2 access (e.g., token transfers, contract debugging at the EVM level).
 
 | Setting | Value |
 |:--|:--|
