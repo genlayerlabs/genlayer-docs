@@ -14,6 +14,12 @@ System Requirements for a GenLayer validator node are the **initial** recommende
   - GenLayer's _genvm_ can spawn multiple Sub-VMs for contract calls and non-deterministic blocks.
   - Each Sub-VM can consume up to ~4 GB of RAM for storage.
 
+## Swap
+
+- **Recommended:** 128 GB of swap, in addition to the recommended RAM
+- **Why:** Transaction throughput and the resulting memory demand are not yet known, so size swap conservatively to provide headroom for memory spikes
+- Monitor RAM and swap usage as network load becomes clearer; sustained swapping can slow transaction execution
+
 ## CPU
 
 - **Recommended:** Modern multi-core processor with at least 8 cores/16 threads
@@ -25,7 +31,7 @@ System Requirements for a GenLayer validator node are the **initial** recommende
 
 ## Storage
 
-- **Recommended Disk Space:** 128 GB+
+- **Recommended Disk Space:** 128 GB+ (excluding swap)
 - **Preferred Type:** SSD or NVMe (M.2)
 
 ## Network
@@ -49,3 +55,21 @@ System Requirements for a GenLayer validator node are the **initial** recommende
 - Operating System - 64-bit Linux (Ubuntu, Debian, CentOS, etc.)
 - `docker` - for running the WebDriver container
 - `python3`, `python3-pip` and `python3-venv` for GenVM setup
+
+### musl libc (Recommended on Linux)
+
+We recommend installing musl libc on Linux so GenVM binaries can use their default ELF interpreter path. On Ubuntu or Debian:
+
+```bash copy
+sudo apt-get update
+sudo apt-get install -y musl
+```
+
+For other Linux distributions, install the musl runtime package using your distribution's package manager. Check that the interpreter for your architecture exists and is executable:
+
+| Architecture | Default ELF Interpreter Path |
+|--------------|------------------------------|
+| AMD64 (`x86_64`) | `/lib/ld-musl-x86_64.so.1` |
+| ARM64 (`aarch64`) | `/lib/ld-musl-aarch64.so.1` |
+
+The AArch64 path is provided as a GenVM reference; validator nodes currently support AMD64 only
