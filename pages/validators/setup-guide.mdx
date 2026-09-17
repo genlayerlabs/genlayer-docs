@@ -17,13 +17,16 @@ For a deeper understanding of how staking works in GenLayer, see the [Staking do
 | Resource | Requirement |
 |----------|-------------|
 | **Memory** | 16 GB RAM |
+| **Swap** | 128 GB recommended, in addition to RAM |
 | **CPU** | 8-core (AMD64 only) |
-| **Disk** | 128 GB SSD/NVMe |
+| **Disk** | 128 GB SSD/NVMe (excluding swap) |
 | **Network** | 100 Mbps |
 | **OS** | 64-bit Linux |
 | **Software** | Docker, Python 3 (with pip and venv) |
 
 GPU not required unless running LLMs locally. See [detailed requirements](/validators/system-requirements) for more info.
+
+We recommend 128 GB of swap as a conservative starting point while transaction throughput and memory demand are not yet known. On Linux, we also recommend [installing musl libc](/validators/system-requirements#musl-libc-recommended-on-linux) for GenVM's default ELF interpreter
 
 ## Choose Your Setup Method
 
