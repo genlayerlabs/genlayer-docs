@@ -102,6 +102,26 @@ Local development with full control. Requires [GenLayer Studio](/developers/inte
 
 ---
 
+## Preparing for mainnet
+
+A contract or app that works on Studionet, Studio dev, or a testnet is not automatically live on a future production/mainnet environment. Treat the move as a new deployment target with new contract addresses and production fee assumptions.
+
+Use this checklist when preparing an existing app for mainnet:
+
+1. **Keep the contract code, redeploy the contract.** Existing Studionet/testnet deployments stay on their current network. Deploy the production version to the announced mainnet RPC when it is available.
+2. **Update frontend and backend configuration.** Point SDK clients, wallets, indexers, and environment variables to the mainnet chain/RPC and replace all Studionet/testnet contract addresses with the new mainnet addresses.
+3. **Regenerate fee profiles and estimates.** Do not reuse development fee numbers. Re-run the app's representative flows and submit the `FeesDistribution` / fee value returned by the current network estimate.
+4. **Plan for real compute costs.** Development environments may hide or subsidize some costs. Mainnet apps should expect fee-funded LLM/consensus execution and should expose deposits, consumed fees, and refunds clearly in the UI.
+5. **Keep a test environment.** Continue using Studionet, Studio dev, or Bradbury for iteration and regression testing before promoting changes to mainnet.
+
+See [Consensus v0.6 Migration](/developers/consensus-v06-migration), [Fees & Transaction Policy](/developers/decentralized-applications/fees-and-transaction-kit), and [Fee Profiling & Estimation](/developers/decentralized-applications/fee-profiling-and-estimation) for the fee-funded transaction flow.
+
+<Callout type="info">
+Mainnet endpoint details will be listed on this page when they are announced. Until then, use the networks above for development and production-like testing.
+</Callout>
+
+---
+
 ## GenLayer Chain (L2)
 
 The underlying zkSync Elastic Chain that GenLayer runs on. You typically don't need to interact with this directly — the GenLayer RPC passes through all `eth_*` calls. But if you need direct L2 access (e.g., token transfers, contract debugging at the EVM level), you can add this chain to your wallet.
@@ -133,3 +153,4 @@ The underlying zkSync Elastic Chain that GenLayer runs on. You typically don't n
 2. **Use Studio dev only for release-candidate validation** — open [studio-dev.genlayer.com](https://studio-dev.genlayer.com) with the matching RC tooling
 3. **Move to Localnet** — when you need full control and fast iteration
 4. **Deploy to Bradbury** — when ready for production-like testing with real AI workloads
+5. **Prepare separately for mainnet** — redeploy contracts, update app configuration, and re-profile fees when production endpoints are announced
