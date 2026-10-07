@@ -1,3 +1,5 @@
 {
-  "prompt-injection": ""
+  "prompt-injection": "Prompt Injection",
+  "validator-design": "Secure Validator Design",
+  "contract-pitfalls": "Common Contract Pitfalls"
 }
