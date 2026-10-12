@@ -199,7 +199,7 @@ See the [GenVM Configuration](/validators/genvm-configuration) page for partner 
 
 Each validator needs an HTTP RPC endpoint and a WebSocket endpoint for the [GenLayer Chain](/understand-genlayer-protocol/core-concepts/rollup-integration). Validators use them to read the chain state and events and to submit transactions. The WebSocket endpoint is required for new-block and log subscriptions.
 
-GenLayer Chain is an Arbitrum Orbit chain, so you can use a GenLayer Chain RPC provider or run your own [Arbitrum Nitro full node](https://docs.arbitrum.io/run-arbitrum-node/run-full-node) for the chain. Testnet Asimov and Bradbury use the GenLayer Chain endpoints listed on [Networks](/developers/networks) until they upgrade to consensus v0.6.
+On networks running consensus v0.6, GenLayer Chain is an Arbitrum Orbit chain, so you can use a GenLayer Chain RPC provider or run your own [Arbitrum Nitro full node](https://docs.arbitrum.io/run-arbitrum-node/run-full-node) for the chain. Testnet Asimov and Bradbury have not upgraded yet: connect them to their existing GenLayer Chain endpoints (see [Networks](/developers/networks)); a Nitro node does not serve that chain.
 
 One chain node can be shared between multiple validators. The optimal validator-to-node ratio is currently under evaluation.
 

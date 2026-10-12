@@ -79,7 +79,7 @@ GEN is an ERC-20 token on Ethereum. On GenLayer Chain it is the **native currenc
 
 GEN moves between the two chains only through the chain's canonical Arbitrum bridge:
 
-- **Ethereum to GenLayer Chain.** Deposits and messages enter through the chain's ERC-20 Inbox as *retryable tickets*. A retryable is normally redeemed automatically on GenLayer Chain. If automatic redemption fails, anyone can redeem it manually before it expires.
+- **Ethereum to GenLayer Chain.** Native GEN deposits go through the chain's ERC-20 Inbox and are credited to the recipient once the sequencer includes them; they do not create a ticket to redeem. Messages and contract calls, including the protocol's inflation deliveries, are sent as *retryable tickets*. A retryable is normally redeemed automatically on GenLayer Chain. If automatic redemption fails, anyone can redeem it manually before it expires.
 - **GenLayer Chain to Ethereum.** Withdrawals and messages leave through the `ArbSys` system contract. They can be executed on Ethereum through the Outbox only after the rollup assertion that contains them is confirmed, which happens after the chain's challenge period. A sequencer receipt or an L2 event alone cannot authorize an action on Ethereum.
 
 The protocol uses the same path for its own token flows. Inflation is minted on Ethereum and delivered to the staking contract on GenLayer Chain as a retryable ticket; staking acknowledgements and burns travel back through the Outbox. These steps are permissionless—see [network keeper roles](/validators/network-keeper-roles).
@@ -97,7 +97,7 @@ Exchanges, wallets, and indexers can treat GenLayer Chain as an Arbitrum-based E
 - Use standard Ethereum tooling and `eth_*` JSON-RPC methods against the GenLayer Chain RPC or the GenLayer RPC, which passes `eth_*` calls through. Chain IDs and endpoints are listed on [Networks](/developers/networks).
 - Track GEN on GenLayer Chain as the native asset, not as an ERC-20 token. On Ethereum, track it as an ERC-20 token.
 - Expect Arbitrum transaction types and receipt fields, such as the internal system transaction at the start of each block and `gasUsedForL1` in receipts. Current Ethereum libraries handle them; custom decoders may need updates.
-- Plan for the challenge period on withdrawals to Ethereum. Deposits from Ethereum arrive after their retryable ticket is redeemed.
+- Plan for the challenge period on withdrawals to Ethereum. Native GEN deposits from Ethereum are credited once the sequencer includes them.
 - Use the Intelligent Contract transaction status from the GenLayer RPC to decide whether an Intelligent Contract outcome is final, as described below.
 
 ## Settlement and protocol finality are different

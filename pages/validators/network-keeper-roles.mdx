@@ -50,7 +50,14 @@ Steps 2 and 5 **cannot happen on-chain by themselves**: an L2→L1 message can e
   **This role gates the entire network's epoch progression.** The L2 `Staking.epochAdvance()` can only move forward while `epoch + 1 <= inflationEpoch`, and `inflationEpoch` only rises when inflation is delivered to Staking. **If no one relays inflation, epoch progression halts network-wide** once the current epoch catches up to `inflationEpoch`. Staking requests inflation ahead of the current epoch, but this is still the single most important keeper to keep running.
 </Callout>
 
-**When to call:** whenever a request or acknowledgement is waiting in the Outbox after confirmation, and whenever a request is approved but not yet executed. Pre-check a request before submitting:
+**When to call:** whenever
+
+- a request or acknowledgement is waiting in the Outbox after confirmation;
+- a request is approved on Ethereum but not yet executed;
+- an inflation retryable failed automatic redemption — redeem it on GenLayer Chain before it expires, or extend its lifetime with a keepalive; or
+- the inflation escrow holds an undelivered request because the Staking call failed (`DeliveryDeferred`) — call `ArbitrumInflationEscrow.retry()`.
+
+Pre-check a request before submitting:
 
 ```solidity
 // True while the request is approved on Ethereum and has not expired or been executed.
