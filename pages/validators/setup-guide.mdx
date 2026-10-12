@@ -195,11 +195,13 @@ Possible options:
 
 See the [GenVM Configuration](/validators/genvm-configuration) page for partner credits, provider setup, and the greybox fallback strategy.
 
-#### ZKSync Full Node for the GenLayer Chain
+#### GenLayer Chain RPC Access
 
-Each validator needs access to a [ZKSync Full Node](https://docs.zksync.io/zksync-era/tooling/external-node) connected to the GenLayer chain. Validators use this node to read the chain state and submit transactions.
+Each validator needs an HTTP RPC endpoint and a WebSocket endpoint for the [GenLayer Chain](/understand-genlayer-protocol/core-concepts/rollup-integration). Validators use them to read the chain state and events and to submit transactions. The WebSocket endpoint is required for new-block and log subscriptions.
 
-One full node can be shared between multiple validators. The optimal validator-to-node ratio is currently under evaluation.
+On networks running consensus v0.6, GenLayer Chain is an Arbitrum Orbit chain, so you can use a GenLayer Chain RPC provider or run your own [Arbitrum Nitro full node](https://docs.arbitrum.io/run-arbitrum-node/run-full-node) for the chain. Testnet Asimov and Bradbury have not upgraded yet: connect them to their existing GenLayer Chain endpoints (see [Networks](/developers/networks)); a Nitro node does not serve that chain.
+
+One chain node can be shared between multiple validators. The optimal validator-to-node ratio is currently under evaluation.
 
 ### Setup
 
@@ -268,9 +270,9 @@ You can use the following example configuration. **Note:** For most users, you w
 ```yaml copy
 # rollup configuration
 rollup:
-  genlayerchainrpcurl: "TODO: Set your GenLayer Chain ZKSync HTTP RPC URL here" # GenLayer Chain RPC URL
-  genlayerchainwebsocketurl: "TODO: Set your GenLayer Chain ZKSync WebSocket RPC URL here" # GenLayer Chain WebSocket URL
-  provider: "TODO: Set your GenLayer Chain ZKSync provider" # Rollup operator name; surfaces as the "provider" label on RPC-driven metrics. Set explicitly per deployment.
+  genlayerchainrpcurl: "TODO: Set your GenLayer Chain HTTP RPC URL here" # GenLayer Chain RPC URL
+  genlayerchainwebsocketurl: "TODO: Set your GenLayer Chain WebSocket RPC URL here" # GenLayer Chain WebSocket URL
+  provider: "TODO: Set your GenLayer Chain RPC provider" # Rollup operator name; surfaces as the "provider" label on RPC-driven metrics. Set explicitly per deployment.
 # consensus contracts configuration
 consensus:
   # Testnet - Phase 5
@@ -661,7 +663,7 @@ Once you have configured everything, you are ready to start the node.
     - Consensus contract configuration and accessibility
     - GenVM module connectivity and health status
     - LLM provider configuration and API connectivity
-    - Network configuration and ZKSync node accessibility
+    - Network configuration and GenLayer Chain RPC accessibility
 
 5.  Run the node
 

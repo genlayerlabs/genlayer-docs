@@ -7,7 +7,11 @@ import AddToWallet from '../../components/AddToWallet'
 
 # Networks
 
-GenLayer operates as two layers: the **GenLayer RPC** handles intelligent contract operations (`gen_*` methods), while the **GenLayer Chain** is the underlying L2 (zkSync Elastic Chain) that handles standard Ethereum operations (`eth_*` methods). The GenLayer RPC also passes through all `eth_*` and `zks_*` calls to the underlying chain, so you can use either endpoint for standard wallet operations.
+GenLayer operates as two layers: the **GenLayer RPC** handles intelligent contract operations (`gen_*` methods), while the **GenLayer Chain** is the underlying L2—an Arbitrum Orbit chain that settles to Ethereum and uses GEN as its native gas token—that handles standard Ethereum operations (`eth_*` methods). The GenLayer RPC also passes through all `eth_*` calls to the underlying chain, so you can use either endpoint for standard wallet operations. See [GenLayer Chain integration](/understand-genlayer-protocol/core-concepts/rollup-integration) for how the chain, bridge, and settlement work.
+
+<Callout type="info">
+GenLayer Chain runs on Arbitrum Orbit from consensus v0.6. Testnet Asimov and Bradbury keep the endpoints and chain ID listed below until they upgrade to v0.6; this page will list the new endpoints and contract addresses when they move.
+</Callout>
 
 For the full RPC reference, see [GenLayer Node API](/api-references/genlayer-node).
 
@@ -104,7 +108,7 @@ Local development with full control. Requires [GenLayer Studio](/developers/inte
 
 ## GenLayer Chain (L2)
 
-The underlying zkSync Elastic Chain that GenLayer runs on. You typically don't need to interact with this directly — the GenLayer RPC passes through all `eth_*` calls. But if you need direct L2 access (e.g., token transfers, contract debugging at the EVM level), you can add this chain to your wallet.
+The underlying chain that GenLayer runs on. From consensus v0.6 it is an Arbitrum Orbit chain; the endpoint below is the pre-v0.6 testnet chain that Asimov and Bradbury use until they upgrade. GEN is its native currency, so balances and gas are in GEN. You typically don't need to interact with this directly — the GenLayer RPC passes through all `eth_*` calls. But if you need direct L2 access (e.g., token transfers, contract debugging at the EVM level), you can add this chain to your wallet.
 
 | Setting | Value |
 |:--|:--|

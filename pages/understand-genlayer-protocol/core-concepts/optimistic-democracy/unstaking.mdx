@@ -30,7 +30,7 @@ flowchart TB
 1. The validator owner or delegator chooses a positive number of shares and submits an exit.
 2. The protocol stages the withdrawal and processes it through the validator's epoch records and `validatorPrime()`.
 3. Once removed from active stake, those shares no longer contribute to selection weight or earn rewards.
-4. After the unbonding period, anyone can trigger the claim for the beneficiary. Funds go to the owner or delegator, not the caller.
+4. After the unbonding period, and once any slashing for the epochs the stake served has been settled, the beneficiary claims the GEN. A delegator claims directly from the Staking contract; only the delegator can submit that claim. A validator owner claims through the ValidatorWallet, which forwards the GEN to the owner.
 
 Under the current rules, the exit epoch still earns its normal rewards, and the unbonding period is seven epochs measured from the exit request. These values are protocol parameters.
 
