@@ -457,7 +457,7 @@ metrics:
 
 Replace the matching sections of your `config.yaml` with the block for the network you want to join. Replace each top-level section as a whole rather than adding a second `rollup:` or `consensus:` key.
 
-Since v0.6, the node refuses to start unless `consensus.manifestpath` points at the trusted `protocol-manifest.json` for the deployment. The release ships the Bradbury manifest at `configs/node/protocol-manifest.json`, and relative paths resolve against the node root. At startup, the node also refuses a manifest whose registry does not match `consensus.consensusaddress`, or whose chain does not match `consensus.chainid`.
+Since v0.6, the node refuses to start unless `consensus.manifestpath` points at the trusted `protocol-manifest.json` for the deployment. The release ships the Bradbury manifest at `configs/node/bradbury.protocol-manifest.json`, and the Bradbury block below already points `manifestpath` at it. Relative paths resolve against the node root. At startup, the node also refuses a manifest whose registry does not match `consensus.consensusaddress`, or whose chain does not match `consensus.chainid`.
 
 ##### Testnet Bradbury
 
