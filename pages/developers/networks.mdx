@@ -35,13 +35,7 @@ Production-like testnet with real AI/LLM workloads.
 Bradbury Phase 2 reuses chain ID **4221**. Verify block zero has hash `0x17d89764d4f4f963158fc4c5e8f2cb670c2837740b35f37081c12860c3df97e4`, and the AddressManager is `0x3F71AE080BD6270A91dBcc7960d88797828538E0`. An old RPC can return the right chain ID but lead to a different deployment. If a public domain returns a different genesis, stop and have its routing corrected.
 </Callout>
 
-Direct provider endpoints for Phase 2 qualification are:
-
-- HTTP: `https://rpc-genlayer-chain-testnet-cfn8m3xc6l.t.conduit.xyz`
-- WebSocket: `wss://rpc-genlayer-chain-testnet-cfn8m3xc6l.t.conduit.xyz` (assigned API key required)
-- Chain explorer: `https://explorer-genlayer-chain-testnet-cfn8m3xc6l.t.conduit.xyz/`
-
-Create a Conduit key at [app.conduit.xyz/rpc-keys](https://app.conduit.xyz/rpc-keys) and configure it as `GENLAYERNODE_ROLLUP_GENLAYERCHAINRPCKEY` in the node environment (or the `.env` next to `docker-compose.yaml`). Never add it to URLs or `config.yaml`. Resolve Staking and ConsensusMain through the AddressManager instead of treating their initial addresses as permanent network identity.
+The GenLayer Chain WebSocket is `wss://rpc.testnet-chain.genlayer.com` and requires an API key. Create a key at [app.conduit.xyz/rpc-keys](https://app.conduit.xyz/rpc-keys) and configure it as `GENLAYERNODE_ROLLUP_GENLAYERCHAINRPCKEY` in the node environment (or the `.env` next to `docker-compose.yaml`). Never add it to URLs or `config.yaml`. Resolve Staking and ConsensusMain through the AddressManager instead of treating their initial addresses as permanent network identity.
 
 Public domains above are the intended release endpoints. Check their readiness and the faucet's target network before transferring funds; do not assume old balances or registrations carry over.
 

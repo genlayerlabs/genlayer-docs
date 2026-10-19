@@ -208,11 +208,16 @@ Possible options:
 
 See the [GenVM Configuration](/validators/genvm-configuration) page for partner credits, provider setup, and the greybox fallback strategy.
 
-#### Orbit RPC access for the GenLayer Chain
+#### GenLayer Chain RPC access
 
-Bradbury Phase 2 runs on an **Arbitrum Orbit L2**. Each validator needs HTTP and WebSocket access to that network to read state, send transactions and subscribe to chain updates. An old zkSync endpoint is incompatible even when it returns the same chain ID.
+Each validator needs HTTP and WebSocket access to the GenLayer Chain to read state, send transactions and subscribe to chain updates. For Bradbury Phase 2:
 
-Create a key at [app.conduit.xyz/rpc-keys](https://app.conduit.xyz/rpc-keys). The Conduit WebSocket requires a key; anonymous HTTP access does not prove that WebSocket subscriptions will work. Set it in the node's environment:
+- HTTP: `https://rpc.testnet-chain.genlayer.com`
+- WebSocket: `wss://rpc.testnet-chain.genlayer.com` (API key required)
+
+An endpoint of the previous Bradbury chain is incompatible even when it returns the same chain ID.
+
+Create a key at [app.conduit.xyz/rpc-keys](https://app.conduit.xyz/rpc-keys). The WebSocket requires a key; anonymous HTTP access does not prove that WebSocket subscriptions will work. Set it in the node's environment:
 
 ```sh copy
 export GENLAYERNODE_ROLLUP_GENLAYERCHAINRPCKEY="<your Conduit API key>"
@@ -318,13 +323,13 @@ The `config.yaml` in the release package sets `genvm.root_dir: ./opt/genvm/curre
 ```yaml copy
 # rollup configuration
 rollup:
-  genlayerchainrpcurl: "TODO: Set your GenLayer Chain Orbit HTTP RPC URL here" # GenLayer Chain RPC URL
-  genlayerchainwebsocketurl: "TODO: Set your GenLayer Chain Orbit WebSocket RPC URL here" # GenLayer Chain WebSocket URL
+  genlayerchainrpcurl: "TODO: Set your GenLayer Chain HTTP RPC URL here" # GenLayer Chain RPC URL
+  genlayerchainwebsocketurl: "TODO: Set your GenLayer Chain WebSocket RPC URL here" # GenLayer Chain WebSocket URL
   # An API key of the RPC provider never goes in these URLs or in this file:
   # set it in the environment as GENLAYERNODE_ROLLUP_GENLAYERCHAINRPCKEY.
   # The node sends it in this header (default X-AccessKey):
   # genlayerchainrpckeyheader: "X-AccessKey"
-  provider: "TODO: Set your GenLayer Chain Orbit provider" # Rollup operator name; surfaces as the "provider" label on RPC-driven metrics. Set explicitly per deployment.
+  provider: "TODO: Set your GenLayer Chain provider" # Rollup operator name; surfaces as the "provider" label on RPC-driven metrics. Set explicitly per deployment.
 # consensus contracts configuration
 consensus:
   # The deployment-specific fields are empty: take them from your network's documentation.
@@ -622,7 +627,7 @@ curl -fsSL https://docs.genlayer.com/validators/bradbury.protocol-manifest.json 
 
 The binary reads it from that path. Docker Compose mounts the same file into the container (`NODE_MANIFEST_PATH`, default `./configs/node/protocol-manifest.json`).
 
-**WebSocket API key.** The Bradbury HTTPS RPC needs no key, but its WebSocket endpoint (hosted by Conduit) rejects connections without an API key.
+**WebSocket API key.** The Bradbury HTTPS RPC needs no key, but its WebSocket endpoint rejects connections without an API key.
 
 1. Create a key at [app.conduit.xyz/rpc-keys](https://app.conduit.xyz/rpc-keys).
 2. Set it in the node's environment as `GENLAYERNODE_ROLLUP_GENLAYERCHAINRPCKEY`. Never put it in the RPC or WebSocket URLs, or anywhere in `config.yaml`:
