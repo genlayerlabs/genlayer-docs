@@ -41,6 +41,8 @@ Direct provider endpoints for Phase 2 qualification are:
 - WebSocket: `wss://rpc-genlayer-chain-testnet-cfn8m3xc6l.t.conduit.xyz` (assigned API key required)
 - Chain explorer: `https://explorer-genlayer-chain-testnet-cfn8m3xc6l.t.conduit.xyz/`
 
+Create a Conduit key at [app.conduit.xyz/rpc-keys](https://app.conduit.xyz/rpc-keys) and configure it as `GENLAYERNODE_ROLLUP_GENLAYERCHAINRPCKEY` in the node environment (or the `.env` next to `docker-compose.yaml`). Never add it to URLs or `config.yaml`. Resolve Staking and ConsensusMain through the AddressManager instead of treating their initial addresses as permanent network identity.
+
 Public domains above are the intended release endpoints. Check their readiness and the faucet's target network before transferring funds; do not assume old balances or registrations carry over.
 
 ---
