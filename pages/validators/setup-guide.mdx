@@ -21,7 +21,7 @@ For a deeper understanding of how staking works in GenLayer, see the [Staking do
 | **Disk** | 128 GB SSD/NVMe |
 | **Network** | 100 Mbps |
 | **OS** | 64-bit Linux |
-| **Software** | Docker, Python 3 (with pip and venv) |
+| **Software** | Docker, Python 3.10+ (`python3` on `PATH`, with pip and venv) |
 
 GPU not required unless running LLMs locally. See [detailed requirements](/validators/system-requirements) for more info.
 
@@ -242,6 +242,8 @@ One full node can be shared between multiple validators. The optimal validator-t
    ```
 
 5. Run Genvm setup
+
+   This step needs Python 3.10 or newer, available as `python3` on your `PATH`, with `pip` and `venv` (on Debian/Ubuntu: `python3-pip` and `python3-venv`). Check with `python3 --version`.
 
    ```sh copy
    python3 ./third_party/genvm/bin/setup.py
