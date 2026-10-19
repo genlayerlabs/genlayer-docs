@@ -5,8 +5,10 @@
 // The rule:
 // - A stable release (v0.6.0) is always published.
 // - A release candidate (v0.6.0-rc.2) is published while its version has no
-//   stable release yet, and only the newest rc of that version. It acts as the
-//   current release until the stable one exists.
+//   stable release yet. It acts as the current release until the stable one exists:
+//   - the setup guide names only the newest rc of that version;
+//   - the changelog page shows every rc of that version, because each rc's
+//     changelog lists only what changed since the previous rc.
 // - Once v0.6.0 exists, every v0.6.0-rc.N disappears from the docs.
 // - Testnet builds (v0.2.0-testnetNNN) are kept in the changelog page only.
 //
@@ -41,9 +43,10 @@ function compareDesc(a, b) {
 /**
  * The versions the docs publish, newest first.
  * @param {string[]} names version names (changelog file names without .mdx)
- * @param {{testnet?: boolean}} options testnet: keep testnet builds (changelog page)
+ * @param {{testnet?: boolean, allRcs?: boolean}} options for the changelog page:
+ *   testnet keeps testnet builds, allRcs keeps every rc of an unreleased version
  */
-function publishedVersions(names, { testnet = false } = {}) {
+function publishedVersions(names, { testnet = false, allRcs = false } = {}) {
   const versions = names.map(parseVersion).filter(Boolean).sort(compareDesc);
   const stable = new Set(versions.filter((v) => v.pre === null).map((v) => v.core));
   const newestRc = new Map();
@@ -53,7 +56,7 @@ function publishedVersions(names, { testnet = false } = {}) {
   return versions
     .filter((v) => {
       if (v.pre === 'testnet') return testnet;
-      if (v.pre === 'rc') return !stable.has(v.core) && newestRc.get(v.core) === v.name;
+      if (v.pre === 'rc') return !stable.has(v.core) && (allRcs || newestRc.get(v.core) === v.name);
       return true;
     })
     .map((v) => v.name);
@@ -61,13 +64,12 @@ function publishedVersions(names, { testnet = false } = {}) {
 
 /**
  * True when a changelog version may leave the docs: an rc is superseded once
- * its stable release or a newer rc of the same version exists.
+ * the stable release of its version exists.
  */
 function isSuperseded(name, names) {
   const v = parseVersion(name);
   if (!v || v.pre !== 'rc') return false;
-  return names.map(parseVersion).filter(Boolean)
-    .some((o) => o.core === v.core && (o.pre === null || (o.pre === 'rc' && o.preNumber > v.preNumber)));
+  return names.map(parseVersion).filter(Boolean).some((o) => o.core === v.core && o.pre === null);
 }
 
 module.exports = { parseVersion, compareDesc, publishedVersions, isSuperseded };

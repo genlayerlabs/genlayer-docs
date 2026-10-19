@@ -77,11 +77,14 @@ const tests = {
     const names = ['v0.6.0', 'v0.6.1-rc.1'];
     assert.deepStrictEqual(publishedVersions(names), ['v0.6.1-rc.1', 'v0.6.0']);
   },
-  'the changelog page keeps testnet builds but hides superseded rcs': () => {
-    assert.deepStrictEqual(publishedVersions(['v0.2.0-testnet005', 'v0.5.8-rc.4', 'v0.5.8'], { testnet: true }), ['v0.5.8', 'v0.2.0-testnet005']);
+  'the changelog page keeps testnet builds and every rc of an unreleased version': () => {
+    const opts = { testnet: true, allRcs: true };
+    assert.deepStrictEqual(publishedVersions(['v0.2.0-testnet005', 'v0.5.8-rc.4', 'v0.5.8'], opts), ['v0.5.8', 'v0.2.0-testnet005']);
+    assert.deepStrictEqual(publishedVersions(['v0.5.14', 'v0.6.0-rc.1', 'v0.6.0-rc.2'], opts), ['v0.6.0-rc.2', 'v0.6.0-rc.1', 'v0.5.14']);
+    assert.deepStrictEqual(publishedVersions(['v0.5.14', 'v0.6.0-rc.1', 'v0.6.0-rc.2', 'v0.6.0'], opts), ['v0.6.0', 'v0.5.14']);
   },
-  'superseded: an rc may leave once its stable or a newer rc exists, a stable never': () => {
-    assert.ok(isSuperseded('v0.6.0-rc.1', ['v0.6.0-rc.2']));
+  'superseded: an rc may leave once its stable exists, a stable never': () => {
+    assert.ok(!isSuperseded('v0.6.0-rc.1', ['v0.6.0-rc.2']));
     assert.ok(isSuperseded('v0.6.0-rc.2', ['v0.6.0']));
     assert.ok(!isSuperseded('v0.6.0-rc.2', ['v0.6.0-rc.1', 'v0.5.14']));
     assert.ok(!isSuperseded('v0.5.14', ['v0.6.0']));
