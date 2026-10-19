@@ -846,6 +846,11 @@ Before the first start, in the directory with your `docker-compose.yaml`:
 1. Create a `docker-compose.yaml` file with the following content:
 
 ```yaml copy
+# A fixed project name: the container names below are fixed too, so a stack
+# started from a new release directory must be the SAME Compose project, or
+# Docker refuses with "container name ... is already in use". With it, `up -d`
+# from the new version's directory recreates the old version's containers.
+name: genlayer-node
 services:
   webdriver-container:
     container_name: genlayer-node-webdriver

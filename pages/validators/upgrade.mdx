@@ -62,6 +62,7 @@ Breaking changes involve a new consensus deployment. The old database is incompa
 - Docker: `NODE_PASSWORD` has no default, and a validator needs it: the node refuses validator mode without a password. It reaches the node as `GENLAYERNODE_PASSWORD`, not as `--password`. See [Running the Node using docker-compose](/validators/setup-guide#running-the-node-using-docker-compose).
 - Docker: the node container runs as uid `10001`. Make `./data` writable by it once: `sudo chown -R 10001:10001 ./data`.
 - Docker: the node no longer mounts `/var/run/docker.sock`. It reaches Docker through the read-only `docker-socket-proxy` service.
+- Docker: the compose project is named `genlayer-node`, so `docker compose up` from a new version's directory replaces the containers of the previous version instead of failing with "container name ... already in use".
 - Monitoring: the `CENTRAL_*` URLs and credentials have no defaults. Alloy stops at startup if any is unset. See [Monitoring](/validators/monitoring).
 - Do not use `genlayernode run --upgrade` in v0.6: the call that resumes the node is not available yet, so the node waits forever.
 

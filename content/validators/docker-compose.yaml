@@ -1,3 +1,8 @@
+# A fixed project name: the container names below are fixed too, so a stack
+# started from a new release directory must be the SAME Compose project, or
+# Docker refuses with "container name ... is already in use". With it, `up -d`
+# from the new version's directory recreates the old version's containers.
+name: genlayer-node
 services:
   webdriver-container:
     container_name: genlayer-node-webdriver
