@@ -114,11 +114,9 @@ The wizard outputs all three addresses at the end. Save them - you'll need the V
 ### Prerequisites
 
 - **Node.js** (v20 or higher; Node.js 22 for a fresh installation)
-- **GenLayer CLI** - Install an exact, qualified **v0.40** release that bundles the **v2 SDK with Bradbury Phase 2 addresses**. The default npm tag can still select an older release:
+- **GenLayer CLI** - Install the release candidate (`rc` tag), the v0.40 line for Bradbury Phase 2. The default npm tag (`latest`) still selects an older release:
   ```bash copy
-  # Set CLI_VERSION to the exact version in the Bradbury Phase 2 release announcement.
-  : "${CLI_VERSION:?Set the qualified Bradbury Phase 2 CLI version first}"
-  npm install -g "genlayer@${CLI_VERSION}"
+  npm install -g genlayer@rc
   genlayer --version
   ```
 - **GEN tokens** - Read the deployed self-stake minimum with `genlayer staking epoch-info --network testnet-bradbury`, and keep additional GEN for gas. **42,000 GEN is a protocol default, not a guaranteed current network setting.** Delegation does not replace required self-stake.
