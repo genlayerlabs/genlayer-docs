@@ -1,4 +1,24 @@
-# Bradbury Phase 1 network consensus configuration
+# Bradbury Phase 2 network configuration (GenLayer testnet, chain id 4221).
+#
+# Put these values into configs/node/config.yaml. They come from the
+# genlayer-consensus deployment record deployments/bradbury-phase-2.json and its
+# sealed protocol manifest, which is configs/node/bradbury.protocol-manifest.json.
+
+# rollup configuration
+rollup:
+  genlayerchainrpcurl: "https://rpc-genlayer-chain-testnet-cfn8m3xc6l.t.conduit.xyz/" # GenLayer Chain RPC URL
+  # Conduit refuses a WebSocket connection without an API key, and takes the
+  # key at the end of the URL, not in a header. Get a key at conduit.xyz
+  # (Nodes > Create API key) and replace <CONDUIT_API_KEY> with it. To keep the
+  # key out of this file, set the whole URL in the environment as
+  # GENLAYERNODE_ROLLUP_GENLAYERCHAINWEBSOCKETURL. The node hides the URL path
+  # when it prints this URL.
+  genlayerchainwebsocketurl: "wss://rpc-genlayer-chain-testnet-cfn8m3xc6l.t.conduit.xyz/<CONDUIT_API_KEY>" # GenLayer Chain WebSocket URL
+  provider: "conduit" # Rollup operator name; surfaces as the "provider" label on RPC-driven metrics.
+
+# consensus contracts configuration
 consensus:
-  consensusaddress: "0x8aCE036C8C3C5D603dB546b031302FCf149648E8"
-  genesis: 501711
+  consensusaddress: "0x3F71AE080BD6270A91dBcc7960d88797828538E0" # AddressManager contract address. The node names the network bradbury-phase2 from it.
+  chainid: "4221" # DECIMAL chain id of this deployment.
+  manifestpath: "configs/node/bradbury.protocol-manifest.json" # Trusted protocol manifest of this deployment; a relative path resolves against the node root.
+  genesis: 47930 # Genesis block number for this consensus deployment (AddressManager deployment block).
