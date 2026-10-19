@@ -10,6 +10,7 @@
 
 ### Misc
 
+- Docker: mount custom GenVM configs (for example `genvm-module-llm.yaml` for OpenRouter/greybox) at `/app/opt/genvm/current/config/`; v0.6 no longer reads `/app/third_party/genvm/config/`, so a v0.5 `docker-compose.override.yml` mount there is ignored and the image default loads
 - `/health` no longer returns `severity` in `conditions`; use `state` for the current health
 - The release compose file mounts the protocol manifest from `NODE_MANIFEST_PATH` (default `./configs/node/protocol-manifest.json`) at the path that `consensus.manifestpath` names
 - The release package links `opt/genvm/current` to its GenVM tree, and its `config.yaml` sets `genvm.root_dir: ./opt/genvm/current`
