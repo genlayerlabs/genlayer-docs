@@ -277,7 +277,7 @@ rollup:
 consensus:
   # Clarke Dev template: the deployment-specific fields are intentionally empty.
   consensusaddress: "" # AddressManager contract address for this deployment.
-  manifestpath: "" # Trusted producer protocol manifest for this deployment. Bradbury: configs/node/bradbury.protocol-manifest.json (ships in the release package); a dev-env deploy places its own at configs/node/protocol-manifest.json. Relative paths resolve against the node root. A mismatch with consensusaddress is refused at startup.
+  manifestpath: "configs/node/protocol-manifest.json" # Trusted producer protocol manifest for this deployment: save your network's manifest (from its documentation) at this path; a dev-env deploy places its own here too. Relative paths resolve against the node root. A mismatch with consensusaddress is refused at startup.
   chainid: "" # DECIMAL chain id this deployment was made on (not hex, no leading zeros). Held independently of the manifest so a manifest describing another deployment is caught.
   # genesis: 47930 # (Optional) Genesis block number for this consensus deployment. If not provided, it will be auto-detected by searching for the first log from the ConsensusMain contract.
   # chain_submit_buffer: "30s" # (Optional) Slack reserved at the end of each consensus step to submit the resulting on-chain tx (commit vote, reveal vote, proposed receipt) before the slot closes. Tune to underlying settlement chain latency. Default 30s.
@@ -462,16 +462,17 @@ metrics:
 
 Replace the matching sections of your `config.yaml` with the block for the network you want to join. Replace each top-level section as a whole rather than adding a second `rollup:` or `consensus:` key.
 
-Since v0.6, the node refuses to start unless `consensus.manifestpath` points at the trusted `protocol-manifest.json` for the deployment. The release ships the Bradbury manifest at `configs/node/bradbury.protocol-manifest.json`, and the Bradbury block below already points `manifestpath` at it. Relative paths resolve against the node root. At startup, the node also refuses a manifest whose registry does not match `consensus.consensusaddress`, or whose chain does not match `consensus.chainid`.
+Since v0.6, the node refuses to start unless `consensus.manifestpath` points at the trusted protocol manifest of the network. The release package contains no network files: download the manifest for your network from this page and save it at `configs/node/protocol-manifest.json`, the path `manifestpath` names. Relative paths resolve against the node root. At startup, the node also refuses a manifest whose registry does not match `consensus.consensusaddress`, or whose chain does not match `consensus.chainid`.
 
 ##### Testnet Bradbury
 
 ```yaml copy
 # Bradbury Phase 2 network configuration (GenLayer testnet, chain id 4221).
 #
-# Put these values into configs/node/config.yaml. They come from the
-# genlayer-consensus deployment record deployments/bradbury-phase-2.json and its
-# sealed protocol manifest, which is configs/node/bradbury.protocol-manifest.json.
+# Put these values into configs/node/config.yaml, and save the Bradbury protocol
+# manifest (bradbury.protocol-manifest.json) as configs/node/protocol-manifest.json.
+# They come from the genlayer-consensus deployment record
+# deployments/bradbury-phase-2.json and its sealed protocol manifest.
 
 # rollup configuration
 rollup:
@@ -488,10 +489,19 @@ rollup:
 consensus:
   consensusaddress: "0x3F71AE080BD6270A91dBcc7960d88797828538E0" # AddressManager contract address. The node names the network bradbury-phase2 from it.
   chainid: "4221" # DECIMAL chain id of this deployment.
-  manifestpath: "configs/node/bradbury.protocol-manifest.json" # Trusted protocol manifest of this deployment; a relative path resolves against the node root.
+  manifestpath: "configs/node/protocol-manifest.json" # Where bradbury.protocol-manifest.json is saved; a relative path resolves against the node root.
   genesis: 47930 # Genesis block number for this consensus deployment (AddressManager deployment block).
 
 ```
+
+**Protocol manifest.** Download the Bradbury manifest and save it as `configs/node/protocol-manifest.json`. Run this from the node directory (the extracted release, or the directory with your `docker-compose.yaml`):
+
+```sh copy
+mkdir -p configs/node
+curl -fsSL https://docs.genlayer.com/validators/bradbury.protocol-manifest.json -o configs/node/protocol-manifest.json
+```
+
+The binary reads it from that path. Docker Compose mounts the same file into the container (`NODE_MANIFEST_PATH`, default `./configs/node/protocol-manifest.json`).
 
 **WebSocket API key.** The Bradbury HTTPS RPC needs no key, but its WebSocket endpoint (hosted by Conduit) rejects connections without an API key.
 
@@ -739,6 +749,8 @@ services:
       - "${NODE_OPS_PORT:-9153}:9153"
     volumes:
       - ${NODE_CONFIG_PATH:-./configs/node/config.yaml}:/app/configs/node/config.yaml:ro
+      # The trusted protocol manifest of the network; consensus.manifestpath names this path.
+      - ${NODE_MANIFEST_PATH:-./configs/node/protocol-manifest.json}:/app/configs/node/protocol-manifest.json:ro
       - ${NODE_DATA_PATH:-./data}:/app/data
       - ./genvm-module-web-docker.yaml:/app/third_party/genvm/config/genvm-module-web.yaml
       - /var/run/docker.sock:/var/run/docker.sock:ro # required for webdriver metrics collection
@@ -803,6 +815,9 @@ NODE_PASSWORD=12345678
 
 # Path to node configuration file
 NODE_CONFIG_PATH=./configs/node/config.yaml
+
+# Path to the trusted protocol manifest of your network
+NODE_MANIFEST_PATH=./configs/node/protocol-manifest.json
 
 # Path to node data directory (for persistence)
 NODE_DATA_PATH=./data
