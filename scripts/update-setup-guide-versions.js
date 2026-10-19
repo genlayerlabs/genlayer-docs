@@ -7,15 +7,15 @@ const { publishedVersions } = require('./lib/release-versions');
 // A generator that cannot find its source or its target block fails the build.
 const fail = (msg) => { console.error(msg); process.exitCode = 1; };
 
-// The tail of the guide's list command, the same rule in shell: the sed pair
-// makes the version sort put v0.6.0-rc.N below v0.6.0; awk drops an rc once its
-// stable release exists and keeps only the newest rc of an unreleased version.
-const LIST_COMMAND_TAIL = `| sed 's/-rc/~rc/' | sort -ruV | sed 's/~rc/-rc/' | awk '{c=$0; sub(/-rc\\..*/,"",c)} /-rc\\./{if ((c in s) || (c in r)) next; r[c]=1} !/-rc\\./{s[c]=1} {print}' | head -n 5`;
+// The tail of the guide's list command: the sed pair makes the version sort
+// put v0.6.0-rc.N below v0.6.0; awk drops the rc builds of versions that are
+// already stable (the bucket keeps them, the changelog does not list them).
+const LIST_COMMAND_TAIL = `| sed 's/-rc/~rc/' | sort -ruV | sed 's/~rc/-rc/' | awk '{c=$0; sub(/-rc\\..*/,"",c)} /-rc\\./{if (c in s) next} !/-rc\\./{s[c]=1} {print}' | head -n 5`;
 
 /**
  * Update the setup guide's version list, list command and `export version=` line.
- * The guide names the newest published version (scripts/lib/release-versions.js):
- * the newest release candidate while its stable release does not exist yet.
+ * The guide lists the versions the node has changelog files for
+ * (scripts/lib/release-versions.js) and names the newest one.
  * @param {{root?: string}} options
  */
 function updateSetupGuideVersions({ root = process.cwd() } = {}) {

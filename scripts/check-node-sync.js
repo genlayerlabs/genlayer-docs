@@ -12,13 +12,13 @@
 // - the Bradbury manifest is valid JSON and matches bradbury.yaml;
 // - no Asimov references in validator and node API pages;
 // - no changelog version disappears compared with BASE_REF (default origin/main),
-//   except a release candidate superseded by its stable release or a newer rc.
+//   except a release candidate: the node removes rc changelog files on purpose.
 
 const fs = require('fs');
 const path = require('path');
 const { execFileSync } = require('child_process');
 const { extractAlloyBlock } = require('./update-alloy-in-monitoring');
-const { isSuperseded } = require('./lib/release-versions');
+const { mayLeave } = require('./lib/release-versions');
 
 const root = path.join(__dirname, '..');
 const read = (p) => fs.readFileSync(path.join(root, p), 'utf8');
@@ -127,7 +127,7 @@ try {
   const now = fs.readdirSync(path.join(root, 'content/validators/changelog'))
     .filter((f) => f.endsWith('.mdx')).map((f) => f.replace(/\.mdx$/, ''));
   for (const file of before) {
-    if (!exists(`content/validators/changelog/${file}`) && !isSuperseded(file.replace(/\.mdx$/, ''), now)) {
+    if (!exists(`content/validators/changelog/${file}`) && !mayLeave(file.replace(/\.mdx$/, ''))) {
       fail(`changelog: ${file} is on ${baseRef} but was removed (is it missing in the node source?)`);
     }
   }

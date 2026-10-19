@@ -20,11 +20,11 @@ function generateChangelog() {
   }
   
   // The versions the docs publish, newest first (scripts/lib/release-versions.js):
-  // a release candidate shows until its stable release exists.
+  // every changelog file the node has, rcs included.
   const names = fs.readdirSync(changelogDir)
     .filter(file => file.endsWith('.mdx'))
     .map(file => file.replace(/\.mdx$/, ''));
-  const files = publishedVersions(names, { testnet: true, allRcs: true }).map(v => `${v}.mdx`);
+  const files = publishedVersions(names, { testnet: true }).map(v => `${v}.mdx`);
   const unknown = names.filter(n => !files.includes(`${n}.mdx`) && !parseVersion(n));
   if (unknown.length) fail(`Changelog files with an unknown version name: ${unknown.join(', ')}`);
 

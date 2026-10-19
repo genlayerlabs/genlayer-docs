@@ -210,17 +210,17 @@ One full node can be shared between multiple validators. The optimal validator-t
    You can use this command to list available versions:
 
    ```sh copy
-   curl -s "https://storage.googleapis.com/storage/v1/b/gh-af/o?prefix=genlayer-node/bin/amd64" | grep -o '"name": *"[^"]*"' | sed -n 's/.*\/\(v[^/]*\)\/.*/\1/p' | sed 's/-rc/~rc/' | sort -ruV | sed 's/~rc/-rc/' | awk '{c=$0; sub(/-rc\..*/,"",c)} /-rc\./{if ((c in s) || (c in r)) next; r[c]=1} !/-rc\./{s[c]=1} {print}' | head -n 5
+   curl -s "https://storage.googleapis.com/storage/v1/b/gh-af/o?prefix=genlayer-node/bin/amd64" | grep -o '"name": *"[^"]*"' | sed -n 's/.*\/\(v[^/]*\)\/.*/\1/p' | sed 's/-rc/~rc/' | sort -ruV | sed 's/~rc/-rc/' | awk '{c=$0; sub(/-rc\..*/,"",c)} /-rc\./{if (c in s) next} !/-rc\./{s[c]=1} {print}' | head -n 5
    ```
 
    You should see a list like this
 
    ```sh
    v0.6.0-rc.2
+   v0.6.0-rc.1
    v0.5.14
    v0.5.13
    v0.5.12
-   v0.5.11
    ```
 
    Typically, you will want to run the latest version

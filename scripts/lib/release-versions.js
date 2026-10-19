@@ -2,19 +2,15 @@
 // (update-setup-guide-versions.js), the changelog page (generate-changelog.js)
 // and the sync check (check-node-sync.js). Tested by scripts/test-release-versions.js.
 //
-// The rule:
-// - A stable release (v0.6.0) is always published.
-// - A release candidate (v0.6.0-rc.2) is published while its version has no
-//   stable release yet. It acts as the current release until the stable one exists:
-//   - the setup guide names only the newest rc of that version;
-//   - the changelog page shows every rc of that version, because each rc's
-//     changelog lists only what changed since the previous rc.
-// - Once v0.6.0 exists, every v0.6.0-rc.N disappears from the docs.
-// - Testnet builds (v0.2.0-testnetNNN) are kept in the changelog page only.
-//
-// Versions come from the changelog files synced from genlayer-node
-// (content/validators/changelog/<version>.mdx). The node keeps one file per rc
-// and never deletes them: the docs choose what to show.
+// The rule: the docs publish every version that has a changelog file in the
+// node repo (content/validators/changelog/<version>.mdx, synced from
+// genlayer-node docs/changelog/). The node decides what is published:
+// - each release candidate gets its own file (v0.6.0-rc.1, v0.6.0-rc.2, ...);
+// - the node removes the rc files when it decides to (for example when v0.6.0
+//   is released), and the next sync removes them from the docs.
+// The setup guide's version list and the changelog page list the same
+// versions. The guide names the newest one; a stable release sorts above its
+// own rcs. Testnet builds (v0.2.0-testnetNNN) are kept in the changelog page only.
 
 // v0.6.0, v0.6.0-rc.2, v0.2.0-testnet005
 const VERSION_RE = /^v(\d+)\.(\d+)\.(\d+)(?:-(rc)\.(\d+)|-(testnet)(\d+))?$/;
@@ -43,33 +39,24 @@ function compareDesc(a, b) {
 /**
  * The versions the docs publish, newest first.
  * @param {string[]} names version names (changelog file names without .mdx)
- * @param {{testnet?: boolean, allRcs?: boolean}} options for the changelog page:
- *   testnet keeps testnet builds, allRcs keeps every rc of an unreleased version
+ * @param {{testnet?: boolean}} options testnet: keep testnet builds (changelog page)
  */
-function publishedVersions(names, { testnet = false, allRcs = false } = {}) {
-  const versions = names.map(parseVersion).filter(Boolean).sort(compareDesc);
-  const stable = new Set(versions.filter((v) => v.pre === null).map((v) => v.core));
-  const newestRc = new Map();
-  for (const v of versions) {
-    if (v.pre === 'rc' && !newestRc.has(v.core)) newestRc.set(v.core, v.name);
-  }
-  return versions
-    .filter((v) => {
-      if (v.pre === 'testnet') return testnet;
-      if (v.pre === 'rc') return !stable.has(v.core) && (allRcs || newestRc.get(v.core) === v.name);
-      return true;
-    })
+function publishedVersions(names, { testnet = false } = {}) {
+  return names
+    .map(parseVersion)
+    .filter(Boolean)
+    .filter((v) => testnet || v.pre !== 'testnet')
+    .sort(compareDesc)
     .map((v) => v.name);
 }
 
 /**
- * True when a changelog version may leave the docs: an rc is superseded once
- * the stable release of its version exists.
+ * True when a changelog version may leave the docs without failing the sync
+ * check: the node removes rc files on purpose; a stable release never leaves.
  */
-function isSuperseded(name, names) {
+function mayLeave(name) {
   const v = parseVersion(name);
-  if (!v || v.pre !== 'rc') return false;
-  return names.map(parseVersion).filter(Boolean).some((o) => o.core === v.core && o.pre === null);
+  return Boolean(v && v.pre === 'rc');
 }
 
-module.exports = { parseVersion, compareDesc, publishedVersions, isSuperseded };
+module.exports = { parseVersion, compareDesc, publishedVersions, mayLeave };
