@@ -476,13 +476,12 @@ Since v0.6, the node refuses to start unless `consensus.manifestpath` points at 
 # rollup configuration
 rollup:
   genlayerchainrpcurl: "https://rpc-genlayer-chain-testnet-cfn8m3xc6l.t.conduit.xyz/" # GenLayer Chain RPC URL
-  # Conduit refuses a WebSocket connection without an API key, and takes the
-  # key at the end of the URL, not in a header. Get a key at conduit.xyz
-  # (Nodes > Create API key) and replace <CONDUIT_API_KEY> with it. To keep the
-  # key out of this file, set the whole URL in the environment as
-  # GENLAYERNODE_ROLLUP_GENLAYERCHAINWEBSOCKETURL. The node hides the URL path
-  # when it prints this URL.
-  genlayerchainwebsocketurl: "wss://rpc-genlayer-chain-testnet-cfn8m3xc6l.t.conduit.xyz/<CONDUIT_API_KEY>" # GenLayer Chain WebSocket URL
+  genlayerchainwebsocketurl: "wss://rpc-genlayer-chain-testnet-cfn8m3xc6l.t.conduit.xyz/" # GenLayer Chain WebSocket URL
+  # Conduit refuses a WebSocket connection without an API key. Create a key at
+  # https://app.conduit.xyz/rpc-keys and set it in the environment as
+  # GENLAYERNODE_ROLLUP_GENLAYERCHAINRPCKEY, never in these URLs or this file.
+  # The node sends it in the X-AccessKey header on the RPC and WebSocket
+  # connections.
   provider: "conduit" # Rollup operator name; surfaces as the "provider" label on RPC-driven metrics.
 
 # consensus contracts configuration
@@ -494,17 +493,18 @@ consensus:
 
 ```
 
-**WebSocket API key.** The Bradbury HTTPS RPC needs no key, but its WebSocket endpoint (hosted by Conduit) has rejected connections without an API key since August 4, 2026.
+**WebSocket API key.** The Bradbury HTTPS RPC needs no key, but its WebSocket endpoint (hosted by Conduit) rejects connections without an API key.
 
-1. Create a key in the Conduit app: open **Nodes** and click **Create API key** (see [Conduit: Get an API key](https://docs.conduit.xyz/rpc-nodes/getting-started/get-api-key)).
-2. Replace `<CONDUIT_API_KEY>` at the end of `genlayerchainwebsocketurl` with your key. Conduit reads the key from the URL, not from a header, so `GENLAYERNODE_ROLLUP_GENLAYERCHAINRPCKEY` does not apply to this URL.
-3. To keep the key out of `config.yaml`, leave the placeholder in the file and set the whole URL in the node's environment instead:
+1. Create a key at [app.conduit.xyz/rpc-keys](https://app.conduit.xyz/rpc-keys).
+2. Set it in the node's environment as `GENLAYERNODE_ROLLUP_GENLAYERCHAINRPCKEY`. Never put it in the RPC or WebSocket URLs, or anywhere in `config.yaml`:
 
    ```sh copy
-   export GENLAYERNODE_ROLLUP_GENLAYERCHAINWEBSOCKETURL="wss://rpc-genlayer-chain-testnet-cfn8m3xc6l.t.conduit.xyz/<CONDUIT_API_KEY>"
+   export GENLAYERNODE_ROLLUP_GENLAYERCHAINRPCKEY="<your Conduit API key>"
    ```
 
-The node hides the URL path when it prints this URL, so the key does not appear in logs.
+   With Docker, add the same variable to the `.env` file next to your `docker-compose.yaml`.
+
+The node sends the key in the `X-AccessKey` header on both the RPC and WebSocket connections. To use a different header name, set `rollup.genlayerchainrpckeyheader`.
 
 #### Overriding Configuration with Environment Variables
 
@@ -522,6 +522,7 @@ Any configuration value in `config.yaml` can be overridden using environment var
 |------------|---------------------|
 | `rollup.genlayerchainrpcurl` | `GENLAYERNODE_ROLLUP_GENLAYERCHAINRPCURL` |
 | `rollup.genlayerchainwebsocketurl` | `GENLAYERNODE_ROLLUP_GENLAYERCHAINWEBSOCKETURL` |
+| (secret, environment only) | `GENLAYERNODE_ROLLUP_GENLAYERCHAINRPCKEY` |
 | `consensus.contractmainaddress` | `GENLAYERNODE_CONSENSUS_CONTRACTMAINADDRESS` |
 | `consensus.contractdataaddress` | `GENLAYERNODE_CONSENSUS_CONTRACTDATAADDRESS` |
 | `consensus.genesis` | `GENLAYERNODE_CONSENSUS_GENESIS` |
