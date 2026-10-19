@@ -7,10 +7,11 @@
 
 # rollup configuration
 rollup:
-  genlayerchainrpcurl: "https://rpc-genlayer-chain-testnet-cfn8m3xc6l.t.conduit.xyz/" # GenLayer Chain RPC URL
-  genlayerchainwebsocketurl: "wss://rpc-genlayer-chain-testnet-cfn8m3xc6l.t.conduit.xyz/" # GenLayer Chain WebSocket URL
-  # Conduit refuses a WebSocket connection without an API key. Create a key at
-  # https://app.conduit.xyz/rpc-keys and set it in the environment as
+  genlayerchainrpcurl: "https://rpc.testnet-chain.genlayer.com/" # GenLayer Chain RPC URL
+  genlayerchainwebsocketurl: "wss://rpc.testnet-chain.genlayer.com/" # GenLayer Chain WebSocket URL
+  # The WebSocket refuses a connection without an API key. The chain is
+  # operated by Conduit: create a key at https://app.conduit.xyz/rpc-keys and
+  # set it in the environment as
   # GENLAYERNODE_ROLLUP_GENLAYERCHAINRPCKEY, never in these URLs or this file.
   # The node sends it in the X-AccessKey header on the RPC and WebSocket
   # connections.
