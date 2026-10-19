@@ -5,11 +5,10 @@ const path = require('path');
 
 /**
  * Update the setup guide with the latest config from content/validators/config.yaml
- * and network-specific consensus configs from content/validators/asimov.yaml and bradbury.yaml
+ * and the network-specific config from content/validators/bradbury.yaml
  */
 function updateConfigInSetupGuide() {
   const configPath = path.join(process.cwd(), 'content/validators/config.yaml');
-  const asimovPath = path.join(process.cwd(), 'content/validators/asimov.yaml');
   const bradburyPath = path.join(process.cwd(), 'content/validators/bradbury.yaml');
   const setupGuidePath = path.join(process.cwd(), 'pages/validators/setup-guide.mdx');
 
@@ -36,23 +35,7 @@ function updateConfigInSetupGuide() {
     }
   }
 
-  // Update Asimov consensus config
-  if (fs.existsSync(asimovPath)) {
-    const asimovContent = fs.readFileSync(asimovPath, 'utf8');
-    const asimovPattern = /(##### Testnet Asimov\s*```yaml[^\n]*\n)([\s\S]*?)(\n```)/;
-
-    if (asimovPattern.test(setupGuideContent)) {
-      setupGuideContent = setupGuideContent.replace(
-        asimovPattern,
-        `$1${asimovContent}$3`
-      );
-      console.log(`Updated Asimov config block at ${new Date().toISOString()}`);
-    } else {
-      console.error('Could not find Asimov config pattern in setup guide');
-    }
-  }
-
-  // Update Bradbury consensus config
+  // Update Bradbury network config (rollup + consensus)
   if (fs.existsSync(bradburyPath)) {
     const bradburyContent = fs.readFileSync(bradburyPath, 'utf8');
     const bradburyPattern = /(##### Testnet Bradbury\s*```yaml[^\n]*\n)([\s\S]*?)(\n```)/;

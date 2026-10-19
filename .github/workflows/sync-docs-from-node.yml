@@ -106,7 +106,6 @@ jobs:
             docs/api/rpc
             docs/api/ops
             configs/node/config.yaml.example
-            configs/node/asimov.yaml.example
             configs/node/bradbury.yaml.example
             release/docker-compose.yaml
             release/alloy-config.river
@@ -129,7 +128,7 @@ jobs:
     needs: prepare
     strategy:
       matrix:
-        sync_type: [changelog, config, config_asimov, config_bradbury, docker_compose, docker_compose_monitoring, alloy_config, greybox_setup, api_gen, api_debug, api_ops]
+        sync_type: [changelog, config, config_bradbury, docker_compose, docker_compose_monitoring, alloy_config, greybox_setup, api_gen, api_debug, api_ops]
       fail-fast: false
     steps:
       - name: Checkout documentation repository
@@ -163,12 +162,6 @@ jobs:
               echo "title=Config File" >> $GITHUB_OUTPUT
               echo "source_path=source-repo/configs/node/config.yaml.example" >> $GITHUB_OUTPUT
               echo "target_path=content/validators/config.yaml" >> $GITHUB_OUTPUT
-              echo "filter_pattern=.*" >> $GITHUB_OUTPUT
-              ;;
-            "config_asimov")
-              echo "title=Config File (Asimov)" >> $GITHUB_OUTPUT
-              echo "source_path=source-repo/configs/node/asimov.yaml.example" >> $GITHUB_OUTPUT
-              echo "target_path=content/validators/asimov.yaml" >> $GITHUB_OUTPUT
               echo "filter_pattern=.*" >> $GITHUB_OUTPUT
               ;;
             "config_bradbury")
@@ -536,12 +529,11 @@ jobs:
           echo "" >> $GITHUB_STEP_SUMMARY
           
           # Process each sync type report
-          for sync_type in changelog config config_asimov config_bradbury docker_compose docker_compose_monitoring alloy_config greybox_setup api_gen api_debug api_ops; do
+          for sync_type in changelog config config_bradbury docker_compose docker_compose_monitoring alloy_config greybox_setup api_gen api_debug api_ops; do
             # Get proper title
             case "$sync_type" in
               "changelog") title="📝 Changelog Sync" ;;
               "config") title="⚙️ Config File Sync" ;;
-              "config_asimov") title="⚙️ Config File Sync (Asimov)" ;;
               "config_bradbury") title="⚙️ Config File Sync (Bradbury)" ;;
               "docker_compose") title="🐳 Docker Compose Sync" ;;
               "docker_compose_monitoring") title="🐳 Docker Compose Sync (Monitoring)" ;;

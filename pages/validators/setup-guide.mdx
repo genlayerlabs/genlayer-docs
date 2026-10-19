@@ -131,7 +131,7 @@ genlayer staking wizard
 The wizard guides you through:
 
 1. **Account setup** - Create or select your owner account
-2. **Network selection** - Choose testnet-asimov
+2. **Network selection** - Choose testnet-bradbury
 3. **Balance verification** - Confirms you have at least 42,000 GEN
 4. **Operator setup** - Create and export an operator keystore for your validator server
 5. **Stake amount** - Enter how much GEN to stake (minimum 42,000)
@@ -263,7 +263,7 @@ This is the main configuration file of your node. Without it, your node won't st
 
 The file needs to be located at `configs/node/config.yaml`
 
-You can use the following example configuration. **Note:** For most users, you will only need to modify the `genlayerchainrpcurl`, `genlayerchainwebsocketurl`, and the `consensus` section for your target network (see [Network-Specific Consensus Configuration](#network-specific-consensus-configuration) below).
+You can use the following example configuration. **Note:** For most users, you will only need to replace the `rollup` and `consensus` sections with the values for your target network (see [Network-Specific Consensus Configuration](#network-specific-consensus-configuration) below).
 
 ```yaml copy
 # rollup configuration
@@ -455,17 +455,9 @@ metrics:
 
 #### Network-Specific Consensus Configuration
 
-Set the `consensus` section in your `config.yaml` according to the network you want to join:
+Replace the matching sections of your `config.yaml` with the block for the network you want to join. Replace each top-level section as a whole rather than adding a second `rollup:` or `consensus:` key.
 
-##### Testnet Asimov
-
-```yaml copy
-# Asimov Phase 5 network consensus configuration
-consensus:
-  consensusaddress: "0xe66B434bc83805f380509642429eC8e43AE9874a"
-  genesis: 17326
-
-```
+Since v0.6, the node refuses to start unless `consensus.manifestpath` points at the trusted `protocol-manifest.json` for the deployment. The release ships the Bradbury manifest at `configs/node/protocol-manifest.json`, and relative paths resolve against the node root. At startup, the node also refuses a manifest whose registry does not match `consensus.consensusaddress`, or whose chain does not match `consensus.chainid`.
 
 ##### Testnet Bradbury
 
