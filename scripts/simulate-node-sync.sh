@@ -13,6 +13,9 @@ set -euo pipefail
 #   <node-ref>  tag, branch or commit in the node repo (e.g. v0.6.0-rc.2, origin/v0.6-dev)
 # Environment:
 #   NODE_REPO   local genlayer-node clone (default: ../genlayer-node); fetch it first.
+#   SYNC_TYPES  optional subset of sync types (node-sync-params.sh --list) to take
+#               from <node-ref>, e.g. to pin the files a release shipped:
+#               SYNC_TYPES="config docker_compose" scripts/simulate-node-sync.sh v0.6.0-rc.1
 #
 # Needs: git, node, and for the sync step GNU sed + yq v4 + perl. Where those are
 # missing (macOS), the sync step runs in a debian:bookworm-slim container.
@@ -34,7 +37,7 @@ if sed --version >/dev/null 2>&1 && yq --version 2>/dev/null | grep -q 'version 
   bash .github/scripts/run-sync-matrix.sh "$SNAPSHOT"
 else
   echo "GNU sed or yq v4 not found: running the sync step in a container"
-  docker run --rm -v "$ROOT:/docs" -v "$SNAPSHOT:/src:ro" -w /docs debian:bookworm-slim bash -c '
+  docker run --rm -e SYNC_TYPES -v "$ROOT:/docs" -v "$SNAPSHOT:/src:ro" -w /docs debian:bookworm-slim bash -c '
     set -e
     apt-get -qq update >/dev/null
     apt-get -qq install -y wget ca-certificates perl >/dev/null

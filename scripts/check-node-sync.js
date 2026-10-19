@@ -27,7 +27,9 @@ const failures = [];
 const fail = (msg) => failures.push(msg);
 
 // 1. Every sync target exists.
-const types = execFileSync('bash', ['.github/scripts/node-sync-params.sh', '--list'], { cwd: root, encoding: 'utf8' })
+// Always every type, whatever SYNC_TYPES a local run used.
+const allTypes = { ...process.env, SYNC_TYPES: '' };
+const types = execFileSync('bash', ['.github/scripts/node-sync-params.sh', '--list'], { cwd: root, encoding: 'utf8', env: allTypes })
   .trim().split('\n');
 for (const type of types) {
   const out = execFileSync('bash', ['.github/scripts/node-sync-params.sh', type], { cwd: root, encoding: 'utf8' });

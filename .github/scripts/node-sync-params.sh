@@ -15,6 +15,9 @@ set -euo pipefail
 #   SOURCE_ROOT       where the node snapshot is checked out (default: source-repo)
 #   CHANGELOG_PATH, API_GEN_PATH, API_DEBUG_PATH, API_OPS_PATH,
 #   API_GEN_REGEX, API_DEBUG_REGEX: the workflow_dispatch overrides
+#   SYNC_TYPES        optional space-separated subset of sync types for --list
+#                     and --sources (local runs only, e.g. to pin some files to
+#                     an older node tag); default: all types
 
 SOURCE_ROOT="${SOURCE_ROOT:-source-repo}"
 CHANGELOG_PATH="${CHANGELOG_PATH:-docs/changelog}"
@@ -38,12 +41,24 @@ api_gen|API Gen Methods|${API_GEN_PATH}|pages/api-references/genlayer-node/gen|$
 api_debug|API Debug Methods|${API_DEBUG_PATH}|pages/api-references/genlayer-node/debug|${API_DEBUG_REGEX}
 api_ops|API Ops Methods|${API_OPS_PATH}|pages/api-references/genlayer-node/ops|.*"
 
+# Rows of the selected types (all rows when SYNC_TYPES is unset).
+selected() {
+  if [[ -z "${SYNC_TYPES:-}" ]]; then
+    printf '%s\n' "$TABLE"
+    return
+  fi
+  local t
+  for t in $SYNC_TYPES; do
+    awk -F'|' -v t="$t" '$1 == t' <<< "$TABLE" | grep . || { echo "Unknown sync type: $t" >&2; exit 1; }
+  done
+}
+
 case "${1:-}" in
   --list)
-    cut -d'|' -f1 <<< "$TABLE"
+    selected | cut -d'|' -f1
     ;;
   --sources)
-    cut -d'|' -f3 <<< "$TABLE" | sort -u
+    selected | cut -d'|' -f3 | sort -u
     ;;
   "")
     echo "Usage: $0 --list | --sources | <sync_type>" >&2
