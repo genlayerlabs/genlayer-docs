@@ -702,23 +702,23 @@ printf '\n'
 
 #### Option 1: Import from CLI Wizard (Recommended)
 
-If you used `genlayer staking wizard`, it exported an operator keystore file. Transfer this file to your validator server and import it:
+The wizard exports an encrypted Web3/geth-compatible operator keystore. Transfer
+only that file to the validator server. With the default `datadir: ./data/node`
+and `node.keystoredir: keystore`, install it as the node service user:
 
-```sh copy
-./bin/genlayernode account import \
-  --passphrase "password you set when exporting from wizard" \
-  --path "/path/to/operator-keystore.json" \
-  -c $(pwd)/configs/node/config.yaml \
-  --setup
+```bash copy
+install -d -m 700 ./data/node/keystore
+test ! -e ./data/node/keystore/operator.json || exit 1
+install -m 600 /path/to/operator-keystore.json ./data/node/keystore/operator.json
 ```
 
-You should see:
-
-```sh
-Operator account imported:
-	Operator address: 0xA0b12Fd2f3F7e86fEC458D114A5E7a6f571160a8
-	Operator address has been set in config.yaml
-```
+Set `GENLAYERNODE_PASSWORD` privately to the **export passphrase**. This preserves
+the file's encryption; it does not re-encrypt it with a different password. Adjust
+the destination if your configured data or keystore path differs. Set the public
+`node.operatorAddress` and `node.validatorWalletAddress` in your config and run
+doctor to verify unlocking and registration. The current `account import` command
+requires an export passphrase argument; it does not prompt for it. The encrypted
+file installation above avoids putting that secret in process arguments.
 
 #### Option 2: Generate New Operator Key
 
@@ -732,38 +732,17 @@ For Phase 2 registration, the CLI also needs that operator account to sign its p
 
 #### Restoring Your Operator Key
 
-To restore from a backup (e.g., after migrating to a new server):
-
-```sh copy
-./bin/genlayernode account import \
-  --passphrase "your backup encryption passphrase" \
-  --path "/path/to/your/secure/backup.key" \
-  -c $(pwd)/configs/node/config.yaml \
-  --setup
-```
-
-<Callout type="warning" emoji="🚨">
-  Always verify that your imported key works by checking the operator address matches what's configured for your validator.
-</Callout>
+Stop the old node before transferring its operator to another server. Restore the
+encrypted keystore using the procedure above, retain its passphrase privately and
+verify the public address against registration before startup. Never run both
+nodes with the same operator simultaneously.
 
 #### Backing Up Your Operator Key
 
-After setting up your operator key, back it up securely:
-
-```sh copy
-./bin/genlayernode account export \
-  --address "your operator address" \
-  --passphrase "your backup encryption passphrase" \
-  --path "/path/to/your/secure/backup.key" \
-  -c $(pwd)/configs/node/config.yaml
-```
-
-<Callout type="warning" emoji="🚨">
-  **Important: Back up your operator key!** Losing access means you'll need to set up a new operator and update your validator configuration. Store the backup securely.
-</Callout>
-
-To print the private key from your backup file, use the `--print` flag. **Keep this private key secure and never share it.**
-
+Back up the encrypted operator keystore, public config and trusted manifest using
+your approved secure backup location. Keep the passphrase separately. Preserve
+owner-only permissions and test recovery before discarding the source. Do not
+print or export the raw private key as part of routine installation.
 
 ### Running the node
 
@@ -1235,21 +1214,21 @@ This is the release package's `.env.example`: copy it to `.env` next to `docker-
 
 4. Import the operator key
 
-   `config.yaml` is mounted read-only, so `account import --setup` cannot write the operator address from inside the container. Import the key into the data directory, then add the address to the config yourself:
+   Install the encrypted CLI operator export into the node's keystore directory.
+   The example uses the default data mount and `datadir: ./data/node`. Adapt it if
+   you changed `NODE_DATA_PATH` or the configured keystore path.
 
-   ```sh copy
-   # 1. Put the key file in the data directory (mounted writable at /app/data)
-   mkdir -p ./data/import && cp /path/to/operator-keystore.json ./data/import/
-
-   # 2. Import it. The keystore password comes from NODE_PASSWORD in .env.
-   docker compose --profile node run --rm --entrypoint /app/bin/genlayernode genlayer-node \
-     account import --path /app/data/import/operator-keystore.json --passphrase "password you set when exporting from wizard"
-
-   # 3. Remove the key file
-   rm ./data/import/operator-keystore.json && rmdir ./data/import
+   ```bash copy
+   sudo install -d -m 700 -o 10001 -g 10001 ./data/node/keystore
+   test ! -e ./data/node/keystore/operator.json || exit 1
+   sudo install -m 600 -o 10001 -g 10001 /path/to/operator-keystore.json \
+     ./data/node/keystore/operator.json
    ```
 
-   On Linux, run step 2 after the `chown` above. For a raw private key, use `--private-key <hex>` instead of `--path` and `--passphrase`. The command prints the operator address: add it to `configs/node/config.yaml` on the host:
+   Set `NODE_PASSWORD` in the private `.env` to the export's passphrase. This keeps
+   the original encryption and avoids passing a password or private key in process
+   arguments. `config.yaml` is mounted read-only: set the public registered
+   operator address in the host configuration, then verify it with doctor:
 
    ```yaml
    node:
