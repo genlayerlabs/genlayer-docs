@@ -25,8 +25,8 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
-      - name: Test the setup guide version channel
-        run: npm run test:setup-guide-versions
+      - name: Test the release-version rule (newest rc until its stable exists)
+        run: npm run test:release-versions
 
       - name: Run documentation sync scripts
         # The one generator list (.github/scripts/doc-generator.sh). Fails when a

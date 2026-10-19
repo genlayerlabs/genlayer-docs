@@ -2,6 +2,7 @@
 
 const fs = require('fs');
 const path = require('path');
+const { publishedVersions, parseVersion } = require('./lib/release-versions');
 
 // A generator that cannot find its source or its target block fails the build.
 const fail = (msg) => { console.error(msg); process.exitCode = 1; };
@@ -18,37 +19,15 @@ function generateChangelog() {
     return;
   }
   
-  // Read all .mdx files from the changelog directory
-  const files = fs.readdirSync(changelogDir)
+  // The versions the docs publish, newest first (scripts/lib/release-versions.js):
+  // a release candidate shows until its stable release exists.
+  const names = fs.readdirSync(changelogDir)
     .filter(file => file.endsWith('.mdx'))
-    .sort((a, b) => {
-      // Sort versions in descending order (newest first)
-      // Handle both v0.x.x and v0.x.x-testnetXXX formats
-      const versionA = a.replace('.mdx', '');
-      const versionB = b.replace('.mdx', '');
-      
-      // Extract version parts for comparison
-      const parseVersion = (v) => {
-        const match = v.match(/v(\d+)\.(\d+)\.(\d+)(?:-testnet(\d+))?/);
-        if (!match) return [0, 0, 0, 0];
-        return [
-          parseInt(match[1]), 
-          parseInt(match[2]), 
-          parseInt(match[3]), 
-          parseInt(match[4] || '999') // Regular versions come before testnet versions
-        ];
-      };
-      
-      const [majorA, minorA, patchA, testnetA] = parseVersion(versionA);
-      const [majorB, minorB, patchB, testnetB] = parseVersion(versionB);
-      
-      // Compare versions (descending order)
-      if (majorB !== majorA) return majorB - majorA;
-      if (minorB !== minorA) return minorB - minorA;
-      if (patchB !== patchA) return patchB - patchA;
-      return testnetB - testnetA;
-    });
-  
+    .map(file => file.replace(/\.mdx$/, ''));
+  const files = publishedVersions(names, { testnet: true }).map(v => `${v}.mdx`);
+  const unknown = names.filter(n => !files.includes(`${n}.mdx`) && !parseVersion(n));
+  if (unknown.length) fail(`Changelog files with an unknown version name: ${unknown.join(', ')}`);
+
   // Read the content of each file
   const sections = [];
   for (const file of files) {

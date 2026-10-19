@@ -2,66 +2,23 @@
 
 const fs = require('fs');
 const path = require('path');
+const { publishedVersions } = require('./lib/release-versions');
 
 // A generator that cannot find its source or its target block fails the build.
 const fail = (msg) => { console.error(msg); process.exitCode = 1; };
 
-const CHANNELS = ['stable', 'all'];
-
-// v0.6.0, v0.6.0-rc.2, v0.2.0-testnet005
-const VERSION_RE = /^v(\d+)\.(\d+)\.(\d+)(?:-(rc)\.(\d+)|-(testnet)(\d+))?$/;
-
-function parseVersion(v) {
-  const m = v.match(VERSION_RE);
-  if (!m) return null;
-  const pre = m[4] || m[6] || null;
-  return {
-    name: v,
-    core: [Number(m[1]), Number(m[2]), Number(m[3])],
-    pre, // null for a stable release
-    preNumber: Number(m[5] || m[7] || 0),
-  };
-}
-
-// Newest first. A stable release sorts above its own pre-releases.
-function compareDesc(a, b) {
-  for (let i = 0; i < 3; i++) {
-    if (a.core[i] !== b.core[i]) return b.core[i] - a.core[i];
-  }
-  if (!a.pre !== !b.pre) return a.pre ? 1 : -1;
-  return b.preNumber - a.preNumber;
-}
-
-/**
- * Select the versions the guide names for a channel.
- * Testnet builds (v0.2.0-testnetNNN) are never named. Release candidates are
- * named only on the 'all' channel.
- */
-function selectVersions(names, channel) {
-  if (!CHANNELS.includes(channel)) {
-    throw new Error(`versionChannel must be one of ${CHANNELS.join(', ')}, got ${JSON.stringify(channel)}`);
-  }
-  return names
-    .map(parseVersion)
-    .filter(Boolean)
-    .filter((v) => v.pre !== 'testnet' && (channel === 'all' || v.pre === null))
-    .sort(compareDesc)
-    .map((v) => v.name);
-}
-
-/** The list command shown in the guide, as the channel would run it. */
-function listCommandTail(channel) {
-  return channel === 'all' ? '| sort -ruV | head -n 5' : '| sort -ruV | grep -v "rc" | head -n 5';
-}
+// The tail of the guide's list command, the same rule in shell: the sed pair
+// makes the version sort put v0.6.0-rc.N below v0.6.0; awk drops an rc once its
+// stable release exists and keeps only the newest rc of an unreleased version.
+const LIST_COMMAND_TAIL = `| sed 's/-rc/~rc/' | sort -ruV | sed 's/~rc/-rc/' | awk '{c=$0; sub(/-rc\\..*/,"",c)} /-rc\\./{if ((c in s) || (c in r)) next; r[c]=1} !/-rc\\./{s[c]=1} {print}' | head -n 5`;
 
 /**
  * Update the setup guide's version list, list command and `export version=` line.
- * @param {{root?: string, channel?: string}} options
+ * The guide names the newest published version (scripts/lib/release-versions.js):
+ * the newest release candidate while its stable release does not exist yet.
+ * @param {{root?: string}} options
  */
-function updateSetupGuideVersions({ root = process.cwd(), channel } = {}) {
-  if (channel === undefined) {
-    channel = require('./setup-guide-versions.config').versionChannel;
-  }
+function updateSetupGuideVersions({ root = process.cwd() } = {}) {
   const changelogDir = path.join(root, 'content/validators/changelog');
   const setupGuidePath = path.join(root, 'pages/validators/setup-guide.mdx');
 
@@ -77,16 +34,9 @@ function updateSetupGuideVersions({ root = process.cwd(), channel } = {}) {
   const names = fs.readdirSync(changelogDir)
     .filter((file) => file.endsWith('.mdx'))
     .map((file) => file.replace(/\.mdx$/, ''));
-
-  let versions;
-  try {
-    versions = selectVersions(names, channel);
-  } catch (e) {
-    fail(e.message);
-    return;
-  }
+  const versions = publishedVersions(names);
   if (versions.length === 0) {
-    fail(`No ${channel} version files found in changelog directory`);
+    fail('No version files found in changelog directory');
     return;
   }
 
@@ -102,10 +52,10 @@ function updateSetupGuideVersions({ root = process.cwd(), channel } = {}) {
     fail('Could not find version list pattern in setup guide');
   }
 
-  // The tail of the list command: version sort, rc filter (stable only), first 5.
-  const listCommandPattern = /\| sort -ruV?(?: \| grep -v "rc")? \| head -n 5/;
+  // Everything after the sed that extracts the version names.
+  const listCommandPattern = /\| (?:sed 's\/-rc\/~rc\/' \| )?sort -ruV?[^\n]*?\| head -n 5/;
   if (listCommandPattern.test(content)) {
-    content = content.replace(listCommandPattern, () => listCommandTail(channel));
+    content = content.replace(listCommandPattern, () => LIST_COMMAND_TAIL);
   } else {
     fail('Could not find the version list command (| sort -ru... | head -n 5) in setup guide');
   }
@@ -118,11 +68,11 @@ function updateSetupGuideVersions({ root = process.cwd(), channel } = {}) {
   }
 
   fs.writeFileSync(setupGuidePath, content);
-  console.log(`Updated setup guide (${channel} channel) with ${versions.length} versions, latest: ${latestVersion}`);
+  console.log(`Updated setup guide with ${versions.length} published versions, latest: ${latestVersion}`);
 }
 
 if (require.main === module) {
   updateSetupGuideVersions();
 }
 
-module.exports = { updateSetupGuideVersions, selectVersions, listCommandTail, CHANNELS };
+module.exports = { updateSetupGuideVersions, LIST_COMMAND_TAIL };

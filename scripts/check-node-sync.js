@@ -11,12 +11,14 @@
 // - sanitized files are sanitized (no live RPC URLs, no alloy service);
 // - the Bradbury manifest is valid JSON and matches bradbury.yaml;
 // - no Asimov references in validator and node API pages;
-// - no changelog version disappears compared with BASE_REF (default origin/main).
+// - no changelog version disappears compared with BASE_REF (default origin/main),
+//   except a release candidate superseded by its stable release or a newer rc.
 
 const fs = require('fs');
 const path = require('path');
 const { execFileSync } = require('child_process');
 const { extractAlloyBlock } = require('./update-alloy-in-monitoring');
+const { isSuperseded } = require('./lib/release-versions');
 
 const root = path.join(__dirname, '..');
 const read = (p) => fs.readFileSync(path.join(root, p), 'utf8');
@@ -122,8 +124,10 @@ const baseRef = process.env.BASE_REF || 'origin/main';
 try {
   const before = execFileSync('git', ['ls-tree', '--name-only', `${baseRef}:content/validators/changelog`], { cwd: root, encoding: 'utf8', stdio: ['ignore', 'pipe', 'ignore'] })
     .trim().split('\n').filter(Boolean);
+  const now = fs.readdirSync(path.join(root, 'content/validators/changelog'))
+    .filter((f) => f.endsWith('.mdx')).map((f) => f.replace(/\.mdx$/, ''));
   for (const file of before) {
-    if (!exists(`content/validators/changelog/${file}`)) {
+    if (!exists(`content/validators/changelog/${file}`) && !isSuperseded(file.replace(/\.mdx$/, ''), now)) {
       fail(`changelog: ${file} is on ${baseRef} but was removed (is it missing in the node source?)`);
     }
   }

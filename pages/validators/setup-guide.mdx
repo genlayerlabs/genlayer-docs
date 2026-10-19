@@ -210,7 +210,7 @@ One full node can be shared between multiple validators. The optimal validator-t
    You can use this command to list available versions:
 
    ```sh copy
-   curl -s "https://storage.googleapis.com/storage/v1/b/gh-af/o?prefix=genlayer-node/bin/amd64" | grep -o '"name": *"[^"]*"' | sed -n 's/.*\/\(v[^/]*\)\/.*/\1/p' | sort -ruV | grep -v "rc" | head -n 5
+   curl -s "https://storage.googleapis.com/storage/v1/b/gh-af/o?prefix=genlayer-node/bin/amd64" | grep -o '"name": *"[^"]*"' | sed -n 's/.*\/\(v[^/]*\)\/.*/\1/p' | sed 's/-rc/~rc/' | sort -ruV | sed 's/~rc/-rc/' | awk '{c=$0; sub(/-rc\..*/,"",c)} /-rc\./{if ((c in s) || (c in r)) next; r[c]=1} !/-rc\./{s[c]=1} {print}' | head -n 5
    ```
 
    You should see a list like this
@@ -1212,7 +1212,30 @@ This is the release package's `.env.example`: copy it to `.env` next to `docker-
 - the API key of at least one LLM provider.
 - `GENLAYERNODE_ROLLUP_GENLAYERCHAINRPCKEY`, when your chain RPC provider needs a key (the Bradbury WebSocket does).
 
-4. Checking Your Configuration
+4. Import the operator key
+
+   `config.yaml` is mounted read-only, so `account import --setup` cannot write the operator address from inside the container. Import the key into the data directory, then add the address to the config yourself:
+
+   ```sh copy
+   # 1. Put the key file in the data directory (mounted writable at /app/data)
+   mkdir -p ./data/import && cp /path/to/operator-keystore.json ./data/import/
+
+   # 2. Import it. The keystore password comes from NODE_PASSWORD in .env.
+   docker compose --profile node run --rm --entrypoint /app/bin/genlayernode genlayer-node \
+     account import --path /app/data/import/operator-keystore.json --passphrase "password you set when exporting from wizard"
+
+   # 3. Remove the key file
+   rm ./data/import/operator-keystore.json && rmdir ./data/import
+   ```
+
+   On Linux, run step 2 after the `chown` above. For a raw private key, use `--private-key <hex>` instead of `--path` and `--passphrase`. The command prints the operator address: add it to `configs/node/config.yaml` on the host:
+
+   ```yaml
+   node:
+     operatorAddress: "0x..."
+   ```
+
+5. Checking Your Configuration
 
 Before the first start, run `doctor` in the node container, with the same config, manifest, environment and network as the node:
 
@@ -1220,7 +1243,7 @@ Before the first start, run `doctor` in the node container, with the same config
 docker compose --profile node run --rm --entrypoint /app/bin/genlayernode genlayer-node doctor
 ```
 
-5. Start the services using Docker Compose:
+6. Start the services using Docker Compose:
 
 ```sh copy
 docker compose --profile node up -d
