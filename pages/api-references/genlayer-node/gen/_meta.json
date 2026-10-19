@@ -6,5 +6,11 @@
   "gen_getTransactionReceipt": "gen_getTransactionReceipt",
   "gen_getTransactionStatus": "gen_getTransactionStatus",
   "gen_getTransactionLifecycle": "gen_getTransactionLifecycle",
-  "gen_syncing": "gen_syncing"
+  "gen_syncing": "gen_syncing",
+  "gen_estimateGas": "gen_estimateGas",
+  "gen_getLogs": "gen_getLogs",
+  "gen_getTransactionData": "gen_getTransactionData",
+  "gen_protocolVersion": "gen_protocolVersion",
+  "gen_subscribe": "gen_subscribe",
+  "gen_unsubscribe": "gen_unsubscribe"
 }

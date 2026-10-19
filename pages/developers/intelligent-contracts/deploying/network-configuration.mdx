@@ -1,5 +1,5 @@
 ---
-description: "Choose and configure Localnet, Studionet, the Studio development preview, Asimov, or Bradbury."
+description: "Choose and configure Localnet, Studionet, the Studio development preview, or Bradbury."
 ---
 
 import { Callout } from 'nextra-theme-docs'
@@ -24,7 +24,6 @@ The stable built-in aliases are:
 |:--|:--|
 | `localnet` | Local Studio or GLSim; full control and resets |
 | `studionet` | Stable hosted Studio at `studio.genlayer.com` |
-| `testnet-asimov` | Shared infrastructure and stress testing |
 | `testnet-bradbury` | Production-like testing with real AI workloads |
 
 The v0.123 / Consensus v0.6 release-candidate tooling adds `studio-dev`, backed by the JavaScript SDK's `studioDevnet` chain definition:
@@ -70,7 +69,7 @@ Both have browser faucets. Studio-dev is temporary: expect resets and do not dep
 
 ## Public testnets
 
-Use Bradbury for production-like contract testing and Asimov for infrastructure-oriented testing:
+Use Bradbury for production-like contract testing:
 
 ```bash
 genlayer network set testnet-bradbury

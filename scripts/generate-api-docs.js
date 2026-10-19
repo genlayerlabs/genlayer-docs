@@ -3,6 +3,9 @@
 const fs = require('fs');
 const path = require('path');
 
+// A generator that cannot find its source or its target block fails the build.
+const fail = (msg) => { console.error(msg); process.exitCode = 1; };
+
 // Configuration constants - can be overridden by environment variables
 const CONFIG = {
   API_DIR: process.env.API_DOCS_DIR || 'pages/api-references/genlayer-node',
@@ -33,7 +36,7 @@ function updateMetaJson(dirPath) {
       existingMeta = JSON.parse(fs.readFileSync(metaPath, 'utf8'));
       existingOrder = Object.keys(existingMeta);
     } catch (err) {
-      console.warn(`Failed to parse existing _meta.json: ${err.message}`);
+      fail(`Failed to parse existing _meta.json: ${err.message}`);
     }
   }
   
@@ -77,7 +80,7 @@ function generateApiDocs() {
   const targetFile = path.join(process.cwd(), CONFIG.TARGET_FILE);
   
   if (!fs.existsSync(apiDir)) {
-    console.error(`API directory ${apiDir} does not exist`);
+    fail(`API directory ${apiDir} does not exist`);
     return;
   }
   
@@ -100,7 +103,7 @@ function generateApiDocs() {
     }
     console.log(`Found ${genMethods.length} gen methods`);
   } else {
-    console.warn(`Gen methods directory ${genDir} does not exist - skipping`);
+    fail(`Gen methods directory ${genDir} does not exist - skipping`);
   }
   
   // Read debug methods
@@ -122,7 +125,7 @@ function generateApiDocs() {
     }
     console.log(`Found ${debugMethods.length} debug methods`);
   } else {
-    console.warn(`Debug methods directory ${debugDir} does not exist - skipping`);
+    fail(`Debug methods directory ${debugDir} does not exist - skipping`);
   }
   
   // Read ops methods
@@ -144,14 +147,14 @@ function generateApiDocs() {
     }
     console.log(`Found ${opsMethods.length} ops methods`);
   } else {
-    console.warn(`Ops methods directory ${opsDir} does not exist - skipping`);
+    fail(`Ops methods directory ${opsDir} does not exist - skipping`);
   }
   
   // Read the template file
   const templateFile = path.join(process.cwd(), CONFIG.TEMPLATE_FILE);
   
   if (!fs.existsSync(templateFile)) {
-    console.error(`Template file ${templateFile} does not exist`);
+    fail(`Template file ${templateFile} does not exist`);
     return;
   }
   
@@ -161,9 +164,9 @@ function generateApiDocs() {
   // Process the template with method content using string replacement
   // Replace template variables with actual content
   let apiContent = templateContent
-    .replace('${genMethods.join(\'\\n\\n\')}', genMethods.join('\n\n'))
-    .replace('${debugMethods.join(\'\\n\\n\')}', debugMethods.join('\n\n'))
-    .replace('${opsMethods.join(\'\\n\\n\')}', opsMethods.join('\n\n'));
+    .replace('${genMethods.join(\'\\n\\n\')}', () => genMethods.join('\n\n'))
+    .replace('${debugMethods.join(\'\\n\\n\')}', () => debugMethods.join('\n\n'))
+    .replace('${opsMethods.join(\'\\n\\n\')}', () => opsMethods.join('\n\n'));
   
   // Write to the target file
   fs.writeFileSync(targetFile, apiContent);

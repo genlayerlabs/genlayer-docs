@@ -1,0 +1,53 @@
+### gen_estimateGas
+
+Reserved for estimating gas for a GenLayer transaction. **Not implemented** — the method is registered and reachable, but every call returns an error.
+
+**Method:** `gen_estimateGas`
+
+**Parameters:** None currently read — any params supplied are ignored because the method returns before parsing them
+
+**Returns:** Nothing. The call always fails with JSON-RPC error code `-32004`
+
+**Example Request:**
+
+```json
+{
+  "jsonrpc": "2.0",
+  "method": "gen_estimateGas",
+  "params": [],
+  "id": 1
+}
+```
+
+**Example Response:**
+
+```json
+{
+  "jsonrpc": "2.0",
+  "error": {
+    "code": -32004,
+    "message": "method not implemented: gen_estimateGas"
+  },
+  "id": 1
+}
+```
+
+**Notes:**
+
+- The method is registered in the `genlayer` endpoint group, so it is reachable and rate-limited like any other method — it just cannot succeed
+- The error code is `-32004` ("method not supported"), not `-32601` ("method not found"): the node recognises the method and is declining to serve it, rather than failing to route it
+- Disabling the `genlayer` group, or this method specifically via `endpoints.methods`, changes the response to the same `-32004` code with a "method not supported" message
+- Do not use gas estimation to size a transaction budget today; set fees explicitly instead
+
+**cURL Example:**
+
+```bash
+curl -X POST http://localhost:9151 \
+  -H "Content-Type: application/json" \
+  -d '{
+    "jsonrpc": "2.0",
+    "method": "gen_estimateGas",
+    "params": [],
+    "id": 1
+  }'
+```

@@ -26,9 +26,9 @@ on:
         required: false
         default: 'gen_(?!dbg_).*'
       api_debug_regex:
-        description: 'Regex pattern to filter API debug files (e.g., "gen_dbg_.*")'
+        description: 'Regex pattern to filter API debug files (e.g., "gen_dbg_(?!load_test).*"; gen_dbg_load_test is a stub and stays out of the docs)'
         required: false
-        default: 'gen_dbg_.*'
+        default: 'gen_dbg_(?!load_test).*'
       api_ops_path:
         description: 'Path to API ops files in source repo'
         required: false
@@ -50,6 +50,7 @@ jobs:
     environment: Node Sync
     outputs:
       version: ${{ steps.final_version.outputs.version }}
+      sync_types: ${{ steps.sync_list.outputs.sync_types }}
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
@@ -95,32 +96,45 @@ jobs:
           echo "version=$VERSION" >> $GITHUB_OUTPUT
           echo "✅ Will sync version: $VERSION"
 
+      - name: List synced node paths
+        id: sync_list
+        env:
+          CHANGELOG_PATH: ${{ github.event.inputs.changelog_path || github.event.client_payload.changelog_path || 'docs/changelog' }}
+          API_GEN_PATH: ${{ github.event.inputs.api_gen_path || github.event.client_payload.api_gen_path || 'docs/api/rpc' }}
+          API_DEBUG_PATH: ${{ github.event.inputs.api_debug_path || github.event.client_payload.api_debug_path || 'docs/api/rpc' }}
+          API_OPS_PATH: ${{ github.event.inputs.api_ops_path || github.event.client_payload.api_ops_path || 'docs/api/ops' }}
+        run: |
+          # .github/scripts/node-sync-params.sh is the one list of synced files.
+          {
+            echo "sources<<EOF"
+            bash .github/scripts/node-sync-params.sh --sources
+            echo "EOF"
+            echo "sync_types=$(bash .github/scripts/node-sync-params.sh --list | jq -R . | jq -sc .)"
+          } >> "$GITHUB_OUTPUT"
+
       - name: Clone source repository
         uses: actions/checkout@v4
         with:
           repository: genlayerlabs/genlayer-node
           token: ${{ steps.app-token.outputs.token }}
           fetch-depth: 1
-          sparse-checkout: |
-            docs/changelog
-            docs/api/rpc
-            docs/api/ops
-            configs/node/config.yaml.example
-            configs/node/asimov.yaml.example
-            configs/node/bradbury.yaml.example
-            release/docker-compose.yaml
-            release/alloy-config.river
-            release/greybox-setup-guide.md
+          sparse-checkout: ${{ steps.sync_list.outputs.sources }}
           sparse-checkout-cone-mode: false
           path: source-repo
+          # Read-only snapshot: do not leave the app token in source-repo/.git/config.
+          persist-credentials: false
           ref: ${{ steps.final_version.outputs.version }}
 
       - name: Upload source snapshot
         uses: actions/upload-artifact@v4
         with:
           name: node-source
-          path: source-repo/
-          include-hidden-files: false
+          # release/.env.example is a dotfile, so hidden files are included.
+          # .git is excluded: it is not synced content.
+          path: |
+            source-repo/
+            !source-repo/.git
+          include-hidden-files: true
           retention-days: 1
 
   sync-files:
@@ -129,7 +143,7 @@ jobs:
     needs: prepare
     strategy:
       matrix:
-        sync_type: [changelog, config, config_asimov, config_bradbury, docker_compose, docker_compose_monitoring, alloy_config, greybox_setup, api_gen, api_debug, api_ops]
+        sync_type: ${{ fromJSON(needs.prepare.outputs.sync_types) }}
       fail-fast: false
     steps:
       - name: Checkout documentation repository
@@ -151,75 +165,14 @@ jobs:
 
       - name: Set sync parameters
         id: set_params
-        run: |
-          case "${{ matrix.sync_type }}" in
-            "changelog")
-              echo "title=Changelog" >> $GITHUB_OUTPUT
-              echo "source_path=source-repo/${{ github.event.inputs.changelog_path || github.event.client_payload.changelog_path || 'docs/changelog' }}" >> $GITHUB_OUTPUT
-              echo "target_path=content/validators/changelog" >> $GITHUB_OUTPUT
-              echo "filter_pattern=.*" >> $GITHUB_OUTPUT
-              ;;
-            "config")
-              echo "title=Config File" >> $GITHUB_OUTPUT
-              echo "source_path=source-repo/configs/node/config.yaml.example" >> $GITHUB_OUTPUT
-              echo "target_path=content/validators/config.yaml" >> $GITHUB_OUTPUT
-              echo "filter_pattern=.*" >> $GITHUB_OUTPUT
-              ;;
-            "config_asimov")
-              echo "title=Config File (Asimov)" >> $GITHUB_OUTPUT
-              echo "source_path=source-repo/configs/node/asimov.yaml.example" >> $GITHUB_OUTPUT
-              echo "target_path=content/validators/asimov.yaml" >> $GITHUB_OUTPUT
-              echo "filter_pattern=.*" >> $GITHUB_OUTPUT
-              ;;
-            "config_bradbury")
-              echo "title=Config File (Bradbury)" >> $GITHUB_OUTPUT
-              echo "source_path=source-repo/configs/node/bradbury.yaml.example" >> $GITHUB_OUTPUT
-              echo "target_path=content/validators/bradbury.yaml" >> $GITHUB_OUTPUT
-              echo "filter_pattern=.*" >> $GITHUB_OUTPUT
-              ;;
-            "docker_compose")
-              echo "title=Docker Compose File" >> $GITHUB_OUTPUT
-              echo "source_path=source-repo/release/docker-compose.yaml" >> $GITHUB_OUTPUT
-              echo "target_path=content/validators/docker-compose.yaml" >> $GITHUB_OUTPUT
-              echo "filter_pattern=.*" >> $GITHUB_OUTPUT
-              ;;
-            "docker_compose_monitoring")
-              echo "title=Docker Compose File (Monitoring)" >> $GITHUB_OUTPUT
-              echo "source_path=source-repo/release/docker-compose.yaml" >> $GITHUB_OUTPUT
-              echo "target_path=content/validators/docker-compose-monitoring.yaml" >> $GITHUB_OUTPUT
-              echo "filter_pattern=.*" >> $GITHUB_OUTPUT
-              ;;
-            "alloy_config")
-              echo "title=Alloy Config File" >> $GITHUB_OUTPUT
-              echo "source_path=source-repo/release/alloy-config.river" >> $GITHUB_OUTPUT
-              echo "target_path=content/validators/alloy-config.river" >> $GITHUB_OUTPUT
-              echo "filter_pattern=.*" >> $GITHUB_OUTPUT
-              ;;
-            "greybox_setup")
-              echo "title=Greybox Setup Guide" >> $GITHUB_OUTPUT
-              echo "source_path=source-repo/release/greybox-setup-guide.md" >> $GITHUB_OUTPUT
-              echo "target_path=content/validators/greybox-setup-guide.md" >> $GITHUB_OUTPUT
-              echo "filter_pattern=.*" >> $GITHUB_OUTPUT
-              ;;
-            "api_gen")
-              echo "title=API Gen Methods" >> $GITHUB_OUTPUT
-              echo "source_path=source-repo/${{ github.event.inputs.api_gen_path || github.event.client_payload.api_gen_path || 'docs/api/rpc' }}" >> $GITHUB_OUTPUT
-              echo "target_path=pages/api-references/genlayer-node/gen" >> $GITHUB_OUTPUT
-              echo "filter_pattern=${{ github.event.inputs.api_gen_regex || github.event.client_payload.api_gen_regex || 'gen_(?!dbg_).*' }}" >> $GITHUB_OUTPUT
-              ;;
-            "api_debug")
-              echo "title=API Debug Methods" >> $GITHUB_OUTPUT
-              echo "source_path=source-repo/${{ github.event.inputs.api_debug_path || github.event.client_payload.api_debug_path || 'docs/api/rpc' }}" >> $GITHUB_OUTPUT
-              echo "target_path=pages/api-references/genlayer-node/debug" >> $GITHUB_OUTPUT
-              echo "filter_pattern=${{ github.event.inputs.api_debug_regex || github.event.client_payload.api_debug_regex || 'gen_dbg_.*' }}" >> $GITHUB_OUTPUT
-              ;;
-            "api_ops")
-              echo "title=API Ops Methods" >> $GITHUB_OUTPUT
-              echo "source_path=source-repo/${{ github.event.inputs.api_ops_path || github.event.client_payload.api_ops_path || 'docs/api/ops' }}" >> $GITHUB_OUTPUT
-              echo "target_path=pages/api-references/genlayer-node/ops" >> $GITHUB_OUTPUT
-              echo "filter_pattern=.*" >> $GITHUB_OUTPUT
-              ;;
-          esac
+        env:
+          CHANGELOG_PATH: ${{ github.event.inputs.changelog_path || github.event.client_payload.changelog_path || 'docs/changelog' }}
+          API_GEN_PATH: ${{ github.event.inputs.api_gen_path || github.event.client_payload.api_gen_path || 'docs/api/rpc' }}
+          API_DEBUG_PATH: ${{ github.event.inputs.api_debug_path || github.event.client_payload.api_debug_path || 'docs/api/rpc' }}
+          API_OPS_PATH: ${{ github.event.inputs.api_ops_path || github.event.client_payload.api_ops_path || 'docs/api/ops' }}
+          API_GEN_REGEX: ${{ github.event.inputs.api_gen_regex || github.event.client_payload.api_gen_regex || 'gen_(?!dbg_).*' }}
+          API_DEBUG_REGEX: ${{ github.event.inputs.api_debug_regex || github.event.client_payload.api_debug_regex || 'gen_dbg_(?!load_test).*' }}
+        run: bash .github/scripts/node-sync-params.sh "${{ matrix.sync_type }}" >> "$GITHUB_OUTPUT"
 
       - name: Sync files using composite action
         id: sync
@@ -302,6 +255,8 @@ jobs:
         uses: actions/checkout@v4
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
+          # check-node-sync compares the changelog with origin/main.
+          fetch-depth: 0
       
       - name: Setup Node.js
         uses: actions/setup-node@v4
@@ -332,7 +287,11 @@ jobs:
       - name: Run documentation generation scripts
         id: generate
         run: |
-          .github/scripts/doc-generator.sh && echo "success=true" >> "$GITHUB_OUTPUT"
+          .github/scripts/doc-generator.sh
+          # No PR from a sync that breaks a page: generated blocks must hold
+          # their synced source verbatim, and no changelog entry may disappear.
+          npm run check:node-sync
+          echo "success=true" >> "$GITHUB_OUTPUT"
 
       - name: Copy sync reports for final artifact
         run: |
@@ -453,7 +412,7 @@ jobs:
           - **Source Repository**: \`genlayerlabs/genlayer-node\`
           - **Version**: \`${{ needs.prepare.outputs.version }}\`
           - **API Gen Filter**: \`${{ github.event.inputs.api_gen_regex != '' && github.event.inputs.api_gen_regex || (github.event.client_payload.api_gen_regex != '' && github.event.client_payload.api_gen_regex || 'gen_(?!dbg_).*') }}\`
-          - **API Debug Filter**: \`${{ github.event.inputs.api_debug_regex != '' && github.event.inputs.api_debug_regex || (github.event.client_payload.api_debug_regex != '' && github.event.client_payload.api_debug_regex || 'gen_dbg_.*') }}\`
+          - **API Debug Filter**: \`${{ github.event.inputs.api_debug_regex != '' && github.event.inputs.api_debug_regex || (github.event.client_payload.api_debug_regex != '' && github.event.client_payload.api_debug_regex || 'gen_dbg_(?!load_test).*') }}\`
           - **Total Files Changed**: ${{ needs.aggregate-results.outputs.total_changes }}
             - Added: ${{ needs.aggregate-results.outputs.total_added }} files
             - Updated: ${{ needs.aggregate-results.outputs.total_updated }} files
@@ -536,20 +495,22 @@ jobs:
           echo "" >> $GITHUB_STEP_SUMMARY
           
           # Process each sync type report
-          for sync_type in changelog config config_asimov config_bradbury docker_compose docker_compose_monitoring alloy_config greybox_setup api_gen api_debug api_ops; do
+          for sync_type in $(echo '${{ needs.prepare.outputs.sync_types }}' | jq -r '.[]'); do
             # Get proper title
             case "$sync_type" in
               "changelog") title="📝 Changelog Sync" ;;
               "config") title="⚙️ Config File Sync" ;;
-              "config_asimov") title="⚙️ Config File Sync (Asimov)" ;;
               "config_bradbury") title="⚙️ Config File Sync (Bradbury)" ;;
+              "config_bradbury_manifest") title="📜 Protocol Manifest Sync (Bradbury)" ;;
               "docker_compose") title="🐳 Docker Compose Sync" ;;
               "docker_compose_monitoring") title="🐳 Docker Compose Sync (Monitoring)" ;;
+              "env_example") title="🔑 Environment File Sync (.env.example)" ;;
               "alloy_config") title="📊 Alloy Config Sync" ;;
               "greybox_setup") title="🔧 Greybox Setup Guide Sync" ;;
               "api_gen") title="🔧 API Gen Methods Sync" ;;
               "api_debug") title="🐛 API Debug Methods Sync" ;;
               "api_ops") title="📊 API Ops Methods Sync" ;;
+              *) title="$sync_type" ;;
             esac
             
             echo "### $title" >> $GITHUB_STEP_SUMMARY

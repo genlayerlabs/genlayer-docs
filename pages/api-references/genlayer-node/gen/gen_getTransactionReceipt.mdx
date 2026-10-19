@@ -20,7 +20,11 @@ A `Transaction` object which contains the details of the transaction. The struct
 - `activator` (`address`): The address of the validator that activated the transaction.
 - `status` (`uint8`): The current status of the transaction.
 - `statusName` (`string`): The ABI transaction status name for `status` (`Uninitialized`, `Pending`, `Proposing`, `Committing`, `Revealing`, `Accepted`, `Undetermined`, `Finalized`, `Canceled`, `AppealRevealing`, `AppealCommitting`, `ValidatorsTimeout`, `LeaderTimeout`, or `LeaderRevealing`).
-- `previousStatus` (`null`): **Always null.** The contract dropped this field from `ITransactions.Transaction` (26 → 25 tuple components), so the node has nothing to report. It is `null` rather than `0` because `0` decodes as `Uninitialized`, which would be a wrong answer rather than an absent one. The field is removed in a v2 receipt.
+- `previousStatus` (`null`): **Always null.** The contract dropped this field
+  from `ITransactions.Transaction` (26 → 25 tuple components), so the node has
+  nothing to report. It is `null` rather than `0` because `0` decodes as
+  `Uninitialized`, which would be a wrong answer rather than an absent one. The
+  field is removed in a v2 receipt.
 - `txSlot` (`uint256`): The transaction slot number.
 - `initialRotations` (`uint256`): The initial number of rotations.
 - `numOfInitialValidators` (`uint256`): The number of initial validators.
@@ -38,7 +42,7 @@ A `Transaction` object which contains the details of the transaction. The struct
   - `AppealSubmitted` (`uint256`): When an appeal was submitted.
   - `LeaderRevealed` (`uint256`): When the leader was revealed.
 - `result` (`uint8`): The result of the transaction execution.
-- `txExecutionResult` (`uint8`): The execution vote result (`0` NotVoted, `1` FinishedWithReturn, `2` FinishedWithError, `3` Timeout, `4` NondetDisagree, `5` DeterministicViolation).
+- `txExecutionResult` (`uint8`): The leader execution vote result (`0` NotVoted, `1` FinishedWithReturn, `2` FinishedWithError, `3` Timeout, `4` NondetDisagree, `5` DeterministicViolation).
 - `txExecutionResultName` (`string`): The ABI vote type name for `txExecutionResult`.
 - `epoch` (`uint256`): The epoch the transaction belongs to.
 - `resultHash` (`string`): The transaction result hash as a hex string.
@@ -65,16 +69,27 @@ A `Transaction` object which contains the details of the transaction. The struct
     - `storageFeeUsed` (`string`): Storage fee charged on-chain for the transaction, equal to the storage pages it consumed multiplied by the locked `storageUnitPrice`.
     - `messageFeesConsumed` (`string`)
     - `messageFeesBudgetTotal` (`string`)
-  - `hasAllocations` (`boolean`): `true` when the transaction locked a pinned per-message fee allocation tree at submission; `false` for an open bucket (global message-fee bucket) or fee-less transactions.
-  - `allocations` (`array`): The pinned per-message fee allocation tree, one entry per locked allocation (empty for an open bucket). Budget comes from the on-chain allocation tree; `consumed` is read from the separate `allocationConsumed(txId, key)` mapping, keyed by `keccak256(abi.encode(messageType, recipient, callKey))`. Each entry:
+  - `hasAllocations` (`boolean`): `true` when the chain pinned the transaction's message allocations: a pinned per-message fee allocation tree, or a closed transaction, whose allowed set is empty. `false` for an open bucket (global message-fee bucket) or fee-less transactions. It is also `false` when the tree cannot be read, so that a receipt query still answers; the node logs the read failure.
+  - `allocations` (`array`): The pinned per-message fee allocation tree, one entry per locked allocation, internal and external (empty for an open bucket and for a closed transaction). Budget comes from the on-chain allocation tree; `consumed` is read from the separate `allocationConsumed(txId, key)` mapping, keyed by `keccak256(abi.encode(messageType, recipient, callKey))`. Each entry:
     - `messageType` (`number`): `0` = external, `1` = internal.
     - `onAcceptance` (`boolean`): Emission phase the allocation is pinned to (`true` = on acceptance, `false` = on finalization).
     - `parentIndex` (`string`): Index of the parent allocation in the flat tree, or the root sentinel (`2^256 - 1`) for a root-layer allocation.
-    - `recipient` (`string`): Target contract address the allocation funds, or the zero address for a recipient wildcard.
+    - `recipient` (`string`): Target contract address the allocation funds. There is no recipient wildcard: the zero address is a concrete recipient.
     - `callKey` (`string`): 32-byte call key (hex) the allocation matches, or the `keccak256("")` call-key wildcard.
     - `budget` (`string`): Maximum message-fee budget locked for this allocation.
     - `consumed` (`string`): Amount consumed against this allocation so far.
     - `feeParams` (`string`): ABI-encoded per-message fee params (hex), decoded per `messageType`.
+  - `allocationPolicy` (`string`, optional): How the chain classifies the transaction's message allocations. It is read from the chain's own policy, not derived from `hasAllocations` and `allocations`; read it to tell a closed transaction from the other two.
+
+    | `allocationPolicy` | `hasAllocations` | `allocations` | Meaning |
+    | --- | --- | --- | --- |
+    | `"open"` | `false` | `[]` | Nothing is pinned. Messages draw from the open bucket. |
+    | `"pinned"` | `true` | internal and external nodes | A message must match one of the listed allocations. |
+    | `"closed"` | `true` | `[]` | Allocations are pinned to an empty allowed set. The transaction runs and can fund a message from its own contract balance; the chain rejects every other message it emits. |
+
+    The field is omitted when the node could not read the allocation tree or the policy, or when the chain returns a policy this node version does not know; the node logs it. A receipt never states a policy it did not read.
+
+    The values are read at the chain head. The chain deletes the allocation marker when it refunds a transaction's fee budget, so such a transaction reads `"open"` (and `hasAllocations: false`) whatever it was before. That applies to a cancelled transaction, to one that expired by idleness, and to one finalized through recovery; ordinary finalization keeps the policy. For those transactions `"open"` does not show that the transaction ran as an open bucket.
 - `readStateBlockRanges` (`array`): Array of block range objects, each containing:
   - `ActivationBlock` (`uint256`): The activation block number.
   - `ProcessingBlock` (`uint256`): The processing block number.
@@ -171,7 +186,8 @@ A `Transaction` object which contains the details of the transaction. The struct
         "messageFeesBudgetTotal": "0"
       },
       "hasAllocations": false,
-      "allocations": []
+      "allocations": [],
+      "allocationPolicy": "open"
     },
     "readStateBlockRanges": [
       {

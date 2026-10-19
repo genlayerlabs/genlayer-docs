@@ -149,7 +149,7 @@ networks:
   studionet:
     # Pre-configured — accounts auto-generated
 
-  testnet_asimov:
+  testnet_bradbury:
     accounts:
       - "${ACCOUNT_PRIVATE_KEY_1}"
       - "${ACCOUNT_PRIVATE_KEY_2}"
@@ -163,14 +163,14 @@ environment: .env
 ```
 
 Key options:
-- **Networks**: `localnet` and `studionet` work out of the box. `testnet_asimov` requires account keys.
+- **Networks**: `localnet` and `studionet` work out of the box. `testnet_bradbury` requires account keys.
 - **Paths**: Where your contracts and artifacts live.
 - **Environment**: `.env` file for private keys.
 
 Override via CLI:
 
 ```bash
-gltest --network testnet_asimov
+gltest --network testnet_bradbury
 gltest --contracts-dir custom/contracts/path
 gltest --rpc-url http://custom:4000/api
 gltest --chain-type localnet

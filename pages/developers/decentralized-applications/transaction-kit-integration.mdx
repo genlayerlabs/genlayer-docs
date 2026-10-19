@@ -27,11 +27,11 @@ The kit depends on an injected [EIP-1193](https://eips.ethereum.org/EIPS/eip-119
 
 ```typescript
 import { createTransactionKit } from '@genlayer/transaction-kit';
-import { testnetAsimov } from 'genlayer-js/chains';
+import { testnetBradbury } from 'genlayer-js/chains';
 import feeProfile from './fee-profile.json';
 
 const kit = createTransactionKit({
-  chain: testnetAsimov,
+  chain: testnetBradbury,
   provider: window.ethereum,
   account: userAddress,
   suggestions: feeProfile,
@@ -49,7 +49,7 @@ import '@genlayer/transaction-kit-react/styles.css';
 <GenLayerTransactionPanel
   kit={kit}
   tx={{ kind: 'write', address: contract, method: 'place_bet', args: [42] }}
-  network="testnet-asimov"
+  network="testnet-bradbury"
   trackUntil="decided"
   onDone={(status) => refetchAppState()}
 />
@@ -71,7 +71,7 @@ Deploys use the same panel shape:
 <GenLayerTransactionPanel
   kit={kit}
   tx={{ kind: 'deploy', code, args }}
-  network="testnet-asimov"
+  network="testnet-bradbury"
 />
 ```
 
