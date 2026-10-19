@@ -5,6 +5,10 @@ set -euo pipefail
 # Extracted from the complex git operations in the workflow
 
 # Create sync branch with proper naming
+# The docs paths a node sync may change: what check_for_changes looks at and
+# what commit_and_push_changes commits.
+SYNC_PATHS=(content/validators pages/api-references pages/validators)
+
 create_sync_branch() {
     local version="$1"
     
@@ -44,7 +48,7 @@ commit_and_push_changes() {
     echo "Committing changes..."
     
     # Add relevant directories (including deletions)
-    git add --all content/validators pages/api-references pages/validators
+    git add --all "${SYNC_PATHS[@]}"
     
     # Check what's staged
     echo "📋 Files staged for commit:"
@@ -71,7 +75,9 @@ EOF
 
 # Check for any changes
 check_for_changes() {
-    if [[ -n "$(git status --porcelain)" ]]; then
+    # Only the synced paths count: the job also downloads its artifacts
+    # (temp-final/) into the checkout, and those are never committed.
+    if [[ -n "$(git status --porcelain -- "${SYNC_PATHS[@]}")" ]]; then
         echo "has_changes=true" >> "$GITHUB_OUTPUT"
         echo "✅ Changes detected"
         return 0
