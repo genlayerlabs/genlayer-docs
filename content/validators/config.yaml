@@ -7,9 +7,9 @@ rollup:
 consensus:
   # Clarke Dev template: the deployment-specific fields are intentionally empty.
   consensusaddress: "" # AddressManager contract address for this deployment.
-  manifestpath: "" # Trusted producer protocol-manifest.json for this deployment. The deploy places it at configs/node/protocol-manifest.json; relative paths resolve against the node root. A mismatch with consensusaddress is refused at startup.
+  manifestpath: "" # Trusted producer protocol manifest for this deployment. Bradbury: configs/node/bradbury.protocol-manifest.json (ships in the release package); a dev-env deploy places its own at configs/node/protocol-manifest.json. Relative paths resolve against the node root. A mismatch with consensusaddress is refused at startup.
   chainid: "" # DECIMAL chain id this deployment was made on (not hex, no leading zeros). Held independently of the manifest so a manifest describing another deployment is caught.
-  # genesis: 17326 # (Optional) Genesis block number for this consensus deployment. If not provided, it will be auto-detected by searching for the first log from the ConsensusMain contract.
+  # genesis: 47930 # (Optional) Genesis block number for this consensus deployment. If not provided, it will be auto-detected by searching for the first log from the ConsensusMain contract.
   # chain_submit_buffer: "30s" # (Optional) Slack reserved at the end of each consensus step to submit the resulting on-chain tx (commit vote, reveal vote, proposed receipt) before the slot closes. Tune to underlying settlement chain latency. Default 30s.
   # admissiontimeout: "15s" # (Optional) Bound on the startup deployment admission check. Never unbounded. Default 15s.
 # data directory
