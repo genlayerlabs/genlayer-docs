@@ -26,9 +26,9 @@ on:
         required: false
         default: 'gen_(?!dbg_).*'
       api_debug_regex:
-        description: 'Regex pattern to filter API debug files (e.g., "gen_dbg_.*")'
+        description: 'Regex pattern to filter API debug files (e.g., "gen_dbg_(?!load_test).*"; gen_dbg_load_test is a stub and stays out of the docs)'
         required: false
-        default: 'gen_dbg_.*'
+        default: 'gen_dbg_(?!load_test).*'
       api_ops_path:
         description: 'Path to API ops files in source repo'
         required: false
@@ -171,7 +171,7 @@ jobs:
           API_DEBUG_PATH: ${{ github.event.inputs.api_debug_path || github.event.client_payload.api_debug_path || 'docs/api/rpc' }}
           API_OPS_PATH: ${{ github.event.inputs.api_ops_path || github.event.client_payload.api_ops_path || 'docs/api/ops' }}
           API_GEN_REGEX: ${{ github.event.inputs.api_gen_regex || github.event.client_payload.api_gen_regex || 'gen_(?!dbg_).*' }}
-          API_DEBUG_REGEX: ${{ github.event.inputs.api_debug_regex || github.event.client_payload.api_debug_regex || 'gen_dbg_.*' }}
+          API_DEBUG_REGEX: ${{ github.event.inputs.api_debug_regex || github.event.client_payload.api_debug_regex || 'gen_dbg_(?!load_test).*' }}
         run: bash .github/scripts/node-sync-params.sh "${{ matrix.sync_type }}" >> "$GITHUB_OUTPUT"
 
       - name: Sync files using composite action
@@ -412,7 +412,7 @@ jobs:
           - **Source Repository**: \`genlayerlabs/genlayer-node\`
           - **Version**: \`${{ needs.prepare.outputs.version }}\`
           - **API Gen Filter**: \`${{ github.event.inputs.api_gen_regex != '' && github.event.inputs.api_gen_regex || (github.event.client_payload.api_gen_regex != '' && github.event.client_payload.api_gen_regex || 'gen_(?!dbg_).*') }}\`
-          - **API Debug Filter**: \`${{ github.event.inputs.api_debug_regex != '' && github.event.inputs.api_debug_regex || (github.event.client_payload.api_debug_regex != '' && github.event.client_payload.api_debug_regex || 'gen_dbg_.*') }}\`
+          - **API Debug Filter**: \`${{ github.event.inputs.api_debug_regex != '' && github.event.inputs.api_debug_regex || (github.event.client_payload.api_debug_regex != '' && github.event.client_payload.api_debug_regex || 'gen_dbg_(?!load_test).*') }}\`
           - **Total Files Changed**: ${{ needs.aggregate-results.outputs.total_changes }}
             - Added: ${{ needs.aggregate-results.outputs.total_added }} files
             - Updated: ${{ needs.aggregate-results.outputs.total_updated }} files

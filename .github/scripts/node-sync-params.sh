@@ -22,7 +22,7 @@ API_GEN_PATH="${API_GEN_PATH:-docs/api/rpc}"
 API_DEBUG_PATH="${API_DEBUG_PATH:-docs/api/rpc}"
 API_OPS_PATH="${API_OPS_PATH:-docs/api/ops}"
 API_GEN_REGEX="${API_GEN_REGEX:-gen_(?!dbg_).*}"
-API_DEBUG_REGEX="${API_DEBUG_REGEX:-gen_dbg_.*}"
+API_DEBUG_REGEX="${API_DEBUG_REGEX:-gen_dbg_(?!load_test).*}"
 
 # type|title|node path|docs target|filter
 TABLE="changelog|Changelog|${CHANGELOG_PATH}|content/validators/changelog|.*
