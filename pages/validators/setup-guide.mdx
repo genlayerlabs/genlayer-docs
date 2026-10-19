@@ -41,11 +41,11 @@ We've released an interactive AI wizard that guides you through the entire valid
 #### What it does
 
 - Walks you through all setup steps interactively
-- Checks prerequisites automatically (architecture, RAM, Docker, Node.js, Python)
+- Checks prerequisites automatically (architecture, RAM, Docker, Python, cosign) and installs what is missing after you confirm; Node.js is needed only on the machine that runs the GenLayer CLI
 - Detects common issues before they cause problems (port conflicts, disk space, wrong architecture)
 - Generates configurations based on your answers
 - Supports multiple deployment options: local machine, remote SSH, GCP, AWS, Azure
-- Handles both new validators (staking wizard) and existing validators
+- Handles full nodes, new validators (staking wizard) and existing validators
 - Includes minimal-downtime update procedure for upgrades
 
 #### How to use it
