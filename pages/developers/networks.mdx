@@ -33,24 +33,6 @@ Production-like testnet with real AI/LLM workloads.
 
 ---
 
-## Testnet Asimov
-
-Infrastructure and stress testing.
-
-| Setting | Value |
-|:--|:--|
-| **GenLayer RPC** | `https://rpc-asimov.genlayer.com` |
-| **GenLayer Chain RPC** | `https://rpc.testnet-chain.genlayer.com` |
-| **Chain ID** | 4221 |
-| **Currency** | GEN |
-| **Explorer** | [explorer-asimov.genlayer.com](https://explorer-asimov.genlayer.com) |
-| **Chain Explorer** | [explorer.testnet-chain.genlayer.com](https://explorer.testnet-chain.genlayer.com/) |
-| **Faucet** | [testnet-faucet.genlayer.foundation](https://testnet-faucet.genlayer.foundation) |
-
-<AddToWallet chain={{chainId: "0x107d", chainName: "GenLayer Asimov", rpcUrls: ["https://rpc-asimov.genlayer.com"], nativeCurrency: {name: "GEN Token", symbol: "GEN", decimals: 18}, blockExplorerUrls: ["https://explorer-asimov.genlayer.com"]}} />
-
----
-
 ## Studionet
 
 Hosted development environment — no local setup required.
@@ -119,13 +101,13 @@ The underlying zkSync Elastic Chain that GenLayer runs on. You typically don't n
 
 ## Network Comparison
 
-| | Bradbury | Asimov | Studionet | Studio dev | Localnet |
-|---|---|---|---|---|---|
-| **Purpose** | Production-like testing | Infrastructure testing | Hosted stable dev | Next-stack RC validation | Local dev |
-| **Setup** | None | None | None | Matching RC tooling | Docker or GLSim |
-| **Persistence** | Persistent | Persistent | Temporary | Temporary; resets expected | Local only |
-| **LLM execution** | Real models | Real models | Real models | Real models | Configurable |
-| **Faucet** | [Available](https://testnet-faucet.genlayer.foundation) | [Available](https://testnet-faucet.genlayer.foundation) | Built-in | Built-in | Built-in |
+| | Bradbury | Studionet | Studio dev | Localnet |
+|---|---|---|---|---|
+| **Purpose** | Production-like testing | Hosted stable dev | Next-stack RC validation | Local dev |
+| **Setup** | None | None | Matching RC tooling | Docker or GLSim |
+| **Persistence** | Persistent | Temporary | Temporary; resets expected | Local only |
+| **LLM execution** | Real models | Real models | Real models | Configurable |
+| **Faucet** | [Available](https://testnet-faucet.genlayer.foundation) | Built-in | Built-in | Built-in |
 
 ## Recommended Flow
 

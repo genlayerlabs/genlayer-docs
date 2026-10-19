@@ -158,7 +158,6 @@ graph TD
 | Studio (Localnet) | Built-in faucet — 💧 button in the account selector |
 | Studionet | Built-in faucet — 💧 button in the account selector |
 | Studio development preview | Built-in faucet — 💧 button in the account selector |
-| Testnet Asimov | [testnet-faucet.genlayer.foundation](https://testnet-faucet.genlayer.foundation/) |
 | Testnet Bradbury | [testnet-faucet.genlayer.foundation](https://testnet-faucet.genlayer.foundation/) |
 
 See [Networks](/developers/networks) for full details on each environment.
@@ -169,10 +168,10 @@ Use the `value` parameter in `writeContract()` to send GEN. On a fee-charging de
 
 ```typescript
 import { createClient, createAccount } from 'genlayer-js';
-import { testnetAsimov } from 'genlayer-js/chains';
+import { testnetBradbury } from 'genlayer-js/chains';
 
 const client = createClient({
-  chain: testnetAsimov,
+  chain: testnetBradbury,
   account: createAccount(),
 });
 
