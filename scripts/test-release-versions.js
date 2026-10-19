@@ -8,7 +8,7 @@ const fs = require('fs');
 const os = require('os');
 const path = require('path');
 const { execFileSync } = require('child_process');
-const { publishedVersions, mayLeave } = require('./lib/release-versions');
+const { publishedVersions, currentLine, mayLeave } = require('./lib/release-versions');
 const { updateSetupGuideVersions, LIST_COMMAND_TAIL } = require('./update-setup-guide-versions');
 
 const GUIDE = `1. list
@@ -61,7 +61,8 @@ const tests = {
     assert.deepStrictEqual(publishedVersions(names).slice(0, 3), ['v0.6.0-rc.2', 'v0.6.0-rc.1', 'v0.5.14']);
     const { guide } = guideFor(names);
     assert.match(guide, /export version=v0\.6\.0-rc\.2 #/);
-    assert.match(guide, /```sh\n   v0\.6\.0-rc\.2\n   v0\.6\.0-rc\.1\n   v0\.5\.14\n   v0\.5\.13\n   v0\.5\.12\n   ```/);
+    // The guide lists only the current release line (v0.6.x).
+    assert.match(guide, /```sh\n   v0\.6\.0-rc\.2\n   v0\.6\.0-rc\.1\n   ```/);
   },
   'rc.10 is newer than rc.9': () => {
     assert.strictEqual(publishedVersions(['v0.6.0-rc.9', 'v0.6.0-rc.10'])[0], 'v0.6.0-rc.10');
@@ -70,6 +71,12 @@ const tests = {
     const names = [...STABLE, 'v0.6.0-rc.1', 'v0.6.0-rc.2', 'v0.6.0'];
     assert.deepStrictEqual(publishedVersions(names).slice(0, 3), ['v0.6.0', 'v0.6.0-rc.2', 'v0.6.0-rc.1']);
     assert.match(guideFor(names).guide, /export version=v0\.6\.0 #/);
+  },
+  'the guide lists the current release line only': () => {
+    assert.deepStrictEqual(currentLine(publishedVersions([...STABLE, 'v0.6.0-rc.1', 'v0.6.0'])), ['v0.6.0', 'v0.6.0-rc.1']);
+    assert.deepStrictEqual(currentLine(publishedVersions(STABLE)), ['v0.5.14', 'v0.5.13', 'v0.5.12', 'v0.5.9', 'v0.5.8']);
+    assert.deepStrictEqual(currentLine(publishedVersions(['v0.6.1', 'v0.7.0-rc.1'])), ['v0.7.0-rc.1']);
+    assert.deepStrictEqual(currentLine([]), []);
   },
   'the node removes rc files, the docs follow': () => {
     assert.deepStrictEqual(publishedVersions([...STABLE, 'v0.6.0']).slice(0, 2), ['v0.6.0', 'v0.5.14']);
@@ -88,16 +95,21 @@ const tests = {
     assert.ok(!mayLeave('v0.5.14'));
     assert.ok(!mayLeave('v0.2.0-testnet005'));
   },
-  'the list command keeps rcs of the version in progress, drops rc builds of stable versions': () => {
+  'the list command keeps the current line, drops rc builds of stable versions': () => {
     const guide = guideFor(STABLE).guide;
     assert.ok(guide.includes(LIST_COMMAND_TAIL));
     assert.doesNotMatch(guide, /grep -v "rc"/);
     const tail = LIST_COMMAND_TAIL.replace(/^\| /, '');
     const run = (list) => execFileSync('sh', ['-c', `printf '${list.join('\\n')}\\n' | ${tail}`], { encoding: 'utf8' }).trim().split('\n');
-    // Bucket during the rc: old rc builds of stable versions are dropped.
-    assert.deepStrictEqual(run(['v0.5.9', 'v0.5.14-rc.1', 'v0.5.14', 'v0.6.0-rc.1', 'v0.6.0-rc.2']), ['v0.6.0-rc.2', 'v0.6.0-rc.1', 'v0.5.14', 'v0.5.9']);
-    // After v0.6.0: its rc builds drop too, an rc of the next version shows.
-    assert.deepStrictEqual(run(['v0.5.14', 'v0.6.0-rc.1', 'v0.6.0-rc.2', 'v0.6.0', 'v0.6.1-rc.1']), ['v0.6.1-rc.1', 'v0.6.0', 'v0.5.14']);
+    // The shell command lists what the guide lists.
+    const same = (names) => assert.deepStrictEqual(run(names), currentLine(publishedVersions(names)));
+    // Bucket during the rc: v0.6.x only; rc builds of stable versions dropped.
+    assert.deepStrictEqual(run(['v0.5.9', 'v0.5.14-rc.1', 'v0.5.14', 'v0.6.0-rc.1', 'v0.6.0-rc.2']), ['v0.6.0-rc.2', 'v0.6.0-rc.1']);
+    // After v0.6.0 (node removed the rc files): v0.6.x stable only.
+    same(['v0.5.14', 'v0.6.0']);
+    assert.deepStrictEqual(run(['v0.5.14', 'v0.6.0-rc.1', 'v0.6.0-rc.2', 'v0.6.0']), ['v0.6.0']);
+    // Only v0.5: the v0.5 line.
+    same(['v0.5.9', 'v0.5.12', 'v0.5.14']);
   },
   'the generator is idempotent': () => {
     const once = guideFor([...STABLE, 'v0.6.0-rc.2']).guide;

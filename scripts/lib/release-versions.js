@@ -8,9 +8,10 @@
 // - each release candidate gets its own file (v0.6.0-rc.1, v0.6.0-rc.2, ...);
 // - the node removes the rc files when it decides to (for example when v0.6.0
 //   is released), and the next sync removes them from the docs.
-// The setup guide's version list and the changelog page list the same
-// versions. The guide names the newest one; a stable release sorts above its
-// own rcs. Testnet builds (v0.2.0-testnetNNN) are kept in the changelog page only.
+// The changelog page lists them all (plus testnet builds). The setup guide
+// lists only the current release line, the major.minor of the newest version
+// (during v0.6.0-rc.N that is v0.6.x), and names the newest one; a stable
+// release sorts above its own rcs.
 
 // v0.6.0, v0.6.0-rc.2, v0.2.0-testnet005
 const VERSION_RE = /^v(\d+)\.(\d+)\.(\d+)(?:-(rc)\.(\d+)|-(testnet)(\d+))?$/;
@@ -51,6 +52,17 @@ function publishedVersions(names, { testnet = false } = {}) {
 }
 
 /**
+ * The current release line: the published versions with the same major.minor
+ * as the newest one. Input and output are newest first.
+ */
+function currentLine(versions) {
+  if (versions.length === 0) return [];
+  const line = (name) => parseVersion(name).parts.slice(0, 2).join('.');
+  const current = line(versions[0]);
+  return versions.filter((v) => line(v) === current);
+}
+
+/**
  * True when a changelog version may leave the docs without failing the sync
  * check: the node removes rc files on purpose; a stable release never leaves.
  */
@@ -59,4 +71,4 @@ function mayLeave(name) {
   return Boolean(v && v.pre === 'rc');
 }
 
-module.exports = { parseVersion, compareDesc, publishedVersions, mayLeave };
+module.exports = { parseVersion, compareDesc, publishedVersions, currentLine, mayLeave };

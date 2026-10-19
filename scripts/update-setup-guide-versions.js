@@ -2,20 +2,21 @@
 
 const fs = require('fs');
 const path = require('path');
-const { publishedVersions } = require('./lib/release-versions');
+const { publishedVersions, currentLine } = require('./lib/release-versions');
 
 // A generator that cannot find its source or its target block fails the build.
 const fail = (msg) => { console.error(msg); process.exitCode = 1; };
 
 // The tail of the guide's list command: the sed pair makes the version sort
 // put v0.6.0-rc.N below v0.6.0; awk drops the rc builds of versions that are
-// already stable (the bucket keeps them, the changelog does not list them).
-const LIST_COMMAND_TAIL = `| sed 's/-rc/~rc/' | sort -ruV | sed 's/~rc/-rc/' | awk '{c=$0; sub(/-rc\\..*/,"",c)} /-rc\\./{if (c in s) next} !/-rc\\./{s[c]=1} {print}' | head -n 5`;
+// already stable (the bucket keeps them, the changelog does not list them) and
+// keeps only the current release line (the major.minor of the newest version).
+const LIST_COMMAND_TAIL = `| sed 's/-rc/~rc/' | sort -ruV | sed 's/~rc/-rc/' | awk '{c=$0; sub(/-rc\\..*/,"",c)} /-rc\\./{if (c in s) next} !/-rc\\./{s[c]=1} {split(c,p,"."); l=p[1]"."p[2]} !m{m=l} l==m{print}' | head -n 5`;
 
 /**
  * Update the setup guide's version list, list command and `export version=` line.
- * The guide lists the versions the node has changelog files for
- * (scripts/lib/release-versions.js) and names the newest one.
+ * The guide lists the current release line of the versions the node has
+ * changelog files for (scripts/lib/release-versions.js) and names the newest one.
  * @param {{root?: string}} options
  */
 function updateSetupGuideVersions({ root = process.cwd() } = {}) {
@@ -34,7 +35,8 @@ function updateSetupGuideVersions({ root = process.cwd() } = {}) {
   const names = fs.readdirSync(changelogDir)
     .filter((file) => file.endsWith('.mdx'))
     .map((file) => file.replace(/\.mdx$/, ''));
-  const versions = publishedVersions(names);
+  // The current release line only: during v0.6.0-rc.N the guide lists v0.6.x.
+  const versions = currentLine(publishedVersions(names));
   if (versions.length === 0) {
     fail('No version files found in changelog directory');
     return;
