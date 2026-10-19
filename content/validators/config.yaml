@@ -1,12 +1,12 @@
 # rollup configuration
 rollup:
-  genlayerchainrpcurl: "TODO: Set your GenLayer Chain ZKSync HTTP RPC URL here" # GenLayer Chain RPC URL
-  genlayerchainwebsocketurl: "TODO: Set your GenLayer Chain ZKSync WebSocket RPC URL here" # GenLayer Chain WebSocket URL
+  genlayerchainrpcurl: "TODO: Set your GenLayer Chain Orbit HTTP RPC URL here" # GenLayer Chain RPC URL
+  genlayerchainwebsocketurl: "TODO: Set your GenLayer Chain Orbit WebSocket RPC URL here" # GenLayer Chain WebSocket URL
   # An API key of the RPC provider never goes in these URLs or in this file:
   # set it in the environment as GENLAYERNODE_ROLLUP_GENLAYERCHAINRPCKEY.
   # The node sends it in this header (default X-AccessKey):
   # genlayerchainrpckeyheader: "X-AccessKey"
-  provider: "TODO: Set your GenLayer Chain ZKSync provider" # Rollup operator name; surfaces as the "provider" label on RPC-driven metrics. Set explicitly per deployment.
+  provider: "TODO: Set your GenLayer Chain Orbit provider" # Rollup operator name; surfaces as the "provider" label on RPC-driven metrics. Set explicitly per deployment.
 # consensus contracts configuration
 consensus:
   # The deployment-specific fields are empty: take them from your network's documentation.

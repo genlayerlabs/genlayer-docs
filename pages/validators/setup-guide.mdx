@@ -8,7 +8,7 @@ import { Callout } from "nextra-theme-docs";
 
 Running a GenLayer Validator node ensures the security and reliability of the GenLayer network. Below are the requirements for running a GenLayer validator.
 
-Validators require both a staking deposit and a validator priming transaction to enter the set.
+Registration creates a validator identity; it does not by itself make the node an active validator. Check the deployed self-stake minimum, activation epoch and priming requirements separately. During epoch 0, a registered and healthy node may correctly be waiting for activation.
 
 For a deeper understanding of how staking works in GenLayer, see the [Staking documentation](/understand-genlayer-protocol/core-concepts/optimistic-democracy/staking).
 
@@ -114,32 +114,41 @@ The wizard outputs all three addresses at the end. Save them - you'll need the V
 ### Prerequisites
 
 - **Node.js** (v18 or higher)
-- **GenLayer CLI** - Install the latest version:
+- **GenLayer CLI** - Install an exact, qualified **v0.40** release that bundles the **v2 SDK with Bradbury Phase 2 addresses**. The default npm tag can still select an older release:
   ```bash copy
-  npm install -g genlayer
+  # Set CLI_VERSION to the exact version in the Bradbury Phase 2 release announcement.
+  : "${CLI_VERSION:?Set the qualified Bradbury Phase 2 CLI version first}"
+  npm install -g "genlayer@${CLI_VERSION}"
+  genlayer --version
   ```
-- **GEN tokens** - You need at least **42,000 GEN** for the minimum self-stake requirement
+- **GEN tokens** - Read the deployed self-stake minimum with `genlayer staking epoch-info --network testnet-bradbury`, and keep additional GEN for gas. **42,000 GEN is a protocol default, not a guaranteed current network setting.** Delegation does not replace required self-stake.
+
+During the public DNS cutover, first verify the network identity described on the [networks page](/developers/networks). If you have an assigned provider endpoint, add `--rpc "$BRADBURY_RPC_URL"` to each CLI command below. Do not continue against an endpoint returning the previous network genesis.
 
 ### Using the Validator Wizard
 
 The easiest way to create your validator wallet is using the interactive wizard:
 
 ```bash copy
-genlayer staking wizard
+genlayer staking wizard --network testnet-bradbury
 ```
 
 The wizard guides you through:
 
 1. **Account setup** - Create or select your owner account
 2. **Network selection** - Choose testnet-bradbury
-3. **Balance verification** - Confirms you have at least 42,000 GEN
+3. **Balance verification** - Checks your balance against the deployed minimum and gas requirement
 4. **Operator setup** - Create and export an operator keystore for your validator server
-5. **Stake amount** - Enter how much GEN to stake (minimum 42,000)
+5. **Stake amount** - Enter how much GEN to self-stake using the current on-chain minimum
 6. **Validator creation** - Submits the staking transaction
 7. **Identity setup** - Set your validator's public profile (moniker, website, etc.)
 
 <Callout type="info">
   **Save Your Validator Wallet Address!** After the wizard completes, note down your **Validator Wallet** address. You'll need this for your node configuration.
+</Callout>
+
+<Callout type="warning">
+  Phase 2 registration requires the operator public key and a proof of possession bound to the owner, chain and validator-wallet factory. Use an operator account available to the qualified CLI so it can sign the proof. An external operator address alone is not sufficient; do not use the old `validatorJoin(address)` flow.
 </Callout>
 
 #### Operator Keystore Export
@@ -151,26 +160,28 @@ The wizard creates and exports an operator keystore file for you to transfer to 
 After completing the wizard, verify your status:
 
 ```bash copy
-genlayer staking validator-info --validator 0xYourValidatorWallet...
+genlayer staking validator-info 0xYourValidatorWallet... --network testnet-bradbury
+# Includes registered validators that are not active yet:
+genlayer staking validators --network testnet-bradbury
 ```
 
 ### Managing Your Validator
 
 ```bash copy
 # Add more stake
-genlayer staking validator-deposit --amount 1000gen
+genlayer staking validator-deposit 0xYourValidatorWallet... --amount 1000gen --network testnet-bradbury
 
 # Check active validators
-genlayer staking active-validators
+genlayer staking active-validators --network testnet-bradbury
 
 # Exit (initiates 7-epoch unbonding)
-genlayer staking validator-exit --shares 100
+genlayer staking validator-exit 0xYourValidatorWallet... --shares 100 --network testnet-bradbury
 
 # Claim after unbonding period
-genlayer staking validator-claim
+genlayer staking validator-claim 0xYourValidatorWallet... --network testnet-bradbury
 
 # Update identity
-genlayer staking set-identity --validator 0x... --moniker "New Name"
+genlayer staking set-identity 0x... --moniker "New Name" --network testnet-bradbury
 ```
 
 ---
@@ -195,9 +206,11 @@ Possible options:
 
 See the [GenVM Configuration](/validators/genvm-configuration) page for partner credits, provider setup, and the greybox fallback strategy.
 
-#### ZKSync Full Node for the GenLayer Chain
+#### Orbit RPC access for the GenLayer Chain
 
-Each validator needs access to a [ZKSync Full Node](https://docs.zksync.io/zksync-era/tooling/external-node) connected to the GenLayer chain. Validators use this node to read the chain state and submit transactions.
+Bradbury Phase 2 runs on an **Arbitrum Orbit L2**. Each validator needs HTTP and WebSocket access to that network to read state, send transactions and subscribe to chain updates. An old zkSync endpoint is incompatible even when it returns the same chain ID.
+
+Obtain the assigned endpoint, API key and quota from the Foundation's designated RPC operator. The direct Conduit WebSocket requires a key; anonymous HTTP access does not prove that WebSocket subscriptions will work. Set the key privately in `GENLAYERNODE_ROLLUP_GENLAYERCHAINRPCKEY`; the node sends it as `X-AccessKey`. Never place it in a URL or a shared config file.
 
 One full node can be shared between multiple validators. The optimal validator-to-node ratio is currently under evaluation.
 
@@ -220,12 +233,17 @@ One full node can be shared between multiple validators. The optimal validator-t
    v0.6.0-rc.1
    ```
 
-   Typically, you will want to run the latest version
+   Typically, you will want to run the latest version **approved for Bradbury Phase 2**, not an arbitrary `latest` tag. The list above is a documentation example generated from changelog entries; an entry can precede artifact publication. Confirm the exact version in the release announcement and check all download URLs before installation. Do not fall back to an older release when a target artifact returns 404.
 
 2. Download the packaged application
    ```sh copy
-   export version=v0.6.0-rc.2 # set your desired version here
-   wget https://storage.googleapis.com/gh-af/genlayer-node/bin/amd64/${version}/genlayer-node-linux-amd64-${version}.tar.gz
+   export version=v0.6.0-rc.2 # example target; confirm it is published and approved before use
+   base=https://storage.googleapis.com/gh-af/genlayer-node/bin/amd64/${version}
+   curl -fI "${base}/genlayer-node-linux-amd64-${version}.tar.gz"
+   curl -fI "${base}/genlayer-node_${version}_SHA256SUMS"
+   curl -fI "${base}/genlayer-node_${version}_SHA256SUMS.sigstore.json"
+   # Stop if any check fails; only download after all three succeed.
+   wget "${base}/genlayer-node-linux-amd64-${version}.tar.gz"
    ```
 3. Verify the download (v0.6.0 and later)
 
@@ -293,13 +311,13 @@ The `config.yaml` in the release package sets `genvm.root_dir: ./opt/genvm/curre
 ```yaml copy
 # rollup configuration
 rollup:
-  genlayerchainrpcurl: "TODO: Set your GenLayer Chain ZKSync HTTP RPC URL here" # GenLayer Chain RPC URL
-  genlayerchainwebsocketurl: "TODO: Set your GenLayer Chain ZKSync WebSocket RPC URL here" # GenLayer Chain WebSocket URL
+  genlayerchainrpcurl: "TODO: Set your GenLayer Chain Orbit HTTP RPC URL here" # GenLayer Chain RPC URL
+  genlayerchainwebsocketurl: "TODO: Set your GenLayer Chain Orbit WebSocket RPC URL here" # GenLayer Chain WebSocket URL
   # An API key of the RPC provider never goes in these URLs or in this file:
   # set it in the environment as GENLAYERNODE_ROLLUP_GENLAYERCHAINRPCKEY.
   # The node sends it in this header (default X-AccessKey):
   # genlayerchainrpckeyheader: "X-AccessKey"
-  provider: "TODO: Set your GenLayer Chain ZKSync provider" # Rollup operator name; surfaces as the "provider" label on RPC-driven metrics. Set explicitly per deployment.
+  provider: "TODO: Set your GenLayer Chain Orbit provider" # Rollup operator name; surfaces as the "provider" label on RPC-driven metrics. Set explicitly per deployment.
 # consensus contracts configuration
 consensus:
   # The deployment-specific fields are empty: take them from your network's documentation.
@@ -704,7 +722,7 @@ You can also generate a new operator key directly on the server:
 ./bin/genlayernode account new -c $(pwd)/configs/node/config.yaml --setup
 ```
 
-Then use this address when running the wizard on your local machine.
+For Phase 2 registration, the CLI also needs that operator account to sign its proof of possession. Securely export/import the operator keystore into the owner-side CLI and select it in the wizard; providing the address alone is insufficient. Never transfer the owner key to the server.
 
 #### Restoring Your Operator Key
 
@@ -750,7 +768,7 @@ Once you have configured everything, you are ready to start the node.
     1. **Operator key** imported into the node (see "Import the Operator Key" above)
     2. **Validator wallet address** - obtained after joining as validator via `genlayer staking wizard` or `validator-join`
 
-    Without both configured, your node will run as a full node instead of a validator.
+    Set `node.mode: validator` explicitly and require doctor to pass. Do not assume an incomplete validator configuration will safely become a full node.
 </Callout>
 
 #### Running the Node using the binary
@@ -1205,7 +1223,7 @@ HEALTHCHECK_AUTO_RESTART=true
 This is the release package's `.env.example`: copy it to `.env` next to `docker-compose.yaml`. The release package also ships `docker-compose.yaml` and `genvm-module-web-docker.yaml`. Set at least:
 
 - `NODE_PASSWORD`: the keystore password. It is required: Docker Compose refuses to start without it, and there is no default.
-- `NODE_VERSION`: pin the version you run. `latest` is the newest stable release.
+- `NODE_VERSION`: pin the exact version approved for Bradbury Phase 2. The `latest` image can belong to an older release family.
 - the API key of at least one LLM provider.
 - `GENLAYERNODE_ROLLUP_GENLAYERCHAINRPCKEY`, when your chain RPC provider needs a key (the Bradbury WebSocket does).
 
