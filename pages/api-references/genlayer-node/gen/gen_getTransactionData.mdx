@@ -22,7 +22,7 @@ An object with the on-chain transaction fields for the selected round plus the l
 - `statusName` (`string`): The ABI transaction status name for `status` (`Uninitialized`, `Pending`, `Proposing`, `Committing`, `Revealing`, `Accepted`, `Undetermined`, `Finalized`, `Canceled`, `AppealRevealing`, `AppealCommitting`, `ValidatorsTimeout`, `LeaderTimeout`, or `LeaderRevealing`).
 - `result` (`uint8`): The consensus result of the transaction (`0` Idle, `1` MajorityAgree, `2` MajorityDisagree, `3` MajorityTimeout, `4` DeterministicViolation, `5` NoMajority).
 - `resultName` (`string`): The ABI result name for `result`.
-- `txExecutionResult` (`uint8`): The leader execution vote result (`0` NotVoted, `1` FinishedWithReturn, `2` FinishedWithError, `3` Timeout, `4` NondetDisagree).
+- `txExecutionResult` (`uint8`): The leader execution vote result (`0` NotVoted, `1` FinishedWithReturn, `2` FinishedWithError, `3` Timeout, `4` NondetDisagree, `5` DeterministicViolation).
 - `txExecutionResultName` (`string`): The ABI vote type name for `txExecutionResult`.
 - `txCallData` (`string`): The transaction call data as a hex string.
 - `txExecutionHash` (`string`): The execution hash of the transaction as a hex string.

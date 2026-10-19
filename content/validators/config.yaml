@@ -195,7 +195,7 @@ node:
   #   max_debug_field_bytes: 262144   # 256 KB per field
 # genvm configuration
 genvm:
-  root_dir: ./opt/genvm/v0.6.0-rc1
+  root_dir: ./opt/genvm/v0.6.0-rc10
   start_manager: true # if true node will start genvm manager itself
   manager_url: http://127.0.0.1:3999
   # Permits are charged PER EXECUTION by the genvm manager, and one

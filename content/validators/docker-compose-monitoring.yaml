@@ -97,11 +97,12 @@ services:
 
   genlayer-node:
     image: yeagerai/genlayer-node:${NODE_VERSION:-latest}
-    # The keystore password is NOT on this command line. It reaches the node as
+    # No entrypoint here: the image's own entrypoint precompiles GenVM for the
+    # host CPU on the first start, then runs `genlayernode run`. The keystore
+    # password is NOT on a command line. It reaches the node as
     # GENLAYERNODE_PASSWORD (environment below), which the run command reads in
     # place of --password. A command-line argument is visible in process
     # listings on the host; an environment variable is not.
-    entrypoint: ["/app/bin/genlayernode", "run"]
     container_name: genlayer-node
     restart: unless-stopped
     env_file:

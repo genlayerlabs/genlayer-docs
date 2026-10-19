@@ -55,7 +55,7 @@ Breaking changes involve a new consensus deployment. The old database is incompa
 
 - Bradbury Phase 2 is a new consensus deployment with a new `consensusaddress`. Follow the [breaking upgrade](#breaking-change-upgrade) steps.
 - The node needs the trusted protocol manifest of the network. Set `consensus.manifestpath` (default `configs/node/protocol-manifest.json`) and `consensus.chainid`. The release package has no network files: take the manifest and values from [Network-Specific Consensus Configuration](/validators/setup-guide#network-specific-consensus-configuration).
-- GenVM moved from `third_party/genvm` to `opt/genvm/<version>`. Update `genvm.root_dir` and run `python3 ./opt/genvm/<version>/bin/setup.py` (see [download instructions](/validators/setup-guide#download-the-node-software)).
+- GenVM moved from `third_party/genvm` to `opt/genvm/<version>`, with the link `opt/genvm/current` to it. Set `genvm.root_dir: ./opt/genvm/current` and run `python3 ./opt/genvm/current/bin/setup.py` (see [download instructions](/validators/setup-guide#download-the-node-software)).
 - The Bradbury RPC WebSocket needs an API key. Set it in the environment as `GENLAYERNODE_ROLLUP_GENLAYERCHAINRPCKEY`; it has no `config.yaml` key. See [Testnet Bradbury](/validators/setup-guide#testnet-bradbury).
 - The `genlayer_debug` (`gen_dbg_*`) and `zksync` (`zks_*`) RPC groups are off in the default `config.yaml` (`node.rpc.endpoints`).
 - The data store is split into `genvm.db` and `ops.db`. On startup the node renames an old `genlayer.db` to `genvm.db`; it refuses to start if both exist.

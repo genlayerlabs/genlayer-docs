@@ -251,7 +251,7 @@ One full node can be shared between multiple validators. The optimal validator-t
 
    If either command fails, do not extract: delete the download and fetch it again. Releases before v0.6.0 have no checksum file.
 
-   The same releases also publish `install.sh`, covered by the same checksum file. After verifying, `./install.sh --install-dir /opt/genlayer-node/${version} --tarball genlayer-node-linux-amd64-${version}.tar.gz` replaces steps 4 and 5, and also points `genvm.root_dir` at the GenVM version it unpacked.
+   The same releases also publish `install.sh`, covered by the same checksum file. After verifying, `./install.sh --install-dir /opt/genlayer-node/${version} --tarball genlayer-node-linux-amd64-${version}.tar.gz` replaces steps 4 and 5.
 
 4. Extract the node software
 
@@ -270,8 +270,7 @@ One full node can be shared between multiple validators. The optimal validator-t
    Run it in the final install location: it writes this directory's absolute path into the GenVM binaries. If you move the installation later, run it again there.
 
    ```sh copy
-   export GENVM_VERSION=$(ls opt/genvm) # the GenVM version this release ships
-   python3 ./opt/genvm/${GENVM_VERSION}/bin/setup.py
+   python3 ./opt/genvm/current/bin/setup.py
    ```
 It does following:
 
@@ -292,7 +291,7 @@ The file needs to be located at `configs/node/config.yaml`
 
 You can use the following example configuration. **Note:** For most users, you will only need to replace the `rollup` and `consensus` sections with the values for your target network (see [Network-Specific Consensus Configuration](#network-specific-consensus-configuration) below).
 
-Also check that `genvm.root_dir` names the GenVM directory the release ships: run `ls opt/genvm` in the install directory. `install.sh` sets it for you; after a manual extract, set it yourself.
+The `config.yaml` in the release package sets `genvm.root_dir: ./opt/genvm/current`, a link to the GenVM version the release ships. Keep that value: the example below names the versioned directory, which the package also contains.
 
 ```yaml copy
 # rollup configuration
@@ -492,7 +491,7 @@ node:
   #   max_debug_field_bytes: 262144   # 256 KB per field
 # genvm configuration
 genvm:
-  root_dir: ./opt/genvm/v0.6.0-rc1
+  root_dir: ./opt/genvm/v0.6.0-rc10
   start_manager: true # if true node will start genvm manager itself
   manager_url: http://127.0.0.1:3999
   # Permits are charged PER EXECUTION by the genvm manager, and one
@@ -944,11 +943,12 @@ services:
       - monitoring
   genlayer-node:
     image: yeagerai/genlayer-node:${NODE_VERSION:-latest}
-    # The keystore password is NOT on this command line. It reaches the node as
+    # No entrypoint here: the image's own entrypoint precompiles GenVM for the
+    # host CPU on the first start, then runs `genlayernode run`. The keystore
+    # password is NOT on a command line. It reaches the node as
     # GENLAYERNODE_PASSWORD (environment below), which the run command reads in
     # place of --password. A command-line argument is visible in process
     # listings on the host; an environment variable is not.
-    entrypoint: ["/app/bin/genlayernode", "run"]
     container_name: genlayer-node
     restart: unless-stopped
     env_file:
@@ -1000,7 +1000,7 @@ services:
    webdriver_host: http://webdriver-container:4444
    ```
 
-   The compose file mounts it over the image's own copy at `/app/opt/genvm/current/config/genvm-module-web.yaml`, so no version variable is needed. The binary keeps using `opt/genvm/<version>/config/genvm-module-web.yaml`, which points at `localhost:4444`.
+   The compose file mounts it over the image's own copy at `/app/opt/genvm/current/config/genvm-module-web.yaml`, so no version variable is needed. The binary keeps using `opt/genvm/current/config/genvm-module-web.yaml`, which points at `localhost:4444`.
 
 3. Set the required environment variables in a `.env` file:
 
@@ -1049,6 +1049,11 @@ ANTHROPICKEY=
 XAIKEY=
 GEMINIKEY=
 ATOMAKEY=
+COMPUT3KEY=
+IOINTELLIGENCEKEY=
+LIBERTAI_API_KEY=
+MORPHEUS_API_KEY=
+OPENAIKEY=
 
 # Optional logging level override
 GENLAYERNODE_LOGGING_LEVEL=INFO
@@ -1127,7 +1132,6 @@ NODE_METRICS_ENDPOINT=host.docker.internal:9153
 # Example for multiple nodes:
 # SCRAPE_TARGETS_JSON=[{"__address__":"host.docker.internal:9250","instance":"0x...","validator_name":"node-1"},{"__address__":"host.docker.internal:9251","instance":"0x...","validator_name":"node-2"}]
 #
-# To generate for local nodes, use: ./generate-dev-targets.sh
 # SCRAPE_TARGETS_JSON=
 
 # =============================================================================
@@ -1147,8 +1151,8 @@ LOG_FILE_PATTERN=/var/log/genlayer/node*.log
 
 # Metrics scraping intervals (optional)
 # How often to scrape metrics from the node
-# Default: 15s for node metrics, 10s timeout
-METRICS_SCRAPE_INTERVAL=15s
+# Default: 60s for node metrics, 10s timeout
+METRICS_SCRAPE_INTERVAL=60s
 METRICS_SCRAPE_TIMEOUT=10s
 
 # Alloy internal health monitoring interval (optional)
@@ -1159,9 +1163,9 @@ ALLOY_SELF_MONITORING_INTERVAL=60s
 
 # Loki log batching configuration (optional)
 # Controls how logs are batched before sending to central Loki
-# Default: 1MiB batch size, 1s wait time
+# Default: 1MiB batch size, 60s wait time
 LOKI_BATCH_SIZE=1MiB
-LOKI_BATCH_WAIT=1s
+LOKI_BATCH_WAIT=60s
 
 # =============================================================================
 # Deployment Instructions
@@ -1194,7 +1198,7 @@ LOKI_BATCH_WAIT=1s
 # - Grafana Alloy handles both metrics and logs in a single service
 # - To customize monitoring, edit alloy-config.river
 # - To filter metrics (reduce bandwidth), uncomment the filtering rule in alloy-config.river
-# - Ensure firewall allows outbound connections to monitoring server (port 8180)
+# - Ensure the firewall allows outbound HTTPS to CENTRAL_MONITORING_URL and CENTRAL_LOKI_URL
 #
 
 # Keep health checks but disable automatic container-local recycling when false.
