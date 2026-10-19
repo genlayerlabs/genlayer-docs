@@ -107,12 +107,15 @@ services:
       - path: ./.env
         required: false
     environment:
-      # ":?" makes Compose refuse to start when NODE_PASSWORD is unset or empty,
-      # before any container runs. There is no fallback: this is the password
-      # that encrypts the validator's signing key, and a default shared by every
-      # operator who forgot to set one is a key anyone can open. The release
-      # binary carries no default either — it is compiled out of production.
-      GENLAYERNODE_PASSWORD: "${NODE_PASSWORD:?NODE_PASSWORD is not set. It is the keystore password that unlocks the validator key. Set it in .env; see README section 4.}"
+      # No default: this is the password that encrypts the validator's signing
+      # key, and a default shared by every operator who forgot to set one is a
+      # key anyone can open (the release binary carries none either). The node
+      # itself refuses validator mode with an empty password ("password is
+      # required for validator mode"); a full node needs none. Not a ":?" guard:
+      # Compose interpolates every service, also under another profile, so a
+      # guard here would stop `docker compose up -d webdriver-container` (the
+      # binary install path) and a full node, which never read it.
+      GENLAYERNODE_PASSWORD: "${NODE_PASSWORD:-}"
       # WebDriver metrics collector reaches Docker via the read-only proxy
       # (see docker-socket-proxy above), never the host socket directly.
       DOCKER_HOST: tcp://docker-socket-proxy:2375

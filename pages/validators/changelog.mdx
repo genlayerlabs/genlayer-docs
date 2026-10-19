@@ -20,6 +20,8 @@
 
 ### Bug fixes
 
+- The release compose file no longer requires `NODE_PASSWORD` for every service: `docker compose up -d webdriver-container` (the binary install) and a full node work with it empty, and a validator still refuses to start without it
+
 - Fix web access from contracts under the release compose file: the GenVM web config is mounted at the path GenVM reads, so GenVM uses the WebDriver container instead of `localhost`
 - The release compose file no longer replaces the image entrypoint, so the first start precompiles GenVM for the host CPU (the first start takes longer)
 - The example config sets `genvm.root_dir` to the shipped GenVM (`./opt/genvm/v0.6.0-rc10`), not `v0.6.0-rc1`

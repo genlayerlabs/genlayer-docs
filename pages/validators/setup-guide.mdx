@@ -955,12 +955,15 @@ services:
       - path: ./.env
         required: false
     environment:
-      # ":?" makes Compose refuse to start when NODE_PASSWORD is unset or empty,
-      # before any container runs. There is no fallback: this is the password
-      # that encrypts the validator's signing key, and a default shared by every
-      # operator who forgot to set one is a key anyone can open. The release
-      # binary carries no default either — it is compiled out of production.
-      GENLAYERNODE_PASSWORD: "${NODE_PASSWORD:?NODE_PASSWORD is not set. It is the keystore password that unlocks the validator key. Set it in .env; see README section 4.}"
+      # No default: this is the password that encrypts the validator's signing
+      # key, and a default shared by every operator who forgot to set one is a
+      # key anyone can open (the release binary carries none either). The node
+      # itself refuses validator mode with an empty password ("password is
+      # required for validator mode"); a full node needs none. Not a ":?" guard:
+      # Compose interpolates every service, also under another profile, so a
+      # guard here would stop `docker compose up -d webdriver-container` (the
+      # binary install path) and a full node, which never read it.
+      GENLAYERNODE_PASSWORD: "${NODE_PASSWORD:-}"
       # WebDriver metrics collector reaches Docker via the read-only proxy
       # (see docker-socket-proxy above), never the host socket directly.
       DOCKER_HOST: tcp://docker-socket-proxy:2375
@@ -1023,8 +1026,9 @@ WEBDRIVER_PORT=4444
 # Docker image version
 NODE_VERSION=latest
 
-# Keystore password (unlocks the pre-imported validator wallet). Required — the
-# stack refuses to start without it. Choose your own; never reuse an example
+# Keystore password (unlocks the pre-imported validator wallet). Required for a
+# validator: the node refuses validator mode without it. A full node and the
+# WebDriver-only stack need none. Choose your own; never reuse an example
 # value. It reaches the node as an environment variable, not a command-line
 # argument. See README section 4 for reading it in without echo.
 NODE_PASSWORD=
@@ -1207,7 +1211,7 @@ HEALTHCHECK_AUTO_RESTART=true
 
 This is the release package's `.env.example`: copy it to `.env` next to `docker-compose.yaml`. The release package also ships `docker-compose.yaml` and `genvm-module-web-docker.yaml`. Set at least:
 
-- `NODE_PASSWORD`: the keystore password. It is required: Docker Compose refuses to start without it, and there is no default.
+- `NODE_PASSWORD`: the keystore password. A validator needs it: the node refuses validator mode without a password, and there is no default. A full node and the WebDriver-only stack need none.
 - `NODE_VERSION`: pin the exact version approved for Bradbury Phase 2. The `latest` image can belong to an older release family.
 - the API key of at least one LLM provider.
 - `GENLAYERNODE_ROLLUP_GENLAYERCHAINRPCKEY`, when your chain RPC provider needs a key (the Bradbury WebSocket does).
