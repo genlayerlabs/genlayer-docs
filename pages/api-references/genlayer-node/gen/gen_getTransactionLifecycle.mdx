@@ -26,6 +26,7 @@ Returns one advanced protocol lifecycle snapshot for a transaction. This endpoin
 | `resolutionSourceCode` | uint8 | Resolution source code |
 | `decisionId` | string or null | Decimal decision identity used by decision-scoped protocol commands |
 | `decisionActive` | boolean | Whether `decisionId` still identifies the active decision |
+| `executionGeneration` | string or null | Current execution generation as a decimal string from the same snapshot; independent of retained decision provenance. Null when unavailable in a synthetic response. |
 | `evaluatedAt` | integer | Unix timestamp used for the projection |
 
 **Example Request:**
@@ -60,6 +61,7 @@ Returns one advanced protocol lifecycle snapshot for a transaction. This endpoin
     "resolutionSourceCode": 6,
     "decisionId": "42",
     "decisionActive": true,
+    "executionGeneration": "3",
     "evaluatedAt": 1787868000
   },
   "id": 1

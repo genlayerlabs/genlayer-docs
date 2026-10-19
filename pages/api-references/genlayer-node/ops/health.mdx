@@ -1,12 +1,14 @@
 ### health
 
-Returns the health status of the GenLayer node along with version information and the status of individual health checks.
+Returns the node's operational status and the typed condition catalog that explains it.
 
 **Method:** `GET /health`
 
 **Parameters:** None
 
-**Returns:** JSON object containing the overall health status, version information, and individual check results
+**Returns:** JSON object containing the overall status, network/version information, validator identity (validator mode), and the full condition catalog
+
+**HTTP status:** `503` when `status` is `unavailable`; `200` for every other state.
 
 **Example Request:**
 
@@ -18,100 +20,149 @@ curl -X GET http://localhost:9153/health
 
 ```json
 {
-  "status": "up",
-  "node_version": "v1.2.3",
-  "protocol_version": "consensus-v2.1",
-  "genvm_modules": {
-    "llm": {
-      "state": "healthy",
-      "timestamp": "2024-01-15T10:30:45Z",
-      "last_ok": "2024-01-15T10:30:45Z"
-    },
-    "web": {
-      "state": "healthy",
-      "timestamp": "2024-01-15T10:30:45Z",
-      "last_ok": "2024-01-15T10:30:45Z"
-    }
-  },
-  "checks": {
-    "test-check": {
-      "status": "up",
-      "timestamp": "2024-01-15T10:30:45Z"
-    }
+  "status": "healthy",
+  "network": "bradbury-phase2",
+  "node_version": "v0.6.0",
+  "protocol_version": "0.3.0",
+  "genvm_version": "v0.0.18",
+  "validator_address": "0x1234567890abcdef1234567890abcdef12345678",
+  "validator_moniker": "my-validator",
+  "conditions": {
+    "chain.rpc":                { "state": "healthy", "occurrences": 0, "consecutive_failures": 0, "since": "2026-09-01T08:00:03Z", "updated_at": "2026-09-01T10:31:12Z", "last_ok": "2026-09-01T10:31:12Z" },
+    "chain.websocket":          { "state": "healthy", "occurrences": 0, "consecutive_failures": 0, "since": "2026-09-01T08:00:03Z", "updated_at": "2026-09-01T10:31:12Z", "last_ok": "2026-09-01T10:31:12Z" },
+    "chain.sync":               { "state": "healthy", "occurrences": 0, "consecutive_failures": 0, "since": "2026-09-01T08:02:14Z", "updated_at": "2026-09-01T10:31:12Z", "last_ok": "2026-09-01T10:31:12Z" },
+    "consensus.ban":            { "state": "healthy", "occurrences": 0, "consecutive_failures": 0, "since": "2026-09-01T08:00:03Z", "updated_at": "2026-09-01T10:31:12Z", "last_ok": "2026-09-01T10:31:12Z" },
+    "consensus.stake":          { "state": "healthy", "occurrences": 0, "consecutive_failures": 0, "since": "2026-09-01T08:00:03Z", "updated_at": "2026-09-01T10:31:12Z", "last_ok": "2026-09-01T10:31:12Z" },
+    "consensus.operator_funds": { "state": "healthy", "occurrences": 0, "consecutive_failures": 0, "since": "2026-09-01T08:00:03Z", "updated_at": "2026-09-01T10:31:12Z", "last_ok": "2026-09-01T10:31:12Z" },
+    "consensus.prime":          { "state": "healthy", "occurrences": 0, "consecutive_failures": 0, "since": "2026-09-01T08:04:41Z", "updated_at": "2026-09-01T10:31:12Z", "last_ok": "2026-09-01T10:31:12Z" },
+    "genvm.llm":                { "state": "healthy", "occurrences": 0, "consecutive_failures": 0, "since": "2026-09-01T08:00:31Z", "updated_at": "2026-09-01T10:29:56Z", "last_ok": "2026-09-01T10:29:56Z" },
+    "genvm.web":                { "state": "healthy", "occurrences": 0, "consecutive_failures": 0, "since": "2026-09-01T08:00:31Z", "updated_at": "2026-09-01T10:29:56Z", "last_ok": "2026-09-01T10:29:56Z" },
+    "node.disk":                { "state": "healthy", "occurrences": 0, "consecutive_failures": 0, "since": "2026-09-01T08:00:03Z", "updated_at": "2026-09-01T10:31:12Z", "last_ok": "2026-09-01T10:31:12Z" },
+    "node.snapshot_age":        { "state": "healthy", "occurrences": 0, "consecutive_failures": 0, "since": "2026-09-01T08:00:03Z", "updated_at": "2026-09-01T10:31:12Z", "last_ok": "2026-09-01T10:31:12Z" },
+    "webdriver.render":         { "state": "healthy", "occurrences": 0, "consecutive_failures": 0, "since": "2026-09-01T08:00:03Z", "updated_at": "2026-09-01T10:31:12Z", "last_ok": "2026-09-01T10:31:12Z" }
   }
 }
 ```
 
 **Response Fields:**
 
-- `status` (string): Overall health status - "up" if all checks pass, "down" if any check fails
-- `node_version` (string): The version of the GenLayer node software
-- `protocol_version` (string): The consensus protocol version
-- `genvm_modules` (object): Per-module GenVM health — whether this node can currently do LLM and web work. Reported for `llm` and `web`.
-  - `state` (string): `healthy`, `suspect`, `degraded`, or `unknown`. `suspect` means one failure has been observed and is not yet treated as confirmed; `unknown` means the module has not been exercised yet.
-  - `timestamp` (string, optional): ISO 8601 time the verdict was last updated. Absent until the module is first observed.
-  - `last_ok` (string, optional): ISO 8601 time the module last answered successfully. Absent if it never has.
-  - `detail` (string, optional): the module's own error text. Present only while not healthy.
-- `checks` (object, optional): Map of individual health check results
-  - `[check-name]` (object): Results for a specific health check
-    - `status` (string): Check status - "up" or "down"
-    - `timestamp` (string): ISO 8601 timestamp of when the check was performed
-    - `error` (string, optional): Error message if check failed
+- `status` (string): the most urgent state across the catalog — `unknown`, `healthy`, `suspect`, `warning`, `degraded`, or `unavailable`
+- `network` (string): The network the node is connected to
+- `node_version`, `protocol_version`, `genvm_version` (string): build versions
+- `validator_address` (string, validator mode only): The validator's address
+- `validator_moniker` (string, validator mode only): The validator's on-chain moniker; reported alongside the address even when empty
+- `conditions` (object): the full catalog. Every entry is always present — this is not a list of what is broken.
+  - `state` (string): current observed health; use this field to determine whether the capability is working.
+  - `occurrences` (number): accepted failed observations since process start
+  - `consecutive_failures` (number): current failure streak; zero after recovery
+  - `since`, `updated_at`, `last_ok` (string, optional): ISO 8601 lifecycle timestamps
+  - `reason` (string, present only when not healthy): stable, low-cardinality cause code
+  - `impact` (string, present only when not healthy): what the fault does to this node
+  - `action` (string, present only when not healthy): what the operator should do
+  - `details` (object, present only when not healthy): typed fields explicitly allowlisted by the catalog entry. Raw provider payloads, prompts, credentials, URLs, and stack traces are rejected.
 
-**GenVM module health does not affect `status`.**
+`severity` is not returned by this endpoint. Alert priority belongs to the alerting policy; clients that previously read `conditions.*.severity` should use `state` for current health.
 
-A node with a broken module is still booted, synced and voting — it votes Timeout on the transactions that need that module, which is the designed degraded behaviour rather than an outage. Failing the endpoint would pull a working validator out of load balancers and page an operator about a node behaving as intended. So `genvm_modules` is reported alongside `checks` rather than as one of them, and `status` stays `up`:
+**States**
+
+| State | Meaning | Alerted |
+|---|---|---|
+| `unknown` | The node never observed this condition. | no |
+| `healthy` | The last observation succeeded. | no |
+| `suspect` | One failure, not yet confirmed. It may clear by itself. | no |
+| `warning` | The capability works, and it is confirmed sub-optimal. | yes |
+| `degraded` | The failure is confirmed. The capability does not work. | yes |
+| `unavailable` | The node cannot do its duty at all. | yes |
+
+Roll-up precedence, most urgent first: `unavailable`, `degraded`, `warning`, `suspect`, `unknown`, `healthy`.
+
+`unknown` is not on that ladder. It is only ever the state a condition starts in, so it means "not observed yet", never "faulty". A GenVM module rests there until a transaction needs one; `node.snapshot_age` rests there on a node that takes no snapshots. Letting either gate the endpoint would report `unknown` for a node where nothing is wrong.
+
+If **no** condition has been observed at all, `status` is `unknown` — nothing observed is not the same as nothing wrong.
+
+**Only `unavailable` returns 503.**
+
+A condition can never exceed the liveness cap its catalog entry declares. The GenVM conditions are capped at `degraded`, so a dead LLM provider returns **200**: that node is still booted, synced and voting — it votes Timeout on the transactions it cannot execute, which is the designed behaviour rather than an outage. Failing the endpoint would pull a working validator out of a load balancer.
+
+`consensus.ban`, `consensus.stake`, `chain.rpc`, `chain.websocket` and `chain.sync` are capped at `unavailable`, because each of them stops the node doing its job.
+
+**WebDriver render check**
+
+`webdriver.render` runs the same fresh render probe as `doctor`, using
+`webdriver_host` from the configured GenVM's `genvm-module-web.yaml`. It requires
+HTTP 200, `Resulting-Status: 200`, and exactly `Hello world!` from the diagnostic
+page, within 10 seconds. It bypasses WebDriver's cached `/healthcheck` response.
+A failure reports `degraded` with reason `webdriver_check_failed` and safe
+`failure`, `http_status` and `page_status` details. The endpoint still returns
+HTTP 200: a browser outage does not stop the node syncing and voting.
+
+Allow time for the ten-second render deadline when setting a client timeout.
+`task devtools:nodes:health` defaults to 15 seconds per request so a browser
+timeout can return its diagnosis instead of appearing as an unreachable node.
+
+`genvm.web` continues reporting the broader web module's boot and transaction
+results. A successful direct browser check does not clear a web-module failure.
+
+For `genvm.start_manager: false`, the manager owns the browser configuration.
+The node leaves `webdriver.render` unknown instead of probing an unused local
+root. Doctor likewise reports the browser as not checked; run it on the node
+that owns the manager configuration. Observed `genvm.web` results still apply.
+
+**Example: the LLM provider is dead — HTTP 200**
 
 ```json
 {
-  "status": "up",
-  "genvm_modules": {
-    "llm": {
+  "status": "degraded",
+  "conditions": {
+    "genvm.llm": {
       "state": "degraded",
-      "timestamp": "2024-01-15T10:30:45Z",
-      "last_ok": "2024-01-15T04:12:03Z",
-      "detail": "provider unreachable — voting Timeout on transactions that need an LLM"
-    },
-    "web": { "state": "healthy", "timestamp": "2024-01-15T10:30:45Z", "last_ok": "2024-01-15T10:30:45Z" }
-  }
-}
-```
-
-`timestamp` and `last_ok` answer different questions and are both reported. `timestamp` is when the verdict was last updated; `last_ok` is when the module last worked. They match while healthy, and the gap between them while degraded shows how long the outage has run. `timestamp` matters more here than under `checks`: those entries are re-evaluated on every request, whereas module state is folded from real transaction traffic and is not polled while healthy — so on a quiet validator a `healthy` verdict can rest on an older observation.
-
-
-**HTTP Status Codes:**
-
-- `200 OK`: Node is healthy (all checks passing)
-- `503 Service Unavailable`: Node is unhealthy (one or more checks failing)
-
-**Notes:**
-
-- The endpoint has a 5-second timeout for all health checks
-- The `checks` field is only included when health checks are configured
-- Version fields will show "unset" if version information is not available
-- Individual health checks are executed concurrently with results aggregated in the response
-
-**Example Response (Unhealthy):**
-
-```json
-{
-  "status": "down",
-  "node_version": "v1.2.3",
-  "protocol_version": "consensus-v2.1",
-  "checks": {
-    "database": {
-      "status": "down",
-      "error": "connection timeout",
-      "timestamp": "2024-01-15T10:30:45Z"
-    },
-    "consensus": {
-      "status": "up",
-      "timestamp": "2024-01-15T10:30:45Z"
+      "reason": "llm_request_failed",
+      "impact": "This validator cannot execute a transaction that needs an LLM. It votes Timeout, and the consensus contracts may penalize a Timeout vote.",
+      "action": "Check the affected LLM provider service and payment or billing status, restore access, or configure a working fallback. If credentials are changed through .env, restart the node.",
+      "occurrences": 2,
+      "consecutive_failures": 2,
+      "since": "2026-09-01T10:30:45Z",
+      "updated_at": "2026-09-01T10:31:12Z",
+      "last_ok": "2026-09-01T04:12:03Z"
     }
   }
 }
 ```
+
+**Example: the validator is banned — HTTP 503**
+
+```json
+{
+  "status": "unavailable",
+  "conditions": {
+    "consensus.ban": {
+      "state": "unavailable",
+      "reason": "validator_banned",
+      "impact": "The consensus contracts do not select this validator for a round. The node earns nothing.",
+      "action": "Wait for the stated epoch. If the ban is permanent, restake with a new validator.",
+      "details": { "until_epoch": "4182", "permanent": "false" },
+      "occurrences": 1,
+      "consecutive_failures": 1,
+      "since": "2026-09-01T09:14:02Z",
+      "updated_at": "2026-09-01T10:31:12Z",
+      "last_ok": "2026-09-01T09:13:52Z"
+    }
+  }
+}
+```
+
+**`chain.sync` — 503 only when the node stops syncing**
+
+Depth is not a fault. A node syncing from genesis is millions of blocks behind and perfectly healthy. What matters is whether the stored synced block advances.
+
+| Reason | State | HTTP |
+|---|---|---|
+| `sync_lagging` | `warning` | 200 |
+| `sync_catching_up` | `degraded` | 200 |
+| `sync_stalled` | `unavailable` | **503** |
+| `sync_feed_frozen` | `unavailable` | **503** |
+
+The node never skips a duty because it is behind. It votes Timeout only on a transaction that reads state it has not synced; a new contract deploy still runs.
 
 **cURL Example with Headers:**
 

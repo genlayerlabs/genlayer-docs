@@ -46,7 +46,7 @@ Repeat for each GenVM instance if running multiple. For a full restart: `sudo sy
 
 ## Configuration Files
 
-All configuration lives at `third_party/genvm/config/`. Three files:
+All configuration lives in the GenVM tree of the release, at `opt/genvm/<version>/config/` (in the Docker image: `/app/opt/genvm/current/config/`). Three files:
 
 | File | What it controls | Should you modify? |
 |---|---|---|
@@ -226,33 +226,7 @@ models:
       greybox: { text: 3, image: 3 } # both chains, lower priority
 ```
 
-**To enable:**
-
-```bash
-sudo systemctl stop genlayer-node
-
-# Set your OpenRouter key (or whichever provider you're using)
-echo "OPENROUTERKEY=sk-or-v1-your-key-here" >> /opt/genlayer-node/.env
-
-# Apply the release config with greybox metadata
-VERSION=$(readlink /opt/genlayer-node/bin | sed 's|/bin||; s|.*/||')
-cp /opt/genlayer-node/${VERSION}/third_party/genvm/config/genvm-modules-llm-release.yaml \
-   /opt/genlayer-node/${VERSION}/third_party/genvm/config/genvm-module-llm.yaml
-
-# Switch to greybox script
-sed -i 's/genvm-llm-default\.lua/genvm-llm-greybox.lua/' \
-  /opt/genlayer-node/${VERSION}/third_party/genvm/config/genvm-module-llm.yaml
-
-sudo systemctl start genlayer-node
-```
-
-**Verify:**
-```bash
-sudo journalctl -u genlayer-node --no-hostname | grep "greybox"
-# Expected: greybox: success    provider: openrouter    model: deepseek/deepseek-v3.2
-```
-
-**To revert:** change `genvm-llm-greybox.lua` back to `genvm-llm-default.lua` and restart.
+**To enable, verify, switch back, or reload it on a running node:** follow the [Greybox Setup](/validators/greybox-setup) guide. It is the node release's own guide, synced from the node repository.
 
 #### Writing a custom strategy
 

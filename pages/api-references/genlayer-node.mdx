@@ -18,16 +18,16 @@ Executes a new message call immediately without creating a transaction on the bl
   - `data` (string, required): The encoded function call data
   - `type` (string, required): The type of call (`"read"`, `"write"`, or `"deploy"`)
   - `blockNumber` (string, optional): The block number to query at (hex-encoded). If not provided, uses latest block
-  - `status` (string, optional): The transaction status filter (`"finalized"` or `"accepted"`). If not provided, uses accepted state
+  - `status` (string, optional): The transaction status filter (`"finalized"` or `"decided"`). If not provided, uses decided state
   - `value` (string, optional): The value to send with the call (hex-encoded)
-  - `leader_results` (array of strings or null, optional): When provided, GenVM runs in validator mode (executing `validator_fn` instead of `leader_fn` in `run_nondet` calls). Each element is a hex-encoded equivalence output from a previous leader execution. When omitted or null, GenVM runs in leader mode
+  - `leader_public_data` (string or null, optional): Hex-encoded data returned by a previous leader execution. Its encoding is defined by the GenVM specification. When provided, GenVM runs in validator mode; when omitted or null, GenVM runs in leader mode
 
 **Returns:** A structured JSON object containing execution results and debug information
 
 **Response Fields:**
 
 - `data` (string): Hex-encoded return value from contract execution
-- `eqOutputs` (array of strings): Equivalence outputs from GenVM execution, each as a hex-encoded string. These are deterministic outputs used for consensus validation. Populated in leader mode; empty in validator mode
+- `leaderPublicData` (string): Hex-encoded leader data whose encoding is defined by the GenVM specification. Populated in leader mode; empty in validator mode
 - `status` (object): Execution status
   - `code` (number): Status code (0=success, 1=user error, 2=vm error, 3=internal error)
   - `message` (string): Human-readable status message
@@ -42,9 +42,10 @@ Executes a new message call immediately without creating a transaction on the bl
   - `recipient` (string): Recipient address
   - `value` (string): Value in hex format
   - `data` (string): Message data as hex-encoded string
-  - `onAcceptance` (boolean): Whether message is sent on acceptance
+  - `onAcceptance` (boolean): Whether message is sent on acceptance. Always `false` for an external message (`messageType` 0): external messages on acceptance are not supported yet
   - `saltNonce` (string): Salt nonce in hex format
-- `nondetDisagreementCallNo` (number or null): When running in validator mode (with `leader_results`), indicates which `run_nondet` call the validator disagreed on. Null when there is no disagreement or when running in leader mode
+- `nondetDisagreementCallNo` (number or null): When running in validator mode (with `leader_public_data`), indicates which `run_nondet` call the validator disagreed on. Null when there is no disagreement or when running in leader mode
+- `syncedBlock` (string): Hex-encoded block number that GenVM has synced to. Indicates data freshness — responses are based on state up to this block
 
 **Example - Deploy Call:**
 
@@ -72,7 +73,7 @@ Executes a new message call immediately without creating a transaction on the bl
   "jsonrpc": "2.0",
   "result": {
     "data": "00",
-    "eqOutputs": [],
+    "leaderPublicData": "0e076e645f6f75747305",
     "status": {
       "code": 0,
       "message": "success"
@@ -122,7 +123,7 @@ Executes a new message call immediately without creating a transaction on the bl
 }
 ```
 
-**Example - Read Call (Latest Accepted State):**
+**Example - Read Call (Latest Decided State):**
 
 ```json
 {
@@ -155,7 +156,7 @@ Executes a new message call immediately without creating a transaction on the bl
       "from": "0xf6A60752C24Cd3BFcAf8d387a5EB62d3746F44EE",
       "to": "0xCe5712E63fd5475288aB1B7c0a368B9417357b81",
       "blockNumber": "0x151ec5",
-      "status": "accepted"
+      "status": "decided"
     }
   ],
   "id": 1
@@ -191,7 +192,7 @@ When a contract emits internal messages (e.g., a router contract forwarding call
   "jsonrpc": "2.0",
   "result": {
     "data": "00",
-    "eqOutputs": [],
+    "leaderPublicData": "0e076e645f6f75747305",
     "status": {
       "code": 0,
       "message": "success"
@@ -235,8 +236,8 @@ When a contract emits internal messages (e.g., a router contract forwarding call
 **Notes:**
 
 - The `blockNumber` parameter can be either hex-encoded with a `0x` prefix (e.g., `"0x151ec5"`) or decimal (e.g., `"1384133"`)
-- Valid `status` values are `"accepted"` (default) and `"finalized"`
-- When both parameters are omitted, the call executes against the latest accepted state
+- Valid `status` values are `"decided"` (default) and `"finalized"`
+- When both parameters are omitted, the call executes against the latest decided state
 - For `read` and `write` type calls, if the contract doesn't exist at the specified block/status combination, an error is returned with code `-32001` (Resource not found) and message `"contract not found at address 0x..."`
 - For `deploy` type calls, the `status` and `blockNumber` parameters are not used for contract state validation since no contract exists yet
 
@@ -327,11 +328,19 @@ Retrieves the current state of a GenLayer intelligent contract at a specific blo
 - `request` (object, required): The contract state request parameters
   - `address` (string, required): The contract address to query
   - `blockNumber` (string, optional): The block number to query at (hex-encoded). If not provided, uses latest block
-  - `status` (string, optional): The transaction status filter (`"finalized"` or `"accepted"`). If not provided, uses accepted state
+  - `status` (string, optional): The transaction status filter (`"finalized"` or `"decided"`). If not provided, uses decided state
 
 **Returns:** Hex-encoded contract state data
 
-**Example Request - Latest Accepted State:**
+**Limits:**
+
+| Limit | Default | Config key |
+|---|---|---|
+| Contract bytes read per call | 16 MB | `node.rpc.contract_read_max_bytes` |
+
+This method reads the contract's whole storage, so its cost grows with the contract. The limit stops the read once the contract exceeds it and returns an error, rather than returning part of the state as if it were all of it. Operators may reduce it; `0` or less disables it.
+
+**Example Request - Latest Decided State:**
 
 ```json
 {
@@ -356,7 +365,7 @@ Retrieves the current state of a GenLayer intelligent contract at a specific blo
     {
       "address": "0x73ca5a2b51edf506ceaf110a41780ec51294d89f",
       "blockNumber": "0x151ec5",
-      "status": "accepted"
+      "status": "decided"
     }
   ],
   "id": 1
@@ -376,7 +385,7 @@ Retrieves the current state of a GenLayer intelligent contract at a specific blo
 **Notes:**
 
 - The `blockNumber` parameter should be hex-encoded with a `0x` prefix
-- Valid `status` values are `"accepted"` (default) and `"finalized"`
+- Valid `status` values are `"decided"` (default) and `"finalized"`
 - The returned state is hex-encoded binary data with a `0x` prefix
 - Empty contract state returns `"0x"`
 - If the contract doesn't exist at the specified block/status, an error will be returned
@@ -384,7 +393,7 @@ Retrieves the current state of a GenLayer intelligent contract at a specific blo
 **cURL Example:**
 
 ```bash
-# Get latest accepted state
+# Get latest decided state
 curl -X POST http://localhost:9151 \
   -H "Content-Type: application/json" \
   -d '{
@@ -396,7 +405,7 @@ curl -X POST http://localhost:9151 \
     "id": 1
   }'
 
-# Get state at specific block with accepted status
+# Get state at specific block with decided status
 curl -X POST http://localhost:9151 \
   -H "Content-Type: application/json" \
   -d '{
@@ -405,7 +414,7 @@ curl -X POST http://localhost:9151 \
     "params": [{
       "address": "0x73ca5a2b51edf506ceaf110a41780ec51294d89f",
       "blockNumber": "0x151ec5",
-      "status": "accepted"
+      "status": "decided"
     }],
     "id": 1
   }'
@@ -422,11 +431,19 @@ Retrieves the code of a deployed GenLayer intelligent contract at a specific blo
 - `request` (object, required): The contract code request parameters
   - `address` (string, required): The contract address to query
   - `blockNumber` (string, optional): The block number to query at (hex-encoded). If not provided, uses latest block
-  - `status` (string, optional): The transaction status filter (`"finalized"` or `"accepted"`). If not provided, uses accepted state
+  - `status` (string, optional): The transaction status filter (`"finalized"` or `"decided"`). If not provided, uses decided state
 
 **Returns:** Base64-encoded contract code
 
-**Example Request - Latest Accepted State:**
+**Limits:**
+
+| Limit | Default | Config key |
+|---|---|---|
+| Contract bytes read per call | 16 MB | `node.rpc.contract_read_max_bytes` |
+
+The node reads the contract's code slot directly, so the cost of a call is proportional to the code it returns rather than to everything the contract stores. The limit is a backstop above that: a contract whose declared code length exceeds it is refused before the bytes are read. Operators may reduce it; `0` or less disables it.
+
+**Example Request - Latest Decided State:**
 
 ```json
 {
@@ -471,15 +488,16 @@ Retrieves the code of a deployed GenLayer intelligent contract at a specific blo
 **Notes:**
 
 - The `blockNumber` parameter should be hex-encoded with a `0x` prefix
-- Valid `status` values are `"accepted"` (default) and `"finalized"`
+- Valid `status` values are `"decided"` (default) and `"finalized"`
 - The returned code is base64-encoded
 - If the contract doesn't exist at the specified block/status, an error will be returned
 - If the address does not have code (not a contract), an error will be returned
+- If the contract's code exceeds `node.rpc.contract_read_max_bytes`, the call is refused rather than truncated, so a partial answer is never returned as a whole one
 
 **cURL Example:**
 
 ```bash
-# Get latest accepted code
+# Get latest decided code
 curl -X POST http://localhost:9151 \
   -H "Content-Type: application/json" \
   -d '{
@@ -826,6 +844,7 @@ Returns one advanced protocol lifecycle snapshot for a transaction. This endpoin
 | `resolutionSourceCode` | uint8 | Resolution source code |
 | `decisionId` | string or null | Decimal decision identity used by decision-scoped protocol commands |
 | `decisionActive` | boolean | Whether `decisionId` still identifies the active decision |
+| `executionGeneration` | string or null | Current execution generation as a decimal string from the same snapshot; independent of retained decision provenance. Null when unavailable in a synthetic response. |
 | `evaluatedAt` | integer | Unix timestamp used for the projection |
 
 **Example Request:**
@@ -860,6 +879,7 @@ Returns one advanced protocol lifecycle snapshot for a transaction. This endpoin
     "resolutionSourceCode": 6,
     "decisionId": "42",
     "decisionActive": true,
+    "executionGeneration": "3",
     "evaluatedAt": 1787868000
   },
   "id": 1
@@ -936,6 +956,519 @@ Returns the GenVM sync status, indicating how far the node's local GenVM state i
 - Use `blocksBehind == 0` to determine if the node is fully synced
 - When the node is catching up, `gen_call` requests without an explicit `blockNumber` will serve data at the `syncedBlock` rather than waiting for full sync
 
+**cURL Example:**
+
+```bash
+curl -X POST http://localhost:9151 \
+  -H "Content-Type: application/json" \
+  -d '{
+    "jsonrpc": "2.0",
+    "method": "gen_syncing",
+    "params": [],
+    "id": 1
+  }'
+```
+
+### gen_estimateGas
+
+Reserved for estimating gas for a GenLayer transaction. **Not implemented** — the method is registered and reachable, but every call returns an error.
+
+**Method:** `gen_estimateGas`
+
+**Parameters:** None currently read — any params supplied are ignored because the method returns before parsing them
+
+**Returns:** Nothing. The call always fails with JSON-RPC error code `-32004`
+
+**Example Request:**
+
+```json
+{
+  "jsonrpc": "2.0",
+  "method": "gen_estimateGas",
+  "params": [],
+  "id": 1
+}
+```
+
+**Example Response:**
+
+```json
+{
+  "jsonrpc": "2.0",
+  "error": {
+    "code": -32004,
+    "message": "method not implemented: gen_estimateGas"
+  },
+  "id": 1
+}
+```
+
+**Notes:**
+
+- The method is registered in the `genlayer` endpoint group, so it is reachable and rate-limited like any other method — it just cannot succeed
+- The error code is `-32004` ("method not supported"), not `-32601` ("method not found"): the node recognises the method and is declining to serve it, rather than failing to route it
+- Disabling the `genlayer` group, or this method specifically via `endpoints.methods`, changes the response to the same `-32004` code with a "method not supported" message
+- Do not use gas estimation to size a transaction budget today; set fees explicitly instead
+
+**cURL Example:**
+
+```bash
+curl -X POST http://localhost:9151 \
+  -H "Content-Type: application/json" \
+  -d '{
+    "jsonrpc": "2.0",
+    "method": "gen_estimateGas",
+    "params": [],
+    "id": 1
+  }'
+```
+
+### gen_getLogs
+
+Queries GenLayer contract-emitted events, mirroring `eth_getLogs` semantics under the `gen_` namespace. Events are produced by intelligent contracts (`gl.chain.Event` subclasses calling `.emit()`), persisted by the node while syncing accepted blocks, and indexed by contract address and topics.
+
+**Method:** `gen_getLogs`
+
+**Parameters:**
+
+- `filter` (object, required):
+  - `fromBlock` (`string`, optional): First block of the range (inclusive), as a hex (`0x…`), decimal string, or `"latest"`. Block numbers are rollup (L2) block numbers — the same numbering `gen_syncing` reports. Defaults to the latest GenVM-synced block.
+  - `toBlock` (`string`, optional): Last block of the range (inclusive). Same format and default as `fromBlock`.
+  - `address` (`string | string[]`, optional): Restrict to events emitted by this contract address (or any of these addresses). Empty matches all addresses.
+  - `topics` (`array`, optional): Positional topic filters, at most 4 entries. Each position is `null` (wildcard), a 32-byte hex topic, or an array of topics (OR within the position). Positions match `eth_getLogs` semantics: an event matches when every constrained position matches; an event with fewer topics than a constrained position does not match.
+  - `blockHash` (`string`, optional): 32-byte rollup block hash selecting exactly one block (EIP-234). Mutually exclusive with `fromBlock`/`toBlock`. The node resolves the hash through the rollup RPC; an unknown hash returns error `-32001`.
+  - `status` (`string[]`, optional): Lifecycle stages to return, any of `"accepted"`, `"finalized"`, `"cancelled"`. Filters on the emitting transaction's **current** stage, not on the stage it held at `blockNumber`. Defaults to `["accepted", "finalized"]` — every event whose emitting round still stands. An unknown value returns error `-32602`.
+
+**Returns:**
+
+An array of log objects, ordered by block number, then transaction, then per-transaction event index:
+
+- `address` (`string`): Address of the emitting contract.
+- `topics` (`string[]`): The emitted topics, each a 32-byte hex string. `topics[0]` is the event signature topic: `keccak256` of the UTF-8 string `EventName(sortedIndexedFieldNames)` — GenLayer hashes the **sorted indexed field names without types**, unlike Solidity's typed signature. Remaining topics are the indexed field values (calldata-encoded, right-padded to 32 bytes, or keccak-hashed when longer).
+- `data` (`string`): Hex of the event payload. **Deviation from eth:** this is the GenVM **calldata** encoding of the event's keyword-argument map, not ABI encoding — decode it with a GenLayer SDK calldata codec.
+- `blockNumber` (`string`): Rollup block number (hex) of the block whose sync recorded the event.
+- `transactionHash` (`string`): 32-byte GenLayer transaction ID.
+- `logIndex` (`string`): **Deviation from eth:** index of the event **within its transaction** (hex), not within the block.
+- `round` (`number`): GenLayer extra — the consensus round of the executed result that emitted the event.
+- `status` (`string`): GenLayer extra — the emitting transaction's current lifecycle stage: `"accepted"`, `"finalized"`, or `"cancelled"`. **Not** the `gen_getTransactionStatus` vocabulary: that method's `"Canceled"` means a transaction cancelled before execution, whereas a `"cancelled"` log belongs to a transaction whose acceptance an appeal overturned and which is re-executed on a later round.
+- `removed` (`boolean`): Carries eth's meaning — the log is no longer part of the canonical set. `true` exactly when `status` is `"cancelled"`.
+
+`blockHash` and `transactionIndex` are omitted (not indexed node-side).
+
+**Semantics and limitations:**
+
+- GenLayer events follow their transaction's lifecycle: they become emitted when the transaction is **ACCEPTED**, become **FINALIZED** with it, and can be **CANCELLED** by a successful appeal. Events from **successful, accepted** executions are recorded at acceptance time (a reverted transaction emits no logs, matching EVM semantics).
+- **A log belongs to the block that emitted it.** `blockNumber` is always the acceptance block and `fromBlock`/`toBlock` select on it, so a log's block is stable while its `status` moves. Each log is returned exactly once per query, whatever combination of statuses is requested — including when a transaction is accepted and finalized within the same block.
+- **`status` is current, not as-of.** The same query run twice can report a different `status` for a log (accepted → finalized) or stop returning it (accepted → cancelled), the same way `gen_getTransactionStatus` reports current state.
+- **Default excludes cancelled logs.** A query with no `status` returns `["accepted", "finalized"]`. Events whose round was overturned on appeal are reachable with `status: ["cancelled"]`, where they carry `removed: true`.
+- **Retention.** Operators bound the store with `node.events.retention_blocks` (default 1,000,000 blocks; `0` disables). Queries below the retention watermark return no logs.
+- **Deviation from eth:** an event emitted inside a write-enabled sandbox (`allow_write_ops=True`) whose failure the contract catches still surfaces on the successful transaction — GenVM sandboxes are permission boundaries, not transactional ones, so caught-failure branch events are part of the transaction's log set (EVM drops reverted-sub-call logs).
+- Coverage requires the transaction to have executed on an executor that reports events in its result (all executors bundled with the currently pinned GenVM manager do); a future pin bundling a pre-2025-12 executor would not surface events for transactions it executes.
+- Results reflect **synced** state: a transaction accepted moments ago becomes queryable once the sync loop writes its block (same trailing semantics as `gen_getContractState` at `latest`).
+
+**Limits:**
+
+| Limit | Default | Config key |
+|---|---|---|
+| Block range per query | 10,000 blocks | `node.rpc.getlogs_max_block_range` |
+| Logs per response | 10,000 entries | `node.rpc.getlogs_max_results` |
+| Event retention | 1,000,000 blocks | `node.events.retention_blocks` |
+
+Both are node-configurable (operators may reduce them); exceeding either returns error `-32005` (`query exceeds limits: …` — distinct from HTTP rate limiting, which uses the same code). The method carries a default rate limit of 2 requests per second per IP, also configurable.
+
+**Errors:**
+
+- `-32602`: malformed filter (invalid hex, more than 4 topic positions, non-32-byte topic, `blockHash` combined with a block range, `fromBlock` greater than `toBlock`, unknown `status` value).
+- `-32005`: block range or result count over the configured cap.
+- `-32001`: `blockHash` unknown to the rollup.
+- `-32000`: internal failure (details are logged, not returned).
+
+**Example Request:**
+
+```json
+{
+  "jsonrpc": "2.0",
+  "method": "gen_getLogs",
+  "params": [
+    {
+      "fromBlock": "0x14e300",
+      "toBlock": "0x14e400",
+      "address": "0x73ca5a2b51edf506ceaf110a41780ec51294d89f",
+      "topics": [
+        "0x9f6dbb5f0f942152b8b254e69610e1c65e33a1bb61bd8f4bd88f0ec7bbe15c2f",
+        null
+      ]
+    }
+  ],
+  "id": 1
+}
+```
+
+**Example Response:**
+
+```json
+{
+  "jsonrpc": "2.0",
+  "id": 1,
+  "result": [
+    {
+      "address": "0x73ca5a2b51edf506ceaf110a41780ec51294d89f",
+      "topics": [
+        "0x9f6dbb5f0f942152b8b254e69610e1c65e33a1bb61bd8f4bd88f0ec7bbe15c2f",
+        "0x2a00000000000000000000000000000000000000000000000000000000000000"
+      ],
+      "data": "0x261674696d657374616d70014996d2c96e",
+      "blockNumber": "0x14e309",
+      "transactionHash": "0x635060dd514082096d18c8eb64682cc6a944f9ce1ae6982febf7a71e9f656f49",
+      "logIndex": "0x0",
+      "round": 0,
+      "status": "finalized",
+      "removed": false
+    }
+  ]
+}
+```
+
+### gen_getTransactionData
+
+Retrieves the on-chain transaction data for one round together with the contract execution outputs (`returnData`, `leaderPublicData`) recovered from the node's local trace store. If the node no longer holds the trace (restart, pruning), the on-chain fields are still returned with `returnData: null` — the transaction is never replayed.
+
+**Method:** `gen_getTransactionData`
+
+**Parameters:**
+
+- `request` (object, required):
+  - `txId` (`string`, required): The 32-byte transaction hash as a hexadecimal string with a `0x` prefix.
+  - `round` (`uint8`, optional): The consensus round whose execution outputs to return. Defaults to the latest round.
+
+**Returns:**
+
+An object with the on-chain transaction fields for the selected round plus the locally stored execution outputs:
+
+- `id` (`string`): The transaction ID as a hex string.
+- `sender` (`address`): The address of the sender.
+- `recipient` (`address`): The destination address of the transaction.
+- `activator` (`address`): The address of the validator that activated the transaction.
+- `status` (`uint8`): The current status of the transaction.
+- `statusName` (`string`): The ABI transaction status name for `status` (`Uninitialized`, `Pending`, `Proposing`, `Committing`, `Revealing`, `Accepted`, `Undetermined`, `Finalized`, `Canceled`, `AppealRevealing`, `AppealCommitting`, `ValidatorsTimeout`, `LeaderTimeout`, or `LeaderRevealing`).
+- `result` (`uint8`): The consensus result of the transaction (`0` Idle, `1` MajorityAgree, `2` MajorityDisagree, `3` MajorityTimeout, `4` DeterministicViolation, `5` NoMajority).
+- `resultName` (`string`): The ABI result name for `result`.
+- `txExecutionResult` (`uint8`): The leader execution vote result (`0` NotVoted, `1` FinishedWithReturn, `2` FinishedWithError, `3` Timeout, `4` NondetDisagree).
+- `txExecutionResultName` (`string`): The ABI vote type name for `txExecutionResult`.
+- `txCallData` (`string`): The transaction call data as a hex string.
+- `txExecutionHash` (`string`): The execution hash of the transaction as a hex string.
+- `eqBlocksOutputs` (`string`): The equivalent blocks outputs as a hex string.
+- `timestamps` (`object`): Object containing various timestamps:
+  - `Created` (`uint256`): When the transaction was created.
+  - `Pending` (`uint256`): When the transaction became pending.
+  - `Activated` (`uint256`): When the transaction was activated.
+  - `Proposed` (`uint256`): When the transaction was proposed.
+  - `Committed` (`uint256`): When the transaction was committed.
+  - `LastVote` (`uint256`): When the last vote was cast.
+  - `AppealSubmitted` (`uint256`): When an appeal was submitted.
+  - `LeaderRevealed` (`uint256`): When the leader was revealed.
+- `round` (`uint8`): The round the execution outputs belong to (the requested round, or the latest round when omitted).
+- `returnData` (`string|null`): The contract's return data as a `0x`-prefixed hex string, from the node's locally stored execution trace. `null` when the node holds no trace for the round — clients must handle `null` explicitly.
+- `leaderPublicData` (`string`): Leader data as a `0x`-prefixed hex string from the stored trace. Its encoding is defined by the GenVM specification. `0x` when no trace is available.
+
+**Example Request:**
+
+```json
+{
+  "jsonrpc": "2.0",
+  "method": "gen_getTransactionData",
+  "params": [
+    {
+      "txId": "0x635060dd514082096d18c8eb64682cc6a944f9ce1ae6982febf7a71e9f656f49"
+    }
+  ],
+  "id": 1
+}
+```
+
+**Example Response:**
+
+```json
+{
+  "jsonrpc": "2.0",
+  "id": 1,
+  "result": {
+    "id": "0x635060dd514082096d18c8eb64682cc6a944f9ce1ae6982febf7a71e9f656f49",
+    "sender": "0x5b70759760a85d92bf972b67ee8558e8e8da87d4",
+    "recipient": "0x73ca5a2b51edf506ceaf110a41780ec51294d89f",
+    "activator": "0xf27b07d36ff5b9dcd37fd3a09811d6456dd4483a",
+    "status": 7,
+    "statusName": "Finalized",
+    "result": 1,
+    "resultName": "MajorityAgree",
+    "txExecutionResult": 1,
+    "txExecutionResultName": "FinishedWithReturn",
+    "txCallData": "f5b31604617267730da4017570646174656420746573742073746f72616765066d6574686f64747570646174655f73746f7261676500",
+    "txExecutionHash": "0x76744dc491b1725eb2ba08cf516855c14aac310e36711368c04442fd39d61853",
+    "eqBlocksOutputs": "c0",
+    "timestamps": {
+      "Created": 1750774777,
+      "Pending": 1750774777,
+      "Activated": 1750774781,
+      "Proposed": 1750774786,
+      "Committed": 1750774791,
+      "LastVote": 1750774795,
+      "AppealSubmitted": 0,
+      "LeaderRevealed": 0
+    },
+    "round": 0,
+    "returnData": "0x00",
+    "leaderPublicData": "0x0e076e645f6f7574730d1b01aabb"
+  }
+}
+```
+
+**Notes:**
+
+- Multi-round appeal data (`roundData`) and fee accounting stay on `gen_getTransactionReceipt`; debug output (stdout, stderr, genvm_log) and trace replay stay on `gen_dbg_traceTransaction`.
+- `returnData` and `leaderPublicData` come from the node's local trace store only — a node that never executed the transaction (or pruned the trace) serves `returnData: null` and `leaderPublicData: "0x"` without replaying.
+- **Retention.** `returnData` and `leaderPublicData` come from the trace store, which operators bound with `node.trace.retention_blocks` (default 1,000,000 blocks; `0` disables). Past the watermark this endpoint answers from chain data with `returnData: null`, exactly as it does for a transaction the node never executed.
+- The trace is persisted asynchronously after a transaction is accepted, so a query issued immediately after acceptance can still return `returnData: null`. Clients that need the execution output should poll until it appears (or fall back to `gen_dbg_traceTransaction`, which replays on demand).
+- An explicit `round` beyond the rounds the transaction has returns a `-32001` error.
+- A malformed `txId` (not a 32-byte hex string) returns `-32602`; a transaction not found on-chain returns `-32001`.
+- This endpoint is in the `genlayer` group and is enabled by default.
+
+**cURL Example:**
+
+```bash
+# Latest round
+curl -X POST http://localhost:9151 \
+  -H "Content-Type: application/json" \
+  -d '{
+    "jsonrpc": "2.0",
+    "method": "gen_getTransactionData",
+    "params": [{
+      "txId": "0x635060dd514082096d18c8eb64682cc6a944f9ce1ae6982febf7a71e9f656f49"
+    }],
+    "id": 1
+  }'
+
+# Specific round
+curl -X POST http://localhost:9151 \
+  -H "Content-Type: application/json" \
+  -d '{
+    "jsonrpc": "2.0",
+    "method": "gen_getTransactionData",
+    "params": [{
+      "txId": "0x635060dd514082096d18c8eb64682cc6a944f9ce1ae6982febf7a71e9f656f49",
+      "round": 1
+    }],
+    "id": 1
+  }'
+```
+
+### gen_protocolVersion
+
+Reserved for reporting the GenLayer protocol version. **Not implemented** — the method is registered and reachable, but every call returns an error.
+
+**Method:** `gen_protocolVersion`
+
+**Parameters:** None currently read — any params supplied are ignored because the method returns before parsing them
+
+**Returns:** Nothing. The call always fails with JSON-RPC error code `-32004`
+
+**Example Request:**
+
+```json
+{
+  "jsonrpc": "2.0",
+  "method": "gen_protocolVersion",
+  "params": [],
+  "id": 1
+}
+```
+
+**Example Response:**
+
+```json
+{
+  "jsonrpc": "2.0",
+  "error": {
+    "code": -32004,
+    "message": "method not implemented: gen_protocolVersion"
+  },
+  "id": 1
+}
+```
+
+**Notes:**
+
+- The method is registered in the `genlayer` endpoint group, so it is reachable and rate-limited like any other method — it just cannot succeed
+- The error code is `-32004` ("method not supported"), not `-32601` ("method not found"): the node recognises the method and is declining to serve it, rather than failing to route it
+- To identify what a node is running, use the ops server's `GET /health`, which reports node version and sync state
+- `eth_protocolVersion` is unaffected — it is proxied to the GenLayer chain like any other `eth_*` method
+
+**cURL Example:**
+
+```bash
+curl -X POST http://localhost:9151 \
+  -H "Content-Type: application/json" \
+  -d '{
+    "jsonrpc": "2.0",
+    "method": "gen_protocolVersion",
+    "params": [],
+    "id": 1
+  }'
+```
+
+### gen_subscribe
+
+Opens a subscription to a stream of GenLayer consensus events over the node's inbound WebSocket endpoint. Notifications are pushed as they occur, removing the need to poll `gen_getTransactionStatus`.
+
+**Method:** `gen_subscribe`
+
+**Transport:** WebSocket only. This method is not available over HTTP — an HTTP POST cannot receive push notifications. See the WebSocket endpoint section for the URL.
+
+**Parameters:**
+
+- `stream` (string, required): The event stream to subscribe to. One of `transactions`, `leadership`, `epochs`, `newHeads`.
+
+**Returns:** A subscription id (UUID v4 string) used to correlate notifications and to cancel via `gen_unsubscribe`
+
+**Streams:**
+
+| Stream | Event kinds delivered |
+|--------|-----------------------|
+| `transactions` | `NewTransaction`, `TransactionActivated`, `TransactionReceiptProposed`, `VoteCommitted`, `VoteRevealed`, `TransactionAccepted`, `TransactionFinalized`, `TransactionUndetermined` |
+| `leadership` | `TransactionLeaderRotated`, `TransactionLeaderTimeout`, `TransactionLeaderChanged`, `TransactionLeaderRevealed`, `LeaderIdlenessProcessed`, `AppealStarted` |
+| `epochs` | `EpochAdvance`, `EpochFinalize`, `TimeoutsSet`, `SetEpochMinDuration` |
+| `newHeads` | `NewHeader` |
+
+**Notification Fields:**
+
+| Field | Type | Description |
+|-------|------|-------------|
+| `kind` | string | The event name, matching the consensus contract's ABI event (e.g. `TransactionAccepted`) |
+| `event` | object | The decoded event payload. `bytes32` values are 0x-prefixed hex; field names are camelCase |
+| `event.raw` | object | The originating chain log (block hash, transaction hash, topics), for reconciling against `gen_getLogs` |
+
+**Example Request:**
+
+```json
+{
+  "jsonrpc": "2.0",
+  "method": "gen_subscribe",
+  "params": [
+    "transactions"
+  ],
+  "id": 1
+}
+```
+
+**Example Response:**
+
+```json
+{
+  "jsonrpc": "2.0",
+  "result": "b3f1c2de-9a44-4c1e-8f77-2b0a5d6e1c33",
+  "id": 1
+}
+```
+
+**Example Notification:**
+
+```json
+{
+  "jsonrpc": "2.0",
+  "method": "gen_subscription",
+  "params": {
+    "subscription": "b3f1c2de-9a44-4c1e-8f77-2b0a5d6e1c33",
+    "result": {
+      "kind": "TransactionAccepted",
+      "event": {
+        "txId": "0x9c1f3a7b8d2e4f5061728394a5b6c7d8e9f0a1b2c3d4e5f60718293a4b5c6d7e",
+        "raw": {
+          "address": "0x1234567890abcdef1234567890abcdef12345678",
+          "blockNumber": "0x151ec5",
+          "transactionHash": "0x4d5e6f708192a3b4c5d6e7f8091a2b3c4d5e6f708192a3b4c5d6e7f8091a2b3c"
+        }
+      }
+    }
+  }
+}
+```
+
+**Notes:**
+
+- The subscription id is a UUID v4 generated by this node; it is never an upstream chain subscription id
+- Streams are coarse by design: one subscription covers a whole lifecycle, so following a transaction end to end costs one subscription rather than one per event kind
+- The `kind` values are the consensus contracts' ABI event names, which are stable across node releases. They are deliberately not the node's internal topic names
+- Every payload is derived from on-chain logs and contains no node-private data. The node's own GenVM sync position is not exposed here; use `gen_syncing`
+- `newHeads` is served for convenience and duplicates `eth_subscribe("newHeads")`, which is fed from the same upstream. Latency-sensitive clients should prefer `eth_subscribe`
+- Notifications are live only — there is no historical replay or backfill. Reconcile any gap with `gen_getLogs`
+- Server-side filtering (for example by `txId`) is not supported; subscribe to the stream and filter client-side
+- Subscribing to an unknown stream returns error code `-32602` with the list of supported streams
+- Exceeding `max_subs_per_conn` returns error code `-32000` ("subscription limit reached")
+- This method belongs to the `genlayer` endpoint group; disabling that group disables it on the WebSocket transport too
+- Standard clients can consume this with their generic subscription API, since notifications use the conventional `gen_subscription` envelope. In go-ethereum: `client.Subscribe(ctx, "gen", ch, "transactions")`
+
+**wscat Example:**
+
+```bash
+wscat -c ws://localhost:9151/ws
+> {"jsonrpc":"2.0","method":"gen_subscribe","params":["transactions"],"id":1}
+< {"jsonrpc":"2.0","result":"b3f1c2de-9a44-4c1e-8f77-2b0a5d6e1c33","id":1}
+< {"jsonrpc":"2.0","method":"gen_subscription","params":{"subscription":"b3f1c2de-9a44-4c1e-8f77-2b0a5d6e1c33","result":{"kind":"NewTransaction","event":{"txId":"0x9c1f..."}}}}
+```
+
+### gen_unsubscribe
+
+Cancels a subscription previously opened with `gen_subscribe`. The node stops sending notifications for that subscription and releases the resources backing it.
+
+**Method:** `gen_unsubscribe`
+
+**Transport:** WebSocket only, on the same connection that opened the subscription.
+
+**Parameters:**
+
+- `subscriptionId` (string, required): The id returned by `gen_subscribe`
+
+**Returns:** Boolean — `true` when a matching subscription was cancelled, `false` when the id is unknown on this connection
+
+**Example Request:**
+
+```json
+{
+  "jsonrpc": "2.0",
+  "method": "gen_unsubscribe",
+  "params": [
+    "b3f1c2de-9a44-4c1e-8f77-2b0a5d6e1c33"
+  ],
+  "id": 2
+}
+```
+
+**Example Response:**
+
+```json
+{
+  "jsonrpc": "2.0",
+  "result": true,
+  "id": 2
+}
+```
+
+**Notes:**
+
+- An unknown subscription id is not an error: the response is `result: false`, matching the `eth_unsubscribe` convention
+- Subscriptions are scoped to the connection that created them. One connection cannot cancel another's subscription, and an id from a closed connection always returns `false`
+- Explicit unsubscription is optional for cleanup: closing the WebSocket cancels every subscription on that connection automatically
+- A notification already in flight when the cancellation is processed may still arrive; treat the `true` response as "no further events will be produced", not as a barrier
+- A missing or non-string parameter returns error code `-32602`
+
+**wscat Example:**
+
+```bash
+wscat -c ws://localhost:9151/ws
+> {"jsonrpc":"2.0","method":"gen_unsubscribe","params":["b3f1c2de-9a44-4c1e-8f77-2b0a5d6e1c33"],"id":2}
+< {"jsonrpc":"2.0","result":true,"id":2}
+```
+
 ## Debug Methods
 
 These methods are available for debugging and testing purposes during development.
@@ -1009,6 +1542,7 @@ Get trie information for debugging node internal DB state.
   "result": "graph TD\nnode0@{label: \"br  seq=1\"}\nnode1@{label: \"ext seq=1 0x00000000000000000000000000000000000000000000000000000000000000000000000\"}\nnode1 --\u003e data2@{label: \"seq=1\n[21 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0]\"}\nnode0 --\u003e|0| node1\nnode3@{label: \"ext seq=1 0x72d46c3ada9f897c74d349bbfe0e450c798167c9f580f8daf85def57e96c3ea00000000\"}\nnode3 --\u003e data4@{label: \"seq=1\n[105 110 105 116 105 97 108 32 115 116 111 114 97 103 101 32 118 97 108 117 101 0 0 0 0 0 0 0 0 0 0 0]\"}\nnode0 --\u003e|3| node3\n",
   "id": 1
 }
+```
 
 ### gen_dbg_traceTransaction
 
@@ -1029,14 +1563,15 @@ Retrieves the full execution trace for a transaction, including the return data,
 | Field | Type | Description |
 |-------|------|-------------|
 | `transaction_id` | string | Transaction hash |
-| `result_code` | number | 0=success, 1=user error, 2=VM error |
+| `result_code` | number | 0=success, 1=user error, 2=VM error, 3=internal error |
 | `return_data` | string | Hex-encoded contract return data |
 | `stdout` | string | Standard output captured during execution |
 | `stderr` | string | Standard error captured during execution |
 | `genvm_log` | array | Detailed GenVM execution log entries |
 | `storage_proof` | string | Hex-encoded storage proof hash |
 | `run_time` | string | Execution duration |
-| `eq_outputs` | array | Hex-encoded equivalence principle outputs |
+| `leader_public_data` | string | Hex-encoded leader data; its encoding is defined by the GenVM specification |
+| `stored_at` | string (optional) | ISO 8601 timestamp of when the trace was stored; omitted when not available |
 
 **Example:**
 
@@ -1070,7 +1605,7 @@ Retrieves the full execution trace for a transaction, including the return data,
     ],
     "storage_proof": "0x99ff0d9125e1fc9531a11262e15aeb2c60509a078c4cc4c64cefdfb06ff68647",
     "run_time": "0s",
-    "eq_outputs": []
+    "leader_public_data": "0x0e076e645f6f75747305"
   },
   "id": 1
 }
@@ -1079,8 +1614,61 @@ Retrieves the full execution trace for a transaction, including the return data,
 **Notes:**
 
 - If the trace isn't stored locally (e.g., the node restarted or data was pruned), the endpoint will replay the transaction automatically.
-- This endpoint is in the `genlayer_debug` group and must be enabled in the node configuration.
-- Use `result_code` to determine execution outcome: 0 = contract returned successfully, 1 = contract raised a user error, 2 = GenVM encountered an error.
+- **Retention.** Operators bound the trace store with `node.trace.retention_blocks` (default 1,000,000 blocks; `0` disables). A trace below the retention watermark is gone, so this endpoint falls back to a live replay — reconstructed from the latest on-chain view, and not byte-identical to the stored artifact. A single trace larger than `node.trace.max_trace_bytes` (default 32 MB) is never stored, which produces the same fallback.
+- **Field bound.** The free-form execution-output fields (`return_data`, `stdout`, `stderr`, `genvm_log`) carry whatever the replayed contract emitted, so their size is contract-controlled. Each is capped at `node.trace.max_debug_field_bytes` (default 256 KB; `0` takes the default). When a field is cut, the truncation is marked in-band — a trailing `...[truncated: N of M bytes omitted from gen_dbg trace]` on a string field, or a final `{"truncated": "..."}` entry on `genvm_log` — so the reply stays honest rather than silently short.
+- This endpoint is in the `genlayer_debug` group, which is **disabled by default**. Enable it deliberately, and only on an RPC bind that untrusted callers cannot reach: it replays a transaction through GenVM and returns internal execution output, so it is debug tooling, not a public API.
+- Use `result_code` to determine execution outcome: 0 = contract returned successfully, 1 = contract raised a user error, 2 = GenVM encountered an error, 3 = internal error.
+
+### gen_dbg_load_test
+
+Debug hook reserved for driving a node-side load test. The endpoint is wired end to end, but the service behind it is currently a no-op stub: the call succeeds and returns `null` without performing any work.
+
+**Method:** `gen_dbg_load_test`
+
+**Parameters:** None. Any params supplied are accepted and discarded — the handler does not read them
+
+**Returns:** `null`
+
+**Example Request:**
+
+```json
+{
+  "jsonrpc": "2.0",
+  "method": "gen_dbg_load_test",
+  "params": [],
+  "id": 1
+}
+```
+
+**Example Response:**
+
+```json
+{
+  "jsonrpc": "2.0",
+  "result": null,
+  "id": 1
+}
+```
+
+**Notes:**
+
+- A `null` result means "call accepted, nothing performed" — it is not an error and does not indicate a load test ran
+- Because the handler ignores its params, this method cannot currently be tuned (operation count, test type, or duration). Do not build tooling that depends on such parameters
+- Belongs to the `genlayer_debug` group, which **fails closed**: it is disabled unless an operator explicitly enables it, since the debug methods are reachable unauthenticated on the default `0.0.0.0` RPC bind
+- When the group is disabled, the response is JSON-RPC error `-32004` ("method not supported")
+
+**cURL Example:**
+
+```bash
+curl -X POST http://localhost:9151 \
+  -H "Content-Type: application/json" \
+  -d '{
+    "jsonrpc": "2.0",
+    "method": "gen_dbg_load_test",
+    "params": [],
+    "id": 1
+  }'
+```
 
 ## Ethereum Compatibility
 
@@ -1237,7 +1825,7 @@ curl -X GET http://localhost:9153/balance
 
 ```json
 {
-  "message": "Balance endpoint not available in rollup mode"
+  "message": "Balance endpoint not available in full mode"
 }
 ```
 
@@ -1251,13 +1839,15 @@ curl -X GET http://localhost:9153/balance \
 
 ### health
 
-Returns the health status of the GenLayer node along with version information and the status of individual health checks.
+Returns the node's operational status and the typed condition catalog that explains it.
 
 **Method:** `GET /health`
 
 **Parameters:** None
 
-**Returns:** JSON object containing the overall health status, version information, and individual check results
+**Returns:** JSON object containing the overall status, network/version information, validator identity (validator mode), and the full condition catalog
+
+**HTTP status:** `503` when `status` is `unavailable`; `200` for every other state.
 
 **Example Request:**
 
@@ -1269,100 +1859,149 @@ curl -X GET http://localhost:9153/health
 
 ```json
 {
-  "status": "up",
-  "node_version": "v1.2.3",
-  "protocol_version": "consensus-v2.1",
-  "genvm_modules": {
-    "llm": {
-      "state": "healthy",
-      "timestamp": "2024-01-15T10:30:45Z",
-      "last_ok": "2024-01-15T10:30:45Z"
-    },
-    "web": {
-      "state": "healthy",
-      "timestamp": "2024-01-15T10:30:45Z",
-      "last_ok": "2024-01-15T10:30:45Z"
-    }
-  },
-  "checks": {
-    "test-check": {
-      "status": "up",
-      "timestamp": "2024-01-15T10:30:45Z"
-    }
+  "status": "healthy",
+  "network": "bradbury-phase2",
+  "node_version": "v0.6.0",
+  "protocol_version": "0.3.0",
+  "genvm_version": "v0.0.18",
+  "validator_address": "0x1234567890abcdef1234567890abcdef12345678",
+  "validator_moniker": "my-validator",
+  "conditions": {
+    "chain.rpc":                { "state": "healthy", "occurrences": 0, "consecutive_failures": 0, "since": "2026-09-01T08:00:03Z", "updated_at": "2026-09-01T10:31:12Z", "last_ok": "2026-09-01T10:31:12Z" },
+    "chain.websocket":          { "state": "healthy", "occurrences": 0, "consecutive_failures": 0, "since": "2026-09-01T08:00:03Z", "updated_at": "2026-09-01T10:31:12Z", "last_ok": "2026-09-01T10:31:12Z" },
+    "chain.sync":               { "state": "healthy", "occurrences": 0, "consecutive_failures": 0, "since": "2026-09-01T08:02:14Z", "updated_at": "2026-09-01T10:31:12Z", "last_ok": "2026-09-01T10:31:12Z" },
+    "consensus.ban":            { "state": "healthy", "occurrences": 0, "consecutive_failures": 0, "since": "2026-09-01T08:00:03Z", "updated_at": "2026-09-01T10:31:12Z", "last_ok": "2026-09-01T10:31:12Z" },
+    "consensus.stake":          { "state": "healthy", "occurrences": 0, "consecutive_failures": 0, "since": "2026-09-01T08:00:03Z", "updated_at": "2026-09-01T10:31:12Z", "last_ok": "2026-09-01T10:31:12Z" },
+    "consensus.operator_funds": { "state": "healthy", "occurrences": 0, "consecutive_failures": 0, "since": "2026-09-01T08:00:03Z", "updated_at": "2026-09-01T10:31:12Z", "last_ok": "2026-09-01T10:31:12Z" },
+    "consensus.prime":          { "state": "healthy", "occurrences": 0, "consecutive_failures": 0, "since": "2026-09-01T08:04:41Z", "updated_at": "2026-09-01T10:31:12Z", "last_ok": "2026-09-01T10:31:12Z" },
+    "genvm.llm":                { "state": "healthy", "occurrences": 0, "consecutive_failures": 0, "since": "2026-09-01T08:00:31Z", "updated_at": "2026-09-01T10:29:56Z", "last_ok": "2026-09-01T10:29:56Z" },
+    "genvm.web":                { "state": "healthy", "occurrences": 0, "consecutive_failures": 0, "since": "2026-09-01T08:00:31Z", "updated_at": "2026-09-01T10:29:56Z", "last_ok": "2026-09-01T10:29:56Z" },
+    "node.disk":                { "state": "healthy", "occurrences": 0, "consecutive_failures": 0, "since": "2026-09-01T08:00:03Z", "updated_at": "2026-09-01T10:31:12Z", "last_ok": "2026-09-01T10:31:12Z" },
+    "node.snapshot_age":        { "state": "healthy", "occurrences": 0, "consecutive_failures": 0, "since": "2026-09-01T08:00:03Z", "updated_at": "2026-09-01T10:31:12Z", "last_ok": "2026-09-01T10:31:12Z" },
+    "webdriver.render":         { "state": "healthy", "occurrences": 0, "consecutive_failures": 0, "since": "2026-09-01T08:00:03Z", "updated_at": "2026-09-01T10:31:12Z", "last_ok": "2026-09-01T10:31:12Z" }
   }
 }
 ```
 
 **Response Fields:**
 
-- `status` (string): Overall health status - "up" if all checks pass, "down" if any check fails
-- `node_version` (string): The version of the GenLayer node software
-- `protocol_version` (string): The consensus protocol version
-- `genvm_modules` (object): Per-module GenVM health — whether this node can currently do LLM and web work. Reported for `llm` and `web`.
-  - `state` (string): `healthy`, `suspect`, `degraded`, or `unknown`. `suspect` means one failure has been observed and is not yet treated as confirmed; `unknown` means the module has not been exercised yet.
-  - `timestamp` (string, optional): ISO 8601 time the verdict was last updated. Absent until the module is first observed.
-  - `last_ok` (string, optional): ISO 8601 time the module last answered successfully. Absent if it never has.
-  - `detail` (string, optional): the module's own error text. Present only while not healthy.
-- `checks` (object, optional): Map of individual health check results
-  - `[check-name]` (object): Results for a specific health check
-    - `status` (string): Check status - "up" or "down"
-    - `timestamp` (string): ISO 8601 timestamp of when the check was performed
-    - `error` (string, optional): Error message if check failed
+- `status` (string): the most urgent state across the catalog — `unknown`, `healthy`, `suspect`, `warning`, `degraded`, or `unavailable`
+- `network` (string): The network the node is connected to
+- `node_version`, `protocol_version`, `genvm_version` (string): build versions
+- `validator_address` (string, validator mode only): The validator's address
+- `validator_moniker` (string, validator mode only): The validator's on-chain moniker; reported alongside the address even when empty
+- `conditions` (object): the full catalog. Every entry is always present — this is not a list of what is broken.
+  - `state` (string): current observed health; use this field to determine whether the capability is working.
+  - `occurrences` (number): accepted failed observations since process start
+  - `consecutive_failures` (number): current failure streak; zero after recovery
+  - `since`, `updated_at`, `last_ok` (string, optional): ISO 8601 lifecycle timestamps
+  - `reason` (string, present only when not healthy): stable, low-cardinality cause code
+  - `impact` (string, present only when not healthy): what the fault does to this node
+  - `action` (string, present only when not healthy): what the operator should do
+  - `details` (object, present only when not healthy): typed fields explicitly allowlisted by the catalog entry. Raw provider payloads, prompts, credentials, URLs, and stack traces are rejected.
 
-**GenVM module health does not affect `status`.**
+`severity` is not returned by this endpoint. Alert priority belongs to the alerting policy; clients that previously read `conditions.*.severity` should use `state` for current health.
 
-A node with a broken module is still booted, synced and voting — it votes Timeout on the transactions that need that module, which is the designed degraded behaviour rather than an outage. Failing the endpoint would pull a working validator out of load balancers and page an operator about a node behaving as intended. So `genvm_modules` is reported alongside `checks` rather than as one of them, and `status` stays `up`:
+**States**
+
+| State | Meaning | Alerted |
+|---|---|---|
+| `unknown` | The node never observed this condition. | no |
+| `healthy` | The last observation succeeded. | no |
+| `suspect` | One failure, not yet confirmed. It may clear by itself. | no |
+| `warning` | The capability works, and it is confirmed sub-optimal. | yes |
+| `degraded` | The failure is confirmed. The capability does not work. | yes |
+| `unavailable` | The node cannot do its duty at all. | yes |
+
+Roll-up precedence, most urgent first: `unavailable`, `degraded`, `warning`, `suspect`, `unknown`, `healthy`.
+
+`unknown` is not on that ladder. It is only ever the state a condition starts in, so it means "not observed yet", never "faulty". A GenVM module rests there until a transaction needs one; `node.snapshot_age` rests there on a node that takes no snapshots. Letting either gate the endpoint would report `unknown` for a node where nothing is wrong.
+
+If **no** condition has been observed at all, `status` is `unknown` — nothing observed is not the same as nothing wrong.
+
+**Only `unavailable` returns 503.**
+
+A condition can never exceed the liveness cap its catalog entry declares. The GenVM conditions are capped at `degraded`, so a dead LLM provider returns **200**: that node is still booted, synced and voting — it votes Timeout on the transactions it cannot execute, which is the designed behaviour rather than an outage. Failing the endpoint would pull a working validator out of a load balancer.
+
+`consensus.ban`, `consensus.stake`, `chain.rpc`, `chain.websocket` and `chain.sync` are capped at `unavailable`, because each of them stops the node doing its job.
+
+**WebDriver render check**
+
+`webdriver.render` runs the same fresh render probe as `doctor`, using
+`webdriver_host` from the configured GenVM's `genvm-module-web.yaml`. It requires
+HTTP 200, `Resulting-Status: 200`, and exactly `Hello world!` from the diagnostic
+page, within 10 seconds. It bypasses WebDriver's cached `/healthcheck` response.
+A failure reports `degraded` with reason `webdriver_check_failed` and safe
+`failure`, `http_status` and `page_status` details. The endpoint still returns
+HTTP 200: a browser outage does not stop the node syncing and voting.
+
+Allow time for the ten-second render deadline when setting a client timeout.
+`task devtools:nodes:health` defaults to 15 seconds per request so a browser
+timeout can return its diagnosis instead of appearing as an unreachable node.
+
+`genvm.web` continues reporting the broader web module's boot and transaction
+results. A successful direct browser check does not clear a web-module failure.
+
+For `genvm.start_manager: false`, the manager owns the browser configuration.
+The node leaves `webdriver.render` unknown instead of probing an unused local
+root. Doctor likewise reports the browser as not checked; run it on the node
+that owns the manager configuration. Observed `genvm.web` results still apply.
+
+**Example: the LLM provider is dead — HTTP 200**
 
 ```json
 {
-  "status": "up",
-  "genvm_modules": {
-    "llm": {
+  "status": "degraded",
+  "conditions": {
+    "genvm.llm": {
       "state": "degraded",
-      "timestamp": "2024-01-15T10:30:45Z",
-      "last_ok": "2024-01-15T04:12:03Z",
-      "detail": "provider unreachable — voting Timeout on transactions that need an LLM"
-    },
-    "web": { "state": "healthy", "timestamp": "2024-01-15T10:30:45Z", "last_ok": "2024-01-15T10:30:45Z" }
-  }
-}
-```
-
-`timestamp` and `last_ok` answer different questions and are both reported. `timestamp` is when the verdict was last updated; `last_ok` is when the module last worked. They match while healthy, and the gap between them while degraded shows how long the outage has run. `timestamp` matters more here than under `checks`: those entries are re-evaluated on every request, whereas module state is folded from real transaction traffic and is not polled while healthy — so on a quiet validator a `healthy` verdict can rest on an older observation.
-
-
-**HTTP Status Codes:**
-
-- `200 OK`: Node is healthy (all checks passing)
-- `503 Service Unavailable`: Node is unhealthy (one or more checks failing)
-
-**Notes:**
-
-- The endpoint has a 5-second timeout for all health checks
-- The `checks` field is only included when health checks are configured
-- Version fields will show "unset" if version information is not available
-- Individual health checks are executed concurrently with results aggregated in the response
-
-**Example Response (Unhealthy):**
-
-```json
-{
-  "status": "down",
-  "node_version": "v1.2.3",
-  "protocol_version": "consensus-v2.1",
-  "checks": {
-    "database": {
-      "status": "down",
-      "error": "connection timeout",
-      "timestamp": "2024-01-15T10:30:45Z"
-    },
-    "consensus": {
-      "status": "up",
-      "timestamp": "2024-01-15T10:30:45Z"
+      "reason": "llm_request_failed",
+      "impact": "This validator cannot execute a transaction that needs an LLM. It votes Timeout, and the consensus contracts may penalize a Timeout vote.",
+      "action": "Check the affected LLM provider service and payment or billing status, restore access, or configure a working fallback. If credentials are changed through .env, restart the node.",
+      "occurrences": 2,
+      "consecutive_failures": 2,
+      "since": "2026-09-01T10:30:45Z",
+      "updated_at": "2026-09-01T10:31:12Z",
+      "last_ok": "2026-09-01T04:12:03Z"
     }
   }
 }
 ```
+
+**Example: the validator is banned — HTTP 503**
+
+```json
+{
+  "status": "unavailable",
+  "conditions": {
+    "consensus.ban": {
+      "state": "unavailable",
+      "reason": "validator_banned",
+      "impact": "The consensus contracts do not select this validator for a round. The node earns nothing.",
+      "action": "Wait for the stated epoch. If the ban is permanent, restake with a new validator.",
+      "details": { "until_epoch": "4182", "permanent": "false" },
+      "occurrences": 1,
+      "consecutive_failures": 1,
+      "since": "2026-09-01T09:14:02Z",
+      "updated_at": "2026-09-01T10:31:12Z",
+      "last_ok": "2026-09-01T09:13:52Z"
+    }
+  }
+}
+```
+
+**`chain.sync` — 503 only when the node stops syncing**
+
+Depth is not a fault. A node syncing from genesis is millions of blocks behind and perfectly healthy. What matters is whether the stored synced block advances.
+
+| Reason | State | HTTP |
+|---|---|---|
+| `sync_lagging` | `warning` | 200 |
+| `sync_catching_up` | `degraded` | 200 |
+| `sync_stalled` | `unavailable` | **503** |
+| `sync_feed_frozen` | `unavailable` | **503** |
+
+The node never skips a duty because it is behind. It votes Timeout only on a transaction that reads state it has not synced; a new contract deploy still runs.
 
 **cURL Example with Headers:**
 
@@ -1414,6 +2053,17 @@ The node collects metrics for three main components:
 - **Node** - The main node process
 - **GenVM** - The GenVM modules (LLM and Web)
 - **WebDriver** - The WebDriver container
+
+**Operator Condition Metrics**
+
+- `genlayer_node_operator_condition_state{condition,state}`: one-hot gauge for the current catalog state. All state series are prewarmed at process start.
+- `genlayer_node_operator_condition_occurrences_total{condition,reason}`: accepted failed observations by stable reason.
+- `genlayer_node_operator_condition_transitions_total{condition,from,to}`: lifecycle transitions, including recovery.
+- `genlayer_node_operator_condition_last_success_timestamp_seconds{condition}`: Unix timestamp of the last successful observation, or zero before one occurs.
+
+`condition`, `state`, `reason`, `from`, and `to` come from the fixed startup catalog; upstream error text is never used as a label.
+
+`occurrences_total` counts differently per condition kind, so the counter stays comparable: an *observed* condition (folded from duty traffic) counts every failed observation, while a *polled* condition counts only entry into a failing state. Counting every failed poll would scale the counter with the poll interval rather than the fault — a three-day ban at a ten-second poll would read as roughly 26,000 events.
 
 **CPU Metrics**
 
@@ -1621,6 +2271,15 @@ Node synchronization status (1 = synced, 0 = not synced).
 **Labels:**
 - `node`: Node address (hex format)
 
+**genlayer_node_prime_blocked_insufficient_funds**
+
+Whether a mandatory validator prime is currently blocked by an unfunded operator wallet (1 = blocked, 0 = not blocked). While blocked the validator cannot pay for consensus duty transactions and is flagged idle each round — fund the operator wallet to recover.
+
+**Type:** Gauge
+
+**Labels:**
+- `node`: Node address (hex format)
+
 **genlayer_node_uptime_seconds**
 
 Node uptime in seconds.
@@ -1686,6 +2345,137 @@ Total number of validator reveal votes.
 
 **Labels:**
 - `node`: Node address (hex format)
+
+**Gas Metrics (duty transactions)**
+
+Emitted inline from the shared consensus gas estimator and transactor, so they cover every duty method (`finalizeTransaction`, `commitVote`, `revealVote`, `proposeReceiptWithFees`, `topUpAndSubmitAppeal`, `activateTransaction`, `validatorPrime`, `epochAdvance`, ...). All are true counters.
+
+**genlayer_node_gas_estimation_total**
+
+Outcome of every duty gas estimation.
+
+**Type:** Counter
+
+**Labels:**
+- `method`: Contract method name
+- `outcome`: One of `success` (real RPC estimate), `fallback_block_limit` (estimation failed; submitted at full block gas limit), `fallback_cache` / `fallback_cache_scaled` (estimation failed; reused gas from the shared calldata-length-keyed cache, possibly learned from a different method)
+
+**genlayer_node_gas_estimation_capped_total**
+
+Estimation succeeded but the safety-multiplied estimate (or per-call reserve) exceeded the block gas limit and was silently capped — the safety margin is gone while everything still works.
+
+**Type:** Counter
+
+**Labels:**
+- `method`: Contract method name
+
+**genlayer_node_gas_shortfall_total**
+
+Confirmed on-chain out-of-gas: the transaction landed but ran out of gas mid-execution. Self-heals — the node retries with a larger gas limit — so a single occurrence is not actionable; a **sustained rate** signals systematic under-estimation (treat as a warning, not a page).
+
+**Type:** Counter
+
+**Labels:**
+- `method`: Contract method name
+- `reason`: One of `typed_shortfall` (`InsufficientGasForInternalMessageCreation` revert with exact gas requirement), `out_of_gas` (explicit `OutOfGas` revert), `heuristic` (undecoded revert that consumed gas above the exhaustion threshold)
+
+**genlayer_node_gas_block_limit_exhausted_total**
+
+Gas shortfall while the gas limit was already capped at the block limit: the work cannot fit in one block and retrying cannot help. Non-self-healing — **any occurrence is actionable** (page-worthy).
+
+**Type:** Counter
+
+**Labels:**
+- `method`: Contract method name
+
+**genlayer_node_gas_spent_wei_total**
+
+Cumulative wei actually billed for gas, from each mined duty receipt (`gasUsed × effectiveGasPrice`). Reverted attempts are billed too and are accounted per attempt; submissions that never land cost nothing. The `reverted` slice is the exact cost of failed work, and `sum(genlayer_node_gas_spent_wei_total)` is the operator's total billed duty gas.
+
+**Type:** Counter
+
+**Labels:**
+- `method`: Contract method name
+- `outcome`: One of `success`, `reverted`
+- `price_source`: `effective` (receipt's billed price) or `fee_cap` (submitted fee cap used as an upper bound when the RPC omits `effectiveGasPrice`)
+
+**Consensus Submission Metrics**
+
+**genlayer_node_consensus_submit_total**
+
+Terminal outcome of every duty submission.
+
+**Type:** Counter
+
+**Labels:**
+- `method`: Contract method name
+- `outcome`: One of `success` (landed and executed), `reverted` (landed, contract rejected — gas still billed), `failed` (never landed: RPC/nonce/funds/authorization)
+
+**genlayer_node_consensus_revert_total**
+
+Decoded revert causes, one increment per observed revert (attempt-level).
+
+**Type:** Counter
+
+**Labels:**
+- `method`: Contract method name
+- `error`: Decoded custom error from the fee/gas allowlist (`InsufficientFeesForRound`, `InsufficientFees`, `FailedFeeTransfer`, `FeeSettlementNotCompleted`, `MaxPriceExceeded`, `ExecutionBudgetExceeded`, `MessageBudgetExceeded`, `BudgetTooLow`, `RollupBudgetBelowFloor`, `InsufficientBondCustody`, `InvalidAppealBond`, `AppealBondTooLow`, `InsufficientGasForInternalMessageCreation`, `OutOfGas`); anything else collapses to `other`
+
+**Fee Flow Metrics (v0.6 ConsensusMainWithFees)**
+
+Note: there are no dedicated appeal-bond metrics. No node runtime path submits appeals — appellants are external clients funding bonds from their own wallets. If a validator appeal duty ever ships, the method-labeled gas/submission metrics above cover it under `method="topUpAndSubmitAppeal"` with no code change.
+
+**genlayer_node_fees_operator_insufficient_funds_total**
+
+Duty submissions rejected because the operator account cannot cover value + gas. Complements the `genlayer_node_prime_blocked_insufficient_funds` gauge by leaving a trace of dips that recover between scrapes. A sustained increase means the operator wallet needs funding (page-worthy).
+
+**Type:** Counter
+
+**genlayer_node_fees_settlement_events_total**
+
+Fee-settlement events decoded from this node's own mined finalize receipts. Finalize runs under a staggered lease, so each finalize is observed by exactly one node — aggregate fleet-wide with `sum by (network)`. Use the `severity` label to alert on failures without enumerating event names: `genlayer_node_fees_settlement_events_total{severity="alarm"}` covers all three failure modes and any future one.
+
+**Type:** Counter
+
+**Labels:**
+- `event`: One of `UnifiedFeesDistributed` (fees distributed at settlement), `FeesRefunded` (surplus returned to the sender), `FeeSettlementFailed` (finalize succeeded but settlement failed — validators unpaid until `retryFeeSettlement`), `CommitFinalFeesFailed` (tx finalized without fee settlement), `ValueWithdrawalFailed` (a best-effort transfer — refund/appealer payout — failed; funds stay custodied pending recovery)
+- `severity`: `alarm` for the three failure events (unpaid or stuck-funds modes needing operator action) or `info` for the normal `UnifiedFeesDistributed` / `FeesRefunded` happy path
+
+**genlayer_node_fees_distributed_wei_total**
+
+Total wei moved at fee settlement across **all** recipients — committee payouts **plus** sender/contributor refunds **plus** appealer rewards — summed from `UnifiedFeesDistributed` amounts in this node's finalize receipts. It **excludes** amounts retained in staking custody (`amountToStaking`). This is a network **"value settled"** liveness signal, **not** per-node earnings — for a validator's own income use `genlayer_node_fees_earned_wei_total`.
+
+**Type:** Counter
+
+**genlayer_node_fees_earned_wei_total**
+
+This node's validator earnings credited at prime, read from the `ValidatorPrime` event when a prime is effective. This is the accurate **per-node** income (unlike `fees_distributed_wei_total`, which is whole-committee plus refunds). Earnings settle into stake per epoch, so this series lags settlement by up to one prime interval. Pair `type="fee_rewards"` with `genlayer_node_gas_spent_wei_total` for operator net P&L (`earned − gas_spent`).
+
+**Type:** Counter
+
+**Labels:**
+- `type`: One of `fee_rewards` (fee-flow income), `validator_rewards`, `delegator_rewards` (staking-reward components)
+
+**genlayer_node_fees_penalties_wei_total**
+
+This node's fee penalties deducted at prime, read from the same `ValidatorPrime` event. Kept separate from `fees_earned_wei_total` so earnings stay gross income; subtract this for net.
+
+**Type:** Counter
+
+**genlayer_node_external_message_delivery_total**
+
+External messages this node's own delivery calls (`flushExternalMessages`, `flushInternalMessages`, `finalizeTransaction`) resolved or paused, read from their mined receipts. A paused message was not called and not charged; the node retries it with a backoff (30 s doubling to 10 min) until the chain reports it issued. A `paused_*` series that keeps rising for one network means a message nobody can deliver.
+
+**Type:** Counter
+
+**Labels:**
+- `outcome`: `delivered` (ran and succeeded), `call_failed` (ran and failed; final), `paused_gas` (no room to forward its gas envelope), `paused_value` (its value was not yet available), `cancelled_unfunded` (its open-bucket envelope was never funded; value refunded), `cancelled_ceiling` (its gas limit is above the current ceiling; value refunded)
+
+**genlayer_node_external_message_reimbursed_wei_total**
+
+Wei the chain reimbursed this node for running external messages: gas used times the transaction's locked gas price. Pair it with `gas_spent_wei_total` for the net cost of delivery.
+
+**Type:** Counter
 
 **Go Runtime Metrics**
 
@@ -1793,7 +2583,19 @@ The token is the value of `GENLAYERNODE_NODE_OPERATOR_TOKEN` on the node process
 
 **Parameters:**
 
-- `destDir` (string, optional): Absolute path on the node's filesystem. When set, switches to write-to-path mode; when omitted or empty, the snapshot is streamed back as `application/gzip`.
+- `scope` (string, optional): Which stores the archive carries — `all` (default), `genvm` or `ops`. An absent scope means `all`, so a caller written before the store split keeps its behaviour. An unrecognised value is rejected with `400`.
+
+  | Scope | Contents | Portable between nodes |
+  |---|---|---|
+  | `all` | both stores, operation store first | **No** |
+  | `genvm` | chain-derived history only | **Yes** |
+  | `ops` | this node's consensus record only | **No** |
+
+  Only `genvm` may be given to another operator. `all` and `ops` carry the vote salts this node generated and the nonce ownership of its operator key; restoring either onto a different node would make that node act on votes it never cast and nonce slots it never signed. The node refuses to start against an operation store stamped with another operator, but that guard runs at startup, not at copy time — treat a non-portable archive accordingly.
+
+  Every archive carries a `snapshot.json` manifest recording the format version, the scopes inside, the rollup block the GenVM store was captured at, and — for `all` and `ops` — the operator address that produced it.
+
+- `destDir` (string, optional): Absolute path on the node's filesystem, which must resolve to a location inside the configured snapshot directory (`node.admin.snapshot_dir`, default `<datadir>/snapshots`). When set, switches to write-to-path mode; when omitted or empty, the snapshot is streamed back as `application/gzip`. Paths outside the snapshot directory are rejected with `400`.
 
 **Returns:**
 - Stream mode (`destDir` omitted): gzipped tar archive in the response body, `Content-Type: application/gzip`.
@@ -1840,7 +2642,16 @@ Content-Disposition: attachment; filename="snapshot.tar.gz"
 curl -X POST http://127.0.0.1:9153/snapshot \
   -H "X-Admin-Auth: $GENLAYERNODE_NODE_OPERATOR_TOKEN" \
   -H "Content-Type: application/json" \
-  -d '{"destDir": "/var/snapshots/bradbury-100"}'
+  -d '{"destDir": "/var/lib/genlayer/data/node/snapshots/bradbury-100"}'
+
+Take only the portable half, to hand to another operator:
+
+```bash
+curl -sS -X POST http://localhost:9153/snapshot \
+  -H "Authorization: Bearer $OPERATOR_TOKEN" \
+  -H 'Content-Type: application/json' \
+  -d '{"scope": "genvm"}' -o genvm-snapshot.tar.gz
+```
 ```
 
 **Example Response — Write-to-Path Mode:**
@@ -1853,7 +2664,7 @@ HTTP/1.1 204 No Content
 
 - `200 OK`: Stream mode succeeded; body carries the gzipped tar archive.
 - `204 No Content`: Write-to-path mode succeeded; snapshot is on disk at `destDir`.
-- `400 Bad Request`: `destDir` is not absolute, or already exists.
+- `400 Bad Request`: `destDir` is not absolute, resolves outside the configured snapshot directory, or already exists.
 - `401 Unauthorized`: Missing, invalid, or empty operator token (also returned when `GENLAYERNODE_NODE_OPERATOR_TOKEN` is unset on the node).
 - `500 Internal Server Error`: Snapshot creation failed (e.g., disk full, DB checkpoint error).
 
@@ -1861,8 +2672,9 @@ HTTP/1.1 204 No Content
 
 - A snapshot may be several GB. In stream mode the connection stays open for the duration of the snapshot — configure reverse proxies / load balancers with adequate read timeouts and disable response buffering.
 - In stream mode, a dropped connection leaves no on-disk artifact on the node; retry the request from scratch.
-- In write-to-path mode, `destDir` must be an absolute path that does not yet exist; the node creates it. Path-traversal hardening beyond these checks is a separate (Sev: Medium) follow-up — treat the operator token as a credential that can write under the node user's filesystem permissions.
-- **Docker deploys**: in write-to-path mode, `destDir` is resolved inside the node container's filesystem, not on the host. To make the resulting directory reachable from the host (or from another container), use a volume mount that maps `destDir` identically on both sides, or stick with stream mode. Stream mode is unaffected — the response body is sent over HTTP regardless of where the node runs.
+- In write-to-path mode, `destDir` must be an absolute path that does not yet exist and that resolves (after `filepath.Clean`) to a location inside the configured snapshot directory; the node creates it. Paths that escape the directory via `..` or point elsewhere on the filesystem are rejected with `400`. This bounds where an operator-token holder can write a checkpoint — still treat the operator token as a credential that can write under the node user's filesystem permissions within that directory.
+- **Snapshot directory** (`node.admin.snapshot_dir`): bounds write-to-path mode. A relative value resolves under `datadir` (so the default `snapshots` is `<datadir>/snapshots`); an absolute value is used as-is, letting a node target a dedicated disk. The node creates the directory with `0700` permissions on first use if it does not exist.
+- **Docker deploys**: in write-to-path mode, `destDir` (and the snapshot directory) is resolved inside the node container's filesystem, not on the host. The default `<datadir>/snapshots` falls under whatever volume the deployment mounts for `datadir`, so it is host-reachable wherever that volume maps. To use a different location, set `snapshot_dir` to a path that is itself volume-mapped identically on both sides, or stick with stream mode. Stream mode is unaffected — the response body is sent over HTTP regardless of where the node runs.
 - The snapshot includes the full chain database (SSTables, MANIFEST, WAL) at the moment of capture. Treat the artifact as sensitive — anyone holding it can reconstruct the node's state.
 - Token comparison is constant-time and length-padded so neither the value nor the length of the secret can be inferred from response timing.
 - Rotation: update `GENLAYERNODE_NODE_OPERATOR_TOKEN` and restart the node. Tokens are read once at startup and not hot-reloaded.

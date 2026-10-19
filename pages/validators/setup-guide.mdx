@@ -210,7 +210,7 @@ One full node can be shared between multiple validators. The optimal validator-t
    You can use this command to list available versions:
 
    ```sh copy
-   curl -s "https://storage.googleapis.com/storage/v1/b/gh-af/o?prefix=genlayer-node/bin/amd64" | grep -o '"name": *"[^"]*"' | sed -n 's/.*\/\(v[^/]*\)\/.*/\1/p' | sort -ru | grep -v "rc" | head -n 5
+   curl -s "https://storage.googleapis.com/storage/v1/b/gh-af/o?prefix=genlayer-node/bin/amd64" | grep -o '"name": *"[^"]*"' | sed -n 's/.*\/\(v[^/]*\)\/.*/\1/p' | sort -ruV | grep -v "rc" | head -n 5
    ```
 
    You should see a list like this
@@ -245,8 +245,11 @@ One full node can be shared between multiple validators. The optimal validator-t
 
    This step needs Python 3.10 or newer, available as `python3` on your `PATH`, with `pip` and `venv` (on Debian/Ubuntu: `python3-pip` and `python3-venv`). Check with `python3 --version`.
 
+   Run it in the final install location: it writes this directory's absolute path into the GenVM binaries. If you move the installation later, run it again there.
+
    ```sh copy
-   python3 ./third_party/genvm/bin/setup.py
+   export GENVM_VERSION=$(ls opt/genvm) # the GenVM version this release ships
+   python3 ./opt/genvm/${GENVM_VERSION}/bin/setup.py
    ```
 It does following:
 
@@ -272,6 +275,10 @@ You can use the following example configuration. **Note:** For most users, you w
 rollup:
   genlayerchainrpcurl: "TODO: Set your GenLayer Chain ZKSync HTTP RPC URL here" # GenLayer Chain RPC URL
   genlayerchainwebsocketurl: "TODO: Set your GenLayer Chain ZKSync WebSocket RPC URL here" # GenLayer Chain WebSocket URL
+  # An API key of the RPC provider never goes in these URLs or in this file:
+  # set it in the environment as GENLAYERNODE_ROLLUP_GENLAYERCHAINRPCKEY.
+  # The node sends it in this header (default X-AccessKey):
+  # genlayerchainrpckeyheader: "X-AccessKey"
   provider: "TODO: Set your GenLayer Chain ZKSync provider" # Rollup operator name; surfaces as the "provider" label on RPC-driven metrics. Set explicitly per deployment.
 # consensus contracts configuration
 consensus:
@@ -293,6 +300,18 @@ logging:
   file:
     # enabled: set to `true` to save logs to a folder
     enabled: true
+    # The console and this file carry different levels on purpose: INFO to the
+    # terminal, DEBUG here. That split is why the file sink exists — INFO is what
+    # an operator watches live and has to stay readable, DEBUG is the complete
+    # record kept for investigation. Set this to INFO and the two collapse: the
+    # file becomes a copy of the console and stops being a record.
+    #
+    # It has to be on permanently. An incident is over by the time anyone could
+    # raise the level, and the detail cannot be reconstructed after the fact.
+    #
+    # What it accepts: every debug line lands on disk, including RPC and GenVM
+    # payloads chosen by the caller. The level bounds nothing —
+    # maxsize/maxage/maxbackups below are what limit the volume.
     level: "DEBUG"
     # folder: path to the folder where to store logs. Relative paths go under `datadir`.
     folder: logs
@@ -316,10 +335,16 @@ node:
   mode: "validator"
   # Address of the ValidatorWallet contract (required for validator mode)
   validatorWalletAddress: ""
-  # Address of the operator that owns the ValidatorWallet
+  # Address of the operator that performs consensus duties for the ValidatorWallet
   operatorAddress: ""
   admin:
     port: 9155
+    # snapshot_dir: bounding directory for POST /snapshot write-to-path mode.
+    # A caller-supplied destDir must resolve inside this directory, else the
+    # request is rejected with 400. Relative paths go under `datadir`; an
+    # absolute path is used as-is (e.g. to target a dedicated disk).
+    # Default: snapshots  (i.e. <datadir>/snapshots)
+    # snapshot_dir: snapshots
   rpc:
     # host: 0.0.0.0 # bind address for the HTTP listener (default: all interfaces)
     port: 9151 # RPC server port
@@ -364,73 +389,122 @@ node:
     #   - "::1"              # IPv6 loopback (localhost on macOS)
     #   - "10.0.0.0/8"
     endpoints:
-      # Group-level configuration (enables/disables all methods in a group).
-      # When a group is enabled, ALL methods in that group are available.
-      # Rate limits (req/s per IP) apply by default even without config:
+      # RPC method groups, keyed directly under `endpoints`. Each group toggles a
+      # family of methods and may nest per-method overrides and rate limits.
+      # Default rate limits (req/s per IP) apply even when unset:
       #   genlayer: 20, genlayer_debug: 2, ethereum: 50, zksync: 50
-      #   gen_call: 2, gen_getContractSchema: 2 (method-level overrides)
-      groups:
-        genlayer: true # gen_* methods (default ratelimit: 20 req/s per IP)
-        genlayer_debug: true # gen_dbg_* methods (default ratelimit: 2 req/s per IP)
-        ethereum: true # eth_* proxy methods (default ratelimit: 50 req/s per IP)
-        # includes: eth_blockNumber, eth_getBlockByNumber, eth_getBlockByHash,
-        #   eth_sendRawTransaction, eth_getTransactionReceipt, etc.
-        zksync: true # zks_* proxy methods (default ratelimit: 50 req/s per IP)
-        # includes: zks_getTransaction, zks_getBlockDetails, etc.
-      # Object format with custom rate limit (overrides defaults):
-      # groups:
-      #   genlayer:
-      #     enabled: true
-      #     ratelimit: 100       # custom: 100 req/s per IP instead of default 20
-      #
-      # Method-level configuration (optional, overrides group settings).
-      # Methods inherit their group's enabled state by default.
-      # Use this section to:
-      #   - Disable specific methods in an enabled group
-      #   - Enable specific methods in a disabled group
-      #   - Set per-method rate limits
-      #
-      # Example: enable all eth_* except eth_sendRawTransaction:
-      #   groups:
-      #     ethereum: true
-      #   methods:
-      #     eth_sendRawTransaction: false
-      #
-      # Example: disable all eth_* except eth_sendRawTransaction:
-      #   groups:
-      #     ethereum: false
-      #   methods:
-      #     eth_sendRawTransaction: true
-      # methods:
-      #   gen_call: true                   # default ratelimit: 2 req/s per IP (GenVM-bound)
-      #   gen_getContractSchema: true      # default ratelimit: 2 req/s per IP (GenVM-bound)
-      #   eth_blockNumber: true
-      #   eth_sendRawTransaction: true
-      #   zks_getTransaction: true
-      # Object format with custom rate limit:
-      # methods:
-      #   gen_call:
-      #     enabled: true
-      #     ratelimit: 5         # custom: 5 req/s per IP instead of default 2
-      #   gen_getContractSchema:
-      #     enabled: true
-      #     ratelimit: 0         # explicitly disable rate limiting for this method
+      #   gen_call: 2, gen_getContractSchema: 2 (method-level defaults)
+      genlayer:
+        enabled: true # gen_* methods
+      # gen_dbg_* methods (trie dump, transaction trace). OFF by default: these
+      # replay a transaction through GenVM and return internal execution output,
+      # so they are debug tooling, not a public API. Enable deliberately, and
+      # only on an RPC bind that untrusted callers cannot reach. Matches the
+      # node's own code default and the go-ethereum debug-namespace convention.
+      genlayer_debug:
+        enabled: false # gen_dbg_* methods
+      ethereum:
+        enabled: true # eth_* proxy methods (eth_blockNumber, eth_call, ...)
+      zksync:
+        enabled: false # zks_* proxy methods (zks_getBlockDetails, ...)
+        #
+        # A group with no overrides may use the bool shorthand (`ethereum: true`).
+        #
+        # Custom per-group rate limit + per-method overrides (object form):
+        #   genlayer:
+        #     enabled: true
+        #     ratelimit: 100              # 100 req/s per IP instead of the default 20
+        #     methods:
+        #       gen_call:
+        #         enabled: true
+        #         ratelimit: 5            # 5 req/s per IP instead of the default 2
+        #       gen_getContractSchema:
+        #         enabled: false          # disable a single method within an enabled group
+        #
+        # Proxy allowlist (opt-in): disable a proxy group, then re-enable only a
+        # vetted set under its `methods`. Every other eth_*/zks_* is then rejected
+        # with -32601 (method not found) and not forwarded upstream. Leave the
+        # groups enabled (the default) to forward all eth_*/zks_* (passthrough).
+        #   ethereum:
+        #     enabled: false
+        #     methods:
+        #       eth_getBalance: true
+        #       eth_getTransactionCount: true
+        #       eth_getCode: true
+        #       eth_getStorageAt: true
+        #       eth_call: true
+        #       eth_estimateGas: true
+        #       eth_gasPrice: true
+        #       eth_blockNumber: true
+        #       eth_getBlockByHash: true
+        #       eth_getBlockByNumber: true
+        #       eth_getTransactionByHash: true
+        #       eth_getTransactionReceipt: true
+        #       eth_getLogs: true
+        #       eth_chainId: true
+        #       eth_syncing: true
+        #       eth_accounts: true
+        #       eth_sendRawTransaction: true   # write — enable only if clients submit raw txs
+        #   zksync:
+        #     enabled: false                   # zks_* left fully disabled (no vetted client use)
   ops:
-    port: 9153 # Metrics port
+    port: 9153 # Ops server port (/health, /metrics, /balance, /snapshot)
     endpoints:
-      metrics: true # Enable metrics endpoint
-      health: true # Enable health endpoint
-      balance: true # Enable balance endpoint
-  dev:
-    disableSubscription: false # Useful for testing with zksync-anvil
+      # Compatibility metadata. The current Ops server registers /metrics,
+      # /health, /balance, and /snapshot regardless of these values. `doctor`
+      # consults `health` to decide whether to run its HTTP health probe.
+      metrics: true
+      health: true
+  # Execution-trace store and debug-trace reply bounds. All optional; the
+  # values below are the built-in defaults. Uncomment to tune at runtime — no
+  # rebuild needed.
+  # trace:
+  #   retention_blocks: 1000000       # keep traces this many blocks behind the tip (0 disables retention)
+  #   max_trace_bytes: 33554432       # 32 MB: a single trace larger than this is never stored
+  #   # Per-field cap on the public gen_dbg_traceTransaction reply. Each free-form
+  #   # field (return_data, stdout, stderr, genvm_log) carries contract-emitted
+  #   # output, so its size is contract-controlled. Over the cap, the field is
+  #   # truncated and the cut is marked in-band. 0 takes the default.
+  #   max_debug_field_bytes: 262144   # 256 KB per field
 # genvm configuration
 genvm:
-  root_dir: ./third_party/genvm
+  root_dir: ./opt/genvm/v0.6.0-rc1
   start_manager: true # if true node will start genvm manager itself
   manager_url: http://127.0.0.1:3999
-  permits: 8 # Leave empty for autodiscovery, put a number for updating genvm permits on startup
-  sync_permits: 64 # Optional: permits used while !isSynced (bulk replay). Leave empty to reuse the steady-state `permits` value.
-  sync_wait_timeout: "20s" # Max time to wait for GenVM to sync to a requested block before returning an error
+  # Permits are charged PER EXECUTION by the genvm manager, and one
+  # nondeterministic execution costs 8 of them (permits.nondet). This value is
+  # therefore a permit budget, not an execution count: 32 admits 4 concurrent
+  # nondet executions, which is what the previous `8` bought when a run cost 2
+  # permits. Leaving it EMPTY is preferable — autodiscovery sizes it from the
+  # host and already speaks this unit.
+  permits: 32 # Leave empty for autodiscovery, put a number for updating genvm permits on startup
+  # Same unit as `permits` above, but a sync execution costs 4 rather than 8,
+  # so 256 admits the 64 concurrent replays the previous `64` bought at cost 1.
+  sync_permits: 256 # Optional: permits used while significantly behind (bulk replay). Leave empty to reuse the steady-state `permits` value.
+  # sync_permits_lag_threshold: blocks-behind above which the node runs the replay
+  # budget (sync_permits) instead of the live budget (permits); at or below it the
+  # node is treated as caught up. Keyed on the actual sync lag, not the health
+  # gradient. Uncomment to tune; default 1000.
+  # sync_permits_lag_threshold: 1000
+  # sync_wait_timeout bounds the gen_* READ path — not GenVM execution: a read
+  # (gen_call / gen_getContractState / gen_getContractCode /
+  # gen_dbg_traceTransaction) waits up to this long for the node to sync the
+  # requested block and index the record, then returns a not-synced error.
+  sync_wait_timeout: "20s"
+  # sync_wait_poll_interval is the re-check cadence those same reads use while they
+  # poll for an artifact that lands just after its block is synced, bounded overall
+  # by sync_wait_timeout. Uncomment to tune; default 100ms. An absent key and a
+  # non-positive value both mean "use the default": 0s would otherwise be a wait
+  # that never ticks.
+  # sync_wait_poll_interval: "100ms"
+  replay:
+    parallel_enabled: false # Opt in to bounded parallel replay of independent accepted transactions in the same block
+    workers: 4 # Maximum concurrent replay executions
+    consensus_reserve_permits: 2 # Kept free for live validator duties unless a duty is waiting on replayed state
+    replay_floor_permits: 1 # Minimum replay capacity while replay work is queued
+    max_journal_bytes: 268435456 # 256 MiB block-wide cap; overflow falls back to serial replay
+    reorg_history_blocks: 4096 # Number of hash-identified replay checkpoints retained for exact canonical rollback
+    max_reorg_journal_bytes: 268435456 # 256 MiB inverse-journal cap per block; overflow aborts replay and keeps duties disabled
 # Advanced configuration
 merkleforest:
   maxdepth: 16
@@ -680,7 +754,7 @@ Once you have configured everything, you are ready to start the node.
     - To start them automatically in node configuration set `genvm.manage_modules` to `true`
     - To start them manually run
       ```bash copy
-       ./third_party/genvm/bin/genvm-modules web & ./third_party/genvm/bin/genvm-modules llm &
+       ./opt/genvm/${GENVM_VERSION}/bin/genvm-modules web & ./opt/genvm/${GENVM_VERSION}/bin/genvm-modules llm &
       ```
 
 <Callout type="info">
@@ -727,23 +801,120 @@ You can also run the GenLayer node using Docker and Docker Compose.
 services:
   webdriver-container:
     container_name: genlayer-node-webdriver
-    image: yeagerai/genlayer-genvm-webdriver:0.0.11
+    image: yeagerai/genlayer-genvm-webdriver:0.0.12
     shm_size: 2gb
     security_opt:
       - no-new-privileges:true
     environment:
       PORT: 4444
+      HEALTHCHECK_AUTO_RESTART: "${HEALTHCHECK_AUTO_RESTART:-true}"
     ports:
       - "${WEBDRIVER_PORT:-4444}:4444"
     restart: unless-stopped
+    labels:
+      com.genlayer.health-recovery.logs: "true"
+      com.genlayer.network: "${NETWORK_NAME:-unknown}"
+    healthcheck:
+      test:
+        - CMD-SHELL
+        - |
+          set -eu
+          boot=$$(awk '{print $$22}' /proc/1/stat)
+          if curl -fsS --max-time 10 "http://localhost:$${PORT:-4444}/healthcheck?mode=text&url=https%3A%2F%2Ftest-server.genlayer.com%2Fstatic%2Fgenvm%2Fhello.html"; then
+            printf '%s 0\n' "$$boot" > /tmp/webdriver-health-failures
+            exit 0
+          fi
+          age=$$(awk -v ticks="$$boot" -v hz="$$(getconf CLK_TCK)" '{print int($$1-ticks/hz)}' /proc/uptime)
+          [ "$$age" -ge 10 ] || exit 1
+          read -r previous failures 2>/dev/null < /tmp/webdriver-health-failures || failures=0
+          [ "$${previous:-}" = "$$boot" ] || failures=0
+          failures=$$((failures + 1))
+          printf '%s %s\n' "$$boot" "$$failures" > /tmp/webdriver-health-failures
+          if [ "$$failures" -ge 4 ] && [ "$${HEALTHCHECK_AUTO_RESTART:-true}" != false ]; then
+            printf 'Container webdriver (%s) found to be unhealthy - Restarting container now\n' "$$(cat /etc/hostname)" > /proc/1/fd/1
+            children=$$(cat /proc/1/task/1/children)
+            for child in $$children; do kill -KILL "$$child"; done
+          fi
+          exit 1
+      interval: 30s
+      timeout: 12s
+      retries: 4
+      start_period: 10s
+  # docker-socket-proxy — read-only Docker API gateway for the node's WebDriver
+  # resource stats and Alloy's recovery-log reader. Runs with the `node` OR
+  # `monitoring` profile, so it comes up alongside
+  # a node container AND alongside a monitoring/telemetry bring-up — the latter is
+  # how a binary/systemd node (node not containerized) gets its webdriver metrics.
+  #
+  # The node and Alloy use this read-only gateway instead of the host socket.
+  #   Reading container stats requires the Docker API. Previously the node reached
+  #   the host /var/run/docker.sock directly (bind-mounted into the container, or via
+  #   docker-group membership for a binary node) — but that grants the FULL Docker
+  #   API as root (a `:ro` flag does NOT restrict API calls), so a node compromise
+  #   could escalate to host root. This proxy REPLACES the node's socket access,
+  #   restricted to read-only container endpoints (CONTAINERS=1;
+  #   POST=0 => it returns 403 for create / exec / image operations).
+  #   Health checks stop only their own service process; recovery has no Docker API access.
+  #     - Published ONLY on 127.0.0.1:2375 (host loopback), never 0.0.0.0: 2375 is
+  #       the unauthenticated Docker API, so it must not leave the host. A container
+  #       node reaches it over the compose network (tcp://docker-socket-proxy:2375);
+  #       a binary/systemd node reaches it on the host (tcp://127.0.0.1:2375).
+  #     - Standard, widely-audited image (tecnativa/docker-socket-proxy).
+  #
+  # The node points DOCKER_HOST at this proxy and NEVER falls back to the host
+  # socket: if DOCKER_HOST is unset the node skips webdriver metrics entirely
+  # (non-fatal). Note those are the webdriver container's CPU/memory/traffic series
+  # (genlayer_node_*{component="webdriver"}) that feed validator resource dashboards —
+  # so keep DOCKER_HOST set to keep those panels populated. Disabling metrics
+  # permits removing the node's DOCKER_HOST; Alloy still needs this gateway.
+  docker-socket-proxy:
+    image: tecnativa/docker-socket-proxy:v0.5.0
+    container_name: genlayer-node-docker-proxy
+    environment:
+      CONTAINERS: 1 # GET /containers/{json,inspect,stats} — read-only via POST=0
+      VERSION: 1 # required by the Docker client's API-version negotiation
+      NETWORKS: 1 # read-only network metadata required by Alloy Docker discovery
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+    ports:
+      # Loopback ONLY (never 0.0.0.0) — 2375 is the unauthenticated Docker API and
+      # must not be exposed beyond the host. Lets a binary/systemd node reach the
+      # proxy at tcp://127.0.0.1:2375; container nodes use the service name instead.
+      - "127.0.0.1:2375:2375"
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://localhost:2375/version"]
+      interval: 10s
+      timeout: 3s
+      retries: 5
+      start_period: 5s
+    security_opt:
+      - no-new-privileges:true
+    restart: unless-stopped
+    profiles:
+      - node
+      - monitoring
   genlayer-node:
     image: yeagerai/genlayer-node:${NODE_VERSION:-latest}
-    entrypoint: ["sh", "-c", "/app/bin/genlayernode run --password ${NODE_PASSWORD:-12345678}"]
+    # The keystore password is NOT on this command line. It reaches the node as
+    # GENLAYERNODE_PASSWORD (environment below), which the run command reads in
+    # place of --password. A command-line argument is visible in process
+    # listings on the host; an environment variable is not.
+    entrypoint: ["/app/bin/genlayernode", "run"]
     container_name: genlayer-node
     restart: unless-stopped
     env_file:
       - path: ./.env
         required: false
+    environment:
+      # ":?" makes Compose refuse to start when NODE_PASSWORD is unset or empty,
+      # before any container runs. There is no fallback: this is the password
+      # that encrypts the validator's signing key, and a default shared by every
+      # operator who forgot to set one is a key anyone can open. The release
+      # binary carries no default either — it is compiled out of production.
+      GENLAYERNODE_PASSWORD: "${NODE_PASSWORD:?NODE_PASSWORD is not set. It is the keystore password that unlocks the validator key. Set it in .env; see README section 4.}"
+      # WebDriver metrics collector reaches Docker via the read-only proxy
+      # (see docker-socket-proxy above), never the host socket directly.
+      DOCKER_HOST: tcp://docker-socket-proxy:2375
     ports:
       - "${NODE_RPC_PORT:-9151}:9151"
       - "${NODE_OPS_PORT:-9153}:9153"
@@ -752,10 +923,12 @@ services:
       # The trusted protocol manifest of the network; consensus.manifestpath names this path.
       - ${NODE_MANIFEST_PATH:-./configs/node/protocol-manifest.json}:/app/configs/node/protocol-manifest.json:ro
       - ${NODE_DATA_PATH:-./data}:/app/data
-      - ./genvm-module-web-docker.yaml:/app/third_party/genvm/config/genvm-module-web.yaml
-      - /var/run/docker.sock:/var/run/docker.sock:ro # required for webdriver metrics collection
+      # opt/genvm/current links to the image's GenVM tree, so no version variable is needed.
+      - ./genvm-module-web-docker.yaml:/app/opt/genvm/current/config/genvm-module-web.yaml
     security_opt:
       - no-new-privileges:true
+    cap_drop:
+      - ALL
     logging:
       driver: "json-file"
       options:
@@ -764,31 +937,21 @@ services:
         compress: "true"
     depends_on:
       - webdriver-container
+      - docker-socket-proxy
     profiles:
       - node
 
 ```
 
-2. Create `genvm-module-web-docker.yaml` for Docker networking:
+2. Keep `genvm-module-web-docker.yaml` next to your `docker-compose.yaml`.
 
-The extracted tarball includes `third_party/genvm/config/genvm-module-web.yaml` configured for `localhost`, which works when running
-the binary directly. For docker-compose, you need a version that points to the webdriver service name.
+   It ships in the release package. It is GenVM's web module config with the webdriver address set to the compose service name:
 
-Create `genvm-module-web-docker.yaml` in the same directory as your `docker-compose.yaml`:
+   ```yaml
+   webdriver_host: http://webdriver-container:4444
+   ```
 
-- Copy the contents of `third_party/genvm/config/genvm-module-web.yaml` into `genvm-module-web-docker.yaml`.
-- Modify the `webdriver_host` configuration to use the service name `webdriver-container` instead of `localhost`:
-
-```yaml copy
-webdriver_host: http://webdriver-container:4444
-```
-
-This allows the node container to reach the webdriver container using Docker's internal networking.
-
-The key difference:
-- **Binary execution**: uses `localhost:4444` (webdriver runs on same machine)
-- **Docker-compose**: uses `webdriver-container:4444` (container service name)
-
+   The compose file mounts it over the image's own copy at `/app/opt/genvm/current/config/genvm-module-web.yaml`, so no version variable is needed. The binary keeps using `opt/genvm/<version>/config/genvm-module-web.yaml`, which points at `localhost:4444`.
 
 3. Set the required environment variables in a `.env` file:
 
@@ -798,6 +961,7 @@ The key difference:
 
 ```env copy
 # GenLayer Node Release Configuration
+# Copy this file to .env and configure for your deployment
 
 # =============================================================================
 # WebDriver Configuration (required for GenVM)
@@ -808,10 +972,13 @@ WEBDRIVER_PORT=4444
 # Node Service Configuration (optional - use node profile)
 # =============================================================================
 # Docker image version
-NODE_VERSION=v0.4.0
+NODE_VERSION=latest
 
-# Keystore password (used to unlock the pre-imported wallet)
-NODE_PASSWORD=12345678
+# Keystore password (unlocks the pre-imported validator wallet). Required — the
+# stack refuses to start without it. Choose your own; never reuse an example
+# value. It reaches the node as an environment variable, not a command-line
+# argument. See README section 4 for reading it in without echo.
+NODE_PASSWORD=
 
 # Path to node configuration file
 NODE_CONFIG_PATH=./configs/node/config.yaml
@@ -826,35 +993,184 @@ NODE_DATA_PATH=./data
 NODE_RPC_PORT=9151
 NODE_OPS_PORT=9153
 
-# LLM API Key (required for GenVM LLM module)
+# LLM API Keys (required for GenVM LLM module)
+OPENROUTERKEY=
 HEURISTKEY=
-COMPUT3KEY=
-IOINTELLIGENCE_API_KEY=
 ANTHROPICKEY=
 XAIKEY=
 GEMINIKEY=
 ATOMAKEY=
-CHUTES_API_KEY=
-MORPHEUS_API_KEY=
+
+# Optional logging level override
+GENLAYERNODE_LOGGING_LEVEL=INFO
+
+# API key of the GenLayer Chain RPC provider, for both the RPC and the
+# WebSocket endpoint of the node config. Optional: leave it empty when the
+# endpoints need no key. Put the key only here, never in the endpoint URLs of
+# the config: a key in a URL ends up in logs and error texts.
+GENLAYERNODE_ROLLUP_GENLAYERCHAINRPCKEY=
+
+# Operator bearer token for the ops server's POST /snapshot route. When
+# unset, the route is default-deny (every caller gets 401). Set this to
+# enable operator-driven snapshot tooling from outside the node container.
+# Generate with: openssl rand -hex 32
+GENLAYERNODE_NODE_OPERATOR_TOKEN=
+
+# =============================================================================
+# Monitoring Configuration (optional - use monitoring profile)
+# =============================================================================
+
+# Where Alloy pushes metrics and logs. All six values are REQUIRED when the
+# monitoring profile is up — the alloy container stops with a clear message
+# when any is missing. There are no defaults on purpose: an endpoint default
+# sends your data to somebody else's tenant, and a credential default gives
+# everybody the same key.
+#
+# Examples:
+#   Your own local stack:
+#     CENTRAL_MONITORING_URL=http://localhost:9090/api/v1/write
+#     CENTRAL_LOKI_URL=http://localhost:3100/loki/api/v1/push
+#   A Grafana Cloud tenant (values from your Grafana Cloud stack page):
+#     CENTRAL_MONITORING_URL=https://<your-prometheus-endpoint>/api/prom/push
+#     CENTRAL_LOKI_URL=https://<your-loki-endpoint>/loki/api/v1/push
+#
+# A receiver without authentication still needs the username/password set —
+# any placeholder value satisfies the start check and is ignored by the
+# receiver.
+CENTRAL_MONITORING_URL=
+CENTRAL_LOKI_URL=
+
+# Metrics (Prometheus) credentials
+CENTRAL_MONITORING_USERNAME=
+CENTRAL_MONITORING_PASSWORD=
+# Logs (Loki) credentials
+CENTRAL_LOKI_USERNAME=
+CENTRAL_LOKI_PASSWORD=
+
+# =============================================================================
+# Single Node Configuration
+# =============================================================================
+# Use these variables for monitoring a single node
+
+# Node identification
+NODE_ID=validator-001
+VALIDATOR_NAME=MyValidator
+# Network label for recovery logs and alert routing; use the deployed network.
+# Leave empty for an unknown label, rather than guessing a production network.
+NETWORK_NAME=
+
+# Node metrics endpoint (optional)
+# Endpoint where the node exposes its Prometheus metrics
+# Default: host.docker.internal:9153
+NODE_METRICS_ENDPOINT=host.docker.internal:9153
+
+# =============================================================================
+# Multi-Node Configuration
+# =============================================================================
+# Alternative to single node config: provide a JSON array of targets
+# When SCRAPE_TARGETS_JSON is set, it overrides NODE_ID, VALIDATOR_NAME, and NODE_METRICS_ENDPOINT
+#
+# Format: JSON array of target objects with required fields:
+#   - __address__: "host:port" of the metrics endpoint
+#   - instance: unique identifier (e.g., node address)
+#   - validator_name: human-readable name
+#
+# Example for multiple nodes:
+# SCRAPE_TARGETS_JSON=[{"__address__":"host.docker.internal:9250","instance":"0x...","validator_name":"node-1"},{"__address__":"host.docker.internal:9251","instance":"0x...","validator_name":"node-2"}]
+#
+# To generate for local nodes, use: ./generate-dev-targets.sh
+# SCRAPE_TARGETS_JSON=
+
+# =============================================================================
+# Log Collection Configuration
+# =============================================================================
+# Local log directory (on host machine)
+# Path where GenLayer node(s) write their log files
+# Single node: ./data/node/logs
+# Multi-node: ./data/node/default (parent directory containing all node subdirs)
+NODE_LOGS_PATH=./data/node/logs
+
+# Log file pattern (inside container, mapped from NODE_LOGS_PATH)
+# Single node: /var/log/genlayer/node.log
+# Multi-node: /var/log/genlayer/*/logs/node.log
+# Default: /var/log/genlayer/node*.log (matches both patterns)
+LOG_FILE_PATTERN=/var/log/genlayer/node*.log
+
+# Metrics scraping intervals (optional)
+# How often to scrape metrics from the node
+# Default: 15s for node metrics, 10s timeout
+METRICS_SCRAPE_INTERVAL=15s
+METRICS_SCRAPE_TIMEOUT=10s
+
+# Alloy internal health monitoring interval (optional)
+# How often Alloy checks its own internal health metrics
+# These metrics are not forwarded, only used for local debugging
+# Default: 60s
+ALLOY_SELF_MONITORING_INTERVAL=60s
+
+# Loki log batching configuration (optional)
+# Controls how logs are batched before sending to central Loki
+# Default: 1MiB batch size, 1s wait time
+LOKI_BATCH_SIZE=1MiB
+LOKI_BATCH_WAIT=1s
+
+# =============================================================================
+# Deployment Instructions
+# =============================================================================
+#
+# 1. Basic deployment (WebDriver only):
+#    docker compose up -d
+#
+# 2. Node deployment (WebDriver + Node):
+#    Configure node settings above, then:
+#    docker compose --profile node up -d
+#
+# 3. Node with monitoring (WebDriver + Node + Alloy):
+#    Configure node and monitoring settings, then:
+#    docker compose --profile node --profile monitoring up -d
+#
+# 4. Monitoring only (WebDriver + Alloy):
+#    Configure monitoring settings, then:
+#    docker compose --profile monitoring up -d
+#
+# 5. Check status:
+#    docker compose ps
+#    docker compose logs genlayer-node
+#    docker compose logs alloy
+#
+# =============================================================================
+# Configuration Notes
+# =============================================================================
+#
+# - Grafana Alloy handles both metrics and logs in a single service
+# - To customize monitoring, edit alloy-config.river
+# - To filter metrics (reduce bandwidth), uncomment the filtering rule in alloy-config.river
+# - Ensure firewall allows outbound connections to monitoring server (port 8180)
+#
+
+# Keep health checks but disable automatic container-local recycling when false.
+HEALTHCHECK_AUTO_RESTART=true
 ```
 
-or simply use the provided `docker-compose.yaml`, `.env.example` and the `genvm-module-web-docker.yaml` from the extracted tarball.
+This is the release package's `.env.example`: copy it to `.env` next to `docker-compose.yaml`. The release package also ships `docker-compose.yaml` and `genvm-module-web-docker.yaml`. Set at least:
+
+- `NODE_PASSWORD`: the keystore password. It is required: Docker Compose refuses to start without it, and there is no default.
+- `NODE_VERSION`: pin the version you run. `latest` is the newest stable release.
+- the API key of at least one LLM provider.
+- `GENLAYERNODE_ROLLUP_GENLAYERCHAINRPCKEY`, when your chain RPC provider needs a key (the Bradbury WebSocket does).
 
 4. Checking Your Configuration
 
-To ensure your node is correctly configured, you can run the following command:
+Before the first start, run `doctor` in the node container, with the same config, manifest, environment and network as the node:
 
 ```sh copy
-source .env && docker run --rm --env-file ./.env \
-  -v ${NODE_CONFIG_PATH:-./configs/node/config.yaml}:/app/configs/node/config.yaml \
-  yeagerai/genlayer-node:${NODE_VERSION:-v0.4.0} \
-  ./bin/genlayernode doctor
+docker compose --profile node run --rm --entrypoint /app/bin/genlayernode genlayer-node doctor
 ```
 
 5. Start the services using Docker Compose:
 
 ```sh copy
-source .env && docker compose --profile node up -d
+docker compose --profile node up -d
 ```
 
 ### Telemetry

@@ -41,6 +41,17 @@ The node collects metrics for three main components:
 - **GenVM** - The GenVM modules (LLM and Web)
 - **WebDriver** - The WebDriver container
 
+**Operator Condition Metrics**
+
+- `genlayer_node_operator_condition_state{condition,state}`: one-hot gauge for the current catalog state. All state series are prewarmed at process start.
+- `genlayer_node_operator_condition_occurrences_total{condition,reason}`: accepted failed observations by stable reason.
+- `genlayer_node_operator_condition_transitions_total{condition,from,to}`: lifecycle transitions, including recovery.
+- `genlayer_node_operator_condition_last_success_timestamp_seconds{condition}`: Unix timestamp of the last successful observation, or zero before one occurs.
+
+`condition`, `state`, `reason`, `from`, and `to` come from the fixed startup catalog; upstream error text is never used as a label.
+
+`occurrences_total` counts differently per condition kind, so the counter stays comparable: an *observed* condition (folded from duty traffic) counts every failed observation, while a *polled* condition counts only entry into a failing state. Counting every failed poll would scale the counter with the poll interval rather than the fault — a three-day ban at a ten-second poll would read as roughly 26,000 events.
+
 **CPU Metrics**
 
 **genlayer_node_cpu_usage_percent**
@@ -247,6 +258,15 @@ Node synchronization status (1 = synced, 0 = not synced).
 **Labels:**
 - `node`: Node address (hex format)
 
+**genlayer_node_prime_blocked_insufficient_funds**
+
+Whether a mandatory validator prime is currently blocked by an unfunded operator wallet (1 = blocked, 0 = not blocked). While blocked the validator cannot pay for consensus duty transactions and is flagged idle each round — fund the operator wallet to recover.
+
+**Type:** Gauge
+
+**Labels:**
+- `node`: Node address (hex format)
+
 **genlayer_node_uptime_seconds**
 
 Node uptime in seconds.
@@ -312,6 +332,137 @@ Total number of validator reveal votes.
 
 **Labels:**
 - `node`: Node address (hex format)
+
+**Gas Metrics (duty transactions)**
+
+Emitted inline from the shared consensus gas estimator and transactor, so they cover every duty method (`finalizeTransaction`, `commitVote`, `revealVote`, `proposeReceiptWithFees`, `topUpAndSubmitAppeal`, `activateTransaction`, `validatorPrime`, `epochAdvance`, ...). All are true counters.
+
+**genlayer_node_gas_estimation_total**
+
+Outcome of every duty gas estimation.
+
+**Type:** Counter
+
+**Labels:**
+- `method`: Contract method name
+- `outcome`: One of `success` (real RPC estimate), `fallback_block_limit` (estimation failed; submitted at full block gas limit), `fallback_cache` / `fallback_cache_scaled` (estimation failed; reused gas from the shared calldata-length-keyed cache, possibly learned from a different method)
+
+**genlayer_node_gas_estimation_capped_total**
+
+Estimation succeeded but the safety-multiplied estimate (or per-call reserve) exceeded the block gas limit and was silently capped — the safety margin is gone while everything still works.
+
+**Type:** Counter
+
+**Labels:**
+- `method`: Contract method name
+
+**genlayer_node_gas_shortfall_total**
+
+Confirmed on-chain out-of-gas: the transaction landed but ran out of gas mid-execution. Self-heals — the node retries with a larger gas limit — so a single occurrence is not actionable; a **sustained rate** signals systematic under-estimation (treat as a warning, not a page).
+
+**Type:** Counter
+
+**Labels:**
+- `method`: Contract method name
+- `reason`: One of `typed_shortfall` (`InsufficientGasForInternalMessageCreation` revert with exact gas requirement), `out_of_gas` (explicit `OutOfGas` revert), `heuristic` (undecoded revert that consumed gas above the exhaustion threshold)
+
+**genlayer_node_gas_block_limit_exhausted_total**
+
+Gas shortfall while the gas limit was already capped at the block limit: the work cannot fit in one block and retrying cannot help. Non-self-healing — **any occurrence is actionable** (page-worthy).
+
+**Type:** Counter
+
+**Labels:**
+- `method`: Contract method name
+
+**genlayer_node_gas_spent_wei_total**
+
+Cumulative wei actually billed for gas, from each mined duty receipt (`gasUsed × effectiveGasPrice`). Reverted attempts are billed too and are accounted per attempt; submissions that never land cost nothing. The `reverted` slice is the exact cost of failed work, and `sum(genlayer_node_gas_spent_wei_total)` is the operator's total billed duty gas.
+
+**Type:** Counter
+
+**Labels:**
+- `method`: Contract method name
+- `outcome`: One of `success`, `reverted`
+- `price_source`: `effective` (receipt's billed price) or `fee_cap` (submitted fee cap used as an upper bound when the RPC omits `effectiveGasPrice`)
+
+**Consensus Submission Metrics**
+
+**genlayer_node_consensus_submit_total**
+
+Terminal outcome of every duty submission.
+
+**Type:** Counter
+
+**Labels:**
+- `method`: Contract method name
+- `outcome`: One of `success` (landed and executed), `reverted` (landed, contract rejected — gas still billed), `failed` (never landed: RPC/nonce/funds/authorization)
+
+**genlayer_node_consensus_revert_total**
+
+Decoded revert causes, one increment per observed revert (attempt-level).
+
+**Type:** Counter
+
+**Labels:**
+- `method`: Contract method name
+- `error`: Decoded custom error from the fee/gas allowlist (`InsufficientFeesForRound`, `InsufficientFees`, `FailedFeeTransfer`, `FeeSettlementNotCompleted`, `MaxPriceExceeded`, `ExecutionBudgetExceeded`, `MessageBudgetExceeded`, `BudgetTooLow`, `RollupBudgetBelowFloor`, `InsufficientBondCustody`, `InvalidAppealBond`, `AppealBondTooLow`, `InsufficientGasForInternalMessageCreation`, `OutOfGas`); anything else collapses to `other`
+
+**Fee Flow Metrics (v0.6 ConsensusMainWithFees)**
+
+Note: there are no dedicated appeal-bond metrics. No node runtime path submits appeals — appellants are external clients funding bonds from their own wallets. If a validator appeal duty ever ships, the method-labeled gas/submission metrics above cover it under `method="topUpAndSubmitAppeal"` with no code change.
+
+**genlayer_node_fees_operator_insufficient_funds_total**
+
+Duty submissions rejected because the operator account cannot cover value + gas. Complements the `genlayer_node_prime_blocked_insufficient_funds` gauge by leaving a trace of dips that recover between scrapes. A sustained increase means the operator wallet needs funding (page-worthy).
+
+**Type:** Counter
+
+**genlayer_node_fees_settlement_events_total**
+
+Fee-settlement events decoded from this node's own mined finalize receipts. Finalize runs under a staggered lease, so each finalize is observed by exactly one node — aggregate fleet-wide with `sum by (network)`. Use the `severity` label to alert on failures without enumerating event names: `genlayer_node_fees_settlement_events_total{severity="alarm"}` covers all three failure modes and any future one.
+
+**Type:** Counter
+
+**Labels:**
+- `event`: One of `UnifiedFeesDistributed` (fees distributed at settlement), `FeesRefunded` (surplus returned to the sender), `FeeSettlementFailed` (finalize succeeded but settlement failed — validators unpaid until `retryFeeSettlement`), `CommitFinalFeesFailed` (tx finalized without fee settlement), `ValueWithdrawalFailed` (a best-effort transfer — refund/appealer payout — failed; funds stay custodied pending recovery)
+- `severity`: `alarm` for the three failure events (unpaid or stuck-funds modes needing operator action) or `info` for the normal `UnifiedFeesDistributed` / `FeesRefunded` happy path
+
+**genlayer_node_fees_distributed_wei_total**
+
+Total wei moved at fee settlement across **all** recipients — committee payouts **plus** sender/contributor refunds **plus** appealer rewards — summed from `UnifiedFeesDistributed` amounts in this node's finalize receipts. It **excludes** amounts retained in staking custody (`amountToStaking`). This is a network **"value settled"** liveness signal, **not** per-node earnings — for a validator's own income use `genlayer_node_fees_earned_wei_total`.
+
+**Type:** Counter
+
+**genlayer_node_fees_earned_wei_total**
+
+This node's validator earnings credited at prime, read from the `ValidatorPrime` event when a prime is effective. This is the accurate **per-node** income (unlike `fees_distributed_wei_total`, which is whole-committee plus refunds). Earnings settle into stake per epoch, so this series lags settlement by up to one prime interval. Pair `type="fee_rewards"` with `genlayer_node_gas_spent_wei_total` for operator net P&L (`earned − gas_spent`).
+
+**Type:** Counter
+
+**Labels:**
+- `type`: One of `fee_rewards` (fee-flow income), `validator_rewards`, `delegator_rewards` (staking-reward components)
+
+**genlayer_node_fees_penalties_wei_total**
+
+This node's fee penalties deducted at prime, read from the same `ValidatorPrime` event. Kept separate from `fees_earned_wei_total` so earnings stay gross income; subtract this for net.
+
+**Type:** Counter
+
+**genlayer_node_external_message_delivery_total**
+
+External messages this node's own delivery calls (`flushExternalMessages`, `flushInternalMessages`, `finalizeTransaction`) resolved or paused, read from their mined receipts. A paused message was not called and not charged; the node retries it with a backoff (30 s doubling to 10 min) until the chain reports it issued. A `paused_*` series that keeps rising for one network means a message nobody can deliver.
+
+**Type:** Counter
+
+**Labels:**
+- `outcome`: `delivered` (ran and succeeded), `call_failed` (ran and failed; final), `paused_gas` (no room to forward its gas envelope), `paused_value` (its value was not yet available), `cancelled_unfunded` (its open-bucket envelope was never funded; value refunded), `cancelled_ceiling` (its gas limit is above the current ceiling; value refunded)
+
+**genlayer_node_external_message_reimbursed_wei_total**
+
+Wei the chain reimbursed this node for running external messages: gas used times the transaction's locked gas price. Pair it with `gas_spent_wei_total` for the net cost of delivery.
+
+**Type:** Counter
 
 **Go Runtime Metrics**
 

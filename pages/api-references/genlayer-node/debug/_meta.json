@@ -1,5 +1,6 @@
 {
   "gen_dbg_ping": "gen_dbg_ping",
   "gen_dbg_trie": "gen_dbg_trie",
-  "gen_dbg_traceTransaction": "gen_dbg_traceTransaction"
+  "gen_dbg_traceTransaction": "gen_dbg_traceTransaction",
+  "gen_dbg_load_test": "gen_dbg_load_test"
 }

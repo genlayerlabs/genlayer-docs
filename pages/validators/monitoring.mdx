@@ -142,36 +142,85 @@ METRICS_SCRAPE_INTERVAL=15s
   #   Set SCRAPE_TARGETS_JSON in .env
   #   docker compose --profile monitoring up -d
   alloy:
-    image: grafana/alloy:v1.16.1
+    image: grafana/alloy:v1.20.1
+    init: true
     container_name: genlayer-node-alloy
+    labels:
+      com.genlayer.health-recovery.logs: "true"
+      com.genlayer.network: "${NETWORK_NAME:-unknown}"
+    depends_on:
+      - docker-socket-proxy
+    # The guard runs before Alloy: with the monitoring profile up but the
+    # endpoints or credentials unset, the container stops with a message
+    # naming what to set, instead of half-running. Half-running is worse than
+    # stopping here in both directions: pushing to a shared endpoint with a
+    # shared default credential pollutes it for everyone, and pushing to an
+    # unreachable one leaves telemetry unavailable and can grow the WAL. The
+    # healthcheck preserves that buffer. The $$ keeps compose from
+    # interpolating; the shell only tests emptiness — no value ever lands on
+    # a command line.
+    entrypoint: ["/bin/sh", "-c"]
     command:
-      - run
-      - /etc/alloy/config.river
-      - --server.http.listen-addr=0.0.0.0:12345
-      - --storage.path=/var/lib/alloy/data
+      - >-
+        missing="";
+        [ -n "$$CENTRAL_MONITORING_URL" ]      || missing="$$missing CENTRAL_MONITORING_URL";
+        [ -n "$$CENTRAL_MONITORING_USERNAME" ] || missing="$$missing CENTRAL_MONITORING_USERNAME";
+        [ -n "$$CENTRAL_MONITORING_PASSWORD" ] || missing="$$missing CENTRAL_MONITORING_PASSWORD";
+        [ -n "$$CENTRAL_LOKI_URL" ]            || missing="$$missing CENTRAL_LOKI_URL";
+        [ -n "$$CENTRAL_LOKI_USERNAME" ]       || missing="$$missing CENTRAL_LOKI_USERNAME";
+        [ -n "$$CENTRAL_LOKI_PASSWORD" ]       || missing="$$missing CENTRAL_LOKI_PASSWORD";
+        if [ -n "$$missing" ]; then
+        echo "ERROR: not set:$$missing" >&2;
+        echo "Monitoring pushes to an endpoint YOU configure — set the CENTRAL_* values in .env (see .env.example for a localhost example)." >&2;
+        exit 1;
+        fi;
+        exec /bin/alloy run /etc/alloy/config.river
+        --server.http.listen-addr=0.0.0.0:12345
+        --storage.path=/var/lib/alloy/data
     volumes:
       - ./alloy-config.river:/etc/alloy/config.river:ro
       - ./alloy-healthcheck.sh:/etc/alloy/healthcheck.sh:ro
       - ${NODE_LOGS_PATH:-./data/node/logs}:/var/log/genlayer:ro
       - alloy_data:/var/lib/alloy
     healthcheck:
-      test: ["CMD", "sh", "/etc/alloy/healthcheck.sh"]
+      test:
+        - CMD-SHELL
+        - |
+          set -eu
+          sh /etc/alloy/healthcheck.sh && exit 0
+          [ "$${HEALTHCHECK_AUTO_RESTART:-true}" != false ] || exit 1
+          [ "$$(cat /proc/1/comm)" = docker-init ] || exit 1
+          boot=$$(awk '{print $$22}' /proc/1/stat)
+          age=$$(awk -v ticks="$$boot" -v hz="$$(getconf CLK_TCK)" '{print int($$1-ticks/hz)}' /proc/uptime)
+          [ "$$age" -ge 120 ] || exit 1
+          children=$$(cat /proc/1/task/1/children)
+          printf 'Container alloy (%s) found to be unhealthy - Restarting container now\n' "$$(cat /etc/hostname)" > /proc/1/fd/1
+          kill -TERM 1
+          sleep 5
+          # A stopped service cannot handle TERM; init's child can still receive KILL.
+          for child in $$children; do kill -KILL "$$child"; done
+          exit 1
       interval: 120s
       timeout: 15s
       retries: 1
       start_period: 120s
     environment:
-      # Central monitoring endpoints
-      - CENTRAL_LOKI_URL=${CENTRAL_LOKI_URL:-https://logs-prod-042.grafana.net/loki/api/v1/push}
-      - CENTRAL_MONITORING_URL=${CENTRAL_MONITORING_URL:-https://prometheus-prod-66-prod-us-east-3.grafana.net/api/prom/push}
+      - HEALTHCHECK_AUTO_RESTART=${HEALTHCHECK_AUTO_RESTART:-true}
+      # Central monitoring endpoints and credentials: NO defaults, on purpose.
+      # An endpoint may be public knowledge; a credential never is, and a
+      # default one ships the same key to everyone holding this file. The
+      # entrypoint guard above turns "unset" into a clear stop instead of a
+      # silent push to the wrong place.
+      - CENTRAL_LOKI_URL=${CENTRAL_LOKI_URL:-}
+      - CENTRAL_MONITORING_URL=${CENTRAL_MONITORING_URL:-}
 
       # Metrics (Prometheus) authentication
-      - CENTRAL_MONITORING_USERNAME=${CENTRAL_MONITORING_USERNAME:-telemetric}
-      - CENTRAL_MONITORING_PASSWORD=${CENTRAL_MONITORING_PASSWORD:-12345678}
+      - CENTRAL_MONITORING_USERNAME=${CENTRAL_MONITORING_USERNAME:-}
+      - CENTRAL_MONITORING_PASSWORD=${CENTRAL_MONITORING_PASSWORD:-}
 
       # Logs (Loki) authentication
-      - CENTRAL_LOKI_USERNAME=${CENTRAL_LOKI_USERNAME:-telemetric}
-      - CENTRAL_LOKI_PASSWORD=${CENTRAL_LOKI_PASSWORD:-12345678}
+      - CENTRAL_LOKI_USERNAME=${CENTRAL_LOKI_USERNAME:-}
+      - CENTRAL_LOKI_PASSWORD=${CENTRAL_LOKI_PASSWORD:-}
 
       # Single node configuration
       - NODE_ID=${NODE_ID:-validator-001}
@@ -265,6 +314,65 @@ loki.source.file "genlayer" {
 }
 
 // Write logs to central Loki instance
+// Read opted-in WebDriver/Alloy recovery events through the existing read-only
+// Docker proxy. Containers log their own restart attempts before exiting.
+discovery.docker "health_recovery" {
+  host = "http://docker-socket-proxy:2375"
+  refresh_interval = "5s"
+
+  filter {
+    name = "label"
+    values = [
+      "com.genlayer.health-recovery.logs=true",
+    ]
+  }
+}
+
+discovery.relabel "health_recovery" {
+  targets = discovery.docker.health_recovery.targets
+
+  rule {
+    source_labels = ["__meta_docker_container_label_com_docker_compose_project"]
+    target_label = "compose_project"
+  }
+
+  rule {
+    source_labels = ["__meta_docker_container_label_com_genlayer_network"]
+    target_label = "network"
+  }
+
+  rule {
+    source_labels = ["network"]
+    regex = ""
+    target_label = "network"
+    replacement = "unknown"
+  }
+}
+
+loki.source.docker "health_recovery" {
+  // Docker's TCP transport keeps the log stream open. With an HTTP(S) host,
+  // Alloy bounds the entire stream by refresh_interval and repeatedly reopens it.
+  host = "tcp://docker-socket-proxy:2375"
+  targets = discovery.relabel.health_recovery.output
+  refresh_interval = "5s"
+  labels = {
+    job = "genlayer-node",
+    component = "health-recovery",
+    instance = sys.env("NODE_ID"),
+    validator_name = sys.env("VALIDATOR_NAME"),
+  }
+  forward_to = [loki.process.health_recovery.receiver]
+}
+
+// Collect only restart events, not Alloy's own operational log stream.
+loki.process "health_recovery" {
+  stage.match {
+    selector = "{component=\"health-recovery\"} != \"found to be unhealthy - Restarting container now\""
+    action = "drop"
+  }
+  forward_to = [loki.write.central.receiver]
+}
+
 loki.write "central" {
   endpoint {
     url = sys.env("CENTRAL_LOKI_URL")

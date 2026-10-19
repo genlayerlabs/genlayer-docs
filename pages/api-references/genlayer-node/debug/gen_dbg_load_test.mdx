@@ -1,0 +1,50 @@
+### gen_dbg_load_test
+
+Debug hook reserved for driving a node-side load test. The endpoint is wired end to end, but the service behind it is currently a no-op stub: the call succeeds and returns `null` without performing any work.
+
+**Method:** `gen_dbg_load_test`
+
+**Parameters:** None. Any params supplied are accepted and discarded — the handler does not read them
+
+**Returns:** `null`
+
+**Example Request:**
+
+```json
+{
+  "jsonrpc": "2.0",
+  "method": "gen_dbg_load_test",
+  "params": [],
+  "id": 1
+}
+```
+
+**Example Response:**
+
+```json
+{
+  "jsonrpc": "2.0",
+  "result": null,
+  "id": 1
+}
+```
+
+**Notes:**
+
+- A `null` result means "call accepted, nothing performed" — it is not an error and does not indicate a load test ran
+- Because the handler ignores its params, this method cannot currently be tuned (operation count, test type, or duration). Do not build tooling that depends on such parameters
+- Belongs to the `genlayer_debug` group, which **fails closed**: it is disabled unless an operator explicitly enables it, since the debug methods are reachable unauthenticated on the default `0.0.0.0` RPC bind
+- When the group is disabled, the response is JSON-RPC error `-32004` ("method not supported")
+
+**cURL Example:**
+
+```bash
+curl -X POST http://localhost:9151 \
+  -H "Content-Type: application/json" \
+  -d '{
+    "jsonrpc": "2.0",
+    "method": "gen_dbg_load_test",
+    "params": [],
+    "id": 1
+  }'
+```
