@@ -3,6 +3,9 @@
 const fs = require('fs');
 const path = require('path');
 
+// A generator that cannot find its source or its target block fails the build.
+const fail = (msg) => { console.error(msg); process.exitCode = 1; };
+
 /**
  * Update the setup guide with the latest config from content/validators/config.yaml
  * and the network-specific config from content/validators/bradbury.yaml
@@ -13,7 +16,7 @@ function updateConfigInSetupGuide() {
   const setupGuidePath = path.join(process.cwd(), 'pages/validators/setup-guide.mdx');
 
   if (!fs.existsSync(setupGuidePath)) {
-    console.error(`Setup guide file ${setupGuidePath} does not exist`);
+    fail(`Setup guide file ${setupGuidePath} does not exist`);
     return;
   }
 
@@ -27,11 +30,11 @@ function updateConfigInSetupGuide() {
     if (configPattern.test(setupGuideContent)) {
       setupGuideContent = setupGuideContent.replace(
         configPattern,
-        `$1${configContent}$3`
+        (_, before, _old, after) => before + configContent + after
       );
       console.log(`Updated main config block at ${new Date().toISOString()}`);
     } else {
-      console.error('Could not find main config pattern in setup guide');
+      fail('Could not find main config pattern in setup guide');
     }
   }
 
@@ -43,11 +46,11 @@ function updateConfigInSetupGuide() {
     if (bradburyPattern.test(setupGuideContent)) {
       setupGuideContent = setupGuideContent.replace(
         bradburyPattern,
-        `$1${bradburyContent}$3`
+        (_, before, _old, after) => before + bradburyContent + after
       );
       console.log(`Updated Bradbury config block at ${new Date().toISOString()}`);
     } else {
-      console.error('Could not find Bradbury config pattern in setup guide');
+      fail('Could not find Bradbury config pattern in setup guide');
     }
   }
 

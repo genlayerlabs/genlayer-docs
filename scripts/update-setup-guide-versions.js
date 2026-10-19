@@ -3,106 +3,126 @@
 const fs = require('fs');
 const path = require('path');
 
-/**
- * Update the setup guide with the latest versions from changelog
- */
-function updateSetupGuideVersions() {
-  const changelogDir = path.join(process.cwd(), 'content/validators/changelog');
-  const setupGuidePath = path.join(process.cwd(), 'pages/validators/setup-guide.mdx');
-  
-  if (!fs.existsSync(changelogDir)) {
-    console.error(`Changelog directory ${changelogDir} does not exist`);
-    return;
-  }
-  
-  // Read all version files from the changelog directory
-  const versions = fs.readdirSync(changelogDir)
-    .filter(file => file.endsWith('.mdx'))
-    .map(file => file.replace('.mdx', ''))
-    .sort((a, b) => {
-      // Sort versions in descending order (newest first)
-      const parseVersion = (v) => {
-        const match = v.match(/v(\d+)\.(\d+)\.(\d+)(?:-testnet(\d+))?/);
-        if (!match) return [0, 0, 0, 0];
-        return [
-          parseInt(match[1]), 
-          parseInt(match[2]), 
-          parseInt(match[3]), 
-          parseInt(match[4] || '999') // Regular versions come before testnet versions
-        ];
-      };
-      
-      const [majorA, minorA, patchA, testnetA] = parseVersion(a);
-      const [majorB, minorB, patchB, testnetB] = parseVersion(b);
-      
-      if (majorB !== majorA) return majorB - majorA;
-      if (minorB !== minorA) return minorB - minorA;
-      if (patchB !== patchA) return patchB - patchA;
-      return testnetB - testnetA;
-    });
-  
-  if (versions.length === 0) {
-    console.error('No version files found in changelog directory');
-    return;
-  }
-  
-  // Get the latest version
-  const latestVersion = versions[0];
-  
-  // Check that the setup guide file exists
-  if (!fs.existsSync(setupGuidePath)) {
-    console.error(`Setup guide file ${setupGuidePath} does not exist`);
-    return;
-  }
-  
-  // Read the setup guide
-  let setupGuideContent = fs.readFileSync(setupGuidePath, 'utf8');
-  
-  // Update the version list to match the curl command output
-  // The curl command uses: grep -v "rc" | head -n 5
-  // So we filter out rc versions and show only 5 versions
+// A generator that cannot find its source or its target block fails the build.
+const fail = (msg) => { console.error(msg); process.exitCode = 1; };
 
-  // Filter out testnet and rc versions for the display list (matches grep -v "rc")
-  const releaseVersions = versions.filter(v => !v.includes('testnet') && !v.includes('rc'));
+const CHANNELS = ['stable', 'all'];
 
-  // Take only the first 5 versions (matches head -n 5)
-  const displayVersions = releaseVersions.slice(0, 5);
+// v0.6.0, v0.6.0-rc.2, v0.2.0-testnet005
+const VERSION_RE = /^v(\d+)\.(\d+)\.(\d+)(?:-(rc)\.(\d+)|-(testnet)(\d+))?$/;
 
-  // Build the version list (no indentation, matches actual curl output)
-  const versionListIndented = displayVersions.map(v => `   ${v}`).join('\n');
-
-  // Replace the version list (between "You should see a list like this" and "Typically you will want")
-  const versionListPattern = /(You should see a list like this\s*\n\s*```sh\n)([\s\S]*?)(\n\s*```\s*\n\s*Typically,? you will want)/;
-
-  if (versionListPattern.test(setupGuideContent)) {
-    setupGuideContent = setupGuideContent.replace(
-      versionListPattern,
-      `$1${versionListIndented}$3`
-    );
-  } else {
-    console.warn('Could not find version list pattern in setup guide');
-  }
-  
-  // Update the export version line
-  const exportPattern = /export version=v[\d.]+(?:-testnet\d+)?/;
-  
-  if (exportPattern.test(setupGuideContent)) {
-    setupGuideContent = setupGuideContent.replace(
-      exportPattern,
-      `export version=${latestVersion}`
-    );
-  } else {
-    console.warn('Could not find export version pattern in setup guide');
-  }
-  
-  // Write the updated content back
-  fs.writeFileSync(setupGuidePath, setupGuideContent);
-  console.log(`Updated setup guide with ${versions.length} versions, latest: ${latestVersion}`);
+function parseVersion(v) {
+  const m = v.match(VERSION_RE);
+  if (!m) return null;
+  const pre = m[4] || m[6] || null;
+  return {
+    name: v,
+    core: [Number(m[1]), Number(m[2]), Number(m[3])],
+    pre, // null for a stable release
+    preNumber: Number(m[5] || m[7] || 0),
+  };
 }
 
-// Run the script
+// Newest first. A stable release sorts above its own pre-releases.
+function compareDesc(a, b) {
+  for (let i = 0; i < 3; i++) {
+    if (a.core[i] !== b.core[i]) return b.core[i] - a.core[i];
+  }
+  if (!a.pre !== !b.pre) return a.pre ? 1 : -1;
+  return b.preNumber - a.preNumber;
+}
+
+/**
+ * Select the versions the guide names for a channel.
+ * Testnet builds (v0.2.0-testnetNNN) are never named. Release candidates are
+ * named only on the 'all' channel.
+ */
+function selectVersions(names, channel) {
+  if (!CHANNELS.includes(channel)) {
+    throw new Error(`versionChannel must be one of ${CHANNELS.join(', ')}, got ${JSON.stringify(channel)}`);
+  }
+  return names
+    .map(parseVersion)
+    .filter(Boolean)
+    .filter((v) => v.pre !== 'testnet' && (channel === 'all' || v.pre === null))
+    .sort(compareDesc)
+    .map((v) => v.name);
+}
+
+/** The list command shown in the guide, as the channel would run it. */
+function listCommandTail(channel) {
+  return channel === 'all' ? '| sort -ruV | head -n 5' : '| sort -ruV | grep -v "rc" | head -n 5';
+}
+
+/**
+ * Update the setup guide's version list, list command and `export version=` line.
+ * @param {{root?: string, channel?: string}} options
+ */
+function updateSetupGuideVersions({ root = process.cwd(), channel } = {}) {
+  if (channel === undefined) {
+    channel = require('./setup-guide-versions.config').versionChannel;
+  }
+  const changelogDir = path.join(root, 'content/validators/changelog');
+  const setupGuidePath = path.join(root, 'pages/validators/setup-guide.mdx');
+
+  if (!fs.existsSync(changelogDir)) {
+    fail(`Changelog directory ${changelogDir} does not exist`);
+    return;
+  }
+  if (!fs.existsSync(setupGuidePath)) {
+    fail(`Setup guide file ${setupGuidePath} does not exist`);
+    return;
+  }
+
+  const names = fs.readdirSync(changelogDir)
+    .filter((file) => file.endsWith('.mdx'))
+    .map((file) => file.replace(/\.mdx$/, ''));
+
+  let versions;
+  try {
+    versions = selectVersions(names, channel);
+  } catch (e) {
+    fail(e.message);
+    return;
+  }
+  if (versions.length === 0) {
+    fail(`No ${channel} version files found in changelog directory`);
+    return;
+  }
+
+  const latestVersion = versions[0];
+  let content = fs.readFileSync(setupGuidePath, 'utf8');
+
+  // The version list between "You should see a list like this" and "Typically you will want".
+  const versionListPattern = /(You should see a list like this\s*\n\s*```sh\n)([\s\S]*?)(\n\s*```\s*\n\s*Typically,? you will want)/;
+  const versionList = versions.slice(0, 5).map((v) => `   ${v}`).join('\n');
+  if (versionListPattern.test(content)) {
+    content = content.replace(versionListPattern, (_, before, _old, after) => before + versionList + after);
+  } else {
+    fail('Could not find version list pattern in setup guide');
+  }
+
+  // The tail of the list command: version sort, rc filter (stable only), first 5.
+  const listCommandPattern = /\| sort -ruV?(?: \| grep -v "rc")? \| head -n 5/;
+  if (listCommandPattern.test(content)) {
+    content = content.replace(listCommandPattern, () => listCommandTail(channel));
+  } else {
+    fail('Could not find the version list command (| sort -ru... | head -n 5) in setup guide');
+  }
+
+  const exportPattern = /export version=v\d+\.\d+\.\d+(?:-rc\.\d+|-testnet\d+)?/;
+  if (exportPattern.test(content)) {
+    content = content.replace(exportPattern, () => `export version=${latestVersion}`);
+  } else {
+    fail('Could not find export version pattern in setup guide');
+  }
+
+  fs.writeFileSync(setupGuidePath, content);
+  console.log(`Updated setup guide (${channel} channel) with ${versions.length} versions, latest: ${latestVersion}`);
+}
+
 if (require.main === module) {
   updateSetupGuideVersions();
 }
 
-module.exports = { updateSetupGuideVersions };
+module.exports = { updateSetupGuideVersions, selectVersions, listCommandTail, CHANNELS };

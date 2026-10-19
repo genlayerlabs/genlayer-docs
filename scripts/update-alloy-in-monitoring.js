@@ -3,6 +3,9 @@
 const fs = require('fs');
 const path = require('path');
 
+// A generator that cannot find its source or its target block fails the build.
+const fail = (msg) => { console.error(msg); process.exitCode = 1; };
+
 /**
  * Update the monitoring page with the latest alloy service from the full docker-compose.
  * Extracts the alloy service definition + volumes section from the full (unsanitized)
@@ -14,12 +17,12 @@ function updateAlloyInMonitoring() {
   const monitoringPath = path.join(projectRoot, 'pages/validators/monitoring.mdx');
 
   if (!fs.existsSync(dockerComposePath)) {
-    console.error(`Full docker-compose file ${dockerComposePath} does not exist`);
+    fail(`Full docker-compose file ${dockerComposePath} does not exist`);
     return;
   }
 
   if (!fs.existsSync(monitoringPath)) {
-    console.error(`Monitoring file ${monitoringPath} does not exist`);
+    fail(`Monitoring file ${monitoringPath} does not exist`);
     return;
   }
 
@@ -30,7 +33,7 @@ function updateAlloyInMonitoring() {
   const alloyBlock = extractAlloyBlock(dockerComposeContent);
 
   if (!alloyBlock) {
-    console.error('Could not extract alloy service block from docker-compose');
+    fail('Could not extract alloy service block from docker-compose');
     return;
   }
 
@@ -41,13 +44,13 @@ function updateAlloyInMonitoring() {
   if (alloyPattern.test(monitoringContent)) {
     monitoringContent = monitoringContent.replace(
       alloyPattern,
-      `$1${alloyBlock}$3`
+      (_, before, _old, after) => before + alloyBlock + after
     );
 
     fs.writeFileSync(monitoringPath, monitoringContent);
     console.log(`Updated monitoring alloy service block at ${new Date().toISOString()}`);
   } else {
-    console.error('Could not find alloy service YAML block pattern in monitoring.mdx');
+    fail('Could not find alloy service YAML block pattern in monitoring.mdx');
   }
 }
 
@@ -144,4 +147,4 @@ if (require.main === module) {
   updateAlloyInMonitoring();
 }
 
-module.exports = { updateAlloyInMonitoring };
+module.exports = { updateAlloyInMonitoring, extractAlloyBlock };

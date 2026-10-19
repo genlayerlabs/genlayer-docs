@@ -12,6 +12,9 @@ jobs:
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
+        with:
+          # check-node-sync compares the changelog with origin/main.
+          fetch-depth: 0
 
       - name: Setup Node.js
         uses: actions/setup-node@v4
@@ -22,16 +25,16 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
+      - name: Test the setup guide version channel
+        run: npm run test:setup-guide-versions
+
       - name: Run documentation sync scripts
-        run: |
-          npm run node-generate-changelog
-          npm run node-update-setup-guide
-          npm run node-update-config
-          npm run node-update-docker-compose
-          npm run node-update-monitoring-docker-compose
-          npm run node-update-monitoring-alloy-config
-          npm run node-update-greybox
-          npm run node-generate-api-docs
+        # The one generator list (.github/scripts/doc-generator.sh). Fails when a
+        # generator cannot find its source or its block.
+        run: npm run node-generate-all
+
+      - name: Check synced content reaches the pages verbatim
+        run: npm run check:node-sync
 
       - name: Check for uncommitted changes
         run: |
