@@ -39,10 +39,10 @@ curl -X POST "http://127.0.0.1:${PORT}/module/stop" \
 
 curl -X POST "http://127.0.0.1:${PORT}/module/start" \
   -H 'Content-Type: application/json' \
-  -d '{"module_type": "Web", "config": null}'
+  -d '{"module_type": "Llm", "config": null}'
 ```
 
-Repeat for each GenVM instance if running multiple. For a full restart: `sudo systemctl restart genlayer-node`.
+Repeat for each GenVM instance if running multiple. A module reload picks up YAML and Lua changes only. A new or changed API key in `.env` needs a full node restart, because a running process cannot see environment changes. For a full restart: `sudo systemctl restart genlayer-node`.
 
 ## Configuration Files
 
@@ -52,7 +52,7 @@ All configuration lives in the GenVM tree of the release, at `opt/genvm/<version
 |---|---|---|
 | `genvm-module-llm.yaml` | LLM providers, models, prompt templates, Lua script selection | **Yes** — this is your main configuration file |
 | `genvm-module-web.yaml` | Web access, webdriver, URL restrictions | Rarely — only for advanced URL policy changes |
-| `genvm-manager.yaml` | Concurrency permits, VM pool | Rarely — only if tuning for your hardware |
+| `genvm-manager.yaml` | Permit pool (concurrency), VM pool | Rarely — the node sets the permit budget from its own `genvm.permits` (see below) |
 
 ## Configuring Your LLM Backends
 
@@ -139,20 +139,35 @@ backends:
 
 ### API key environment variables
 
-Set these in your `.env` file before starting the node. You only need to set the keys for providers you're actually using. Keys use `${ENV[VARIABLE_NAME]}` syntax in the YAML.
+The YAML reads each key with `${ENV[VARIABLE_NAME]}`. Set only the keys for the providers you use.
 
-| Variable | Provider |
-|---|---|
-| `OPENROUTERKEY` | OpenRouter |
-| `OPENAIKEY` | OpenAI |
-| `ANTHROPICKEY` | Anthropic |
-| `GEMINIKEY` | Google Gemini |
-| `HEURISTKEY` | Heurist |
-| `XAIKEY` | X.ai (Grok) |
-| `COMPUT3KEY` | Comput3 |
-| `IOINTELLIGENCE_API_KEY` | io.net |
-| `CHUTES_API_KEY` | Chutes |
-| `MORPHEUS_API_KEY` | Morpheus |
+Where to set them:
+
+- **Docker:** in the `.env` file next to `docker-compose.yaml`. The node service loads it.
+- **Binary or systemd:** in the node's process environment. Export them in the shell that starts the node, or load the file from the systemd unit (for example with `EnvironmentFile=`).
+
+Which keys are read depends on the LLM config you run. Two files ship in the GenVM config directory:
+
+- **Default config:** `genvm-module-llm.yaml` as shipped with GenVM. This is what the node loads unless you change it.
+- **Release config:** `genvm-modules-llm-release.yaml`, shipped by the node release next to it. It adds OpenRouter and the partner providers. It takes effect only after you copy it over `genvm-module-llm.yaml` (see step 3 of [Greybox Setup](/validators/greybox-setup)).
+
+| Variable | Provider | Default config | Release config |
+|---|---|---|---|
+| `OPENROUTERKEY` | OpenRouter | Not read | Yes |
+| `HEURISTKEY` | Heurist | Yes | Yes |
+| `COMPUT3KEY` | Comput3 | Not read | Yes |
+| `IOINTELLIGENCEKEY` | io.net | Not read | Yes |
+| `LIBERTAI_API_KEY` | LibertAI | Not read | Yes |
+| `MORPHEUS_API_KEY` | Morpheus | Not read | Yes |
+| `OPENAIKEY` | OpenAI | Yes (also the `dev` backend, which points at OpenRouter) | Backend disabled |
+| `ANTHROPICKEY` | Anthropic | Yes | Backend disabled |
+| `GEMINIKEY` | Google Gemini | Yes | Backend disabled |
+| `XAIKEY` | X.ai (Grok) | Yes | Backend disabled |
+| `ATOMAKEY` | Atoma | Backend disabled | Backend disabled |
+
+"Backend disabled" means the backend is in the file with `enabled: false`. Set it to `true` to use the key.
+
+Chutes has no built-in backend. To use it, add an `openai-compatible` backend with your own key variable (see [Chutes](/partners/chutes)).
 
 <Callout type="info">
   Enabled backends without a configured API key will log warnings. Either set the key or disable the backend with `enabled: false`.
@@ -194,13 +209,29 @@ Greyboxing encompasses several layers of configuration, all implemented in the L
 
 GenVM ships with two Lua scripts. Switch between them by changing `lua_script_path` in `genvm-module-llm.yaml`.
 
-#### Default: Random selection
+#### Default: Priority chain
 
 **Script:** `genvm-llm-default.lua`
 
-Iterates through all enabled backends that match the required capabilities (JSON support, image support) and tries them in arbitrary order. Falls back to the next provider on overload errors (429, 503, 408, 504, 529).
+Builds one chain over every enabled model, in a fixed order:
 
-This is the simplest strategy — works out of the box with no tuning.
+1. Providers by `meta.priority`, highest first. A provider without it counts as `0`. Ties go by provider name, in reverse alphabetical order.
+2. Within a provider, models by name, in alphabetical order.
+
+For each prompt, models without a needed capability (`supports_json`, `supports_image`) are skipped and the rest are tried in order. Any failure moves on to the next model, not only overload errors. If every candidate fails, the prompt fails with `NO_PROVIDER_FOR_PROMPT`.
+
+Set the order with `meta.priority` on the backend:
+
+```yaml
+backends:
+  my-provider:
+    meta:
+      priority: 10   # higher is tried first
+```
+
+`meta.priority` runs in the opposite direction to the `meta.greybox` numbers of the ordered fallback chain below: for priority, higher goes first; for greybox, lower goes first.
+
+This strategy works out of the box with no tuning. It is not curated: it uses every enabled model in one chain.
 
 #### Ordered fallback chain
 
@@ -346,10 +377,17 @@ The Lua script (`genvm-web-default.lua`) implements two functions:
 
 ## Advanced: GenVM Manager
 
-The manager (`genvm-manager.yaml`) controls concurrency. The main setting is `permits` — max concurrent GenVM executions.
+The manager (`genvm-manager.yaml`) controls concurrency through a pool of permits. The node sets that pool on startup from `genvm.permits` in its `config.yaml`:
+
+```yaml
+genvm:
+  permits: 32 # Leave empty for autodiscovery
+```
+
+`permits` is a permit budget, not an execution count. Each execution costs permits, and one nondeterministic execution costs 8, so `32` admits 4 nondeterministic executions at a time. Leaving it empty is preferable: autodiscovery sizes the budget from the host. `sync_permits` uses the same unit; a sync execution costs 4.
 
 <Callout type="info">
-  On macOS (native), auto-detection is not supported. Set `permits` manually (e.g., `32`).
+  On macOS (native), auto-detection is not supported: GenVM falls back to a fixed default. Set `genvm.permits` manually (e.g., `32`).
 </Callout>
 
 ## Troubleshooting
@@ -358,6 +396,12 @@ The manager (`genvm-manager.yaml`) controls concurrency. The main setting is `pe
 
 **"module_failed_to_start":** Check that the Lua script exists at the path in `lua_script_path`, API keys are set, and YAML syntax is valid.
 
-**"NO_PROVIDER_FOR_PROMPT":** No enabled backend matches the request's capabilities. Ensure at least one has `supports_json: true` (and `supports_image: true` for image prompts).
+**"NO_PROVIDER_FOR_PROMPT":** No model could answer the prompt. Either no enabled model has the capability it needs (ensure at least one has `supports_json: true`, and `supports_image: true` for image prompts), or every candidate failed.
 
-**All models exhausted:** All providers returned overload errors. Check API key validity and provider status pages. Add more backends as fallback.
+**All models exhausted:** Every candidate failed. Check API key validity and provider status pages.
+
+**Check which backends actually answer:** Run `./bin/genlayernode doctor`. Its LLM check probes each enabled backend live, rather than only checking that a key variable is set.
+
+**Configure more than one provider.** A backend only enters the chain if its key is set. With a single provider there is no fallback: when it is down or out of credit, the chain is exhausted at once. The node keeps running, but it votes Timeout on every transaction that needs an LLM, and Timeout votes are penalized. `doctor` warns when only one backend is usable.
+
+**Restart vs. reload:** A key added or changed in `.env` needs a node restart. Edits to `genvm-module-llm.yaml` or the Lua script need only an LLM module reload (see [Hot-Reload](#hot-reload)).

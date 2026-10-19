@@ -230,18 +230,40 @@ One full node can be shared between multiple validators. The optimal validator-t
    export version=v0.5.14 # set your desired version here
    wget https://storage.googleapis.com/gh-af/genlayer-node/bin/amd64/${version}/genlayer-node-linux-amd64-${version}.tar.gz
    ```
-3. Extract the node software
+3. Verify the download (v0.6.0 and later)
+
+   Each release from v0.6.0 on publishes a signed checksum file next to the tarball. Verify it before you extract: extraction feeds the GenVM setup script, so a tampered tarball must be caught here. You need [cosign](https://docs.sigstore.dev/cosign/system_config/installation/).
+
+   ```sh copy
+   base=https://storage.googleapis.com/gh-af/genlayer-node/bin/amd64/${version}
+   wget ${base}/genlayer-node_${version}_SHA256SUMS ${base}/genlayer-node_${version}_SHA256SUMS.sigstore.json
+
+   # 1. The checksum file was produced by GenLayer's release workflow.
+   cosign verify-blob \
+     --bundle "genlayer-node_${version}_SHA256SUMS.sigstore.json" \
+     --certificate-identity-regexp '^https://github\.com/genlayerlabs/genlayer-node/\.github/workflows/release-package\.yml@' \
+     --certificate-oidc-issuer https://token.actions.githubusercontent.com \
+     "genlayer-node_${version}_SHA256SUMS"
+
+   # 2. The tarball matches the checksum file.
+   sha256sum -c "genlayer-node_${version}_SHA256SUMS" --ignore-missing
+   ```
+
+   If either command fails, do not extract: delete the download and fetch it again. Releases before v0.6.0 have no checksum file.
+
+   The same releases also publish `install.sh`, covered by the same checksum file. After verifying, `./install.sh --install-dir /opt/genlayer-node/${version} --tarball genlayer-node-linux-amd64-${version}.tar.gz` replaces steps 4 and 5, and also points `genvm.root_dir` at the GenVM version it unpacked.
+
+4. Extract the node software
+
+   The tarball has one top-level directory, `genlayer-node-linux-amd64/`; `--strip-components=1` puts its contents straight into `./${version}`.
+
    ```sh copy
    mkdir -p ${version}
-   tar -xzvf `genlayer-node-linux-amd64-${version}.tar.gz` -C `./${version}`
-   ```
-4. Change the directory
-
-   ```sh copy
-   cd `./${version}`
+   tar -xzf genlayer-node-linux-amd64-${version}.tar.gz -C ./${version} --strip-components=1
+   cd ./${version}
    ```
 
-5. Run Genvm setup
+5. Run the GenVM setup
 
    This step needs Python 3.10 or newer, available as `python3` on your `PATH`, with `pip` and `venv` (on Debian/Ubuntu: `python3-pip` and `python3-venv`). Check with `python3 --version`.
 
@@ -269,6 +291,8 @@ This is the main configuration file of your node. Without it, your node won't st
 The file needs to be located at `configs/node/config.yaml`
 
 You can use the following example configuration. **Note:** For most users, you will only need to replace the `rollup` and `consensus` sections with the values for your target network (see [Network-Specific Consensus Configuration](#network-specific-consensus-configuration) below).
+
+Also check that `genvm.root_dir` names the GenVM directory the release ships: run `ls opt/genvm` in the install directory. `install.sh` sets it for you; after a manual extract, set it yourself.
 
 ```yaml copy
 # rollup configuration
@@ -592,7 +616,7 @@ The node sends the key in the `X-AccessKey` header on both the RPC and WebSocket
 
 #### Overriding Configuration with Environment Variables
 
-Any configuration value in `config.yaml` can be overridden using environment variables with the prefix `GENLAYERNODE_`.
+Any configuration value in `config.yaml` can be overridden using environment variables with the prefix `GENLAYERNODE_`. Only keys that exist in the file are picked up: a key that is commented out, such as `consensus.genesis` in the template, must be uncommented before its variable has an effect.
 
 **Pattern:**
 
@@ -606,9 +630,9 @@ Any configuration value in `config.yaml` can be overridden using environment var
 |------------|---------------------|
 | `rollup.genlayerchainrpcurl` | `GENLAYERNODE_ROLLUP_GENLAYERCHAINRPCURL` |
 | `rollup.genlayerchainwebsocketurl` | `GENLAYERNODE_ROLLUP_GENLAYERCHAINWEBSOCKETURL` |
-| (secret, environment only) | `GENLAYERNODE_ROLLUP_GENLAYERCHAINRPCKEY` |
-| `consensus.contractmainaddress` | `GENLAYERNODE_CONSENSUS_CONTRACTMAINADDRESS` |
-| `consensus.contractdataaddress` | `GENLAYERNODE_CONSENSUS_CONTRACTDATAADDRESS` |
+| `consensus.consensusaddress` | `GENLAYERNODE_CONSENSUS_CONSENSUSADDRESS` |
+| `consensus.chainid` | `GENLAYERNODE_CONSENSUS_CHAINID` |
+| `consensus.manifestpath` | `GENLAYERNODE_CONSENSUS_MANIFESTPATH` |
 | `consensus.genesis` | `GENLAYERNODE_CONSENSUS_GENESIS` |
 | `node.mode` | `GENLAYERNODE_NODE_MODE` |
 | `node.validatorWalletAddress` | `GENLAYERNODE_NODE_VALIDATORWALLETADDRESS` |
@@ -616,11 +640,20 @@ Any configuration value in `config.yaml` can be overridden using environment var
 | `node.rpc.port` | `GENLAYERNODE_NODE_RPC_PORT` |
 | `logging.level` | `GENLAYERNODE_LOGGING_LEVEL` |
 
+These have no key in `config.yaml` and are read from the environment only:
+
+| Variable | Purpose |
+|----------|---------|
+| `GENLAYERNODE_PASSWORD` | Keystore password. Use it instead of `--password`, which is visible in process listings and shell history. |
+| `GENLAYERNODE_CONFIG_PATH` | Path to the config file (default `configs/node/config.yaml`). |
+| `GENLAYERNODE_ROLLUP_GENLAYERCHAINRPCKEY` | API key of the chain RPC provider. Never put it in the endpoint URLs. |
+| `GENLAYERNODE_NODE_OPERATOR_TOKEN` | Bearer token for the ops server's `POST /snapshot` route. Without it the route refuses every caller. Generate one with `openssl rand -hex 32`. |
+
 **Usage example:**
 
 ```sh copy
 # Override the RPC port
-export GENLAYERNODE_CONSENSUS_CONTRACTMAINADDRESS="0x..."
+export GENLAYERNODE_NODE_RPC_PORT="9151"
 
 # Set validator wallet address
 export GENLAYERNODE_NODE_VALIDATORWALLETADDRESS="0x..."
@@ -639,13 +672,20 @@ See the [GenVM Configuration](/validators/genvm-configuration) page for detailed
 
 The operator key is used by your node to sign blocks and perform validator duties.
 
+The account commands read the node's keystore password from `GENLAYERNODE_PASSWORD`. Set it once per shell, without echoing it. Do not pass it with `--password`: command-line arguments can be visible in process listings and shell history.
+
+```sh copy
+read -rsp "Keystore password: " GENLAYERNODE_PASSWORD
+export GENLAYERNODE_PASSWORD
+printf '\n'
+```
+
 #### Option 1: Import from CLI Wizard (Recommended)
 
 If you used `genlayer staking wizard`, it exported an operator keystore file. Transfer this file to your validator server and import it:
 
 ```sh copy
 ./bin/genlayernode account import \
-  --password "your node password" \
   --passphrase "password you set when exporting from wizard" \
   --path "/path/to/operator-keystore.json" \
   -c $(pwd)/configs/node/config.yaml \
@@ -655,9 +695,9 @@ If you used `genlayer staking wizard`, it exported an operator keystore file. Tr
 You should see:
 
 ```sh
-Account imported:
-  Address: 0xA0b12Fd2f3F7e86fEC458D114A5E7a6f571160a8
-  Account setup as a validator
+Operator account imported:
+	Operator address: 0xA0b12Fd2f3F7e86fEC458D114A5E7a6f571160a8
+	Operator address has been set in config.yaml
 ```
 
 #### Option 2: Generate New Operator Key
@@ -665,7 +705,7 @@ Account imported:
 You can also generate a new operator key directly on the server:
 
 ```sh copy
-./bin/genlayernode account new -c $(pwd)/configs/node/config.yaml --setup --password "your secret password"
+./bin/genlayernode account new -c $(pwd)/configs/node/config.yaml --setup
 ```
 
 Then use this address when running the wizard on your local machine.
@@ -676,7 +716,6 @@ To restore from a backup (e.g., after migrating to a new server):
 
 ```sh copy
 ./bin/genlayernode account import \
-  --password "your node password" \
   --passphrase "your backup encryption passphrase" \
   --path "/path/to/your/secure/backup.key" \
   -c $(pwd)/configs/node/config.yaml \
@@ -693,7 +732,6 @@ After setting up your operator key, back it up securely:
 
 ```sh copy
 ./bin/genlayernode account export \
-  --password "your node password" \
   --address "your operator address" \
   --passphrase "your backup encryption passphrase" \
   --path "/path/to/your/secure/backup.key" \
@@ -723,25 +761,22 @@ Once you have configured everything, you are ready to start the node.
 
 1.  Set the LLM Provider API Key
 
-    Set the appropriate environment variable for your chosen LLM provider. See the [GenVM Configuration](/validators/genvm-configuration) page for details on LLM providers and obtaining API credits.
+    Set the environment variable of at least one LLM provider. See the [GenVM Configuration](/validators/genvm-configuration) page for details on LLM providers and obtaining API credits.
 
     ```sh copy
-    # For Heurist
+    # Read by the default GenVM LLM config
     export HEURISTKEY='your_heurist_api_key'
+    export ANTHROPICKEY='your_anthropic_api_key'
+    export OPENAIKEY='your_openai_api_key'
+    export XAIKEY='your_xai_api_key'
+    export GEMINIKEY='your_gemini_api_key'
 
-    # For Comput3
+    # Read only by the release LLM config (genvm-modules-llm-release.yaml, used by greyboxing)
+    export OPENROUTERKEY='your_openrouter_api_key'
     export COMPUT3KEY='your_comput3_api_key'
-
-    # For io.net
-    export IOINTELLIGENCE_API_KEY='your_ionet_api_key'
-
-    # For Chutes
-    export CHUTES_API_KEY='your_chutes_api_key'
-
-    # For Morpheus
+    export IOINTELLIGENCEKEY='your_ionet_api_key'
     export MORPHEUS_API_KEY='your_morpheus_api_key'
-
-    # For other providers, use the appropriate environment variable name
+    export LIBERTAI_API_KEY='your_libertai_api_key'
     ```
 
 2.  Run the WebDriver container
@@ -750,37 +785,41 @@ Once you have configured everything, you are ready to start the node.
     docker compose up -d # Starts the WebDriver needed by the GenVM web module
     ```
 
-3.  (Optional) Run two services (modules) in background (this is a crucial step for running _Intelligent_ contracts). This can be done automatically or manually.
-    - To start them automatically in node configuration set `genvm.manage_modules` to `true`
-    - To start them manually run
-      ```bash copy
-       ./opt/genvm/${GENVM_VERSION}/bin/genvm-modules web & ./opt/genvm/${GENVM_VERSION}/bin/genvm-modules llm &
-      ```
+    The node starts the GenVM manager and its modules itself (`genvm.start_manager: true` in the config template).
 
-<Callout type="info">
-  Note: If you are using the default configuration, `genvm.manage_modules` is
-  set to `true` by default, meaning the node will manage these modules
-  automatically.
-</Callout>
+    **WebDriver resource metrics (optional).** To report the WebDriver container's CPU, memory and traffic as `genlayer_node_*{component="webdriver"}` series, also start the read-only Docker API proxy, and give only the node process `DOCKER_HOST=tcp://127.0.0.1:2375` (see step 4):
 
-4. Checking Your Configuration
+    ```sh copy
+    docker compose up -d docker-socket-proxy
+    ```
 
-    To ensure your node is correctly configured, you can run the following command:
+    Run the node as a user that is not in the `docker` group, and do not `export DOCKER_HOST` in a shell you also use for `docker` commands: they would reach the read-only proxy and fail. Without `DOCKER_HOST` the node skips these metrics.
+
+3. Checking Your Configuration
+
+    Run `doctor` before the first start, from the install directory, with the same environment the node will run with:
 
     ```sh copy
     ./bin/genlayernode doctor
     ```
 
-    The `doctor` command now includes comprehensive GenVM diagnostics integration to validate:
-    - Consensus contract configuration and accessibility
-    - GenVM module connectivity and health status
-    - LLM provider configuration and API connectivity
-    - Network configuration and ZKSync node accessibility
+    It checks, in order:
+    - GenLayer Chain connectivity
+    - the consensus deployment: it reads the on-chain contracts and checks them against the trusted protocol manifest at `consensus.manifestpath`
+    - the GenVM configuration: binaries, module config, the LLM provider keys and a live call to each enabled provider, and the WebDriver
 
-5.  Run the node
+4.  Run the node
+
+    With `GENLAYERNODE_PASSWORD` set (see [Import the Operator Key](#import-the-operator-key)):
 
     ```sh copy
-    ./bin/genlayernode run -c $(pwd)/configs/node/config.yaml --password "your secret password" # The same password you used when creating the account
+    ./bin/genlayernode run -c $(pwd)/configs/node/config.yaml
+    ```
+
+    With WebDriver resource metrics:
+
+    ```sh copy
+    DOCKER_HOST=tcp://127.0.0.1:2375 ./bin/genlayernode run -c $(pwd)/configs/node/config.yaml
     ```
 
 <Callout type="info">
@@ -794,6 +833,16 @@ Once you have configured everything, you are ready to start the node.
 #### Running the Node using docker-compose
 
 You can also run the GenLayer node using Docker and Docker Compose.
+
+Before the first start, in the directory with your `docker-compose.yaml`:
+
+- `configs/node/config.yaml` holds your network's `rollup` and `consensus` values (see [Configuration](#configuration)).
+- `configs/node/protocol-manifest.json` is your network's trusted manifest (see [Network-Specific Consensus Configuration](#network-specific-consensus-configuration)).
+- The node container runs as uid `10001`, and the bind-mounted `./data` keeps its host owner. Let that user write to it once:
+
+  ```sh copy
+  mkdir -p ./data && sudo chown -R 10001:10001 ./data
+  ```
 
 1. Create a `docker-compose.yaml` file with the following content:
 
@@ -1177,25 +1226,7 @@ docker compose --profile node up -d
 
 For a quick setup using Docker Compose:
 
-1. **Configure your `.env` file** with the required variables for monitoring:
-
-   ```env copy
-   # Central monitoring server endpoints for GenLayer Foundation
-   CENTRAL_MONITORING_URL=https://prometheus-prod-66-prod-us-east-3.grafana.net/api/prom/push
-   CENTRAL_LOKI_URL=https://logs-prod-042.grafana.net/loki/api/v1/push
-
-   # Authentication for central monitoring
-   # Metrics (Prometheus) credentials
-   CENTRAL_MONITORING_USERNAME=your-metrics-username
-   CENTRAL_MONITORING_PASSWORD=your-metrics-password
-   # Logs (Loki) credentials
-   CENTRAL_LOKI_USERNAME=your-logs-username
-   CENTRAL_LOKI_PASSWORD=your-logs-password
-
-   # Node identification
-   NODE_ID=validator-001
-   VALIDATOR_NAME=MyValidator
-   ```
+1. **Set the monitoring variables in your `.env` file.** The `.env` example above lists them: the six `CENTRAL_*` endpoint and credential values, `NODE_ID`, `VALIDATOR_NAME` and `NETWORK_NAME`. All six `CENTRAL_*` values are required: Alloy stops with a message when one is missing. Get the endpoints and credentials from the Foundation team, and see the [Monitoring Guide](/validators/monitoring) for the values to use.
 
 2. **Run docker compose**:
    ```bash copy

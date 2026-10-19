@@ -9,15 +9,15 @@ Monitoring and telemetry for GenLayer validators means collecting validator perf
 
 ## Accessing Metrics
 
-The metrics endpoint is exposed on the operations port (default: 9153) configured in your `config.yaml`:
+The metrics endpoint is served by the ops server, on the port set in your `config.yaml` (default: 9153):
 
 ```yaml
 node:
   ops:
-    port: 9153 # Metrics port
-    endpoints:
-      metrics: true # Enable metrics endpoint
+    port: 9153 # Ops server port (/health, /metrics, /balance, /snapshot)
 ```
+
+The ops server always registers `/metrics`, `/health`, `/balance` and `/snapshot`. The `endpoints.metrics` and `endpoints.health` keys in the config template do not turn them on or off; they are kept for compatibility, and `doctor` reads `health` to decide whether to run its HTTP health probe.
 
 Once your node is running, you can access the metrics at:
 ```
@@ -64,7 +64,7 @@ curl -s http://localhost:9153/metrics | grep genlayer_node_
 ```
 
 <Callout type="info">
-  The metrics endpoint also provides `/health` and `/balance` endpoints on the same port for additional monitoring capabilities.
+  The ops port also serves `/health` and `/balance` for additional monitoring, and `POST /snapshot` for operator snapshots. `/snapshot` is default-deny: every caller gets 401 unless `GENLAYERNODE_NODE_OPERATOR_TOKEN` is set in the node's environment, and callers must send that token as a bearer token.
 </Callout>
 
 ## Monitoring Best Practices
@@ -92,7 +92,7 @@ To contribute your node's metrics and logs to the centralized GenLayer Foundatio
 - Setup takes 10–15 minutes once credentials are provided.
 
 **Prerequisites**
-- Metrics enabled in `config.yaml` (`endpoints.metrics: true` — default in recent versions).
+- The node's ops server running (it always serves `/metrics`; no config switch is needed).
 - Ops port 9153 exposed in docker-compose (`ports: - "9153:9153"`).
 - Credentials from the Foundation team (ask in #bradbury):
   - `CENTRAL_MONITORING_URL` — Prometheus remote write URL
@@ -102,33 +102,38 @@ To contribute your node's metrics and logs to the centralized GenLayer Foundatio
 
 **Steps**
 
-1. **Create or update .env** (next to your docker-compose.yaml):
+1. **Create or update .env** (next to your docker-compose.yaml). Fill in the values the Foundation team gave you. All six `CENTRAL_*` values are required: Alloy stops at start-up and names the missing ones if any is empty.
 
 ```env
-# Central monitoring server endpoints for GenLayer Foundation
-CENTRAL_MONITORING_URL=https://prometheus-prod-66-prod-us-east-3.grafana.net/api/prom/push
-CENTRAL_LOKI_URL=https://logs-prod-042.grafana.net/loki/api/v1/push
+# Central monitoring endpoints, from the Foundation team (ask in #bradbury)
+CENTRAL_MONITORING_URL=<prometheus-remote-write-url>
+CENTRAL_LOKI_URL=<loki-push-url>
 
 # Authentication for central monitoring
 # Metrics (Prometheus) credentials
-CENTRAL_MONITORING_USERNAME=your-metrics-username
-CENTRAL_MONITORING_PASSWORD=your-metrics-password
+CENTRAL_MONITORING_USERNAME=<metrics-username>
+CENTRAL_MONITORING_PASSWORD=<metrics-password>
 # Logs (Loki) credentials
-CENTRAL_LOKI_USERNAME=your-logs-username
-CENTRAL_LOKI_PASSWORD=your-logs-password
+CENTRAL_LOKI_USERNAME=<logs-username>
+CENTRAL_LOKI_PASSWORD=<logs-password>
 
 # Node identification
 NODE_ID=validator-001
 VALIDATOR_NAME=MyValidator
+# Network label for recovery logs and alert routing
 NETWORK_NAME=bradbury-phase2
 
 # Usually defaults are fine
 NODE_METRICS_ENDPOINT=host.docker.internal:9153
 LOG_FILE_PATTERN=/var/log/genlayer/node*.log
 METRICS_SCRAPE_INTERVAL=15s
+# Host directory where the node writes its log files (mounted into Alloy)
+NODE_LOGS_PATH=./data/node/logs
+# false keeps the container health checks but turns off automatic restarts
+HEALTHCHECK_AUTO_RESTART=true
 ```
 
-2. **Add or verify the Alloy service in docker-compose.yaml** (copy if missing):
+2. **Add or verify the Alloy service in docker-compose.yaml.** Use the docker-compose.yaml from the release package as it is. It already defines the alloy service under the monitoring profile, together with the docker-socket-proxy service that alloy depends on. Alloy also mounts alloy-healthcheck.sh from the same package. Copying only the alloy block into another compose file does not work: it will not start without docker-socket-proxy and alloy-healthcheck.sh. The block is shown here for reference:
 
 ```yaml
   # Grafana Alloy for both logs and metrics forwarding
@@ -501,6 +506,20 @@ Look for messages indicating successful batch sending (no error codes like 401, 
 - In Foundation Grafana Cloud: search for metrics with labels  
   `instance="${NODE_ID}"` or `validator_name="${VALIDATOR_NAME}"`  
   (example: `genlayer_node_uptime_seconds{instance="0xYourID"}`).
+
+## Container Health Checks
+
+The release docker-compose.yaml gives the webdriver and Alloy containers health checks. When a check keeps failing, the container stops its own process and Docker restarts it (`restart: unless-stopped`). A container you stop by hand stays stopped. Each restart attempt is written to the container's logs; with monitoring on, Alloy forwards these lines with `component="health-recovery"`.
+
+To keep the health checks but turn off the automatic restarts, set `HEALTHCHECK_AUTO_RESTART=false` in `.env` and recreate the services.
+
+Check container health and recovery events:
+
+```bash copy
+docker inspect --format '{{.State.Health.Status}}' genlayer-node-webdriver
+docker inspect --format '{{.State.Health.Status}}' genlayer-node-alloy
+docker compose logs --since 30m webdriver-container alloy
+```
 
 ## Troubleshooting
 

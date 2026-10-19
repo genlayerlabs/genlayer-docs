@@ -1473,6 +1473,16 @@ wscat -c ws://localhost:9151/ws
 
 These methods are available for debugging and testing purposes during development.
 
+Debug methods are off by default. To enable them, set `genlayer_debug.enabled: true` under `node.rpc.endpoints` in `config.yaml`. Enable them only on an RPC port that untrusted callers cannot reach:
+
+```yaml
+node:
+  rpc:
+    endpoints:
+      genlayer_debug:
+        enabled: true
+```
+
 ### gen_dbg_ping
 
 Simple connectivity test method that returns a "pong" response.
@@ -1678,20 +1688,22 @@ The GenLayer Node also supports Ethereum-compatible methods that are proxied to 
 
 - `eth_blockNumber`
 - `eth_getBalance`
-- `eth_sendTransaction`
+- `eth_sendRawTransaction`
 - `eth_call`
 - And other standard Ethereum JSON-RPC methods
 
 ## zkSync Compatibility
 
-[zkSync-compatible](https://docs.zksync.io/zksync-protocol/api/zks-rpc) methods are also supported and proxied to the underlying infrastructure. These methods are prefixed with `zksync_`.
+[zkSync-compatible](https://docs.zksync.io/zksync-protocol/api/zks-rpc) methods are also supported and proxied to the underlying infrastructure. These methods are prefixed with `zks_`.
+
+The default `config.yaml` turns the `zksync` group off (`node.rpc.endpoints.zksync.enabled: false`). Set it to `true` to forward `zks_*` calls.
 
 ## Usage Examples
 
 ### cURL
 
 ```bash
-# Test connectivity
+# Test connectivity (debug method, needs genlayer_debug enabled)
 curl -X POST http://localhost:9151 \
   -H "Content-Type: application/json" \
   -d '{
@@ -1712,7 +1724,7 @@ curl -X POST http://localhost:9151 \
       "to": "0x742d35Cc6634C0532925a3b8D4C9db96c4b4d8b6",
       "data": "0x70a08231000000000000000000000000742d35cc6634c0532925a3b8d4c9db96c4b4d8b6",
       "type": "read",
-      "transaction_hash_variant": "latest-nonfinal"
+      "status": "decided"
     }],
     "id": 1
   }'
@@ -1729,7 +1741,7 @@ curl -X POST http://localhost:9151 \
     "id": 1
   }'
 
-# Get debug trie information
+# Get debug trie information (debug method, needs genlayer_debug enabled)
 curl -X POST http://localhost:9151 \
   -H "Content-Type: application/json" \
   -d '{
