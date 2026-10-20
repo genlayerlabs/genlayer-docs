@@ -6,5 +6,7 @@
   "genvm-configuration": "GenVM Configuration",
   "greybox-setup": "Greybox Setup",
   "upgrade": "Upgrade Guide",
+  "state-recovery": "State Recovery & Re-sync",
+  "rollup-outage": "Rollup / Sequencer Outage",
   "changelog": "Changelog"
 }
