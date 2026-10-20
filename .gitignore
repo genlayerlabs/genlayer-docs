@@ -8,6 +8,7 @@ public/llms.txt
 public/llms-full.txt
 public/**/llms-full.txt
 public/**/*.md
+public/validators/*.protocol-manifest.json
 .specstory/
 # SpecStory explanation file
 .specstory/.what-is-this.md

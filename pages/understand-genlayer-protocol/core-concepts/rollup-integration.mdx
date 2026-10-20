@@ -9,7 +9,7 @@ import { Callout } from "nextra-theme-docs";
 GenLayer Chain is an EVM-compatible [Arbitrum Orbit](https://docs.arbitrum.io/launch-arbitrum-chain/a-gentle-introduction) chain that settles to Ethereum and uses GEN as its native gas token. It hosts ordinary Solidity contracts and the consensus contracts that coordinate Intelligent Contract execution. GenVM is a separate execution environment operated by nodes; it is not an EVM precompile or part of the rollup's execution engine.
 
 <Callout type="info">
-  Consensus v0.6 and later run on the Arbitrum Orbit GenLayer Chain. Public testnets move to it as they upgrade to v0.6; check [Networks](/developers/networks) for the current endpoints of each network.
+  Consensus v0.6 and later run on the Arbitrum Orbit GenLayer Chain, starting with Testnet Bradbury Phase 2. Check [Networks](/developers/networks) for the current endpoints.
 </Callout>
 
 ```mermaid
@@ -94,7 +94,7 @@ The protocol uses the same path for its own token flows. Inflation is minted on 
 
 Exchanges, wallets, and indexers can treat GenLayer Chain as an Arbitrum-based EVM chain:
 
-- Use standard Ethereum tooling and `eth_*` JSON-RPC methods against the GenLayer Chain RPC or the GenLayer RPC, which passes `eth_*` calls through. Chain IDs and endpoints are listed on [Networks](/developers/networks).
+- Use standard Ethereum tooling and `eth_*` JSON-RPC methods against the GenLayer Chain RPC or the GenLayer RPC, which passes supported `eth_*` calls through. Chain IDs and endpoints are listed on [Networks](/developers/networks).
 - Track GEN on GenLayer Chain as the native asset, not as an ERC-20 token. On Ethereum, track it as an ERC-20 token.
 - Expect Arbitrum transaction types and receipt fields, such as the internal system transaction at the start of each block and `gasUsedForL1` in receipts. Current Ethereum libraries handle them; custom decoders may need updates.
 - Plan for the challenge period on withdrawals to Ethereum. Native GEN deposits from Ethereum are credited once the sequencer includes them.

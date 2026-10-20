@@ -28,7 +28,7 @@ const client = createClient({
 });
 ```
 
-Use `testnetBradbury`, `testnetAsimov`, or `studionet` for the corresponding hosted network. The v0.123 preview uses the matching RC's `studioDevnet` definition, which binds chain ID 61997, its RPC, and its consensus deployment together.
+Use `testnetBradbury` or `studionet` for the corresponding hosted network. The v0.123 preview uses the matching RC's `studioDevnet` definition, which binds chain ID 61997, its RPC, and its consensus deployment together.
 
 ## Read a contract
 

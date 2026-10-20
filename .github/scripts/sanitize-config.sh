@@ -24,7 +24,7 @@ echo "Sanitizing config file: $CONFIG_FILE"
 yq -i '
   .rollup.genlayerchainrpcurl = "TODO: Set your GenLayer Chain HTTP RPC URL here" |
   .rollup.genlayerchainwebsocketurl = "TODO: Set your GenLayer Chain WebSocket RPC URL here" |
-  .rollup.provider = "TODO: Set your GenLayer Chain RPC provider"
+  .rollup.provider = "TODO: Set your GenLayer Chain provider"
 ' "$CONFIG_FILE"
 
 echo "Config sanitization completed"

@@ -9,11 +9,19 @@ Retrieves the code of a deployed GenLayer intelligent contract at a specific blo
 - `request` (object, required): The contract code request parameters
   - `address` (string, required): The contract address to query
   - `blockNumber` (string, optional): The block number to query at (hex-encoded). If not provided, uses latest block
-  - `status` (string, optional): The transaction status filter (`"finalized"` or `"accepted"`). If not provided, uses accepted state
+  - `status` (string, optional): The transaction status filter (`"finalized"` or `"decided"`). If not provided, uses decided state
 
 **Returns:** Base64-encoded contract code
 
-**Example Request - Latest Accepted State:**
+**Limits:**
+
+| Limit | Default | Config key |
+|---|---|---|
+| Contract bytes read per call | 16 MB | `node.rpc.contract_read_max_bytes` |
+
+The node reads the contract's code slot directly, so the cost of a call is proportional to the code it returns rather than to everything the contract stores. The limit is a backstop above that: a contract whose declared code length exceeds it is refused before the bytes are read. Operators may reduce it; `0` or less disables it.
+
+**Example Request - Latest Decided State:**
 
 ```json
 {
@@ -58,15 +66,16 @@ Retrieves the code of a deployed GenLayer intelligent contract at a specific blo
 **Notes:**
 
 - The `blockNumber` parameter should be hex-encoded with a `0x` prefix
-- Valid `status` values are `"accepted"` (default) and `"finalized"`
+- Valid `status` values are `"decided"` (default) and `"finalized"`
 - The returned code is base64-encoded
 - If the contract doesn't exist at the specified block/status, an error will be returned
 - If the address does not have code (not a contract), an error will be returned
+- If the contract's code exceeds `node.rpc.contract_read_max_bytes`, the call is refused rather than truncated, so a partial answer is never returned as a whole one
 
 **cURL Example:**
 
 ```bash
-# Get latest accepted code
+# Get latest decided code
 curl -X POST http://localhost:9151 \
   -H "Content-Type: application/json" \
   -d '{

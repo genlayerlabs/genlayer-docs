@@ -1,95 +1,45 @@
 #!/bin/bash
 set -euo pipefail
 
-# Documentation generation wrapper
-# Runs all the npm scripts for doc generation with proper error handling
+# Runs every generator that turns synced node files into pages.
+# The one list of generators: package.json (dev, build), check-node-docs-sync.yml,
+# sync-docs-from-node.yml and scripts/simulate-node-sync.sh all call this script.
+# Each generator exits non-zero when it cannot find its source or target block.
+
+GENERATORS=(
+  node-generate-changelog
+  node-update-setup-guide
+  node-update-config
+  node-update-docker-compose
+  node-update-env
+  node-update-monitoring-docker-compose
+  node-update-monitoring-alloy-config
+  node-update-greybox
+  node-publish-manifests
+  node-generate-api-docs
+)
 
 run_doc_generation() {
     echo "Running documentation generation scripts..."
-    
-    # Track success
-    local failed=false
-    
-    # Run each generation script
-    echo "::group::Running node-generate-changelog"
-    if npm run node-generate-changelog; then
-        echo "✅ Generated changelog"
-    else
-        echo "❌ node-generate-changelog failed"
-        failed=true
-    fi
-    echo "::endgroup::"
-    
-    echo "::group::Running node-update-setup-guide"
-    if npm run node-update-setup-guide; then
-        echo "✅ Updated setup guide versions"
-    else
-        echo "❌ node-update-setup-guide failed"
-        failed=true
-    fi
-    echo "::endgroup::"
-    
-    echo "::group::Running node-update-config"
-    if npm run node-update-config; then
-        echo "✅ Updated config in setup guide"
-    else
-        echo "❌ node-update-config failed"
-        failed=true
-    fi
-    echo "::endgroup::"
+    local failed=()
 
-    echo "::group::Running node-update-docker-compose"
-    if npm run node-update-docker-compose; then
-        echo "✅ Updated docker-compose in setup guide"
-    else
-        echo "❌ node-update-docker-compose failed"
-        failed=true
-    fi
-    echo "::endgroup::"
+    for script in "${GENERATORS[@]}"; do
+        echo "::group::Running $script"
+        if npm run --silent "$script"; then
+            echo "✅ $script"
+        else
+            echo "❌ $script failed"
+            failed+=("$script")
+        fi
+        echo "::endgroup::"
+    done
 
-    echo "::group::Running node-update-monitoring-docker-compose"
-    if npm run node-update-monitoring-docker-compose; then
-        echo "✅ Updated alloy service in monitoring page"
-    else
-        echo "❌ node-update-monitoring-docker-compose failed"
-        failed=true
-    fi
-    echo "::endgroup::"
-
-    echo "::group::Running node-update-monitoring-alloy-config"
-    if npm run node-update-monitoring-alloy-config; then
-        echo "✅ Updated alloy config in monitoring page"
-    else
-        echo "❌ node-update-monitoring-alloy-config failed"
-        failed=true
-    fi
-    echo "::endgroup::"
-
-    echo "::group::Running node-update-greybox"
-    if npm run node-update-greybox; then
-        echo "✅ Updated greybox section in genvm configuration"
-    else
-        echo "❌ node-update-greybox failed"
-        failed=true
-    fi
-    echo "::endgroup::"
-
-    echo "::group::Running node-generate-api-docs"
-    if npm run node-generate-api-docs; then
-        echo "✅ Generated API documentation"
-    else
-        echo "❌ node-generate-api-docs failed"
-        failed=true
-    fi
-    echo "::endgroup::"
-    
-    if [[ "$failed" == "true" ]]; then
-        echo "❌ Some documentation generation scripts failed"
+    if [[ ${#failed[@]} -gt 0 ]]; then
+        echo "❌ Failed generators: ${failed[*]}"
         return 1
     fi
-    
+
     echo "✅ All documentation generation scripts completed successfully"
-    return 0
 }
 
 # Run if called directly

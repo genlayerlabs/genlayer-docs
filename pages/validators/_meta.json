@@ -4,6 +4,7 @@
   "network-keeper-roles": "Network Keeper Roles",
   "system-requirements": "System Requirements",
   "genvm-configuration": "GenVM Configuration",
+  "greybox-setup": "Greybox Setup",
   "upgrade": "Upgrade Guide",
   "changelog": "Changelog"
 }

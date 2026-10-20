@@ -1,10 +1,14 @@
 # Greybox LLM Strategy — Validator Setup Guide
 
-Switch your GenLayer node from random LLM provider selection to deterministic ordered fallback via OpenRouter.
+Switch your GenLayer node from the default auto-generated provider chain to a curated, operator-controlled fallback chain via OpenRouter.
 
 ## What is Greybox?
 
-By default, the node picks a random LLM provider for each call. With **greybox**, the node uses a fixed priority chain configured via `meta.greybox` fields in the YAML config.
+The default policy (`genvm-llm-default.lua`) is already deterministic: it auto-builds a single chain over every enabled model, ordered by provider `meta.priority` **descending**, and falls through to the next candidate on any failure. What it is not is *curated* — it takes whatever models are enabled, in one undifferentiated chain.
+
+With **greybox**, the operator picks the models and their order by hand, in two independent chains (text and image), configured via `meta.greybox` fields on each model in the YAML. Note the two knobs run in opposite directions: `meta.priority` is highest-first, `meta.greybox` is lowest-first.
+
+Greyboxing is deliberately per-validator — validators are expected to diverge in provider choice, so there is no single "correct" chain to converge on.
 
 **Default text chain:** deepseek-v3.2 → qwen3-235b → claude-haiku-4.5 → kimi-k2 → glm-5 → llama-3.3 (heurist) → llama-3.3 (ionet)
 
@@ -44,30 +48,30 @@ The tarball ships with a unified config that includes all backends (openrouter, 
 ```bash
 VERSION=$(readlink /opt/genlayer-node/bin | sed 's|/bin||; s|.*/||')
 
-cp /opt/genlayer-node/${VERSION}/third_party/genvm/config/genvm-modules-llm-release.yaml \
-   /opt/genlayer-node/${VERSION}/third_party/genvm/config/genvm-module-llm.yaml
+cp /opt/genlayer-node/${VERSION}/opt/genvm/${GENVM_VERSION}/config/genvm-modules-llm-release.yaml \
+   /opt/genlayer-node/${VERSION}/opt/genvm/${GENVM_VERSION}/config/genvm-module-llm.yaml
 ```
 
 ### 4. Switch to greybox strategy
 
 ```bash
 sed -i 's/genvm-llm-default\.lua/genvm-llm-greybox.lua/' \
-  /opt/genlayer-node/${VERSION}/third_party/genvm/config/genvm-module-llm.yaml
+  /opt/genlayer-node/${VERSION}/opt/genvm/${GENVM_VERSION}/config/genvm-module-llm.yaml
 ```
 
 ### 5. Verify the config
 
 ```bash
 # Check lua script path
-grep lua_script_path /opt/genlayer-node/${VERSION}/third_party/genvm/config/genvm-module-llm.yaml
+grep lua_script_path /opt/genlayer-node/${VERSION}/opt/genvm/${GENVM_VERSION}/config/genvm-module-llm.yaml
 # Expected: lua_script_path: ${exeDir}/../config/genvm-llm-greybox.lua
 
 # Check openrouter is present
-grep -A2 'openrouter:' /opt/genlayer-node/${VERSION}/third_party/genvm/config/genvm-module-llm.yaml
+grep -A2 'openrouter:' /opt/genlayer-node/${VERSION}/opt/genvm/${GENVM_VERSION}/config/genvm-module-llm.yaml
 # Expected: enabled: true
 
 # Check the greybox Lua file exists
-ls -la /opt/genlayer-node/${VERSION}/third_party/genvm/config/genvm-llm-greybox.lua
+ls -la /opt/genlayer-node/${VERSION}/opt/genvm/${GENVM_VERSION}/config/genvm-llm-greybox.lua
 ```
 
 ### 6. Start the node
@@ -92,13 +96,13 @@ greybox: success    provider: openrouter    model: deepseek/deepseek-v3.2    is_
 
 ## Switching Back to Default
 
-To revert to random provider selection:
+To revert to the default generated chain:
 
 ```bash
 sudo systemctl stop genlayer-node
 
 sed -i 's/genvm-llm-greybox\.lua/genvm-llm-default.lua/' \
-  /opt/genlayer-node/${VERSION}/third_party/genvm/config/genvm-module-llm.yaml
+  /opt/genlayer-node/${VERSION}/opt/genvm/${GENVM_VERSION}/config/genvm-module-llm.yaml
 
 sudo systemctl start genlayer-node
 ```
@@ -177,23 +181,13 @@ After editing the YAML, restart the LLM module (see "Updating Greybox on a Runni
 - Run `task node:doctor` — the "LLM Providers" section probes each enabled backend and reports which ones actually answer, rather than only whether a key variable is set
 - Fallback providers (heurist, ionet) also need valid keys if you want fallback to work
 
-## No usable LLM backend: the node starts DEGRADED
+**Configure more than one provider.** A backend only enters the fallback chain
+if its key is set, so a node set up with OpenRouter alone has no fallback: when
+that provider goes down or is decommissioned, the chain exhausts immediately.
+The node stays up and keeps voting, but it votes Timeout on every transaction
+needing an LLM, and Timeout votes are penalized. `doctor` warns when only one
+backend is usable.
 
-A node with no working LLM backend no longer refuses to start. It boots, syncs and
-stays in the validator set, but it votes **Timeout** on every transaction that
-needs an LLM, logs a loud alert naming the broken module, and reports
-`genvm_modules.llm.state = "degraded"` on ops `/health` while `status` stays
-`"up"`. That is better than the old behaviour — the node used to exit about 75
-seconds after start and then be banned for idleness — but it is **not** a working
-validator: Timeout votes are penalized. Treat it as a failure to fix, not a state
-to run in. The same applies to the web module when the webdriver is unreachable.
-
-Recovery is automatic once a provider answers again — the node learns from its own
-transaction traffic and needs no restart. The **one exception** is a key added to
-`.env`: the node reads its environment at exec, so a running process cannot pick
-that up. Restart it. Editing `genvm-module-llm.yaml` does not require a restart.
-
-**Configure more than one provider.** A backend only enters the fallback chain if
-its key is set, so a node set up with OpenRouter alone has no fallback: when that
-provider goes down or is decommissioned, the chain exhausts immediately. `doctor`
-warns when only one backend is usable.
+Note that a key added to `.env` needs a node restart to take effect — a running
+process cannot pick up environment changes. Editing `genvm-module-llm.yaml`
+does not.

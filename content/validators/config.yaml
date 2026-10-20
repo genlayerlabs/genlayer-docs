@@ -2,13 +2,20 @@
 rollup:
   genlayerchainrpcurl: "TODO: Set your GenLayer Chain HTTP RPC URL here" # GenLayer Chain RPC URL
   genlayerchainwebsocketurl: "TODO: Set your GenLayer Chain WebSocket RPC URL here" # GenLayer Chain WebSocket URL
-  provider: "TODO: Set your GenLayer Chain RPC provider" # Rollup operator name; surfaces as the "provider" label on RPC-driven metrics. Set explicitly per deployment.
+  # An API key of the RPC provider never goes in these URLs or in this file:
+  # set it in the environment as GENLAYERNODE_ROLLUP_GENLAYERCHAINRPCKEY.
+  # The node sends it in this header (default X-AccessKey):
+  # genlayerchainrpckeyheader: "X-AccessKey"
+  provider: "TODO: Set your GenLayer Chain provider" # Rollup operator name; surfaces as the "provider" label on RPC-driven metrics. Set explicitly per deployment.
 # consensus contracts configuration
 consensus:
-  # Testnet - Phase 5
-  consensusaddress: "0xe66B434bc83805f380509642429eC8e43AE9874a" # AddressManager Smart Contract Address
-  genesis: 17326 # (Optional) Genesis block number for this consensus deployment. If not provided, it will be auto-detected by searching for the first log from the ConsensusMain contract.
+  # The deployment-specific fields are empty: take them from your network's documentation.
+  consensusaddress: "" # AddressManager contract address for this deployment.
+  manifestpath: "" # Trusted producer protocol-manifest.json for this deployment. The deploy places it at configs/node/protocol-manifest.json; relative paths resolve against the node root. A mismatch with consensusaddress is refused at startup.
+  chainid: "" # DECIMAL chain id this deployment was made on (not hex, no leading zeros). Held independently of the manifest so a manifest describing another deployment is caught.
+  # genesis: 17326 # (Optional) Genesis block number for this consensus deployment. If not provided, it will be auto-detected by searching for the first log from the ConsensusMain contract.
   # chain_submit_buffer: "30s" # (Optional) Slack reserved at the end of each consensus step to submit the resulting on-chain tx (commit vote, reveal vote, proposed receipt) before the slot closes. Tune to underlying settlement chain latency. Default 30s.
+  # admissiontimeout: "15s" # (Optional) Bound on the startup deployment admission check. Never unbounded. Default 15s.
 # data directory
 datadir: "./data/node"
 # logging configuration
@@ -20,6 +27,18 @@ logging:
   file:
     # enabled: set to `true` to save logs to a folder
     enabled: true
+    # The console and this file carry different levels on purpose: INFO to the
+    # terminal, DEBUG here. That split is why the file sink exists — INFO is what
+    # an operator watches live and has to stay readable, DEBUG is the complete
+    # record kept for investigation. Set this to INFO and the two collapse: the
+    # file becomes a copy of the console and stops being a record.
+    #
+    # It has to be on permanently. An incident is over by the time anyone could
+    # raise the level, and the detail cannot be reconstructed after the fact.
+    #
+    # What it accepts: every debug line lands on disk, including RPC and GenVM
+    # payloads chosen by the caller. The level bounds nothing —
+    # maxsize/maxage/maxbackups below are what limit the volume.
     level: "DEBUG"
     # folder: path to the folder where to store logs. Relative paths go under `datadir`.
     folder: logs
@@ -43,10 +62,16 @@ node:
   mode: "validator"
   # Address of the ValidatorWallet contract (required for validator mode)
   validatorWalletAddress: ""
-  # Address of the operator that owns the ValidatorWallet
+  # Address of the operator that performs consensus duties for the ValidatorWallet
   operatorAddress: ""
   admin:
     port: 9155
+    # snapshot_dir: bounding directory for POST /snapshot write-to-path mode.
+    # A caller-supplied destDir must resolve inside this directory, else the
+    # request is rejected with 400. Relative paths go under `datadir`; an
+    # absolute path is used as-is (e.g. to target a dedicated disk).
+    # Default: snapshots  (i.e. <datadir>/snapshots)
+    # snapshot_dir: snapshots
   rpc:
     # host: 0.0.0.0 # bind address for the HTTP listener (default: all interfaces)
     port: 9151 # RPC server port
@@ -91,73 +116,122 @@ node:
     #   - "::1"              # IPv6 loopback (localhost on macOS)
     #   - "10.0.0.0/8"
     endpoints:
-      # Group-level configuration (enables/disables all methods in a group).
-      # When a group is enabled, ALL methods in that group are available.
-      # Rate limits (req/s per IP) apply by default even without config:
+      # RPC method groups, keyed directly under `endpoints`. Each group toggles a
+      # family of methods and may nest per-method overrides and rate limits.
+      # Default rate limits (req/s per IP) apply even when unset:
       #   genlayer: 20, genlayer_debug: 2, ethereum: 50, zksync: 50
-      #   gen_call: 2, gen_getContractSchema: 2 (method-level overrides)
-      groups:
-        genlayer: true # gen_* methods (default ratelimit: 20 req/s per IP)
-        genlayer_debug: true # gen_dbg_* methods (default ratelimit: 2 req/s per IP)
-        ethereum: true # eth_* proxy methods (default ratelimit: 50 req/s per IP)
-        # includes: eth_blockNumber, eth_getBlockByNumber, eth_getBlockByHash,
-        #   eth_sendRawTransaction, eth_getTransactionReceipt, etc.
-        zksync: true # zks_* proxy methods (default ratelimit: 50 req/s per IP)
-        # includes: zks_getTransaction, zks_getBlockDetails, etc.
-      # Object format with custom rate limit (overrides defaults):
-      # groups:
-      #   genlayer:
-      #     enabled: true
-      #     ratelimit: 100       # custom: 100 req/s per IP instead of default 20
-      #
-      # Method-level configuration (optional, overrides group settings).
-      # Methods inherit their group's enabled state by default.
-      # Use this section to:
-      #   - Disable specific methods in an enabled group
-      #   - Enable specific methods in a disabled group
-      #   - Set per-method rate limits
-      #
-      # Example: enable all eth_* except eth_sendRawTransaction:
-      #   groups:
-      #     ethereum: true
-      #   methods:
-      #     eth_sendRawTransaction: false
-      #
-      # Example: disable all eth_* except eth_sendRawTransaction:
-      #   groups:
-      #     ethereum: false
-      #   methods:
-      #     eth_sendRawTransaction: true
-      # methods:
-      #   gen_call: true                   # default ratelimit: 2 req/s per IP (GenVM-bound)
-      #   gen_getContractSchema: true      # default ratelimit: 2 req/s per IP (GenVM-bound)
-      #   eth_blockNumber: true
-      #   eth_sendRawTransaction: true
-      #   zks_getTransaction: true
-      # Object format with custom rate limit:
-      # methods:
-      #   gen_call:
-      #     enabled: true
-      #     ratelimit: 5         # custom: 5 req/s per IP instead of default 2
-      #   gen_getContractSchema:
-      #     enabled: true
-      #     ratelimit: 0         # explicitly disable rate limiting for this method
+      #   gen_call: 2, gen_getContractSchema: 2 (method-level defaults)
+      genlayer:
+        enabled: true # gen_* methods
+      # gen_dbg_* methods (trie dump, transaction trace). OFF by default: these
+      # replay a transaction through GenVM and return internal execution output,
+      # so they are debug tooling, not a public API. Enable deliberately, and
+      # only on an RPC bind that untrusted callers cannot reach. Matches the
+      # node's own code default and the go-ethereum debug-namespace convention.
+      genlayer_debug:
+        enabled: false # gen_dbg_* methods
+      ethereum:
+        enabled: true # eth_* proxy methods (eth_blockNumber, eth_call, ...)
+      zksync:
+        enabled: false # zks_* proxy methods (zks_getBlockDetails, ...)
+        #
+        # A group with no overrides may use the bool shorthand (`ethereum: true`).
+        #
+        # Custom per-group rate limit + per-method overrides (object form):
+        #   genlayer:
+        #     enabled: true
+        #     ratelimit: 100              # 100 req/s per IP instead of the default 20
+        #     methods:
+        #       gen_call:
+        #         enabled: true
+        #         ratelimit: 5            # 5 req/s per IP instead of the default 2
+        #       gen_getContractSchema:
+        #         enabled: false          # disable a single method within an enabled group
+        #
+        # Proxy allowlist (opt-in): disable a proxy group, then re-enable only a
+        # vetted set under its `methods`. Every other eth_*/zks_* is then rejected
+        # with -32601 (method not found) and not forwarded upstream. Leave the
+        # groups enabled (the default) to forward all eth_*/zks_* (passthrough).
+        #   ethereum:
+        #     enabled: false
+        #     methods:
+        #       eth_getBalance: true
+        #       eth_getTransactionCount: true
+        #       eth_getCode: true
+        #       eth_getStorageAt: true
+        #       eth_call: true
+        #       eth_estimateGas: true
+        #       eth_gasPrice: true
+        #       eth_blockNumber: true
+        #       eth_getBlockByHash: true
+        #       eth_getBlockByNumber: true
+        #       eth_getTransactionByHash: true
+        #       eth_getTransactionReceipt: true
+        #       eth_getLogs: true
+        #       eth_chainId: true
+        #       eth_syncing: true
+        #       eth_accounts: true
+        #       eth_sendRawTransaction: true   # write — enable only if clients submit raw txs
+        #   zksync:
+        #     enabled: false                   # zks_* left fully disabled (no vetted client use)
   ops:
-    port: 9153 # Metrics port
+    port: 9153 # Ops server port (/health, /metrics, /balance, /snapshot)
     endpoints:
-      metrics: true # Enable metrics endpoint
-      health: true # Enable health endpoint
-      balance: true # Enable balance endpoint
-  dev:
-    disableSubscription: false # Useful for testing with zksync-anvil
+      # Compatibility metadata. The current Ops server registers /metrics,
+      # /health, /balance, and /snapshot regardless of these values. `doctor`
+      # consults `health` to decide whether to run its HTTP health probe.
+      metrics: true
+      health: true
+  # Execution-trace store and debug-trace reply bounds. All optional; the
+  # values below are the built-in defaults. Uncomment to tune at runtime — no
+  # rebuild needed.
+  # trace:
+  #   retention_blocks: 1000000       # keep traces this many blocks behind the tip (0 disables retention)
+  #   max_trace_bytes: 33554432       # 32 MB: a single trace larger than this is never stored
+  #   # Per-field cap on the public gen_dbg_traceTransaction reply. Each free-form
+  #   # field (return_data, stdout, stderr, genvm_log) carries contract-emitted
+  #   # output, so its size is contract-controlled. Over the cap, the field is
+  #   # truncated and the cut is marked in-band. 0 takes the default.
+  #   max_debug_field_bytes: 262144   # 256 KB per field
 # genvm configuration
 genvm:
-  root_dir: ./third_party/genvm
+  root_dir: ./opt/genvm/v0.6.0-rc1
   start_manager: true # if true node will start genvm manager itself
   manager_url: http://127.0.0.1:3999
-  permits: 8 # Leave empty for autodiscovery, put a number for updating genvm permits on startup
-  sync_permits: 64 # Optional: permits used while !isSynced (bulk replay). Leave empty to reuse the steady-state `permits` value.
-  sync_wait_timeout: "20s" # Max time to wait for GenVM to sync to a requested block before returning an error
+  # Permits are charged PER EXECUTION by the genvm manager, and one
+  # nondeterministic execution costs 8 of them (permits.nondet). This value is
+  # therefore a permit budget, not an execution count: 32 admits 4 concurrent
+  # nondet executions, which is what the previous `8` bought when a run cost 2
+  # permits. Leaving it EMPTY is preferable — autodiscovery sizes it from the
+  # host and already speaks this unit.
+  permits: 32 # Leave empty for autodiscovery, put a number for updating genvm permits on startup
+  # Same unit as `permits` above, but a sync execution costs 4 rather than 8,
+  # so 256 admits the 64 concurrent replays the previous `64` bought at cost 1.
+  sync_permits: 256 # Optional: permits used while significantly behind (bulk replay). Leave empty to reuse the steady-state `permits` value.
+  # sync_permits_lag_threshold: blocks-behind above which the node runs the replay
+  # budget (sync_permits) instead of the live budget (permits); at or below it the
+  # node is treated as caught up. Keyed on the actual sync lag, not the health
+  # gradient. Uncomment to tune; default 1000.
+  # sync_permits_lag_threshold: 1000
+  # sync_wait_timeout bounds the gen_* READ path — not GenVM execution: a read
+  # (gen_call / gen_getContractState / gen_getContractCode /
+  # gen_dbg_traceTransaction) waits up to this long for the node to sync the
+  # requested block and index the record, then returns a not-synced error.
+  sync_wait_timeout: "20s"
+  # sync_wait_poll_interval is the re-check cadence those same reads use while they
+  # poll for an artifact that lands just after its block is synced, bounded overall
+  # by sync_wait_timeout. Uncomment to tune; default 100ms. An absent key and a
+  # non-positive value both mean "use the default": 0s would otherwise be a wait
+  # that never ticks.
+  # sync_wait_poll_interval: "100ms"
+  replay:
+    parallel_enabled: false # Opt in to bounded parallel replay of independent accepted transactions in the same block
+    workers: 4 # Maximum concurrent replay executions
+    consensus_reserve_permits: 2 # Kept free for live validator duties unless a duty is waiting on replayed state
+    replay_floor_permits: 1 # Minimum replay capacity while replay work is queued
+    max_journal_bytes: 268435456 # 256 MiB block-wide cap; overflow falls back to serial replay
+    reorg_history_blocks: 4096 # Number of hash-identified replay checkpoints retained for exact canonical rollback
+    max_reorg_journal_bytes: 268435456 # 256 MiB inverse-journal cap per block; overflow aborts replay and keeps duties disabled
 # Advanced configuration
 merkleforest:
   maxdepth: 16

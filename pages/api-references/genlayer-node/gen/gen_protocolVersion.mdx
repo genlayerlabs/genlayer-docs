@@ -1,0 +1,53 @@
+### gen_protocolVersion
+
+Reserved for reporting the GenLayer protocol version. **Not implemented** — the method is registered and reachable, but every call returns an error.
+
+**Method:** `gen_protocolVersion`
+
+**Parameters:** None currently read — any params supplied are ignored because the method returns before parsing them
+
+**Returns:** Nothing. The call always fails with JSON-RPC error code `-32004`
+
+**Example Request:**
+
+```json
+{
+  "jsonrpc": "2.0",
+  "method": "gen_protocolVersion",
+  "params": [],
+  "id": 1
+}
+```
+
+**Example Response:**
+
+```json
+{
+  "jsonrpc": "2.0",
+  "error": {
+    "code": -32004,
+    "message": "method not implemented: gen_protocolVersion"
+  },
+  "id": 1
+}
+```
+
+**Notes:**
+
+- The method is registered in the `genlayer` endpoint group, so it is reachable and rate-limited like any other method — it just cannot succeed
+- The error code is `-32004` ("method not supported"), not `-32601` ("method not found"): the node recognises the method and is declining to serve it, rather than failing to route it
+- To identify what a node is running, use the ops server's `GET /health`, which reports node version and sync state
+- `eth_protocolVersion` is unaffected — it is proxied to the GenLayer chain like any other `eth_*` method
+
+**cURL Example:**
+
+```bash
+curl -X POST http://localhost:9151 \
+  -H "Content-Type: application/json" \
+  -d '{
+    "jsonrpc": "2.0",
+    "method": "gen_protocolVersion",
+    "params": [],
+    "id": 1
+  }'
+```

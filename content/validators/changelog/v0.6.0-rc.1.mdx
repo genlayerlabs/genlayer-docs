@@ -1,0 +1,158 @@
+## v0.6.0-rc.1
+
+v0.6 is a breaking release. It runs only against the v0.6 consensus contracts (release tag `v0.6-rc-1`), and all validators upgrade together: receipt hashes, storage-fee votes, spendable contract balance and child budgets change.
+
+### New features
+
+- Check at start-up and in `doctor` that the consensus deployment matches the trusted protocol manifest of the network, and refuse a mismatch; new required `consensus.manifestpath` and `consensus.chainid`, optional `consensus.admissiontimeout` (default 15s)
+- Serve as a tribunal juror: re-run the accused execution, commit and reveal the tribunal vote, and after a restart reveal a committed vote and vote in tribunals that opened while the node was down; log an error when this validator is the accused leader
+- After a tribunal verdict, settle its penalty pages and its quarantine cause
+- As leader, propose receipts that emit messages through the v0.6 message envelope
+- Deliver the messages that accepted and finalized transactions still owe, in turns with the other validators that voted
+- Retry an external message that the chain paused, with a backoff from 30 s up to 10 min
+- Execute transactions under the v0.6 fee model: fee values pinned at activation, storage and receipt budgets, message fee limits and fee allocations; the leader proposes the storage fee the execution used
+- When the chain rejects a leader receipt as over a fee or size limit, propose a leader timeout instead, so the leader gets no idleness strike
+- Vote `DeterministicViolation`, instead of not voting, when the leader receipt is missing data or cannot be used, or reports a storage fee the execution did not use
+- Prove activations and leader proposals with an ECVRF proof made with the operator key; a validator whose signer cannot make ECVRF proofs does not start
+- After a restart, resume the duties this node accepted but did not finish: activate, propose, commit, reveal, appeal vote, message delivery and tribunal vote
+- Deliver consensus events to the duty handlers at least once; new `node.streamer` settings `ack_wait_seconds` (30), `max_ack_pending` (256) and `buffer_size` (2048)
+- Refuse to start when the transaction layout of the consensus contracts differs from the node
+- Bind `ops.db` to `node.operatorAddress` on the first start, and refuse to start when it belongs to another operator (for example a copied data directory)
+- Add opt-in operational keys for the duties that do not need the operator key (`consensus.operational_keys`: `enabled`, `pool_size` 1, `low_watermark` 0.05, `target_balance` 0.25, `interval` 5m); the node derives them from the operator key and tops them up from the operator account
+- Add opt-in parallel replay of independent transactions (`genvm.replay.parallel_enabled`, default off; `workers` 4, `consensus_reserve_permits` 2, `replay_floor_permits` 1, `max_journal_bytes` 256 MiB)
+- Roll back replayed state exactly on chain reorgs (`genvm.replay.reorg_history_blocks`, default 4096; `genvm.replay.max_reorg_journal_bytes`, default 256 MiB)
+- Add the `gen_getLogs` event query endpoint, with a `status` filter (logs of appeal-cancelled rounds need `status: ["cancelled"]`) and the limits `node.rpc.getlogs_max_block_range` and `node.rpc.getlogs_max_results` (10,000 each)
+- Add `gen_subscribe` and `gen_unsubscribe` on the RPC WebSocket, with the streams `transactions`, `leadership`, `epochs` and `newHeads`
+- Add the `gen_getTransactionLifecycle` endpoint: projected status, resolution action, decision id and `executionGeneration`
+- Add the `gen_getTransactionData` endpoint: the on-chain data of a transaction round, plus its `returnData` and `leaderPublicData` from the local trace store (`null` once pruned)
+- Add a `fees` object to `gen_getTransactionReceipt`: deposit, distribution, locked prices, consumed counters (including `storageFeeUsed`), `allocations` and `allocationPolicy`
+- Add events store retention (`node.events.retention_blocks`, default 1,000,000)
+- Add trace store limits: `node.trace.retention_blocks` (1,000,000), `max_trace_bytes` (32 MB) and `max_debug_field_bytes` (256 KB per `gen_dbg_traceTransaction` field)
+- Add the `node.rpc.contract_read_max_bytes` limit (16 MB) for `gen_getContractCode` and `gen_getContractState`
+- Add `genvm.sync_permits_lag_threshold` (default 1000) to choose between the replay and live GenVM permits
+- Add `rollup.rpc_response_header_timeout` (default 30s), `node.rpc.request_timeout` (default 180s) and `consensus.head_pin_freshness` (default 30s)
+- Add `node.rpc.gen_call_max_debug_bytes` (default 1 MB) and `node.rpc.gen_call_max_debug_elements` (default 10,000) to limit `gen_call` debug output
+- Add an opt-in allowlist for proxied `eth_*` and `zks_*` methods: disable the group and enable only the methods listed under it
+- Add a `scope` (`all` default, `genvm`, `ops`) and a `snapshot.json` manifest to `POST /snapshot`
+- Report the operator balance in `/health` and `doctor`: warn below `node.operatorBalanceWarnWei` (default 0.1 GEN), fail below `node.operatorBalanceCriticalWei` (default 0.01 GEN)
+- Add a Validator Participation section to `doctor`: ban, self-stake, operator balance, sync and primed state
+- Show `validator_address` and `validator_moniker` in `/health`, and report the health conditions in `doctor` and the logs
+- Read the chain RPC API key from `GENLAYERNODE_ROLLUP_GENLAYERCHAINRPCKEY` and send it in the `rollup.genlayerchainrpckeyheader` header (default `X-AccessKey`)
+- Publish signed checksums (`genlayer-node_<version>_SHA256SUMS` with a Sigstore bundle) and an `install.sh` script with each release
+- Add gas, duty and fee metrics: `genlayer_node_gas_*`, `genlayer_node_consensus_submit_total`, `genlayer_node_consensus_revert_total`, `genlayer_node_operator_misconfigured_total`, `genlayer_node_fees_operator_insufficient_funds_total`, `genlayer_node_fees_settlement_events_total`, `genlayer_node_fees_distributed_wei_total`, `genlayer_node_fees_earned_wei_total` and `genlayer_node_fees_penalties_wei_total`
+- Add metrics `genlayer_node_operator_condition_*`, `genlayer_node_external_message_delivery_total`, `genlayer_node_external_message_reimbursed_wei_total`, `genlayer_node_sync_consecutive_failures`, `genlayer_node_sync_stuck_block`, `genlayer_node_prime_blocked_insufficient_funds`, `genlayer_node_transact_keyed_replacements_total`, `genlayer_node_event_dispatch_*_total`, `genlayer_node_replay_*`, `genlayer_node_head_partition_*_total` and `genlayer_node_pubsub_messages_dropped_total`
+
+### Misc
+
+- Ship GenVM v0.6.0-rc10; the node uses the new GenVM manager protocol, so an older GenVM manager does not work (this matters only with `genvm.start_manager: false`)
+- The GenVM runtime moves from `third_party/genvm` to `opt/genvm/<version>`: set `genvm.root_dir: ./opt/genvm/v0.6.0-rc10` (`install.sh` sets it for you)
+- Refuse to start when the config file is missing, is not a regular file, or has an empty required field: `datadir`, both rollup URLs, `consensus.consensusaddress`, `consensus.manifestpath`, `consensus.chainid`, and `genvm.root_dir` (or `genvm.manager_url` when `start_manager: false`)
+- Warn about unknown config keys (`Ignoring unknown config keys`)
+- RPC groups move from `node.rpc.endpoints.groups.<group>` to `node.rpc.endpoints.<group>`, and method overrides to `node.rpc.endpoints.<group>.methods.<method>`; the node ignores the old form without an error and uses the defaults, so move your settings
+- The `gen_dbg_*` methods are off unless `node.rpc.endpoints.genlayer_debug.enabled: true`; the example config also turns off the `zks_*` proxy
+- Return `-32601` instead of `-32004` for a denied `eth_*` or `zks_*` method; a disabled `gen_*` method still returns `-32004`
+- Replace the `/health` body: `status` is one of `unknown`, `healthy`, `suspect`, `warning`, `degraded` and `unavailable`, explained by a `conditions` catalog; `checks` and `genvm_modules` are removed
+- `/health` returns HTTP 503 only for `unavailable`, so a node that catches up or is not primed yet now returns 200; a self-stake below the minimum or a critical operator balance sets `consensus.stake` or `consensus.operator_funds` to `unavailable`
+- `gen_getTransactionStatus` returns the stored status only and ignores `timestamp` (use `gen_getTransactionLifecycle` for the projected status); `ReadyToFinalize` (11) is removed, so `ValidatorsTimeout`, `LeaderTimeout` and `LeaderRevealing` are now 11, 12 and 13
+- `previousStatus` in `gen_getTransactionReceipt` is always `null`
+- The `status` parameter of `gen_call`, `gen_getContractState` and `gen_getContractCode` takes `decided` instead of `accepted` (default `decided`); `accepted` returns `-32602`
+- `genvm.permits` and `genvm.sync_permits` are now permit budgets (a nondeterministic run costs 8, a sync run 4): leave them empty or multiply your old values by 4 (8 → 32, 64 → 256)
+- Split the database into `genvm.db` (chain data) and `ops.db` (this node's own records); `<datadir>/genlayer.db` is renamed to `genvm.db` at start-up, and start-up is refused when both exist
+- `node.genlayerdb` is replaced by `node.genvmdb` and `node.opsdb`; move a custom database path by hand
+- Prove VRF duties with the operator key registered before the transaction was created; after an operator key rotation, keep the old operator account in the keystore, with the same password, until its transactions are done
+- Run the Docker image as the non-root user uid 10001; run `sudo chown -R 10001:10001 ./data` once before the first start
+- Read WebDriver container stats only through `DOCKER_HOST`: the release compose adds a read-only Docker socket proxy and no longer mounts `docker.sock` into the node; a binary install sets `DOCKER_HOST`, else the collector is skipped
+- The release compose file requires `NODE_PASSWORD` (the default `12345678` is removed) and gives it to the node as `GENLAYERNODE_PASSWORD`, not on the command line
+- The release monitoring profile has no default `CENTRAL_*` endpoints or credentials: set all six in `.env`
+- Clamp `consensus.chain_submit_buffer` at start-up so at least 5 s of the shortest on-chain phase window stays for execution, and log a warning when it does
+- The `genlayer_node_disk_*` metrics report `directory="genvm.db"` and `directory="ops.db"` in place of `directory="genlayer.db"`; update dashboards and alerts
+- Add a `reason` label (`http_unavailable`, `block_lag`, `rate_limited`) to `genlayer_rollup_rpc_ws_fallback_total`
+- Signed GenVM web requests send the validator wallet address in the `genlayer-node-address` header, instead of the operator address
+- Show contract revert errors with their argument names in logs
+- Show module paths, not build-machine paths, in log `caller` fields and stack traces
+- Update the release image base to Alpine 3.24.2, Grafana Alloy to v1.20.1 and the WebDriver image to 0.0.12, and add `tecnativa/docker-socket-proxy:0.3.0`
+
+### Bug fixes
+
+- Retry a chain HTTP request once after a dropped connection, a 502/503/504 or a rate limit; the transport does not retry timeouts and transaction sends
+- Fall back to the WebSocket RPC when the HTTP RPC is down or does not answer in time, also for transaction submission and at start-up
+- Report the RPC error, not a connection-closed error, when the WebSocket server closes right after it replies
+- Keep syncing when the HTTP RPC lags the WebSocket head, instead of exiting after repeated `block not found`
+- Keep every nonce owned until the chain settles it: a stuck nonce no longer blocks all later transactions until a restart, recorded transactions are sent again after a restart, and a nonce is freed or reused only on chain evidence
+- Make the self-cancellation of a stuck nonce affordable on a small wallet, and outbid the previous cancellation when it is retried
+- Finalize, idleness, epoch-advance and message-delivery transactions no longer cancel pending commit and reveal transactions
+- Keep commit and reveal transactions on time when older pending transactions block them, and cancel transactions whose deadline passed or whose fee bumps are used up
+- No longer mark a transaction rejected, and reuse its nonce, when the RPC does not show it as pending within 10 s
+- Read the receipt before treating a timed-out transaction as failed, so a mined transaction is not sent again
+- Fix a node crash (`concurrent map writes`) when several transactions fail at the same time, for example during parallel finalizations
+- Keep committed votes and their salts across restarts and replayed events, so the reveal is not missed
+- Retries no longer regenerate a commit vote or a proposed receipt, so a validator or leader whose first transaction already mined can still reveal
+- A leader rotation delivered twice (for example at restart) no longer sends a second, reverting propose transaction
+- A GenVM manager outage or restart during a duty no longer turns the transaction into a leader timeout; the duty waits for the manager within its phase
+- Stop retrying a transaction that the operator wallet cannot pay for; when priming is blocked, log one error that names the operator wallet, and resume once it is funded
+- Duty watchers no longer sleep through their turn when the chain clock runs ahead of the node clock
+- Fail a transaction whose calldata cannot be decoded with an error receipt, instead of voting Timeout
+- Stop a transient database read error or a missed sync event from making a synced node vote Timeout
+- Vote Timeout instead of crashing when a node behind sync is missing transaction data
+- Give intelligent contracts the real chain ID instead of `1`
+- Set the contract `origin_address` to the transaction submitter instead of the activating validator
+- Read EVM contract views for intelligent contracts at the activation block, so all validators see the same value
+- Stop sending an extra transaction before each duty; read time-sensitive contract views at the pending block instead
+- Drive pending tribunals to their end during epoch finalization, so an epoch no longer stays unfinalized behind them
+- Re-run transactions that an appeal sends back for recomputation, from a clean round
+- Stagger finalization: one validator at a time polls and submits, also for the predecessor drain and the epoch sweep, so validators stop reverting with `already finalized`
+- Stop sending a duplicate finalize when the last reveal and the decision event arrive together
+- Stop resubmitting a finalize that reverts permanently
+- Epoch recovery sweep: force-process only stuck transactions, and bound each attempt, so a transaction that cannot finalize no longer stops epoch finalization
+- Retry the epoch advance during each validator's turn, so epochs advance at their normal pace again
+- Stop a validator from skipping an epoch's prime after a stale epoch read or a failed retry loop
+- Stop paying for prime transactions that the contract ignores: after 5 in a row with no effect, only re-check until the next epoch
+- Re-fetch blocks that a chain reorg replaced, so their consensus events are no longer lost
+- Stop dropping consensus events that the log bloom check wrongly treated as false positives, and never move the sync cursor backwards (a synced node looked behind and lost its duties)
+- Stop sync with an error that names the transaction, instead of silently skipping an accepted transaction that cannot be decoded
+- Sync contract state for transactions accepted without a `TransactionAccepted` event, so contract reads stop failing with `pebble: not found`
+- Do not restore contract state from an execution that an appeal replaced in the same block
+- Fetch at most 16 transactions at a time during sync, so a node that catches up no longer floods its RPC provider
+- Retry instead of rescanning from block 0 when the first-sync genesis lookup fails
+- Wait for indexed data in `gen_call`, `gen_getContractState`, `gen_getContractCode` and `gen_dbg_traceTransaction` instead of failing while the node catches up (new `genvm.sync_wait_poll_interval`, default `100ms`)
+- Stop crashes on empty or out-of-range data from the chain, and on malformed revert data
+- Reject malformed GenVM storage changes instead of crashing the node
+- Stop a crash from an oversized map-key length in contract calldata, and reject calldata with non-canonical length headers
+- Fail the transaction instead of crashing on missing or malformed numbers in GenVM output and emitted messages
+- Fix a GenVM cache race that could crash the node during sync, and data races on per-transaction and epoch state
+- Fix a slow memory leak of finalized and canceled transactions
+- Exit with a non-zero status after a panic, so Docker or systemd restarts the node
+- Report the real error, not `context canceled`, when parallel work fails
+- Stop logging `Can not process rotate leader` errors when the proposal of the replacement leader carries the rotation
+- Allow full-mode nodes to start without a password
+- Honor `node.rpc.host`; the RPC listener bound to all interfaces
+- Raise the open-file limit to 65536 (or to the hard limit) at start-up, so GenVM stops failing with `Too many open files`
+- Make `doctor` report a GenVM install that was moved after `setup.py` ran
+- Omit `result` from JSON-RPC error responses
+- Accept `gen_dbg_trie` transaction IDs with or without `0x`, and stop `gen_syncing` from reporting a huge `blocksBehind` when the synced block is ahead of the latest one
+
+### Removed
+
+- Remove the `node.environment` field and the development-only `node.dev.disableSubscription` switch; old configs still load, and the node logs the ignored keys
+- Remove the `doctor --network` flag; `doctor` checks the deployment against the protocol manifest instead
+
+### Security
+
+- Keep the chain RPC API key out of logs, error responses, `doctor` output and the config dump; RPC URLs show only scheme and host
+- Stop passing the `GENLAYERNODE_ROLLUP_*` variables (chain URLs and RPC key) and the operator token to GenVM processes
+- Mask the operator token, the GenVM token and the chain RPC key in the config dump, and log RPC request params and results only at DEBUG
+- Stop logging the node admin token in the GenVM manager request logs of the node
+- Warn at start-up when `genvm.manager_url` is not a loopback address, because the requests carry the admin token
+- Write `account new --export` and `account export` files straight to the target with owner-only permissions; the command fails if the file exists
+- A validator refuses to start when its operator account cannot be resolved, instead of signing with a throwaway key
+- Bound memory use: cap GenVM host-call frames at 64 MiB and the size of GenVM manager responses, and limit the concurrent GenVM runs that public RPC (`gen_call`, `gen_dbg_traceTransaction`) starts
+- Stop a malformed leader payload from crashing validators
+- Return generic messages for internal errors from the admin, ops and RPC APIs, and log the detail; a failed chain read in `gen_call` names only the read that failed
+- Restrict the `destDir` of `POST /snapshot` to `node.admin.snapshot_dir` (default `<datadir>/snapshots`); other paths return `400`
+- Reduce the `rpc_url` label of `genlayer_node_info` to scheme and host
+- Limit the `namespace` label of `genlayer_node_ws_inbound_subscriptions_active` to known namespaces, so clients cannot create unbounded metric series
+- Cache `/balance` for 5 s, so public requests cannot multiply chain RPC calls
+- Stop failures of proxied public `eth_*` and `zks_*` requests from opening the chain RPC circuit breaker that guards validator duties
+- Drop all Linux capabilities from the node container in the release compose file
+- Build with a newer Go release that includes the standard-library security fixes
+- Update `golang.org/x/net` to v0.60.0 and `golang.org/x/crypto` to v0.57.0

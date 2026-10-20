@@ -20,7 +20,19 @@ The token is the value of `GENLAYERNODE_NODE_OPERATOR_TOKEN` on the node process
 
 **Parameters:**
 
-- `destDir` (string, optional): Absolute path on the node's filesystem. When set, switches to write-to-path mode; when omitted or empty, the snapshot is streamed back as `application/gzip`.
+- `scope` (string, optional): Which stores the archive carries — `all` (default), `genvm` or `ops`. An absent scope means `all`, so a caller written before the store split keeps its behaviour. An unrecognised value is rejected with `400`.
+
+  | Scope | Contents | Portable between nodes |
+  |---|---|---|
+  | `all` | both stores, operation store first | **No** |
+  | `genvm` | chain-derived history only | **Yes** |
+  | `ops` | this node's consensus record only | **No** |
+
+  Only `genvm` may be given to another operator. `all` and `ops` carry the vote salts this node generated and the nonce ownership of its operator key; restoring either onto a different node would make that node act on votes it never cast and nonce slots it never signed. The node refuses to start against an operation store stamped with another operator, but that guard runs at startup, not at copy time — treat a non-portable archive accordingly.
+
+  Every archive carries a `snapshot.json` manifest recording the format version, the scopes inside, the rollup block the GenVM store was captured at, and — for `all` and `ops` — the operator address that produced it.
+
+- `destDir` (string, optional): Absolute path on the node's filesystem, which must resolve to a location inside the configured snapshot directory (`node.admin.snapshot_dir`, default `<datadir>/snapshots`). When set, switches to write-to-path mode; when omitted or empty, the snapshot is streamed back as `application/gzip`. Paths outside the snapshot directory are rejected with `400`.
 
 **Returns:**
 - Stream mode (`destDir` omitted): gzipped tar archive in the response body, `Content-Type: application/gzip`.
@@ -67,7 +79,16 @@ Content-Disposition: attachment; filename="snapshot.tar.gz"
 curl -X POST http://127.0.0.1:9153/snapshot \
   -H "X-Admin-Auth: $GENLAYERNODE_NODE_OPERATOR_TOKEN" \
   -H "Content-Type: application/json" \
-  -d '{"destDir": "/var/snapshots/asimov-100"}'
+  -d '{"destDir": "/var/lib/genlayer/data/node/snapshots/bradbury-100"}'
+
+Take only the portable half, to hand to another operator:
+
+```bash
+curl -sS -X POST http://localhost:9153/snapshot \
+  -H "Authorization: Bearer $OPERATOR_TOKEN" \
+  -H 'Content-Type: application/json' \
+  -d '{"scope": "genvm"}' -o genvm-snapshot.tar.gz
+```
 ```
 
 **Example Response — Write-to-Path Mode:**
@@ -80,7 +101,7 @@ HTTP/1.1 204 No Content
 
 - `200 OK`: Stream mode succeeded; body carries the gzipped tar archive.
 - `204 No Content`: Write-to-path mode succeeded; snapshot is on disk at `destDir`.
-- `400 Bad Request`: `destDir` is not absolute, or already exists.
+- `400 Bad Request`: `destDir` is not absolute, resolves outside the configured snapshot directory, or already exists.
 - `401 Unauthorized`: Missing, invalid, or empty operator token (also returned when `GENLAYERNODE_NODE_OPERATOR_TOKEN` is unset on the node).
 - `500 Internal Server Error`: Snapshot creation failed (e.g., disk full, DB checkpoint error).
 
@@ -88,8 +109,9 @@ HTTP/1.1 204 No Content
 
 - A snapshot may be several GB. In stream mode the connection stays open for the duration of the snapshot — configure reverse proxies / load balancers with adequate read timeouts and disable response buffering.
 - In stream mode, a dropped connection leaves no on-disk artifact on the node; retry the request from scratch.
-- In write-to-path mode, `destDir` must be an absolute path that does not yet exist; the node creates it. Path-traversal hardening beyond these checks is a separate (Sev: Medium) follow-up — treat the operator token as a credential that can write under the node user's filesystem permissions.
-- **Docker deploys**: in write-to-path mode, `destDir` is resolved inside the node container's filesystem, not on the host. To make the resulting directory reachable from the host (or from another container), use a volume mount that maps `destDir` identically on both sides, or stick with stream mode. Stream mode is unaffected — the response body is sent over HTTP regardless of where the node runs.
+- In write-to-path mode, `destDir` must be an absolute path that does not yet exist and that resolves (after `filepath.Clean`) to a location inside the configured snapshot directory; the node creates it. Paths that escape the directory via `..` or point elsewhere on the filesystem are rejected with `400`. This bounds where an operator-token holder can write a checkpoint — still treat the operator token as a credential that can write under the node user's filesystem permissions within that directory.
+- **Snapshot directory** (`node.admin.snapshot_dir`): bounds write-to-path mode. A relative value resolves under `datadir` (so the default `snapshots` is `<datadir>/snapshots`); an absolute value is used as-is, letting a node target a dedicated disk. The node creates the directory with `0700` permissions on first use if it does not exist.
+- **Docker deploys**: in write-to-path mode, `destDir` (and the snapshot directory) is resolved inside the node container's filesystem, not on the host. The default `<datadir>/snapshots` falls under whatever volume the deployment mounts for `datadir`, so it is host-reachable wherever that volume maps. To use a different location, set `snapshot_dir` to a path that is itself volume-mapped identically on both sides, or stick with stream mode. Stream mode is unaffected — the response body is sent over HTTP regardless of where the node runs.
 - The snapshot includes the full chain database (SSTables, MANIFEST, WAL) at the moment of capture. Treat the artifact as sensitive — anyone holding it can reconstruct the node's state.
 - Token comparison is constant-time and length-padded so neither the value nor the length of the secret can be inferred from response timing.
 - Rotation: update `GENLAYERNODE_NODE_OPERATOR_TOKEN` and restart the node. Tokens are read once at startup and not hot-reloaded.

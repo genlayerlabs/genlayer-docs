@@ -2,107 +2,79 @@
 
 const fs = require('fs');
 const path = require('path');
+const { publishedVersions, currentLine } = require('./lib/release-versions');
+
+// A generator that cannot find its source or its target block fails the build.
+const fail = (msg) => { console.error(msg); process.exitCode = 1; };
+
+// The tail of the guide's list command: the sed pair makes the version sort
+// put v0.6.0-rc.N below v0.6.0; awk drops the rc builds of versions that are
+// already stable (the bucket keeps them, the changelog does not list them) and
+// keeps only the current release line (the major.minor of the newest version).
+const LIST_COMMAND_TAIL = `| sed 's/-rc/~rc/' | sort -ruV | sed 's/~rc/-rc/' | awk '{c=$0; sub(/-rc\\..*/,"",c)} /-rc\\./{if (c in s) next} !/-rc\\./{s[c]=1} {split(c,p,"."); l=p[1]"."p[2]} !m{m=l} l==m{print}' | head -n 5`;
 
 /**
- * Update the setup guide with the latest versions from changelog
+ * Update the setup guide's version list, list command and `export version=` line.
+ * The guide lists the current release line of the versions the node has
+ * changelog files for (scripts/lib/release-versions.js) and names the newest one.
+ * @param {{root?: string}} options
  */
-function updateSetupGuideVersions() {
-  const changelogDir = path.join(process.cwd(), 'content/validators/changelog');
-  const setupGuidePath = path.join(process.cwd(), 'pages/validators/setup-guide.mdx');
-  
+function updateSetupGuideVersions({ root = process.cwd() } = {}) {
+  const changelogDir = path.join(root, 'content/validators/changelog');
+  const setupGuidePath = path.join(root, 'pages/validators/setup-guide.mdx');
+
   if (!fs.existsSync(changelogDir)) {
-    console.error(`Changelog directory ${changelogDir} does not exist`);
+    fail(`Changelog directory ${changelogDir} does not exist`);
     return;
   }
-  
-  // Read all version files from the changelog directory
-  const versions = fs.readdirSync(changelogDir)
-    .filter(file => file.endsWith('.mdx'))
-    .map(file => file.replace('.mdx', ''))
-    .sort((a, b) => {
-      // Sort versions in descending order (newest first)
-      const parseVersion = (v) => {
-        const match = v.match(/v(\d+)\.(\d+)\.(\d+)(?:-testnet(\d+))?/);
-        if (!match) return [0, 0, 0, 0];
-        return [
-          parseInt(match[1]), 
-          parseInt(match[2]), 
-          parseInt(match[3]), 
-          parseInt(match[4] || '999') // Regular versions come before testnet versions
-        ];
-      };
-      
-      const [majorA, minorA, patchA, testnetA] = parseVersion(a);
-      const [majorB, minorB, patchB, testnetB] = parseVersion(b);
-      
-      if (majorB !== majorA) return majorB - majorA;
-      if (minorB !== minorA) return minorB - minorA;
-      if (patchB !== patchA) return patchB - patchA;
-      return testnetB - testnetA;
-    });
-  
-  if (versions.length === 0) {
-    console.error('No version files found in changelog directory');
-    return;
-  }
-  
-  // Get the latest version
-  const latestVersion = versions[0];
-  
-  // Check that the setup guide file exists
   if (!fs.existsSync(setupGuidePath)) {
-    console.error(`Setup guide file ${setupGuidePath} does not exist`);
+    fail(`Setup guide file ${setupGuidePath} does not exist`);
     return;
   }
-  
-  // Read the setup guide
-  let setupGuideContent = fs.readFileSync(setupGuidePath, 'utf8');
-  
-  // Update the version list to match the curl command output
-  // The curl command uses: grep -v "rc" | head -n 5
-  // So we filter out rc versions and show only 5 versions
 
-  // Filter out testnet and rc versions for the display list (matches grep -v "rc")
-  const releaseVersions = versions.filter(v => !v.includes('testnet') && !v.includes('rc'));
+  const names = fs.readdirSync(changelogDir)
+    .filter((file) => file.endsWith('.mdx'))
+    .map((file) => file.replace(/\.mdx$/, ''));
+  // The current release line only: during v0.6.0-rc.N the guide lists v0.6.x.
+  const versions = currentLine(publishedVersions(names));
+  if (versions.length === 0) {
+    fail('No version files found in changelog directory');
+    return;
+  }
 
-  // Take only the first 5 versions (matches head -n 5)
-  const displayVersions = releaseVersions.slice(0, 5);
+  const latestVersion = versions[0];
+  let content = fs.readFileSync(setupGuidePath, 'utf8');
 
-  // Build the version list (no indentation, matches actual curl output)
-  const versionListIndented = displayVersions.map(v => `   ${v}`).join('\n');
-
-  // Replace the version list (between "You should see a list like this" and "Typically you will want")
+  // The version list between "You should see a list like this" and "Typically you will want".
   const versionListPattern = /(You should see a list like this\s*\n\s*```sh\n)([\s\S]*?)(\n\s*```\s*\n\s*Typically,? you will want)/;
+  const versionList = versions.slice(0, 5).map((v) => `   ${v}`).join('\n');
+  if (versionListPattern.test(content)) {
+    content = content.replace(versionListPattern, (_, before, _old, after) => before + versionList + after);
+  } else {
+    fail('Could not find version list pattern in setup guide');
+  }
 
-  if (versionListPattern.test(setupGuideContent)) {
-    setupGuideContent = setupGuideContent.replace(
-      versionListPattern,
-      `$1${versionListIndented}$3`
-    );
+  // Everything after the sed that extracts the version names.
+  const listCommandPattern = /\| (?:sed 's\/-rc\/~rc\/' \| )?sort -ruV?[^\n]*?\| head -n 5/;
+  if (listCommandPattern.test(content)) {
+    content = content.replace(listCommandPattern, () => LIST_COMMAND_TAIL);
   } else {
-    console.warn('Could not find version list pattern in setup guide');
+    fail('Could not find the version list command (| sort -ru... | head -n 5) in setup guide');
   }
-  
-  // Update the export version line
-  const exportPattern = /export version=v[\d.]+(?:-testnet\d+)?/;
-  
-  if (exportPattern.test(setupGuideContent)) {
-    setupGuideContent = setupGuideContent.replace(
-      exportPattern,
-      `export version=${latestVersion}`
-    );
+
+  const exportPattern = /export version=v\d+\.\d+\.\d+(?:-rc\.\d+|-testnet\d+)?/;
+  if (exportPattern.test(content)) {
+    content = content.replace(exportPattern, () => `export version=${latestVersion}`);
   } else {
-    console.warn('Could not find export version pattern in setup guide');
+    fail('Could not find export version pattern in setup guide');
   }
-  
-  // Write the updated content back
-  fs.writeFileSync(setupGuidePath, setupGuideContent);
-  console.log(`Updated setup guide with ${versions.length} versions, latest: ${latestVersion}`);
+
+  fs.writeFileSync(setupGuidePath, content);
+  console.log(`Updated setup guide with ${versions.length} published versions, latest: ${latestVersion}`);
 }
 
-// Run the script
 if (require.main === module) {
   updateSetupGuideVersions();
 }
 
-module.exports = { updateSetupGuideVersions };
+module.exports = { updateSetupGuideVersions, LIST_COMMAND_TAIL };

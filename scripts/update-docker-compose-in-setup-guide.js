@@ -3,6 +3,9 @@
 const fs = require('fs');
 const path = require('path');
 
+// A generator that cannot find its source or its target block fails the build.
+const fail = (msg) => { console.error(msg); process.exitCode = 1; };
+
 /**
  * Update the setup guide with the latest docker-compose from content/validators/docker-compose.yaml
  */
@@ -12,12 +15,12 @@ function updateDockerComposeInSetupGuide() {
   const setupGuidePath = path.join(projectRoot, 'pages/validators/setup-guide.mdx');
 
   if (!fs.existsSync(dockerComposePath)) {
-    console.error(`Docker compose file ${dockerComposePath} does not exist`);
+    fail(`Docker compose file ${dockerComposePath} does not exist`);
     return;
   }
 
   if (!fs.existsSync(setupGuidePath)) {
-    console.error(`Setup guide file ${setupGuidePath} does not exist`);
+    fail(`Setup guide file ${setupGuidePath} does not exist`);
     return;
   }
 
@@ -36,14 +39,14 @@ function updateDockerComposeInSetupGuide() {
     // Replace the docker-compose content while preserving the surrounding text
     setupGuideContent = setupGuideContent.replace(
       dockerComposePattern,
-      `$1${dockerComposeContent}$3`
+      (_, before, _old, after) => before + dockerComposeContent + after
     );
 
     // Write the updated content back
     fs.writeFileSync(setupGuidePath, setupGuideContent);
     console.log(`Updated setup guide docker-compose at ${new Date().toISOString()}`);
   } else {
-    console.error('Could not find docker-compose pattern in setup guide');
+    fail('Could not find docker-compose pattern in setup guide ("Create a `docker-compose.yaml` file with the following content:" followed by a yaml block)');
 
     // Try a more general pattern as fallback
     // Look for a yaml block that contains typical docker-compose content
@@ -70,7 +73,7 @@ function updateDockerComposeInSetupGuide() {
     }
 
     if (!found) {
-      console.error('Could not find docker-compose YAML block in setup guide');
+      fail('Could not find docker-compose YAML block in setup guide');
     }
   }
 }
