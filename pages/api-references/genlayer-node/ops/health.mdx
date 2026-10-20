@@ -21,24 +21,25 @@ curl -X GET http://localhost:9153/health
 ```json
 {
   "status": "healthy",
-  "network": "",
+  "network": "bradbury-phase2",
   "node_version": "v0.6.0",
   "protocol_version": "0.3.0",
   "genvm_version": "v0.0.18",
   "validator_address": "0x1234567890abcdef1234567890abcdef12345678",
   "validator_moniker": "my-validator",
   "conditions": {
-    "chain.rpc":                { "state": "healthy", "severity": "critical", "occurrences": 0, "consecutive_failures": 0, "since": "2026-09-01T08:00:03Z", "updated_at": "2026-09-01T10:31:12Z", "last_ok": "2026-09-01T10:31:12Z" },
-    "chain.websocket":          { "state": "healthy", "severity": "critical", "occurrences": 0, "consecutive_failures": 0, "since": "2026-09-01T08:00:03Z", "updated_at": "2026-09-01T10:31:12Z", "last_ok": "2026-09-01T10:31:12Z" },
-    "chain.sync":               { "state": "healthy", "severity": "critical", "occurrences": 0, "consecutive_failures": 0, "since": "2026-09-01T08:02:14Z", "updated_at": "2026-09-01T10:31:12Z", "last_ok": "2026-09-01T10:31:12Z" },
-    "consensus.ban":            { "state": "healthy", "severity": "critical", "occurrences": 0, "consecutive_failures": 0, "since": "2026-09-01T08:00:03Z", "updated_at": "2026-09-01T10:31:12Z", "last_ok": "2026-09-01T10:31:12Z" },
-    "consensus.stake":          { "state": "healthy", "severity": "critical", "occurrences": 0, "consecutive_failures": 0, "since": "2026-09-01T08:00:03Z", "updated_at": "2026-09-01T10:31:12Z", "last_ok": "2026-09-01T10:31:12Z" },
-    "consensus.operator_funds": { "state": "healthy", "severity": "critical", "occurrences": 0, "consecutive_failures": 0, "since": "2026-09-01T08:00:03Z", "updated_at": "2026-09-01T10:31:12Z", "last_ok": "2026-09-01T10:31:12Z" },
-    "consensus.prime":          { "state": "healthy", "severity": "critical", "occurrences": 0, "consecutive_failures": 0, "since": "2026-09-01T08:04:41Z", "updated_at": "2026-09-01T10:31:12Z", "last_ok": "2026-09-01T10:31:12Z" },
-    "genvm.llm":                { "state": "healthy", "severity": "critical", "occurrences": 0, "consecutive_failures": 0, "since": "2026-09-01T08:00:31Z", "updated_at": "2026-09-01T10:29:56Z", "last_ok": "2026-09-01T10:29:56Z" },
-    "genvm.web":                { "state": "healthy", "severity": "critical", "occurrences": 0, "consecutive_failures": 0, "since": "2026-09-01T08:00:31Z", "updated_at": "2026-09-01T10:29:56Z", "last_ok": "2026-09-01T10:29:56Z" },
-    "node.disk":                { "state": "healthy", "severity": "critical", "occurrences": 0, "consecutive_failures": 0, "since": "2026-09-01T08:00:03Z", "updated_at": "2026-09-01T10:31:12Z", "last_ok": "2026-09-01T10:31:12Z" },
-    "node.snapshot_age":        { "state": "healthy", "severity": "info",     "occurrences": 0, "consecutive_failures": 0, "since": "2026-09-01T08:00:03Z", "updated_at": "2026-09-01T10:31:12Z", "last_ok": "2026-09-01T10:31:12Z" }
+    "chain.rpc":                { "state": "healthy", "occurrences": 0, "consecutive_failures": 0, "since": "2026-09-01T08:00:03Z", "updated_at": "2026-09-01T10:31:12Z", "last_ok": "2026-09-01T10:31:12Z" },
+    "chain.websocket":          { "state": "healthy", "occurrences": 0, "consecutive_failures": 0, "since": "2026-09-01T08:00:03Z", "updated_at": "2026-09-01T10:31:12Z", "last_ok": "2026-09-01T10:31:12Z" },
+    "chain.sync":               { "state": "healthy", "occurrences": 0, "consecutive_failures": 0, "since": "2026-09-01T08:02:14Z", "updated_at": "2026-09-01T10:31:12Z", "last_ok": "2026-09-01T10:31:12Z" },
+    "consensus.ban":            { "state": "healthy", "occurrences": 0, "consecutive_failures": 0, "since": "2026-09-01T08:00:03Z", "updated_at": "2026-09-01T10:31:12Z", "last_ok": "2026-09-01T10:31:12Z" },
+    "consensus.stake":          { "state": "healthy", "occurrences": 0, "consecutive_failures": 0, "since": "2026-09-01T08:00:03Z", "updated_at": "2026-09-01T10:31:12Z", "last_ok": "2026-09-01T10:31:12Z" },
+    "consensus.operator_funds": { "state": "healthy", "occurrences": 0, "consecutive_failures": 0, "since": "2026-09-01T08:00:03Z", "updated_at": "2026-09-01T10:31:12Z", "last_ok": "2026-09-01T10:31:12Z" },
+    "consensus.prime":          { "state": "healthy", "occurrences": 0, "consecutive_failures": 0, "since": "2026-09-01T08:04:41Z", "updated_at": "2026-09-01T10:31:12Z", "last_ok": "2026-09-01T10:31:12Z" },
+    "genvm.llm":                { "state": "healthy", "occurrences": 0, "consecutive_failures": 0, "since": "2026-09-01T08:00:31Z", "updated_at": "2026-09-01T10:29:56Z", "last_ok": "2026-09-01T10:29:56Z" },
+    "genvm.web":                { "state": "healthy", "occurrences": 0, "consecutive_failures": 0, "since": "2026-09-01T08:00:31Z", "updated_at": "2026-09-01T10:29:56Z", "last_ok": "2026-09-01T10:29:56Z" },
+    "node.disk":                { "state": "healthy", "occurrences": 0, "consecutive_failures": 0, "since": "2026-09-01T08:00:03Z", "updated_at": "2026-09-01T10:31:12Z", "last_ok": "2026-09-01T10:31:12Z" },
+    "node.snapshot_age":        { "state": "healthy", "occurrences": 0, "consecutive_failures": 0, "since": "2026-09-01T08:00:03Z", "updated_at": "2026-09-01T10:31:12Z", "last_ok": "2026-09-01T10:31:12Z" },
+    "webdriver.render":         { "state": "healthy", "occurrences": 0, "consecutive_failures": 0, "since": "2026-09-01T08:00:03Z", "updated_at": "2026-09-01T10:31:12Z", "last_ok": "2026-09-01T10:31:12Z" }
   }
 }
 ```
@@ -51,8 +52,7 @@ curl -X GET http://localhost:9153/health
 - `validator_address` (string, validator mode only): The validator's address
 - `validator_moniker` (string, validator mode only): The validator's on-chain moniker; reported alongside the address even when empty
 - `conditions` (object): the full catalog. Every entry is always present — this is not a list of what is broken.
-  - `state` (string): current state
-  - `severity` (string): the catalog's fixed class — `info`, `warning`, or `critical`. Not the state: a `critical` condition can be `healthy`.
+  - `state` (string): current observed health; use this field to determine whether the capability is working.
   - `occurrences` (number): accepted failed observations since process start
   - `consecutive_failures` (number): current failure streak; zero after recovery
   - `since`, `updated_at`, `last_ok` (string, optional): ISO 8601 lifecycle timestamps
@@ -60,6 +60,8 @@ curl -X GET http://localhost:9153/health
   - `impact` (string, present only when not healthy): what the fault does to this node
   - `action` (string, present only when not healthy): what the operator should do
   - `details` (object, present only when not healthy): typed fields explicitly allowlisted by the catalog entry. Raw provider payloads, prompts, credentials, URLs, and stack traces are rejected.
+
+`severity` is not returned by this endpoint. Alert priority belongs to the alerting policy; clients that previously read `conditions.*.severity` should use `state` for current health.
 
 **States**
 
@@ -84,6 +86,28 @@ A condition can never exceed the liveness cap its catalog entry declares. The Ge
 
 `consensus.ban`, `consensus.stake`, `chain.rpc`, `chain.websocket` and `chain.sync` are capped at `unavailable`, because each of them stops the node doing its job.
 
+**WebDriver render check**
+
+`webdriver.render` runs the same fresh render probe as `doctor`, using
+`webdriver_host` from the configured GenVM's `genvm-module-web.yaml`. It requires
+HTTP 200, `Resulting-Status: 200`, and exactly `Hello world!` from the diagnostic
+page, within 10 seconds. It bypasses WebDriver's cached `/healthcheck` response.
+A failure reports `degraded` with reason `webdriver_check_failed` and safe
+`failure`, `http_status` and `page_status` details. The endpoint still returns
+HTTP 200: a browser outage does not stop the node syncing and voting.
+
+Allow time for the ten-second render deadline when setting a client timeout.
+`task devtools:nodes:health` defaults to 15 seconds per request so a browser
+timeout can return its diagnosis instead of appearing as an unreachable node.
+
+`genvm.web` continues reporting the broader web module's boot and transaction
+results. A successful direct browser check does not clear a web-module failure.
+
+For `genvm.start_manager: false`, the manager owns the browser configuration.
+The node leaves `webdriver.render` unknown instead of probing an unused local
+root. Doctor likewise reports the browser as not checked; run it on the node
+that owns the manager configuration. Observed `genvm.web` results still apply.
+
 **Example: the LLM provider is dead — HTTP 200**
 
 ```json
@@ -92,7 +116,6 @@ A condition can never exceed the liveness cap its catalog entry declares. The Ge
   "conditions": {
     "genvm.llm": {
       "state": "degraded",
-      "severity": "critical",
       "reason": "llm_request_failed",
       "impact": "This validator cannot execute a transaction that needs an LLM. It votes Timeout, and the consensus contracts may penalize a Timeout vote.",
       "action": "Check the affected LLM provider service and payment or billing status, restore access, or configure a working fallback. If credentials are changed through .env, restart the node.",
@@ -114,7 +137,6 @@ A condition can never exceed the liveness cap its catalog entry declares. The Ge
   "conditions": {
     "consensus.ban": {
       "state": "unavailable",
-      "severity": "critical",
       "reason": "validator_banned",
       "impact": "The consensus contracts do not select this validator for a round. The node earns nothing.",
       "action": "Wait for the stated epoch. If the ban is permanent, restake with a new validator.",

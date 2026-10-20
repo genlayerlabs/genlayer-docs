@@ -120,6 +120,8 @@ CENTRAL_LOKI_PASSWORD=<logs-password>
 # Node identification
 NODE_ID=validator-001
 VALIDATOR_NAME=MyValidator
+# Network label for recovery logs and alert routing
+NETWORK_NAME=bradbury-phase2
 
 # Usually defaults are fine
 NODE_METRICS_ENDPOINT=host.docker.internal:9153
@@ -127,6 +129,8 @@ LOG_FILE_PATTERN=/var/log/genlayer/node*.log
 METRICS_SCRAPE_INTERVAL=15s
 # Host directory where the node writes its log files (mounted into Alloy)
 NODE_LOGS_PATH=./data/node/logs
+# false keeps the container health checks but turns off automatic restarts
+HEALTHCHECK_AUTO_RESTART=true
 ```
 
 2. **Add or verify the Alloy service in docker-compose.yaml.** Use the docker-compose.yaml from the release package as it is. It already defines the alloy service under the monitoring profile, together with the docker-socket-proxy service that alloy depends on. Alloy also mounts alloy-healthcheck.sh from the same package. Copying only the alloy block into another compose file does not work: it will not start without docker-socket-proxy and alloy-healthcheck.sh. The block is shown here for reference:
@@ -144,14 +148,20 @@ NODE_LOGS_PATH=./data/node/logs
   #   docker compose --profile monitoring up -d
   alloy:
     image: grafana/alloy:v1.20.1
+    init: true
     container_name: genlayer-node-alloy
+    labels:
+      com.genlayer.health-recovery.logs: "true"
+      com.genlayer.network: "${NETWORK_NAME:-unknown}"
+    depends_on:
+      - docker-socket-proxy
     # The guard runs before Alloy: with the monitoring profile up but the
     # endpoints or credentials unset, the container stops with a message
     # naming what to set, instead of half-running. Half-running is worse than
     # stopping here in both directions: pushing to a shared endpoint with a
     # shared default credential pollutes it for everyone, and pushing to an
-    # unreachable one grows the WAL until the healthcheck below reads the
-    # growth as a stall and deletes it. The $$ keeps compose from
+    # unreachable one leaves telemetry unavailable and can grow the WAL. The
+    # healthcheck preserves that buffer. The $$ keeps compose from
     # interpolating; the shell only tests emptiness — no value ever lands on
     # a command line.
     entrypoint: ["/bin/sh", "-c"]
@@ -178,12 +188,29 @@ NODE_LOGS_PATH=./data/node/logs
       - ${NODE_LOGS_PATH:-./data/node/logs}:/var/log/genlayer:ro
       - alloy_data:/var/lib/alloy
     healthcheck:
-      test: ["CMD", "sh", "/etc/alloy/healthcheck.sh"]
+      test:
+        - CMD-SHELL
+        - |
+          set -eu
+          sh /etc/alloy/healthcheck.sh && exit 0
+          [ "$${HEALTHCHECK_AUTO_RESTART:-true}" != false ] || exit 1
+          [ "$$(cat /proc/1/comm)" = docker-init ] || exit 1
+          boot=$$(awk '{print $$22}' /proc/1/stat)
+          age=$$(awk -v ticks="$$boot" -v hz="$$(getconf CLK_TCK)" '{print int($$1-ticks/hz)}' /proc/uptime)
+          [ "$$age" -ge 120 ] || exit 1
+          children=$$(cat /proc/1/task/1/children)
+          printf 'Container alloy (%s) found to be unhealthy - Restarting container now\n' "$$(cat /etc/hostname)" > /proc/1/fd/1
+          kill -TERM 1
+          sleep 5
+          # A stopped service cannot handle TERM; init's child can still receive KILL.
+          for child in $$children; do kill -KILL "$$child"; done
+          exit 1
       interval: 120s
       timeout: 15s
       retries: 1
       start_period: 120s
     environment:
+      - HEALTHCHECK_AUTO_RESTART=${HEALTHCHECK_AUTO_RESTART:-true}
       # Central monitoring endpoints and credentials: NO defaults, on purpose.
       # An endpoint may be public knowledge; a credential never is, and a
       # default one ships the same key to everyone holding this file. The
@@ -292,6 +319,65 @@ loki.source.file "genlayer" {
 }
 
 // Write logs to central Loki instance
+// Read opted-in WebDriver/Alloy recovery events through the existing read-only
+// Docker proxy. Containers log their own restart attempts before exiting.
+discovery.docker "health_recovery" {
+  host = "http://docker-socket-proxy:2375"
+  refresh_interval = "5s"
+
+  filter {
+    name = "label"
+    values = [
+      "com.genlayer.health-recovery.logs=true",
+    ]
+  }
+}
+
+discovery.relabel "health_recovery" {
+  targets = discovery.docker.health_recovery.targets
+
+  rule {
+    source_labels = ["__meta_docker_container_label_com_docker_compose_project"]
+    target_label = "compose_project"
+  }
+
+  rule {
+    source_labels = ["__meta_docker_container_label_com_genlayer_network"]
+    target_label = "network"
+  }
+
+  rule {
+    source_labels = ["network"]
+    regex = ""
+    target_label = "network"
+    replacement = "unknown"
+  }
+}
+
+loki.source.docker "health_recovery" {
+  // Docker's TCP transport keeps the log stream open. With an HTTP(S) host,
+  // Alloy bounds the entire stream by refresh_interval and repeatedly reopens it.
+  host = "tcp://docker-socket-proxy:2375"
+  targets = discovery.relabel.health_recovery.output
+  refresh_interval = "5s"
+  labels = {
+    job = "genlayer-node",
+    component = "health-recovery",
+    instance = sys.env("NODE_ID"),
+    validator_name = sys.env("VALIDATOR_NAME"),
+  }
+  forward_to = [loki.process.health_recovery.receiver]
+}
+
+// Collect only restart events, not Alloy's own operational log stream.
+loki.process "health_recovery" {
+  stage.match {
+    selector = "{component=\"health-recovery\"} != \"found to be unhealthy - Restarting container now\""
+    action = "drop"
+  }
+  forward_to = [loki.write.central.receiver]
+}
+
 loki.write "central" {
   endpoint {
     url = sys.env("CENTRAL_LOKI_URL")
@@ -423,13 +509,16 @@ Look for messages indicating successful batch sending (no error codes like 401, 
 
 ## Container Health Checks
 
-In v0.6.0-rc.1 the release docker-compose.yaml gives the Alloy container a health check (`alloy-healthcheck.sh`, every 120 seconds). It detects a stalled push to the central server: when Alloy's write-ahead log keeps growing, the check clears it and marks the container unhealthy, and Docker restarts Alloy (`restart: unless-stopped`). The WebDriver container has no health check in this release.
+The release docker-compose.yaml gives the webdriver and Alloy containers health checks. When a check keeps failing, the container stops its own process and Docker restarts it (`restart: unless-stopped`). A container you stop by hand stays stopped. Each restart attempt is written to the container's logs; with monitoring on, Alloy forwards these lines with `component="health-recovery"`.
 
-Check the Alloy container's health:
+To keep the health checks but turn off the automatic restarts, set `HEALTHCHECK_AUTO_RESTART=false` in `.env` and recreate the services.
+
+Check container health and recovery events:
 
 ```bash copy
+docker inspect --format '{{.State.Health.Status}}' genlayer-node-webdriver
 docker inspect --format '{{.State.Health.Status}}' genlayer-node-alloy
-docker compose logs --since 30m alloy
+docker compose logs --since 30m webdriver-container alloy
 ```
 
 ## Troubleshooting

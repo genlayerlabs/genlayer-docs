@@ -240,6 +240,7 @@ One full node can be shared between multiple validators. The optimal validator-t
    You should see a list like this
 
    ```sh
+   v0.6.0-rc.2
    v0.6.0-rc.1
    ```
 
@@ -247,7 +248,7 @@ One full node can be shared between multiple validators. The optimal validator-t
 
 2. Download the packaged application
    ```sh copy
-   export version=v0.6.0-rc.1 # example target; confirm it is published and approved before use
+   export version=v0.6.0-rc.2 # example target; confirm it is published and approved before use
    base=https://storage.googleapis.com/gh-af/genlayer-node/bin/amd64/${version}
    curl -fI "${base}/genlayer-node-linux-amd64-${version}.tar.gz"
    curl -fI "${base}/genlayer-node_${version}_SHA256SUMS"
@@ -295,7 +296,7 @@ One full node can be shared between multiple validators. The optimal validator-t
    Run it in the final install location: it writes this directory's absolute path into the GenVM binaries. If you move the installation later, run it again there.
 
    ```sh copy
-   python3 ./opt/genvm/v0.6.0-rc10/bin/setup.py # v0.6.0-rc.1 ships GenVM v0.6.0-rc10: check with `ls opt/genvm`
+   python3 ./opt/genvm/current/bin/setup.py
    ```
 It does following:
 
@@ -316,7 +317,7 @@ The file needs to be located at `configs/node/config.yaml`
 
 You can use the following example configuration. **Note:** For most users, you will only need to replace the `rollup` and `consensus` sections with the values for your target network (see [Network-Specific Consensus Configuration](#network-specific-consensus-configuration) below).
 
-Set `genvm.root_dir` to the GenVM directory the release ships. v0.6.0-rc.1 ships `opt/genvm/v0.6.0-rc10`, but its config template says `./opt/genvm/v0.6.0-rc1`: set `genvm.root_dir: ./opt/genvm/v0.6.0-rc10` (check with `ls opt/genvm`). `install.sh` writes the right value for you.
+The `config.yaml` in the release package sets `genvm.root_dir: ./opt/genvm/current`, a link to the GenVM version the release ships. Keep that value: the example below names the versioned directory, which the package also contains.
 
 ```yaml copy
 # rollup configuration
@@ -332,9 +333,9 @@ rollup:
 consensus:
   # The deployment-specific fields are empty: take them from your network's documentation.
   consensusaddress: "" # AddressManager contract address for this deployment.
-  manifestpath: "" # Trusted producer protocol-manifest.json for this deployment. The deploy places it at configs/node/protocol-manifest.json; relative paths resolve against the node root. A mismatch with consensusaddress is refused at startup.
+  manifestpath: "configs/node/protocol-manifest.json" # Trusted producer protocol manifest for this deployment: save your network's manifest (from its documentation) at this path; a dev-env deploy places its own here too. Relative paths resolve against the node root. A mismatch with consensusaddress is refused at startup.
   chainid: "" # DECIMAL chain id this deployment was made on (not hex, no leading zeros). Held independently of the manifest so a manifest describing another deployment is caught.
-  # genesis: 17326 # (Optional) Genesis block number for this consensus deployment. If not provided, it will be auto-detected by searching for the first log from the ConsensusMain contract.
+  # genesis: 47930 # (Optional) Genesis block number for this consensus deployment. If not provided, it will be auto-detected by searching for the first log from the ConsensusMain contract.
   # chain_submit_buffer: "30s" # (Optional) Slack reserved at the end of each consensus step to submit the resulting on-chain tx (commit vote, reveal vote, proposed receipt) before the slot closes. Tune to underlying settlement chain latency. Default 30s.
   # admissiontimeout: "15s" # (Optional) Bound on the startup deployment admission check. Never unbounded. Default 15s.
 # data directory
@@ -516,7 +517,7 @@ node:
   #   max_debug_field_bytes: 262144   # 256 KB per field
 # genvm configuration
 genvm:
-  root_dir: ./opt/genvm/v0.6.0-rc1
+  root_dir: ./opt/genvm/v0.6.0-rc10
   start_manager: true # if true node will start genvm manager itself
   manager_url: http://127.0.0.1:3999
   # Permits are charged PER EXECUTION by the genvm manager, and one
@@ -624,7 +625,7 @@ mkdir -p configs/node
 curl -fsSL https://docs.genlayer.com/validators/bradbury.protocol-manifest.json -o configs/node/protocol-manifest.json
 ```
 
-The binary reads it from that path. With Docker, mount it into the container yourself: the v0.6.0-rc.1 compose file does not (see [Running the Node using docker-compose](#running-the-node-using-docker-compose)).
+The binary reads it from that path. Docker Compose mounts the same file into the container (`NODE_MANIFEST_PATH`, default `./configs/node/protocol-manifest.json`).
 
 **WebSocket API key.** The Bradbury HTTPS RPC needs no key, but its WebSocket endpoint rejects connections without an API key.
 
@@ -789,8 +790,6 @@ Once you have configured everything, you are ready to start the node.
     docker compose up -d # Starts the WebDriver needed by the GenVM web module
     ```
 
-    In v0.6.0-rc.1 every `docker compose` command fails while `NODE_PASSWORD` is empty, also for the WebDriver alone. For a binary node, set any non-empty value in the `.env` next to `docker-compose.yaml`.
-
     The node starts the GenVM manager and its modules itself (`genvm.start_manager: true` in the config template).
 
     **WebDriver resource metrics (optional).** To report the WebDriver container's CPU, memory and traffic as `genlayer_node_*{component="webdriver"}` series, also start the read-only Docker API proxy, and give only the node process `DOCKER_HOST=tcp://127.0.0.1:2375` (see step 4):
@@ -843,16 +842,7 @@ You can also run the GenLayer node using Docker and Docker Compose. Release cand
 Before the first start, in the directory with your `docker-compose.yaml`:
 
 - `configs/node/config.yaml` holds your network's `rollup` and `consensus` values (see [Configuration](#configuration)).
-- `configs/node/protocol-manifest.json` is your network's trusted manifest (see [Network-Specific Consensus Configuration](#network-specific-consensus-configuration)). The v0.6.0-rc.1 compose file does not mount it: add a `docker-compose.override.yml` next to `docker-compose.yaml`, which Docker Compose reads automatically:
-
-  ```yaml copy
-  services:
-    genlayer-node:
-      volumes:
-        - ./configs/node/protocol-manifest.json:/app/configs/node/protocol-manifest.json:ro
-        # Only if you customize the LLM config (for example for greyboxing):
-        # - ./genvm-module-llm.yaml:/app/opt/genvm/v0.6.0-rc10/config/genvm-module-llm.yaml:ro
-  ```
+- `configs/node/protocol-manifest.json` is your network's trusted manifest (see [Network-Specific Consensus Configuration](#network-specific-consensus-configuration)).
 - The node container runs as uid `10001`, and the bind-mounted `./data` keeps its host owner. Let that user write to it once:
 
   ```sh copy
@@ -862,6 +852,11 @@ Before the first start, in the directory with your `docker-compose.yaml`:
 1. Create a `docker-compose.yaml` file with the following content:
 
 ```yaml copy
+# A fixed project name: the container names below are fixed too, so a stack
+# started from a new release directory must be the SAME Compose project, or
+# Docker refuses with "container name ... is already in use". With it, `up -d`
+# from the new version's directory recreates the old version's containers.
+name: genlayer-node
 services:
   webdriver-container:
     container_name: genlayer-node-webdriver
@@ -871,24 +866,54 @@ services:
       - no-new-privileges:true
     environment:
       PORT: 4444
+      HEALTHCHECK_AUTO_RESTART: "${HEALTHCHECK_AUTO_RESTART:-true}"
     ports:
       - "${WEBDRIVER_PORT:-4444}:4444"
     restart: unless-stopped
-  # docker-socket-proxy — hardened, read-only Docker API gateway used ONLY so the
-  # node can read the WebDriver container's resource stats (CPU/memory/traffic) for
-  # metrics. Runs with the `node` OR `monitoring` profile, so it comes up alongside
+    labels:
+      com.genlayer.health-recovery.logs: "true"
+      com.genlayer.network: "${NETWORK_NAME:-unknown}"
+    healthcheck:
+      test:
+        - CMD-SHELL
+        - |
+          set -eu
+          boot=$$(awk '{print $$22}' /proc/1/stat)
+          if curl -fsS --max-time 10 "http://localhost:$${PORT:-4444}/healthcheck?mode=text&url=https%3A%2F%2Ftest-server.genlayer.com%2Fstatic%2Fgenvm%2Fhello.html"; then
+            printf '%s 0\n' "$$boot" > /tmp/webdriver-health-failures
+            exit 0
+          fi
+          age=$$(awk -v ticks="$$boot" -v hz="$$(getconf CLK_TCK)" '{print int($$1-ticks/hz)}' /proc/uptime)
+          [ "$$age" -ge 10 ] || exit 1
+          read -r previous failures 2>/dev/null < /tmp/webdriver-health-failures || failures=0
+          [ "$${previous:-}" = "$$boot" ] || failures=0
+          failures=$$((failures + 1))
+          printf '%s %s\n' "$$boot" "$$failures" > /tmp/webdriver-health-failures
+          if [ "$$failures" -ge 4 ] && [ "$${HEALTHCHECK_AUTO_RESTART:-true}" != false ]; then
+            printf 'Container webdriver (%s) found to be unhealthy - Restarting container now\n' "$$(cat /etc/hostname)" > /proc/1/fd/1
+            children=$$(cat /proc/1/task/1/children)
+            for child in $$children; do kill -KILL "$$child"; done
+          fi
+          exit 1
+      interval: 30s
+      timeout: 12s
+      retries: 4
+      start_period: 10s
+  # docker-socket-proxy — read-only Docker API gateway for the node's WebDriver
+  # resource stats and Alloy's recovery-log reader. Runs with the `node` OR
+  # `monitoring` profile, so it comes up alongside
   # a node container AND alongside a monitoring/telemetry bring-up — the latter is
   # how a binary/systemd node (node not containerized) gets its webdriver metrics.
   #
-  # WHY THIS EXISTS — and why it is NOT a new exposure or a "leak":
+  # The node and Alloy use this read-only gateway instead of the host socket.
   #   Reading container stats requires the Docker API. Previously the node reached
   #   the host /var/run/docker.sock directly (bind-mounted into the container, or via
   #   docker-group membership for a binary node) — but that grants the FULL Docker
   #   API as root (a `:ro` flag does NOT restrict API calls), so a node compromise
-  #   could escalate to host root. This proxy REPLACES that: it is the only thing
-  #   touching the socket, restricted to read-only container endpoints (CONTAINERS=1;
-  #   POST=0 => it returns 403 for create / exec / images / everything else). Net
-  #   exposure goes DOWN, not up.
+  #   could escalate to host root. This proxy REPLACES the node's socket access,
+  #   restricted to read-only container endpoints (CONTAINERS=1;
+  #   POST=0 => it returns 403 for create / exec / image operations).
+  #   Health checks stop only their own service process; recovery has no Docker API access.
   #     - Published ONLY on 127.0.0.1:2375 (host loopback), never 0.0.0.0: 2375 is
   #       the unauthenticated Docker API, so it must not leave the host. A container
   #       node reaches it over the compose network (tcp://docker-socket-proxy:2375);
@@ -899,14 +924,15 @@ services:
   # socket: if DOCKER_HOST is unset the node skips webdriver metrics entirely
   # (non-fatal). Note those are the webdriver container's CPU/memory/traffic series
   # (genlayer_node_*{component="webdriver"}) that feed validator resource dashboards —
-  # so keep DOCKER_HOST set to keep those panels populated. To disable metrics
-  # instead: set metrics.collectors.webdriver.enabled: false and delete this service.
+  # so keep DOCKER_HOST set to keep those panels populated. Disabling metrics
+  # permits removing the node's DOCKER_HOST; Alloy still needs this gateway.
   docker-socket-proxy:
-    image: tecnativa/docker-socket-proxy:0.3.0
+    image: tecnativa/docker-socket-proxy:v0.5.0
     container_name: genlayer-node-docker-proxy
     environment:
       CONTAINERS: 1 # GET /containers/{json,inspect,stats} — read-only via POST=0
       VERSION: 1 # required by the Docker client's API-version negotiation
+      NETWORKS: 1 # read-only network metadata required by Alloy Docker discovery
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock:ro
     ports:
@@ -928,23 +954,27 @@ services:
       - monitoring
   genlayer-node:
     image: yeagerai/genlayer-node:${NODE_VERSION:-latest}
-    # The keystore password is NOT on this command line. It reaches the node as
+    # No entrypoint here: the image's own entrypoint precompiles GenVM for the
+    # host CPU on the first start, then runs `genlayernode run`. The keystore
+    # password is NOT on a command line. It reaches the node as
     # GENLAYERNODE_PASSWORD (environment below), which the run command reads in
     # place of --password. A command-line argument is visible in process
     # listings on the host; an environment variable is not.
-    entrypoint: ["/app/bin/genlayernode", "run"]
     container_name: genlayer-node
     restart: unless-stopped
     env_file:
       - path: ./.env
         required: false
     environment:
-      # ":?" makes Compose refuse to start when NODE_PASSWORD is unset or empty,
-      # before any container runs. There is no fallback: this is the password
-      # that encrypts the validator's signing key, and a default shared by every
-      # operator who forgot to set one is a key anyone can open. The release
-      # binary carries no default either — it is compiled out of production.
-      GENLAYERNODE_PASSWORD: "${NODE_PASSWORD:?NODE_PASSWORD is not set. It is the keystore password that unlocks the validator key. Set it in .env; see README section 4.}"
+      # No default: this is the password that encrypts the validator's signing
+      # key, and a default shared by every operator who forgot to set one is a
+      # key anyone can open (the release binary carries none either). The node
+      # itself refuses validator mode with an empty password ("password is
+      # required for validator mode"); a full node needs none. Not a ":?" guard:
+      # Compose interpolates every service, also under another profile, so a
+      # guard here would stop `docker compose up -d webdriver-container` (the
+      # binary install path) and a full node, which never read it.
+      GENLAYERNODE_PASSWORD: "${NODE_PASSWORD:-}"
       # WebDriver metrics collector reaches Docker via the read-only proxy
       # (see docker-socket-proxy above), never the host socket directly.
       DOCKER_HOST: tcp://docker-socket-proxy:2375
@@ -953,8 +983,11 @@ services:
       - "${NODE_OPS_PORT:-9153}:9153"
     volumes:
       - ${NODE_CONFIG_PATH:-./configs/node/config.yaml}:/app/configs/node/config.yaml:ro
+      # The trusted protocol manifest of the network; consensus.manifestpath names this path.
+      - ${NODE_MANIFEST_PATH:-./configs/node/protocol-manifest.json}:/app/configs/node/protocol-manifest.json:ro
       - ${NODE_DATA_PATH:-./data}:/app/data
-      - ./genvm-module-web-docker.yaml:/app/opt/genvm/${GENVM_VERSION}/config/genvm-module-web.yaml
+      # opt/genvm/current links to the image's GenVM tree, so no version variable is needed.
+      - ./genvm-module-web-docker.yaml:/app/opt/genvm/current/config/genvm-module-web.yaml
     security_opt:
       - no-new-privileges:true
     cap_drop:
@@ -981,7 +1014,7 @@ services:
    webdriver_host: http://webdriver-container:4444
    ```
 
-   The v0.6.0-rc.1 compose file mounts it over the image's own copy at `/app/opt/genvm/${GENVM_VERSION}/config/genvm-module-web.yaml`. Set `GENVM_VERSION=v0.6.0-rc10` in `.env`: without it the file lands in the wrong place and GenVM cannot reach the WebDriver. The binary keeps using `opt/genvm/v0.6.0-rc10/config/genvm-module-web.yaml`, which points at `localhost:4444`.
+   The compose file mounts it over the image's own copy at `/app/opt/genvm/current/config/genvm-module-web.yaml`, so no version variable is needed. The binary keeps using `opt/genvm/current/config/genvm-module-web.yaml`, which points at `localhost:4444`.
 
 3. Set the required environment variables in a `.env` file:
 
@@ -1004,14 +1037,18 @@ WEBDRIVER_PORT=4444
 # Docker image version
 NODE_VERSION=latest
 
-# Keystore password (unlocks the pre-imported validator wallet). Required — the
-# stack refuses to start without it. Choose your own; never reuse an example
+# Keystore password (unlocks the pre-imported validator wallet). Required for a
+# validator: the node refuses validator mode without it. A full node and the
+# WebDriver-only stack need none. Choose your own; never reuse an example
 # value. It reaches the node as an environment variable, not a command-line
 # argument. See README section 4 for reading it in without echo.
 NODE_PASSWORD=
 
 # Path to node configuration file
 NODE_CONFIG_PATH=./configs/node/config.yaml
+
+# Path to the trusted protocol manifest of your network
+NODE_MANIFEST_PATH=./configs/node/protocol-manifest.json
 
 # Path to node data directory (for persistence)
 NODE_DATA_PATH=./data
@@ -1027,6 +1064,11 @@ ANTHROPICKEY=
 XAIKEY=
 GEMINIKEY=
 ATOMAKEY=
+COMPUT3KEY=
+IOINTELLIGENCEKEY=
+LIBERTAI_API_KEY=
+MORPHEUS_API_KEY=
+OPENAIKEY=
 
 # Optional logging level override
 GENLAYERNODE_LOGGING_LEVEL=INFO
@@ -1082,6 +1124,9 @@ CENTRAL_LOKI_PASSWORD=
 # Node identification
 NODE_ID=validator-001
 VALIDATOR_NAME=MyValidator
+# Network label for recovery logs and alert routing; use the deployed network.
+# Leave empty for an unknown label, rather than guessing a production network.
+NETWORK_NAME=
 
 # Node metrics endpoint (optional)
 # Endpoint where the node exposes its Prometheus metrics
@@ -1102,7 +1147,6 @@ NODE_METRICS_ENDPOINT=host.docker.internal:9153
 # Example for multiple nodes:
 # SCRAPE_TARGETS_JSON=[{"__address__":"host.docker.internal:9250","instance":"0x...","validator_name":"node-1"},{"__address__":"host.docker.internal:9251","instance":"0x...","validator_name":"node-2"}]
 #
-# To generate for local nodes, use: ./generate-dev-targets.sh
 # SCRAPE_TARGETS_JSON=
 
 # =============================================================================
@@ -1122,8 +1166,8 @@ LOG_FILE_PATTERN=/var/log/genlayer/node*.log
 
 # Metrics scraping intervals (optional)
 # How often to scrape metrics from the node
-# Default: 15s for node metrics, 10s timeout
-METRICS_SCRAPE_INTERVAL=15s
+# Default: 60s for node metrics, 10s timeout
+METRICS_SCRAPE_INTERVAL=60s
 METRICS_SCRAPE_TIMEOUT=10s
 
 # Alloy internal health monitoring interval (optional)
@@ -1134,9 +1178,9 @@ ALLOY_SELF_MONITORING_INTERVAL=60s
 
 # Loki log batching configuration (optional)
 # Controls how logs are batched before sending to central Loki
-# Default: 1MiB batch size, 1s wait time
+# Default: 1MiB batch size, 60s wait time
 LOKI_BATCH_SIZE=1MiB
-LOKI_BATCH_WAIT=1s
+LOKI_BATCH_WAIT=60s
 
 # =============================================================================
 # Deployment Instructions
@@ -1169,16 +1213,17 @@ LOKI_BATCH_WAIT=1s
 # - Grafana Alloy handles both metrics and logs in a single service
 # - To customize monitoring, edit alloy-config.river
 # - To filter metrics (reduce bandwidth), uncomment the filtering rule in alloy-config.river
-# - Ensure firewall allows outbound connections to monitoring server (port 8180)
+# - Ensure the firewall allows outbound HTTPS to CENTRAL_MONITORING_URL and CENTRAL_LOKI_URL
 #
+
+# Keep health checks but disable automatic container-local recycling when false.
+HEALTHCHECK_AUTO_RESTART=true
 ```
 
 This is the release package's `.env.example`: copy it to `.env` next to `docker-compose.yaml`. The release package also ships `docker-compose.yaml` and `genvm-module-web-docker.yaml`. Set at least:
 
-- `NODE_PASSWORD`: the keystore password, with no default. In v0.6.0-rc.1 every `docker compose` command fails while it is empty, also for a full node or the WebDriver alone. A validator sets the operator key's password (the export passphrase); a full node sets any non-empty value.
-- `GENVM_VERSION=v0.6.0-rc10`: the GenVM version v0.6.0-rc.1 ships. The compose file uses it to mount `genvm-module-web-docker.yaml`; `.env.example` does not list it.
-- `COMPOSE_PROJECT_NAME=genlayer-node`: the v0.6.0-rc.1 compose file has no fixed project name, so Compose names the project after the directory. With a fixed name, a new version run from a new directory replaces the old containers instead of failing with "container name ... already in use". Passing `-p genlayer-node` to every `docker compose` command does the same.
-- `NODE_VERSION`: pin the exact version approved for Bradbury Phase 2, today `NODE_VERSION=v0.6.0-rc.1`. The `latest` image can belong to an older release family.
+- `NODE_PASSWORD`: the keystore password. A validator needs it: the node refuses validator mode without a password, and there is no default. A full node and the WebDriver-only stack need none.
+- `NODE_VERSION`: pin the exact version approved for Bradbury Phase 2. The `latest` image can belong to an older release family.
 - the API key of at least one LLM provider.
 - `GENLAYERNODE_ROLLUP_GENLAYERCHAINRPCKEY`, when your chain RPC provider needs a key (the Bradbury WebSocket does).
 
@@ -1223,7 +1268,7 @@ docker compose --profile node up -d
 
 For a quick setup using Docker Compose:
 
-1. **Set the monitoring variables in your `.env` file.** The `.env` example above lists them: the six `CENTRAL_*` endpoint and credential values, `NODE_ID` and `VALIDATOR_NAME`. All six `CENTRAL_*` values are required: Alloy stops with a message when one is missing. Get the endpoints and credentials from the Foundation team, and see the [Monitoring Guide](/validators/monitoring) for the values to use.
+1. **Set the monitoring variables in your `.env` file.** The `.env` example above lists them: the six `CENTRAL_*` endpoint and credential values, `NODE_ID`, `VALIDATOR_NAME` and `NETWORK_NAME`. All six `CENTRAL_*` values are required: Alloy stops with a message when one is missing. Get the endpoints and credentials from the Foundation team, and see the [Monitoring Guide](/validators/monitoring) for the values to use.
 
 2. **Run docker compose**:
    ```bash copy
