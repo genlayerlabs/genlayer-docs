@@ -120,6 +120,8 @@ CENTRAL_LOKI_PASSWORD=<logs-password>
 # Node identification
 NODE_ID=validator-001
 VALIDATOR_NAME=MyValidator
+# Network label for recovery logs and alert routing
+NETWORK_NAME=bradbury-phase2
 
 # Usually defaults are fine
 NODE_METRICS_ENDPOINT=host.docker.internal:9153
@@ -127,6 +129,8 @@ LOG_FILE_PATTERN=/var/log/genlayer/node*.log
 METRICS_SCRAPE_INTERVAL=15s
 # Host directory where the node writes its log files (mounted into Alloy)
 NODE_LOGS_PATH=./data/node/logs
+# false keeps the container health checks but turns off automatic restarts
+HEALTHCHECK_AUTO_RESTART=true
 ```
 
 2. **Add or verify the Alloy service in docker-compose.yaml.** Use the docker-compose.yaml from the release package as it is. It already defines the alloy service under the monitoring profile, together with the docker-socket-proxy service that alloy depends on. Alloy also mounts alloy-healthcheck.sh from the same package. Copying only the alloy block into another compose file does not work: it will not start without docker-socket-proxy and alloy-healthcheck.sh. The block is shown here for reference:
@@ -505,13 +509,16 @@ Look for messages indicating successful batch sending (no error codes like 401, 
 
 ## Container Health Checks
 
-In v0.6.0-rc.1 the release docker-compose.yaml gives the Alloy container a health check (`alloy-healthcheck.sh`, every 120 seconds). It detects a stalled push to the central server: when Alloy's write-ahead log keeps growing, the check clears it and marks the container unhealthy, and Docker restarts Alloy (`restart: unless-stopped`). The WebDriver container has no health check in this release.
+The release docker-compose.yaml gives the webdriver and Alloy containers health checks. When a check keeps failing, the container stops its own process and Docker restarts it (`restart: unless-stopped`). A container you stop by hand stays stopped. Each restart attempt is written to the container's logs; with monitoring on, Alloy forwards these lines with `component="health-recovery"`.
 
-Check the Alloy container's health:
+To keep the health checks but turn off the automatic restarts, set `HEALTHCHECK_AUTO_RESTART=false` in `.env` and recreate the services.
+
+Check container health and recovery events:
 
 ```bash copy
+docker inspect --format '{{.State.Health.Status}}' genlayer-node-webdriver
 docker inspect --format '{{.State.Health.Status}}' genlayer-node-alloy
-docker compose logs --since 30m alloy
+docker compose logs --since 30m webdriver-container alloy
 ```
 
 ## Troubleshooting

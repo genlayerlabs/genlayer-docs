@@ -296,7 +296,7 @@ One full node can be shared between multiple validators. The optimal validator-t
    Run it in the final install location: it writes this directory's absolute path into the GenVM binaries. If you move the installation later, run it again there.
 
    ```sh copy
-   python3 ./opt/genvm/v0.6.0-rc10/bin/setup.py # v0.6.0-rc.1 ships GenVM v0.6.0-rc10: check with `ls opt/genvm`
+   python3 ./opt/genvm/current/bin/setup.py
    ```
 It does following:
 
@@ -317,7 +317,7 @@ The file needs to be located at `configs/node/config.yaml`
 
 You can use the following example configuration. **Note:** For most users, you will only need to replace the `rollup` and `consensus` sections with the values for your target network (see [Network-Specific Consensus Configuration](#network-specific-consensus-configuration) below).
 
-Set `genvm.root_dir` to the GenVM directory the release ships. v0.6.0-rc.1 ships `opt/genvm/v0.6.0-rc10`, but its config template says `./opt/genvm/v0.6.0-rc1`: set `genvm.root_dir: ./opt/genvm/v0.6.0-rc10` (check with `ls opt/genvm`). `install.sh` writes the right value for you.
+The `config.yaml` in the release package sets `genvm.root_dir: ./opt/genvm/current`, a link to the GenVM version the release ships. Keep that value: the example below names the versioned directory, which the package also contains.
 
 ```yaml copy
 # rollup configuration
@@ -625,7 +625,7 @@ mkdir -p configs/node
 curl -fsSL https://docs.genlayer.com/validators/bradbury.protocol-manifest.json -o configs/node/protocol-manifest.json
 ```
 
-The binary reads it from that path. With Docker, mount it into the container yourself: the v0.6.0-rc.1 compose file does not (see [Running the Node using docker-compose](#running-the-node-using-docker-compose)).
+The binary reads it from that path. Docker Compose mounts the same file into the container (`NODE_MANIFEST_PATH`, default `./configs/node/protocol-manifest.json`).
 
 **WebSocket API key.** The Bradbury HTTPS RPC needs no key, but its WebSocket endpoint rejects connections without an API key.
 
@@ -790,8 +790,6 @@ Once you have configured everything, you are ready to start the node.
     docker compose up -d # Starts the WebDriver needed by the GenVM web module
     ```
 
-    In v0.6.0-rc.1 every `docker compose` command fails while `NODE_PASSWORD` is empty, also for the WebDriver alone. For a binary node, set any non-empty value in the `.env` next to `docker-compose.yaml`.
-
     The node starts the GenVM manager and its modules itself (`genvm.start_manager: true` in the config template).
 
     **WebDriver resource metrics (optional).** To report the WebDriver container's CPU, memory and traffic as `genlayer_node_*{component="webdriver"}` series, also start the read-only Docker API proxy, and give only the node process `DOCKER_HOST=tcp://127.0.0.1:2375` (see step 4):
@@ -844,16 +842,7 @@ You can also run the GenLayer node using Docker and Docker Compose. Release cand
 Before the first start, in the directory with your `docker-compose.yaml`:
 
 - `configs/node/config.yaml` holds your network's `rollup` and `consensus` values (see [Configuration](#configuration)).
-- `configs/node/protocol-manifest.json` is your network's trusted manifest (see [Network-Specific Consensus Configuration](#network-specific-consensus-configuration)). The v0.6.0-rc.1 compose file does not mount it: add a `docker-compose.override.yml` next to `docker-compose.yaml`, which Docker Compose reads automatically:
-
-  ```yaml copy
-  services:
-    genlayer-node:
-      volumes:
-        - ./configs/node/protocol-manifest.json:/app/configs/node/protocol-manifest.json:ro
-        # Only if you customize the LLM config (for example for greyboxing):
-        # - ./genvm-module-llm.yaml:/app/opt/genvm/v0.6.0-rc10/config/genvm-module-llm.yaml:ro
-  ```
+- `configs/node/protocol-manifest.json` is your network's trusted manifest (see [Network-Specific Consensus Configuration](#network-specific-consensus-configuration)).
 - The node container runs as uid `10001`, and the bind-mounted `./data` keeps its host owner. Let that user write to it once:
 
   ```sh copy
@@ -1025,7 +1014,7 @@ services:
    webdriver_host: http://webdriver-container:4444
    ```
 
-   The v0.6.0-rc.1 compose file mounts it over the image's own copy at `/app/opt/genvm/${GENVM_VERSION}/config/genvm-module-web.yaml`. Set `GENVM_VERSION=v0.6.0-rc10` in `.env`: without it the file lands in the wrong place and GenVM cannot reach the WebDriver. The binary keeps using `opt/genvm/v0.6.0-rc10/config/genvm-module-web.yaml`, which points at `localhost:4444`.
+   The compose file mounts it over the image's own copy at `/app/opt/genvm/current/config/genvm-module-web.yaml`, so no version variable is needed. The binary keeps using `opt/genvm/current/config/genvm-module-web.yaml`, which points at `localhost:4444`.
 
 3. Set the required environment variables in a `.env` file:
 
@@ -1233,10 +1222,8 @@ HEALTHCHECK_AUTO_RESTART=true
 
 This is the release package's `.env.example`: copy it to `.env` next to `docker-compose.yaml`. The release package also ships `docker-compose.yaml` and `genvm-module-web-docker.yaml`. Set at least:
 
-- `NODE_PASSWORD`: the keystore password, with no default. In v0.6.0-rc.1 every `docker compose` command fails while it is empty, also for a full node or the WebDriver alone. A validator sets the operator key's password (the export passphrase); a full node sets any non-empty value.
-- `GENVM_VERSION=v0.6.0-rc10`: the GenVM version v0.6.0-rc.1 ships. The compose file uses it to mount `genvm-module-web-docker.yaml`; `.env.example` does not list it.
-- `COMPOSE_PROJECT_NAME=genlayer-node`: the v0.6.0-rc.1 compose file has no fixed project name, so Compose names the project after the directory. With a fixed name, a new version run from a new directory replaces the old containers instead of failing with "container name ... already in use". Passing `-p genlayer-node` to every `docker compose` command does the same.
-- `NODE_VERSION`: pin the exact version approved for Bradbury Phase 2, today `NODE_VERSION=v0.6.0-rc.1`. The `latest` image can belong to an older release family.
+- `NODE_PASSWORD`: the keystore password. A validator needs it: the node refuses validator mode without a password, and there is no default. A full node and the WebDriver-only stack need none.
+- `NODE_VERSION`: pin the exact version approved for Bradbury Phase 2. The `latest` image can belong to an older release family.
 - the API key of at least one LLM provider.
 - `GENLAYERNODE_ROLLUP_GENLAYERCHAINRPCKEY`, when your chain RPC provider needs a key (the Bradbury WebSocket does).
 
@@ -1281,7 +1268,7 @@ docker compose --profile node up -d
 
 For a quick setup using Docker Compose:
 
-1. **Set the monitoring variables in your `.env` file.** The `.env` example above lists them: the six `CENTRAL_*` endpoint and credential values, `NODE_ID` and `VALIDATOR_NAME`. All six `CENTRAL_*` values are required: Alloy stops with a message when one is missing. Get the endpoints and credentials from the Foundation team, and see the [Monitoring Guide](/validators/monitoring) for the values to use.
+1. **Set the monitoring variables in your `.env` file.** The `.env` example above lists them: the six `CENTRAL_*` endpoint and credential values, `NODE_ID`, `VALIDATOR_NAME` and `NETWORK_NAME`. All six `CENTRAL_*` values are required: Alloy stops with a message when one is missing. Get the endpoints and credentials from the Foundation team, and see the [Monitoring Guide](/validators/monitoring) for the values to use.
 
 2. **Run docker compose**:
    ```bash copy
