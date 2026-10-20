@@ -47,33 +47,37 @@ echo "OPENROUTERKEY=sk-or-v1-your-key-here" >> ${ENV_FILE}
 
 The tarball ships with a unified config that includes all backends (openrouter, morpheus, heurist, ionet, etc.).
 
-```bash
-VERSION=$(readlink /opt/genlayer-node/bin | sed 's|/bin||; s|.*/||')
+`NODE_DIR` is the directory of your node release (where you extracted the
+tarball). On a host with the `/opt/genlayer-node/bin` symlink layout, it is
+`/opt/genlayer-node/<version>`.
 
-cp /opt/genlayer-node/${VERSION}/opt/genvm/${GENVM_VERSION}/config/genvm-modules-llm-release.yaml \
-   /opt/genlayer-node/${VERSION}/opt/genvm/${GENVM_VERSION}/config/genvm-module-llm.yaml
+```bash
+NODE_DIR=/path/to/your/node/release
+
+cp ${NODE_DIR}/opt/genvm/current/config/genvm-modules-llm-release.yaml \
+   ${NODE_DIR}/opt/genvm/current/config/genvm-module-llm.yaml
 ```
 
 ### 4. Switch to greybox strategy
 
 ```bash
 sed -i 's/genvm-llm-default\.lua/genvm-llm-greybox.lua/' \
-  /opt/genlayer-node/${VERSION}/opt/genvm/${GENVM_VERSION}/config/genvm-module-llm.yaml
+  ${NODE_DIR}/opt/genvm/current/config/genvm-module-llm.yaml
 ```
 
 ### 5. Verify the config
 
 ```bash
 # Check lua script path
-grep lua_script_path /opt/genlayer-node/${VERSION}/opt/genvm/${GENVM_VERSION}/config/genvm-module-llm.yaml
+grep lua_script_path ${NODE_DIR}/opt/genvm/current/config/genvm-module-llm.yaml
 # Expected: lua_script_path: ${exeDir}/../config/genvm-llm-greybox.lua
 
 # Check openrouter is present
-grep -A2 'openrouter:' /opt/genlayer-node/${VERSION}/opt/genvm/${GENVM_VERSION}/config/genvm-module-llm.yaml
+grep -A2 'openrouter:' ${NODE_DIR}/opt/genvm/current/config/genvm-module-llm.yaml
 # Expected: enabled: true
 
 # Check the greybox Lua file exists
-ls -la /opt/genlayer-node/${VERSION}/opt/genvm/${GENVM_VERSION}/config/genvm-llm-greybox.lua
+ls -la ${NODE_DIR}/opt/genvm/current/config/genvm-llm-greybox.lua
 ```
 
 ### 6. Start the node
@@ -104,7 +108,7 @@ To revert to the default generated chain:
 sudo systemctl stop genlayer-node
 
 sed -i 's/genvm-llm-greybox\.lua/genvm-llm-default.lua/' \
-  /opt/genlayer-node/${VERSION}/opt/genvm/${GENVM_VERSION}/config/genvm-module-llm.yaml
+  ${NODE_DIR}/opt/genvm/current/config/genvm-module-llm.yaml
 
 sudo systemctl start genlayer-node
 ```
@@ -180,7 +184,7 @@ After editing the YAML, restart the LLM module (see "Updating Greybox on a Runni
 **All models exhausted error:**
 - OpenRouter may be down or your key is invalid
 - Check your key at https://openrouter.ai/settings/keys
-- Run `task node:doctor` — the "LLM Providers" section probes each enabled backend and reports which ones actually answer, rather than only whether a key variable is set
+- Run `./bin/genlayernode doctor` from `${NODE_DIR}` — the "LLM Providers" section probes each enabled backend and reports which ones actually answer, rather than only whether a key variable is set
 - Fallback providers (heurist, ionet) also need valid keys if you want fallback to work
 
 **Configure more than one provider.** A backend only enters the fallback chain
