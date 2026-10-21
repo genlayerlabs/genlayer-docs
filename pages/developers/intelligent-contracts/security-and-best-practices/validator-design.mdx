@@ -1,0 +1,188 @@
+---
+description: "Secure validator design for GenLayer Intelligent Contracts: six validator anti-patterns with fixes, an error-agreement policy and a review checklist."
+---
+
+import { Callout } from "nextra-theme-docs";
+
+# Secure Validator Design
+
+In a custom equivalence principle the **validator function is your security
+boundary**. The leader proposes; validators decide whether the proposal is
+true. This page lists the validator bugs that most often turn a GenLayer
+contract into "whatever the leader says", with a fix for each.
+
+All examples use the recommended pattern:
+
+```python
+result = gl.vm.run_nondet_unsafe(leader_fn, validator_fn)
+```
+
+## 1. Leader-output-only validation
+
+**Bug** — the validator only checks the *shape* of the leader's answer:
+
+```python
+def validator_fn(res) -> bool:
+    if not isinstance(res, gl.vm.Return):
+        return False
+    d = res.calldata
+    return isinstance(d.get("approved"), bool) and 0 <= d.get("score", -1) <= 100
+```
+
+A malicious leader returns `{"approved": True, "score": 99}` and every
+validator agrees, even if their own LLM would have said "no".
+
+**Fix** — redo the work and compare the decision:
+
+```python
+def validator_fn(res) -> bool:
+    if not isinstance(res, gl.vm.Return):
+        return handle_leader_error(res, leader_fn)
+    mine = leader_fn()
+    return res.calldata["approved"] == mine["approved"]
+```
+
+## 2. Exact equality over free-form output
+
+**Bug** — `res.calldata == leader_fn()` (or `gl.eq_principle.strict_eq`) around
+an LLM call. Two honest LLMs almost never produce the same wording, so
+validators disagree, leaders rotate and the transaction ends **undetermined**.
+This is a liveness bug that attackers can also exploit to stall a contract.
+
+**Fix** — compare only the stable decision fields; ignore `reasoning`/`summary`
+text (but bound its size, see §5).
+
+## 3. Agreeing whenever the leader errors
+
+**Bug**:
+
+```python
+if not isinstance(res, gl.vm.Return):
+    return True   # "the leader had a problem, fine"
+```
+
+A leader can now veto any outcome — block a payout, censor a claim — by
+reporting an error.
+
+**Fix** — reproduce the call and only agree on errors you can reproduce:
+
+```python
+ERR_EXPECTED, ERR_EXTERNAL = "[EXPECTED]", "[EXTERNAL]"
+ERR_TRANSIENT, ERR_LLM = "[TRANSIENT]", "[LLM_ERROR]"
+
+def handle_leader_error(res, leader_fn) -> bool:
+    leader_msg = getattr(res, "message", "")
+    try:
+        leader_fn()
+        return False                      # it works for me -> the leader is wrong
+    except gl.vm.UserError as e:
+        if e.message.startswith((ERR_EXPECTED, ERR_EXTERNAL)):
+            return e.message == leader_msg   # deterministic errors must match exactly
+        if e.message.startswith(ERR_TRANSIENT):
+            return leader_msg.startswith(ERR_TRANSIENT)   # both saw an outage
+        return False                      # LLM errors: force a new leader
+    except Exception:
+        return False
+```
+
+| Prefix | Raise it for | Agreement rule |
+|---|---|---|
+| `[EXPECTED]` | business-rule failures | identical message |
+| `[EXTERNAL]` | deterministic API errors (4xx, "not found") | identical message |
+| `[TRANSIENT]` | timeouts, 5xx, rate limits, incomplete data | both transient |
+| `[LLM_ERROR]` | malformed model output | never agree |
+
+## 4. Tolerance that straddles a decision threshold
+
+**Bug** — numeric tolerance without a decision check:
+
+```python
+def validator_fn(res) -> bool:
+    return abs(res.calldata["score"] - leader_fn()["score"]) <= 15
+
+# later, deterministic code:
+if result["score"] >= 70: pay()
+```
+
+Honest validators measure 60 (fail). A leader reports 72 (pass): 12 apart,
+inside the tolerance, and the outcome flips.
+
+**Fix** — require the same side of every threshold **and** the tolerance:
+
+```python
+theirs, mine = int(res.calldata["score"]), leader_fn()["score"]
+same_side = (theirs >= 70) == (mine >= 70)
+return same_side and abs(theirs - mine) <= 15
+```
+
+The same applies to buckets (`RELEASE ≥ 90 %`, `SPLIT`, `REFUND ≤ 10 %`) and to
+measurements near a policy threshold (119.5 mm vs 120.5 mm of rainfall).
+
+## 5. Unbounded leader payloads
+
+**Bug** — the validator ignores free-text fields, so a leader can return a
+200 KB `reasoning` string that the contract then stores.
+
+**Fix** — truncate in the leader *and* reject oversized results in the
+validator:
+
+```python
+if len(str(res.calldata.get("reasoning", ""))) > 300:
+    return False
+```
+
+## 6. Trusting leader-supplied derived fields
+
+**Bug** — the leader returns both `score` and `passed`, and the validator
+compares only `passed` (or only `score`). A leader can send an inconsistent
+pair such as `{"score": 40, "passed": True}`.
+
+**Fix** — derive decisions from the measured value inside the validator, and
+reject payloads whose derived fields don't match:
+
+```python
+if res.calldata["passed"] != (int(res.calldata["score"]) >= 70):
+    return False
+```
+
+<Callout type="info">
+  Even better: don't include derived fields in the leader result at all —
+  compute them deterministically after consensus.
+</Callout>
+
+## Reference validator
+
+```python
+def validator_fn(res) -> bool:
+    if not isinstance(res, gl.vm.Return):
+        return handle_leader_error(res, leader_fn)          # §3
+    try:
+        mine = leader_fn()                                   # §1
+    except Exception:
+        return False
+    theirs = res.calldata
+    if not isinstance(theirs, dict):
+        return False
+    if len(str(theirs.get("reasoning", ""))) > 300:          # §5
+        return False
+    try:
+        t_score = int(theirs["score"])
+    except (KeyError, TypeError, ValueError):
+        return False
+    if theirs.get("passed") != (t_score >= 70):              # §6
+        return False
+    return (
+        theirs["passed"] == mine["passed"]                   # §2, §4
+        and abs(t_score - mine["score"]) <= 15
+    )
+```
+
+## Review checklist
+
+- [ ] The validator re-executes or independently derives the decision.
+- [ ] It compares decision fields, never free text.
+- [ ] Errors are classified and only reproducible errors are agreed on.
+- [ ] Tolerances never carry a value across a decision threshold.
+- [ ] Payload size is bounded.
+- [ ] Derived fields are recomputed, not trusted.
+- [ ] Each case above has a test using `direct_vm.run_validator(leader_result=...)` or `run_validator(leader_error=...)` — see [Adversarial validator tests](/developers/intelligent-contracts/testing#adversarial-validator-tests).
