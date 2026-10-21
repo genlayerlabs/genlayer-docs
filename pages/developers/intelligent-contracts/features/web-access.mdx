@@ -59,9 +59,9 @@ External APIs can return error responses. Consider checking the status code:
 def fetch_data():
     response = gl.nondet.web.request(api_url, method='GET')
     if response.status_code >= 400 and response.status_code < 500:
-        raise gl.UserError(f"API returned client error: {response.status_code}")
+        raise gl.vm.UserError(f"API returned client error: {response.status_code}")
     elif response.status_code >= 500:
-        raise gl.UserError(f"API temporarily unavailable: {response.status_code}")
+        raise gl.vm.UserError(f"API temporarily unavailable: {response.status_code}")
     return json.loads(response.body.decode("utf-8"))
 ```
 
