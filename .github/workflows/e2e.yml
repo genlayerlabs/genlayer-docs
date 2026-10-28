@@ -13,7 +13,10 @@ concurrency:
 jobs:
   test:
     name: Playwright E2E
-    runs-on: ubuntu-latest
+    # Pinned: ubuntu-latest is Ubuntu 26.04, where Playwright 1.55 cannot install
+    # its browsers. Move back to ubuntu-latest after upgrading @playwright/test to
+    # a release that supports 26.04.
+    runs-on: ubuntu-24.04
     timeout-minutes: 30
     steps:
       - name: Checkout
