@@ -17,7 +17,7 @@ Today the GenLayer Foundation operates a baseline set of these keepers so the ne
 
 | Role | Function | Who may call | Reward | Risk if idle |
 |---|---|---|---|---|
-| **Inflation relayer** | `GEN.executeL2Message()` (L1) | Anyone (permissionless) | `incentivePercentage` × epoch inflation, minted to caller. | **Epoch progression halts network-wide.** L2 cannot advance past `inflationEpoch`. |
+| **Inflation relayer** | Outbox execution, then `GEN.executeInflationRequest()` (Ethereum); retryable redemption (GenLayer Chain) | Anyone (permissionless) | Bounded gas reimbursement in GEN for `executeInflationRequest()`, when the keeper policy enables it. | **Epoch progression halts network-wide.** L2 cannot advance past `inflationEpoch`. |
 | **Epoch advancer** | `Staking.epochAdvance()` (L2) | Anyone (permissionless) | None | Epochs stop advancing; fees/inflation are not distributed. |
 | **Validator primer** | `Staking.validatorPrime(validator)` (L2) | Anyone, on behalf of a validator | 1% of any slash that fires (only when a slash is pending and caller ≠ validator). Healthy validator → none. | Validator misses selection; pending slashes go unenforced. |
 | **Appellant** | SDK/CLI appeal operation (`topUpAndSubmitAppeal`) | Anyone (permissionless, payable) | Successful appeal returns 2.5× the bond: principal plus 1.5× profit. | Incorrect results are not challenged. |
@@ -34,33 +34,39 @@ Today the GenLayer Foundation operates a baseline set of these keepers so the ne
 
 ## Inflation Relayer
 
-**Function:** `GEN.executeL2Message(batchNumber, txIndex, batchIndex, message, proof, l2GasPrice, l2GasLimit)` on the **L1** GEN token contract.
+**Functions:** the canonical Arbitrum `Outbox` on Ethereum, `GEN.executeInflationRequest(epochTo, gasPrice, gasLimit)` on the Ethereum GEN token contract, and retryable-ticket redemption on GenLayer Chain.
 
-Each epoch's inflation makes a round trip: the L2 Staking contract requests it, L1 mints and bridges it back, and L2 receives it. The middle step — proving the L2→L1 message on L1 and relaying it — **cannot happen on-chain**, because zkSync L2→L1 messages can only be proved after the L2 batch has finalized on L1 (roughly an hour on real networks). Someone has to call `executeL2Message()` off-chain to complete the round trip.
+GEN inflation is minted on Ethereum and delivered to the Staking contract on GenLayer Chain, so each inflation tranche makes a round trip over the chain's canonical Arbitrum bridge:
+
+1. **Request (GenLayer Chain → Ethereum).** When `Staking.epochAdvance()` sees that delivered inflation is running low, Staking sends an inflation request to Ethereum through `ArbSys` and emits `InflationRequestedFromL2`.
+2. **Execute the Outbox message (Ethereum).** After the rollup assertion containing the request is confirmed, anyone executes it through the Outbox with its Merkle proof. The GEN bridge receiver authenticates the message and approves the request on GEN for one day (`ArbitrumInflationRequestApproved`).
+3. **Execute the request (Ethereum).** Anyone calls `GEN.executeInflationRequest(epochTo, gasPrice, gasLimit)` with the approved parameters. GEN mints the tranche and sends it to GenLayer Chain as a retryable ticket through the chain's ERC-20 Inbox.
+4. **Deliver (GenLayer Chain).** The retryable is normally redeemed automatically, delivering the GEN to the inflation escrow, which credits Staking and raises `inflationEpoch`. If automatic redemption fails, anyone can redeem the ticket before it expires; if the Staking call fails, the escrow keeps the GEN and anyone can call `ArbitrumInflationEscrow.retry()`.
+5. **Acknowledge (GenLayer Chain → Ethereum).** After Staking accepts the GEN, the escrow sends a delivery acknowledgement back through `ArbSys`. Once its assertion is confirmed, anyone executes it through the Outbox so GEN records the delivery. Only one inflation transfer can be outstanding, so the next request cannot be executed until this acknowledgement lands.
+
+Steps 2 and 5 **cannot happen on-chain by themselves**: an L2→L1 message can execute only after its assertion is confirmed on Ethereum, which takes the chain's challenge period. Someone has to submit those transactions off-chain.
 
 <Callout type="error" emoji="🛑">
-  **This role gates the entire network's epoch progression.** The L2 `Staking.epochAdvance()` can only move forward while `epoch + 1 <= inflationEpoch`, and `inflationEpoch` only rises when `executeL2Message()` is successfully relayed on L1. **If no one relays inflation, epoch progression halts network-wide** once the current epoch catches up to `inflationEpoch`. This is the single most important keeper to keep running.
+  **This role gates the entire network's epoch progression.** The L2 `Staking.epochAdvance()` can only move forward while `epoch + 1 <= inflationEpoch`, and `inflationEpoch` only rises when inflation is delivered to Staking. **If no one relays inflation, epoch progression halts network-wide** once the current epoch catches up to `inflationEpoch`. Staking requests inflation ahead of the current epoch, but this is still the single most important keeper to keep running.
 </Callout>
 
-**When to call:** whenever an inflation request message is pending relay. Pre-check any candidate message — and estimate the reward — with the L1 view helper:
+**When to call:** whenever
+
+- a request or acknowledgement is waiting in the Outbox after confirmation;
+- a request is approved on Ethereum but not yet executed;
+- an inflation retryable failed automatic redemption — redeem it on GenLayer Chain before it expires, or extend its lifetime with a keepalive; or
+- the inflation escrow holds an undelivered request because the Staking call failed (`DeliveryDeferred`) — call `ArbitrumInflationEscrow.retry()`.
+
+Pre-check a request before submitting:
 
 ```solidity
-// Returns (pending, rewards): whether the message still needs relaying,
-// and the estimated GEN reward for relaying it.
-(bool pending, uint256 rewards) = GEN.isL2MessagePending(
-    batchNumber, txIndex, batchIndex, message
-);
+// True while the request is approved on Ethereum and has not expired or been executed.
+bool ready = GEN.isInflationRequestApproved(epochTo, gasPrice, gasLimit);
 ```
 
-**Reward:** on a successful INFLATION relay, the caller is paid
+**Reward:** a successful `executeInflationRequest()` reimburses the caller in GEN, minted on Ethereum and emitted as `KeeperRewardPaid`. The reward is the gas the call used plus a fixed overhead, priced at the lower of the paid gas price and a policy maximum, converted to GEN with the rollup's fee-token exchange rate, plus a premium, and capped at a policy maximum. A zero-cap policy disables it. Outbox executions and retryable redemptions are not reimbursed. The full inflation tranche still goes to Staking; the reward is not deducted from it.
 
-```
-reward = totalInflation × incentivePercentage / 10000
-```
-
-minted to `msg.sender` on L1, emitting `IncentiveRewardPaid(caller, reward)`. The reward is **carved out of** that epoch's inflation, not minted on top — total new supply is `fees + totalInflation` regardless of the incentive.
-
-**Cadence:** relay each pending inflation message shortly after its L2 batch finalizes on L1 (about hourly on testnet, gated by batch finalization). Relaying is idempotent per target epoch — a duplicate request for an already-requested epoch is a safe no-op — so a keeper that occasionally double-submits does no harm.
+**Cadence:** follow the confirmation of each request and acknowledgement on Ethereum. Duplicate submissions are safe: an executed or expired approval reverts, and a late duplicate ticket cannot credit Staking twice.
 
 ---
 
@@ -68,7 +74,7 @@ minted to `msg.sender` on L1, emitting `IncentiveRewardPaid(caller, reward)`. Th
 
 **Function:** `Staking.epochAdvance()` on the L2 Staking contract.
 
-Advances the network from the current epoch to the next. On each advance it distributes the finalized epoch's fees and inflation to validators, developers, and the DAO, requests the next window of inflation from L1 (see [Inflation Relayer](#inflation-relayer)), and — when the burn threshold is met — auto-triggers [token burning](#burn-trigger).
+Advances the network from the current epoch to the next. On each advance it distributes the finalized epoch's fees and inflation to validators, developers, and the DAO, requests the next window of inflation from Ethereum (see [Inflation Relayer](#inflation-relayer)), and — when the burn threshold is met — auto-triggers [token burning](#burn-trigger).
 
 **When to call:** once the current epoch's minimum duration has elapsed and its transactions are resolved. In normal operation this is driven automatically; a keeper only needs to step in if advancement stalls.
 
@@ -164,7 +170,7 @@ Removes accumulated burnable GEN (unclaimed inflation, the post-incentive slashe
 **When to call:** almost never manually. Burning fires **automatically inside `epochAdvance()`** whenever the accumulated `burning` balance meets the configured `burnThreshold`. The manual call is a **fallback** for flushing balances that sit **below** the threshold, or when threshold automation is disabled (`burnThreshold = 0`, the default).
 
 <Callout type="info">
-  Completing a burn on L1 requires two further off-chain operator steps (`finalizeWithdrawal` then a BURN-payload `executeL2Message`) that pair with the L2 emission. Those steps do **not** pay the inflation relayer reward. See the staking system specification for the full burn flow.
+  The burn leaves GenLayer Chain as a native GEN withdrawal through `ArbSys`. After its assertion is confirmed, someone must execute the withdrawal through the Outbox on Ethereum; GEN then burns exactly the withdrawn amount. Refunded bridge gas collected by the inflation fee vault is burned the same way through `burnFees()`. These steps do **not** pay a keeper reward.
 </Callout>
 
 **Reward:** none.
@@ -191,14 +197,14 @@ Paginated garbage collection that reclaims **expired** quarantine records. It on
 
 **Network endpoints and contract addresses.** Keepers need the L2 Staking / consensus contract address and the L1 GEN token address for the target network. The L2 consensus `AddressManager` address and the chain RPC/WebSocket URLs for each testnet live in the [Network-Specific Consensus Configuration](/validators/setup-guide#network-specific-consensus-configuration) section of the setup guide. From the CLI, `genlayer network info` prints the active network's configuration and contract addresses.
 
-**Reference implementations.** The consensus repository ships reference scripts for the multi-step relay flows — the inflation relayer's proof-fetch-and-execute logic lives at `scripts/consensus_flows/staking/executeL2Message.ts`, alongside companion scripts for the other staking flows. Use these as a starting point for a production keeper: they show how to fetch the L2 receipt, poll `zks_getL2ToL1LogProof` until the batch is finalized, and submit the L1 call.
+**Bridge tooling.** The inflation and burn flows use the chain's canonical Arbitrum bridge, so standard Arbitrum tooling applies: see Arbitrum's guides to [L2-to-L1 messages](https://docs.arbitrum.io/how-arbitrum-works/deep-dives/l2-to-l1-messaging) for building Outbox proofs and executing confirmed messages, and to [L1-to-L2 messages](https://docs.arbitrum.io/how-arbitrum-works/deep-dives/l1-to-l2-messaging) for redeeming retryable tickets. A keeper also needs the Ethereum GEN token address and the chain's canonical Inbox, Bridge, and Outbox addresses for the target network.
 
 **Practical guidance:**
 
-- **Prioritize the inflation relayer.** It is the only keeper whose absence halts the whole network, and the only one that pays a standing reward. Everything else is a backstop to already-automated behavior.
-- **Check for a reward before assuming one.** Only the inflation relayer (via `incentivePercentage`), the validator primer (only on an actually-enforced slash), and the appellant (only on a successful appeal) ever pay. The rest are unpaid liveness/hygiene work.
-- **Expect idempotency.** Inflation relays, stuck-tx healing, and quarantine GC are all safe to retry or double-submit — duplicate or non-applicable calls are no-ops, not errors.
-- **Watch gas vs. reward.** For the paid roles, compare the estimated reward (e.g. `isL2MessagePending`'s `rewards`, or the pending slash amount) against the transaction cost before submitting.
+- **Prioritize the inflation relayer.** It is the only keeper whose absence halts the whole network, and the only one that can pay a standing reward. Everything else is a backstop to already-automated behavior.
+- **Check for a reward before assuming one.** Only the inflation relayer (gas reimbursement for `executeInflationRequest()`, when enabled), the validator primer (only on an actually-enforced slash), and the appellant (only on a successful appeal) ever pay. The rest are unpaid liveness/hygiene work.
+- **Expect idempotency.** Inflation relays, stuck-tx healing, and quarantine GC are all safe to retry or double-submit — duplicate or non-applicable calls either revert or are no-ops, with no side effects.
+- **Watch gas vs. reward.** For the paid roles, compare the expected reward (the capped gas reimbursement, or the pending slash amount) against the transaction cost before submitting.
 
 ## Related Resources
 
