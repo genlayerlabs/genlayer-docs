@@ -135,7 +135,7 @@ The wizard guides you through:
 
 1. **Account setup** - Create or select your owner account
 2. **Network selection** - Choose testnet-bradbury
-3. **Funding source** - Stake from your wallet or from a vesting contract
+3. **Funding source** - Stake from your wallet or from a vesting contract. With a vesting contract, the vesting contract owns the validator wallet, and you manage it with the `genlayer vesting validator` commands (see [If You Staked from a Vesting Contract](#if-you-staked-from-a-vesting-contract))
 4. **Balance verification** - Checks your balance against the deployed minimum and gas requirement
 5. **Operator setup** - Create and export an operator keystore for your validator server
 6. **Stake amount** - Enter how much GEN to self-stake using the current on-chain minimum
@@ -167,22 +167,55 @@ genlayer staking validators --network testnet-bradbury
 
 ### Managing Your Validator
 
+Deposits, exits, claims and identity changes are calls the validator wallet accepts only from its **owner**. Sign them with the owner account (`--account owner` below; use the name your owner account has in the CLI, `genlayer account list` shows them). The operator key can't sign them: the call reverts with `OwnableUnauthorizedAccount`.
+
+If you staked from a vesting contract, the vesting contract is the owner, so these `staking` commands revert for your wallet. Use the commands in [If You Staked from a Vesting Contract](#if-you-staked-from-a-vesting-contract) instead.
+
 ```bash copy
 # Add more stake
-genlayer staking validator-deposit 0xYourValidatorWallet... --amount 1000gen --network testnet-bradbury
+genlayer staking validator-deposit 0xYourValidatorWallet... --amount 1000gen --account owner --network testnet-bradbury
 
 # Check active validators
 genlayer staking active-validators --network testnet-bradbury
 
 # Exit (initiates 7-epoch unbonding)
-genlayer staking validator-exit 0xYourValidatorWallet... --shares 100 --network testnet-bradbury
+genlayer staking validator-exit 0xYourValidatorWallet... --shares 100 --account owner --network testnet-bradbury
 
 # Claim after unbonding period
-genlayer staking validator-claim 0xYourValidatorWallet... --network testnet-bradbury
+genlayer staking validator-claim 0xYourValidatorWallet... --account owner --network testnet-bradbury
 
-# Update identity
-genlayer staking set-identity 0x... --moniker "New Name" --network testnet-bradbury
+# Update identity (replaces the whole identity, see below)
+genlayer staking set-identity 0xYourValidatorWallet... --moniker "My Validator" --website "https://example.com" --description "What my validator does" --account owner --network testnet-bradbury
 ```
+
+<Callout type="warning">
+  **Each `set-identity` call replaces the whole identity.** The wallet stores all nine fields (moniker, logo URI, website, description, email, Twitter, Telegram, GitHub and extra CID) on every call, and any field you leave out is cleared. To change one field, pass the others again with their current values. `genlayer staking validator-info` shows the current values of all fields except the extra CID.
+</Callout>
+
+#### If You Staked from a Vesting Contract
+
+When the wizard funds the validator from a vesting contract, the vesting contract owns the validator wallet, and you are its beneficiary. Manage the wallet with the `genlayer vesting validator` commands, signed with the **beneficiary** account. The vesting contract then makes the call to the wallet as its owner. The `genlayer staking` versions of these commands revert with `OwnableUnauthorizedAccount`, whichever account signs them.
+
+To check who owns a wallet, run `genlayer staking validator-info 0xYourValidatorWallet... --network testnet-bradbury`: a vesting-owned wallet shows `Source: vesting (owner is a contract)`.
+
+```bash copy
+# Add more stake from the vesting contract
+genlayer vesting validator deposit 0xYourValidatorWallet... --amount 1000gen --account beneficiary --network testnet-bradbury
+
+# Exit (initiates 7-epoch unbonding)
+genlayer vesting validator exit 0xYourValidatorWallet... --shares 100 --account beneficiary --network testnet-bradbury
+
+# Claim after unbonding period
+genlayer vesting validator claim 0xYourValidatorWallet... --account beneficiary --network testnet-bradbury
+
+# Update identity (replaces the whole identity, same as above)
+genlayer vesting validator set-identity 0xYourValidatorWallet... --moniker "My Validator" --website "https://example.com" --description "What my validator does" --account beneficiary --network testnet-bradbury
+
+# List the validator wallets your vesting contract owns
+genlayer vesting validator list --account beneficiary --network testnet-bradbury
+```
+
+Replace `beneficiary` with the name of your beneficiary account in the CLI. The CLI finds your vesting contract from the beneficiary address. If it can't, add `--vesting 0xYourVestingContract...` to the command.
 
 ---
 
