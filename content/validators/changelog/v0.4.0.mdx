@@ -33,6 +33,19 @@
 - Store and expose genvm execution information
 - Add sign admin endpoint for genvm
 
+### Misc
+
+- Simplify environment variable configuration using .env file
+- Add environment variable override support for config values
+- Update webdriver image to v0.0.9
+- Update RPC and WebSocket endpoints in config.yaml.example
+- Correct status for validatorTimeout after appeal time window
+- Validate presence of abigen in dependency check
+- Rename environment validation functions for clarity
+- Use cockroachdb errors package for error handling
+- Remove wallet.yaml file handling
+- Rename archive to full
+
 ### Bug fixes
 
 - GenVM architecture on arm64
@@ -57,16 +70,3 @@
 - Leader idleness
 - Accidental deadlock in genvm
 - Lazy validators commit order
-
-### Misc
-
-- Simplify environment variable configuration using .env file
-- Add environment variable override support for config values
-- Update webdriver image to v0.0.9
-- Update RPC and WebSocket endpoints in config.yaml.example
-- Correct status for validatorTimeout after appeal time window
-- Validate presence of abigen in dependency check
-- Rename environment validation functions for clarity
-- Use cockroachdb errors package for error handling
-- Remove wallet.yaml file handling
-- Rename archive to full

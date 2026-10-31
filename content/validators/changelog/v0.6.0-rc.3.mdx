@@ -1,0 +1,42 @@
+## v0.6.0-rc.3
+
+Before you upgrade, check the alert rules that read `/health`. The `chain.sync` reasons `sync_stalled` and `sync_feed_frozen` are gone: a node far behind that still syncs returns 200, and a sync that fails at the same block for 5 minutes returns 503 with reason `sync_blocked`. A self-stake below the minimum now sets `consensus.stake` to `warning` (HTTP 200), not 503. At its first start, this release moves the node's nonce ledger from `genvm.db` to `ops.db` (log line `moved the nonce ledger from genvm.db to ops.db`); if you then go back to v0.6.0-rc.2, that node does not start while a transaction it signed is still pending.
+
+### New features
+
+- `doctor` checks that the operator key unlocks when you give the node password (`--password` or `GENLAYERNODE_PASSWORD`, as for the node); without a password it shows a warning and does not fail
+- `doctor --output json` writes one JSON document with a stable `code` and `action` for each finding, and exits `0` (start), `1` (blocked) or `2` (doctor could not run); the codes are in `docs/deploy/troubleshooting.md`
+- Change the chain RPC key without a restart: put the key in a file and set `rollup.genlayerchainrpckeyfile` to its path; the node reads the file again at most every 30 s
+  - do not also set `GENLAYERNODE_ROLLUP_GENLAYERCHAINRPCKEY`: the node then does not start
+- Contract-state pruning: set `node.state.enabled: true` to delete old contract-state versions behind finalized ones after `node.state.retention` (default `336h` of chain time); it is off by default, so the node keeps all history; read `docs/deploy/state-pruning.md` first
+- The node makes fewer chain RPC calls: it keeps repeated transaction reads in memory and does no reorg check for blocks at or below the chain's `finalized` block
+  - the cache is on by default; its settings are under `consensus.transaction_cache`
+- `genlayernode snapshot restore <directory|tar.gz> --datadir <empty-directory>` installs a `genvm` snapshot, and the node continues its sync after the snapshot block
+  - to take a snapshot at a known block, a full node can stop its sync at `consensus.sync_halt_block` and keep RPC and ops serving
+- The RPC API answers `net_version` with the configured chain id
+
+### Misc
+
+- The node runs contracts through the WebSocket endpoint (`/ws`) of the GenVM manager, not its HTTP run API; a manager that you run yourself (`genvm.start_manager: false`) must serve that endpoint, as the shipped GenVM does
+- Update the release image to Alpine 3.24.3, the Alloy image of the release compose file to v1.21.2, and `go-ethereum` to v1.17.10
+
+### Bug fixes
+
+- A leader no longer gets a strike when the commit phase ends on a timeout with enough commits: the leader did not reveal in that case, and now it does
+- A new validator whose self-stake is still a pending deposit no longer fails `doctor` or gets a 503 from `/health`: both show a warning (`VALIDATOR_STAKE_PENDING`, reason `self_stake_pending`) until the next epoch moves the deposit into the stake
+  - a self-stake below the minimum is a warning too, and `doctor` exits 0
+- `/health` no longer returns 503 for hours while a node far behind syncs from genesis; `chain.sync` is `unavailable` only when the sync fails at the same block for 5 minutes (`sync_blocked`) or cannot read the logs of a block (`sync_block_unreadable`)
+- When the node cannot read a recent transaction of a contract from the chain, a GenVM or RPC read of that contract's latest state now fails, instead of giving an older state
+- The nonce ledger of the transactions the node signed is now in `ops.db`, not `genvm.db`: a resync that deletes `genvm.db` no longer deletes it, and a `genvm` snapshot no longer carries it
+- A start-up failure now logs its cause in `node.log` (`Failed to build dependencies`), and the error no longer says only `previously failed`
+- `gen_dbg_traceTransaction` now reads all the fee inputs of a replayed transaction at its processing block; some came from the latest block
+- Correct the API reference: the `directory` label of the `genlayer_node_disk_*` metrics is `genvm.db`, `ops.db`, `logs` or `keystore`
+
+### Removed
+
+- The node no longer renames a v0.5 `<datadir>/genlayer.db` to `genvm.db` at start: it ignores that folder and syncs from genesis into a new `genvm.db`; you can delete the old folder
+
+### Security
+
+- Build with Go 1.26.10, which has the fix for `GO-2026-6809` in the standard library
+- Update `labstack/echo` to v4.16.3 for `GHSA-246p-cpwv-v3jq` (a rate-limit bypass with a spoofed `X-Forwarded-For` header)

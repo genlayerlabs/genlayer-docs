@@ -12,7 +12,8 @@ rollup:
   # The WebSocket refuses a connection without an API key. The chain is
   # operated by Conduit: create a key at https://app.conduit.xyz/rpc-keys and
   # set it in the environment as
-  # GENLAYERNODE_ROLLUP_GENLAYERCHAINRPCKEY, never in these URLs or this file.
+  # GENLAYERNODE_ROLLUP_GENLAYERCHAINRPCKEY (or in the file that
+  # genlayerchainrpckeyfile names), never in these URLs or this file.
   # The node sends it in the X-AccessKey header on the RPC and WebSocket
   # connections.
   provider: "conduit" # Rollup operator name; surfaces as the "provider" label on RPC-driven metrics.

@@ -273,6 +273,7 @@ One full node can be shared between multiple validators. The optimal validator-t
    You should see a list like this
 
    ```sh
+   v0.6.0-rc.3
    v0.6.0-rc.2
    v0.6.0-rc.1
    ```
@@ -281,7 +282,7 @@ One full node can be shared between multiple validators. The optimal validator-t
 
 2. Download the packaged application
    ```sh copy
-   export version=v0.6.0-rc.2 # example target; confirm it is published and approved before use
+   export version=v0.6.0-rc.3 # example target; confirm it is published and approved before use
    base=https://storage.googleapis.com/gh-af/genlayer-node/bin/amd64/${version}
    curl -fI "${base}/genlayer-node-linux-amd64-${version}.tar.gz"
    curl -fI "${base}/genlayer-node_${version}_SHA256SUMS"
@@ -358,7 +359,9 @@ rollup:
   genlayerchainrpcurl: "TODO: Set your GenLayer Chain HTTP RPC URL here" # GenLayer Chain RPC URL
   genlayerchainwebsocketurl: "TODO: Set your GenLayer Chain WebSocket RPC URL here" # GenLayer Chain WebSocket URL
   # An API key of the RPC provider never goes in these URLs or in this file:
-  # set it in the environment as GENLAYERNODE_ROLLUP_GENLAYERCHAINRPCKEY.
+  # set it in the environment as GENLAYERNODE_ROLLUP_GENLAYERCHAINRPCKEY,
+  # or, for a key that changes while the node runs, in a file named here:
+  # genlayerchainrpckeyfile: "/run/secrets/genlayer-rpc/key"
   # The node sends it in this header (default X-AccessKey):
   # genlayerchainrpckeyheader: "X-AccessKey"
   provider: "TODO: Set your GenLayer Chain provider" # Rollup operator name; surfaces as the "provider" label on RPC-driven metrics. Set explicitly per deployment.
@@ -369,8 +372,22 @@ consensus:
   manifestpath: "configs/node/protocol-manifest.json" # Trusted producer protocol manifest for this deployment: save your network's manifest (from its documentation) at this path; a dev-env deploy places its own here too. Relative paths resolve against the node root. A mismatch with consensusaddress is refused at startup.
   chainid: "" # DECIMAL chain id this deployment was made on (not hex, no leading zeros). Held independently of the manifest so a manifest describing another deployment is caught.
   # genesis: 47930 # (Optional) Genesis block number for this consensus deployment. If not provided, it will be auto-detected by searching for the first log from the ConsensusMain contract.
+  # sync_halt_block: 20000 # Node-local, full mode only; stop replay exactly here and keep RPC/ops serving. Zero disables.
   # chain_submit_buffer: "30s" # (Optional) Slack reserved at the end of each consensus step to submit the resulting on-chain tx (commit vote, reveal vote, proposed receipt) before the slot closes. Tune to underlying settlement chain latency. Default 30s.
   # admissiontimeout: "15s" # (Optional) Bound on the startup deployment admission check. Never unbounded. Default 15s.
+  # Cache of repeated transaction reads; on by default. A value read at a finalized
+  # block cannot change; one read above it can be replaced by a reorg, so it is kept
+  # shorter, and a detected reorg empties the cache. Tune with the
+  # genlayer_node_transaction_read_cache_* metrics.
+  # transaction_cache:
+  #   enabled: true
+  #   settled_ttl: 15m          # values read at or below the finalized block
+  #   unsettled_ttl: 30s        # snapshots read above it
+  #   unsettled_long_ttl: 10m   # fee states and history answers read above it
+  #   max_snapshots: 1024
+  #   max_fee_states: 1024
+  #   max_history: 4096
+  #   preload_workers: 5        # sync filter history preloads reading the chain at a time
 # data directory
 datadir: "./data/node"
 # logging configuration
@@ -548,6 +565,15 @@ node:
   #   # output, so its size is contract-controlled. Over the cap, the field is
   #   # truncated and the cut is marked in-band. 0 takes the default.
   #   max_debug_field_bytes: 262144   # 256 KB per field
+  # Contract-state history pruning; off by default (archive node). Past the
+  # window (chain time) the node keeps only the finalized state, so reads at
+  # older blocks fail. The window is raised at run time to the sum of
+  # the phase timeouts times the maximum rounds. Irreversible: read
+  # docs/deploy/state-pruning.md before enabling.
+  # state:
+  #   enabled: false
+  #   retention: 336h                 # two weeks
+  #   sweep_interval: 10m             # how often aged-out history is scheduled for pruning
 # genvm configuration
 genvm:
   root_dir: ./opt/genvm/v0.6.0-rc10
@@ -637,7 +663,8 @@ rollup:
   # The WebSocket refuses a connection without an API key. The chain is
   # operated by Conduit: create a key at https://app.conduit.xyz/rpc-keys and
   # set it in the environment as
-  # GENLAYERNODE_ROLLUP_GENLAYERCHAINRPCKEY, never in these URLs or this file.
+  # GENLAYERNODE_ROLLUP_GENLAYERCHAINRPCKEY (or in the file that
+  # genlayerchainrpckeyfile names), never in these URLs or this file.
   # The node sends it in the X-AccessKey header on the RPC and WebSocket
   # connections.
   provider: "conduit" # Rollup operator name; surfaces as the "provider" label on RPC-driven metrics.

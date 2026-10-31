@@ -84,7 +84,9 @@ If **no** condition has been observed at all, `status` is `unknown` — nothing 
 
 A condition can never exceed the liveness cap its catalog entry declares. The GenVM conditions are capped at `degraded`, so a dead LLM provider returns **200**: that node is still booted, synced and voting — it votes Timeout on the transactions it cannot execute, which is the designed behaviour rather than an outage. Failing the endpoint would pull a working validator out of a load balancer.
 
-`consensus.ban`, `consensus.stake`, `chain.rpc`, `chain.websocket` and `chain.sync` are capped at `unavailable`, because each of them stops the node doing its job.
+`consensus.ban`, `chain.rpc`, `chain.websocket` and `chain.sync` are capped at `unavailable`, because each of them stops the node doing its job.
+
+`consensus.stake` is capped at `warning`: below the minimum self-stake the node keeps syncing, and only the consensus contracts do not select the validator for duties. The reason is `self_stake_pending` when a pending self-stake deposit covers the gap (it becomes stake at the validator's prime in a later epoch), and `self_stake_below_minimum` otherwise.
 
 **WebDriver render check**
 
@@ -151,16 +153,16 @@ that owns the manager configuration. Observed `genvm.web` results still apply.
 }
 ```
 
-**`chain.sync` — 503 only when the node stops syncing**
+**`chain.sync` — 503 only when the sync is blocked**
 
-Depth is not a fault. A node syncing from genesis is millions of blocks behind and perfectly healthy. What matters is whether the stored synced block advances.
+Depth is not a fault. A node syncing from genesis is millions of blocks behind and healthy while its synced block advances. The node reports 503 only when its sync cannot get past a block.
 
-| Reason | State | HTTP |
-|---|---|---|
-| `sync_lagging` | `warning` | 200 |
-| `sync_catching_up` | `degraded` | 200 |
-| `sync_stalled` | `unavailable` | **503** |
-| `sync_feed_frozen` | `unavailable` | **503** |
+| Reason | State | HTTP | When |
+|---|---|---|---|
+| `sync_lagging` | `warning` | 200 | 1–100 blocks behind for 30 s, or the sync cursor cannot be read |
+| `sync_catching_up` | `degraded` | 200 | More than 100 blocks behind, at any depth |
+| `sync_blocked` | `unavailable` | **503** | The sync has failed at the same block for 5 minutes (`details`: `failing_block`, `failures`, `failing_seconds`) |
+| `sync_block_unreadable` | `unavailable` | **503** | The node cannot read the logs of a block (`details`: `unreadable_block`, `unreadable_seconds`) |
 
 The node never skips a duty because it is behind. It votes Timeout only on a transaction that reads state it has not synced; a new contract deploy still runs.
 

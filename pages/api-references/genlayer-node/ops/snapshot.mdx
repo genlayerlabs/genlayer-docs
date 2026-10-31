@@ -32,6 +32,26 @@ The token is the value of `GENLAYERNODE_NODE_OPERATOR_TOKEN` on the node process
 
   Every archive carries a `snapshot.json` manifest recording the format version, the scopes inside, the rollup block the GenVM store was captured at, and — for `all` and `ops` — the operator address that produced it.
 
+  Manifest version remains `1`. `finalizedRoot` contains a `0x`-prefixed,
+  32-byte chain-trie proof. The cursor and root are
+  read from the completed GenVM checkpoint opened read-only, so they describe
+  the archived files even while live replay advances. An absent root is
+  unavailable, not a zero root. For a pristine empty store, the empty root is
+  `Keccak256(0x000000)`, the proof of an empty root branch. Replay from genesis
+  maintains the finalized trie, including an empty root before any finalization.
+  Every GenVM snapshot past genesis has this field unless its datadir predates
+  root maintenance. Such datadirs require a resync from genesis to obtain roots;
+  continuing replay or restoring their snapshots does not reconstruct missing history.
+
+  The trie maps each address to the storage root of its latest finalized
+  transaction with a storage effect. Only canonical replay finalization updates
+  it, identically on full nodes and validators. A failed execution, a decision
+  without storage state, or a successful execution whose proof equals its
+  predecessor leaves the entry unchanged (and does not insert an absent address).
+  A first empty storage generation also leaves the entry absent.
+  Storage and root writes share one reversible batch, so a canonical reorg rolls
+  both back. Speculative execution, acceptance and appeals do not update this root.
+
 - `destDir` (string, optional): Absolute path on the node's filesystem, which must resolve to a location inside the configured snapshot directory (`node.admin.snapshot_dir`, default `<datadir>/snapshots`). When set, switches to write-to-path mode; when omitted or empty, the snapshot is streamed back as `application/gzip`. Paths outside the snapshot directory are rejected with `400`.
 
 **Returns:**
@@ -80,6 +100,7 @@ curl -X POST http://127.0.0.1:9153/snapshot \
   -H "X-Admin-Auth: $GENLAYERNODE_NODE_OPERATOR_TOKEN" \
   -H "Content-Type: application/json" \
   -d '{"destDir": "/var/lib/genlayer/data/node/snapshots/bradbury-100"}'
+```
 
 Take only the portable half, to hand to another operator:
 
@@ -88,7 +109,6 @@ curl -sS -X POST http://localhost:9153/snapshot \
   -H "Authorization: Bearer $OPERATOR_TOKEN" \
   -H 'Content-Type: application/json' \
   -d '{"scope": "genvm"}' -o genvm-snapshot.tar.gz
-```
 ```
 
 **Example Response — Write-to-Path Mode:**
@@ -115,6 +135,50 @@ HTTP/1.1 204 No Content
 - The snapshot includes the full chain database (SSTables, MANIFEST, WAL) at the moment of capture. Treat the artifact as sensitive — anyone holding it can reconstruct the node's state.
 - Token comparison is constant-time and length-padded so neither the value nor the length of the secret can be inferred from response timing.
 - Rotation: update `GENLAYERNODE_NODE_OPERATOR_TOKEN` and restart the node. Tokens are read once at startup and not hot-reloaded.
+
+**Restore A Portable Snapshot:**
+
+```bash
+genlayernode snapshot restore genvm-snapshot.tar.gz --datadir /var/lib/genlayer/restored
+# An extracted snapshot directory is also accepted
+genlayernode run --config /path/to/network.yaml --config /path/to/restore-overlay.yaml
+```
+
+The overlay sets `datadir: /var/lib/genlayer/restored` and keeps the default
+`node.genvmdb: genvm.db` and `node.opsdb: ops.db`. Use the source deployment's
+network configuration; the manifest does not identify the network. The restore
+command requires an absent or empty datadir, validates version 1 and exactly
+`scope=genvm`, checks the manifest cursor and any roots against the checkpoint,
+and installs the files at `<datadir>/genvm.db`. It refuses links, unexpected
+archive entries, and nonportable scopes. It creates no operation store; normal
+startup creates a fresh `ops.db` and resumes replay at the durable cursor + 1.
+Archives are trusted local input with no extraction size cap. Written files and
+directories are fsynced before installation, and the datadir is fsynced before
+and after the rename.
+
+Non-default `node.genvmdb` paths are not supported by restore. A rootless snapshot
+with a non-zero cursor is accepted with a CLI warning: the restored node will not
+maintain roots and needs a resync from genesis for root comparisons.
+
+To capture an exact replay boundary, run in full mode with
+`consensus.sync_halt_block` set to the target block and wait for
+`genlayer_node_sync_halted == 1` before requesting the snapshot. See the
+[configuration guide](../../deploy/configuration.md#consensus-configuration)
+for halt health and restart semantics. Restore verifies the checkpoint's
+metadata, not the correctness of its historical execution. Compare snapshots
+captured at the same halt block with `sync-check.sh --expect-root` or
+`--reference-snapshot`; restoring at N and replaying to M preserves the same
+finalized root as replaying from genesis to M.
+
+`sync-check.sh --network bradbury --checkpoint N --checkpoint M --halt-at H`
+captures an ascending chain on one datadir, saving `snapshots/<block>.tar.gz`
+and `.json` under its work directory. Every output requires a finalized root.
+`--reference-dir <dir>` compares available `<block>.tar.gz` references and
+`checkpoints.json` records each halt, including mismatches before exit 4.
+Without `--halt-at`, the final segment reaches its boot head; the timeout covers
+all segments. `--config` overrides network defaults, and `--genvm-root` selects
+the GenVM directory. The Task equivalent uses `NETWORK`, comma-separated
+`CHECKPOINTS`, `HALT_AT`, `REFERENCE_DIR`, and `GENVM_ROOT`.
 
 **Forward-compatibility note:** when the zero-downtime upgrade controller (Phase 3) lands, `/snapshot` will additionally accept a second role (`upgrade`) so the controller can drive the snapshot + stop + start sequence with its own credential. The operator-token path documented here remains the same — no migration is required for operator tooling.
 

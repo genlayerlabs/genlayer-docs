@@ -1900,7 +1900,9 @@ If **no** condition has been observed at all, `status` is `unknown` — nothing 
 
 A condition can never exceed the liveness cap its catalog entry declares. The GenVM conditions are capped at `degraded`, so a dead LLM provider returns **200**: that node is still booted, synced and voting — it votes Timeout on the transactions it cannot execute, which is the designed behaviour rather than an outage. Failing the endpoint would pull a working validator out of a load balancer.
 
-`consensus.ban`, `consensus.stake`, `chain.rpc`, `chain.websocket` and `chain.sync` are capped at `unavailable`, because each of them stops the node doing its job.
+`consensus.ban`, `chain.rpc`, `chain.websocket` and `chain.sync` are capped at `unavailable`, because each of them stops the node doing its job.
+
+`consensus.stake` is capped at `warning`: below the minimum self-stake the node keeps syncing, and only the consensus contracts do not select the validator for duties. The reason is `self_stake_pending` when a pending self-stake deposit covers the gap (it becomes stake at the validator's prime in a later epoch), and `self_stake_below_minimum` otherwise.
 
 **WebDriver render check**
 
@@ -1967,16 +1969,16 @@ that owns the manager configuration. Observed `genvm.web` results still apply.
 }
 ```
 
-**`chain.sync` — 503 only when the node stops syncing**
+**`chain.sync` — 503 only when the sync is blocked**
 
-Depth is not a fault. A node syncing from genesis is millions of blocks behind and perfectly healthy. What matters is whether the stored synced block advances.
+Depth is not a fault. A node syncing from genesis is millions of blocks behind and healthy while its synced block advances. The node reports 503 only when its sync cannot get past a block.
 
-| Reason | State | HTTP |
-|---|---|---|
-| `sync_lagging` | `warning` | 200 |
-| `sync_catching_up` | `degraded` | 200 |
-| `sync_stalled` | `unavailable` | **503** |
-| `sync_feed_frozen` | `unavailable` | **503** |
+| Reason | State | HTTP | When |
+|---|---|---|---|
+| `sync_lagging` | `warning` | 200 | 1–100 blocks behind for 30 s, or the sync cursor cannot be read |
+| `sync_catching_up` | `degraded` | 200 | More than 100 blocks behind, at any depth |
+| `sync_blocked` | `unavailable` | **503** | The sync has failed at the same block for 5 minutes (`details`: `failing_block`, `failures`, `failing_seconds`) |
+| `sync_block_unreadable` | `unavailable` | **503** | The node cannot read the logs of a block (`details`: `unreadable_block`, `unreadable_seconds`) |
 
 The node never skips a duty because it is behind. It votes Timeout only on a transaction that reads state it has not synced; a new contract deploy still runs.
 
@@ -2165,7 +2167,7 @@ Available free disk space in bytes.
 
 **Labels:**
 - `component`: `node`
-- `directory`: One of `genlayer.db`, `keystore`, `logs`
+- `directory`: One of `genvm.db`, `ops.db`, `keystore`, `logs`
 - `node`: Node address (hex format)
 
 **genlayer_node_disk_total_bytes**
@@ -2176,7 +2178,7 @@ Total disk space in bytes.
 
 **Labels:**
 - `component`: `node`
-- `directory`: One of `genlayer.db`, `keystore`, `logs`
+- `directory`: One of `genvm.db`, `ops.db`, `keystore`, `logs`
 - `node`: Node address (hex format)
 
 **genlayer_node_disk_usage_bytes**
@@ -2187,7 +2189,7 @@ Used disk space in bytes.
 
 **Labels:**
 - `component`: `node`
-- `directory`: One of `genlayer.db`, `keystore`, `logs`
+- `directory`: One of `genvm.db`, `ops.db`, `keystore`, `logs`
 - `node`: Node address (hex format)
 
 **genlayer_node_disk_usage_percent**
@@ -2198,7 +2200,7 @@ Used disk space as percentage.
 
 **Labels:**
 - `component`: `node`
-- `directory`: One of `genlayer.db`, `keystore`, `logs`
+- `directory`: One of `genvm.db`, `ops.db`, `keystore`, `logs`
 - `node`: Node address (hex format)
 
 **Node Status Metrics**
@@ -2248,6 +2250,15 @@ Node synchronization status (1 = synced, 0 = not synced).
 **Labels:**
 - `node`: Node address (hex format)
 
+**genlayer_node_sync_halted**
+
+Whether replay has stopped at `consensus.sync_halt_block` (1 = halted, 0 = running). An intentional halt is not a stalled sync; the node continues serving RPC and snapshots.
+
+**Type:** Gauge
+
+**Labels:**
+- `node`: Node address (hex format)
+
 **genlayer_node_prime_blocked_insufficient_funds**
 
 Whether a mandatory validator prime is currently blocked by an unfunded operator wallet (1 = blocked, 0 = not blocked). While blocked the validator cannot pay for consensus duty transactions and is flagged idle each round — fund the operator wallet to recover.
@@ -2256,6 +2267,21 @@ Whether a mandatory validator prime is currently blocked by an unfunded operator
 
 **Labels:**
 - `node`: Node address (hex format)
+
+**State pruning metrics**
+
+Contract-state pruning (`node.state.enabled`). All are gauges labelled with `node`; the `_total` ones count since the process started.
+
+| Metric | Description |
+|---|---|
+| `genlayer_node_state_pruning_enabled` | 1 when pruning is on, 0 for an archive node |
+| `genlayer_node_state_pruning_cutoff_block` | Newest block whose finalized transactions were handed to the collector |
+| `genlayer_node_state_pruned_versions_total` | Versions merged into a contract's pruned base |
+| `genlayer_node_state_discarded_versions_total` | Overturned or superseded versions deleted without merging |
+| `genlayer_node_state_pruning_deleted_bytes_total` | Uncompressed size of the deleted versions; the merge rewrites part of it, so the disk reclaimed is lower |
+| `genlayer_node_state_pruning_skipped_contracts_total` | Contracts left unpruned in a sweep because a version is not built on the finalized chain; the next finalization retries them |
+| `genlayer_node_state_pruning_pending_tasks` | Prune tasks the collector has not finished |
+| `genlayer_node_state_disk_bytes` | Estimated on-disk size of all contract state |
 
 **genlayer_node_uptime_seconds**
 
@@ -2398,6 +2424,85 @@ Decoded revert causes, one increment per observed revert (attempt-level).
 - `method`: Contract method name
 - `error`: Decoded custom error from the fee/gas allowlist (`InsufficientFeesForRound`, `InsufficientFees`, `FailedFeeTransfer`, `FeeSettlementNotCompleted`, `MaxPriceExceeded`, `ExecutionBudgetExceeded`, `MessageBudgetExceeded`, `BudgetTooLow`, `RollupBudgetBelowFloor`, `InsufficientBondCustody`, `InvalidAppealBond`, `AppealBondTooLow`, `InsufficientGasForInternalMessageCreation`, `OutOfGas`); anything else collapses to `other`
 
+**Transaction Read Metrics**
+
+**genlayer_node_transaction_reads_total**
+
+Reads of consensus transaction data from the chain, made through the node's one transaction reader. One read can be several chain calls: a `snapshot` is the transaction record plus, unless the caller skips them, its idleness timestamps and phase timeouts; a `fee_state` read is the fee inputs of one execution at the transaction's processing block: 8 reads in parallel, plus the idleness timeouts when the transaction has no phase timeouts of its own, plus 2 reads when it has a message fee allocation tree; a `latest_*_with_effect` lookup pages the contract's history and makes one `snapshot` read for each candidate with an agreed execution, which counts separately. Use it to see which node path reads which data, and how often.
+
+**Type:** Counter
+
+**Labels:**
+- `method`: One of `snapshot` (the transaction as the chain holds it at a block), `fee_state` (the fee inputs GenVM needs to execute the transaction), `latest_accepted_with_effect`, `latest_finalized_with_effect` (the newest accepted or finalized transaction of a contract that changed its state)
+- `flow`: The node path that asked: `duty` (a consensus duty, including the leader's and validators' executions), `sync` (the sync filter and its history preload), `recovery` (accepted data missing from a replay batch), `replay` (a replayed execution and the finalized-state settle of the replay), `tribunal` (the judgement of an accused execution), `genvm` (a contract history lookup of a GenVM execution), `rpc` (a JSON-RPC request, including the replay of a trace that is not stored), `other` (no path named)
+- `outcome`: One of `ok`, `error`
+
+Reads the node's transaction read cache answers from memory are not counted here: this counter is the chain reads only.
+
+**genlayer_node_transaction_read_cache_total**
+
+Transaction reads answered by the node's transaction read cache. The cache keeps a transaction's snapshot at an explicit block, its fee state at a processing block, and the answers of the contract history lookup ("latest accepted / finalized transaction with an effect on contract C at block A", which every GenVM execution asks and the sync filter preloads), so the repeats of one node read the chain once: the sync filter, the accepted handler and the last-vote reveal reading an accepted transaction at the same block; a validator's duty run and its replay reading the fee state and the history of the same round. A value read at or below the chain's finalized block is kept for `consensus.transaction_cache.settled_ttl`; one read above it, which a reorg can replace, for `unsettled_ttl` (snapshots) or `unsettled_long_ttl` (fee states, history). See the configuration reference.
+
+`miss` and `bypass` match the `genlayer_node_transaction_reads_total` reads of the same method and flow, except the `snapshot` reads a history lookup makes for its candidates, which do not go through the cache. A history preload counts the accepted answer and, when that answer has no transaction, the finalized answer a GenVM execution then falls back to: each `miss` when the preload read the chain and `hit` when the answer was already kept or being read. Only a preload that read the accepted answer reads the finalized one. A history lookup that excludes the latest answer itself counts `miss`: only the chain can give the older answer.
+
+The share of reads the chain did not serve, per method:
+
+```promql
+sum by (method) (rate(genlayer_node_transaction_read_cache_total{outcome=~"hit|shared"}[1h]))
+/ sum by (method) (rate(genlayer_node_transaction_read_cache_total[1h]))
+```
+
+**Type:** Counter
+
+**Labels:**
+- `method`: One of `snapshot`, `fee_state`, `latest_accepted_with_effect`, `latest_finalized_with_effect`
+- `flow`: The node path that asked, as in `genlayer_node_transaction_reads_total`
+- `outcome`: One of `hit` (served from the cache), `miss` (read from the chain; kept when the read succeeded), `shared` (served by another caller's chain read of the same data, made at the same time), `bypass` (a read the cache does not keep: one at the latest block)
+
+With `consensus.transaction_cache.enabled: false` the cache passes every read through and none of the `genlayer_node_transaction_read_cache_*` metrics move.
+
+**genlayer_node_sync_preloads_queued_total**
+
+History preloads the sync filter queued: one per accepted transaction it read, to put into the transaction read cache the answers the replay's GenVM execution will ask for. `consensus.transaction_cache.preload_workers` preloads read the chain at a time; the others wait for a free worker, and none is dropped while the sync runs. A sync that stops, for a restart or a shutdown, drops its backlog; a restart filters the blocks it did not sync again and queues their preloads again. Each finished preload counts once in `genlayer_node_transaction_read_cache_total{flow="sync",method="latest_accepted_with_effect"}`, whether or not it also loaded the finalized answer, so the difference is the backlog, plus the backlogs that sync restarts dropped:
+
+```promql
+genlayer_node_sync_preloads_queued_total
+- sum(genlayer_node_transaction_read_cache_total{flow="sync",method="latest_accepted_with_effect"})
+```
+
+A backlog that keeps growing in a catch-up means the preloads cannot keep up with the filter; more workers fill the cache sooner and add chain RPC load. With `consensus.transaction_cache.enabled: false` a preload does nothing and the query does not apply.
+
+**Type:** Counter
+
+**genlayer_node_transaction_read_cache_purges_total**
+
+Times the transaction read cache was emptied. The cache pins its reads by block number, and a reorg can replace a block above the chain's finalized block, so the node empties it when it detects one. A steady rate means the chain reorganizes often; each purge costs the cache, not correctness.
+
+**Type:** Counter
+
+**Labels:**
+- `reason`: One of `canonical_reorg` (the replay rolled back to the canonical chain), `router_rewind` (the event router rewound over a replaced block range)
+
+**genlayer_node_transaction_read_cache_evictions_total**
+
+Values the transaction read cache dropped by itself. Use it to tune the cache: many `expired` mean a TTL is shorter than the time between the reads it should serve; any `capacity` means a size limit is too small for what the node reads within the TTL. A value nobody read again that is dropped after its TTL is not counted.
+
+**Type:** Counter
+
+**Labels:**
+- `method`: One of `snapshot`, `fee_state`, `latest_with_effect` (the history answers, accepted and finalized together)
+- `reason`: One of `expired` (a read found its value past its TTL), `capacity` (a live value dropped to make room)
+
+**genlayer_node_transaction_read_cache_entries**
+
+Values the transaction read cache keeps now, per tier and per finality of the block they were read at. Expired values not yet dropped are included.
+
+**Type:** Gauge
+
+**Labels:**
+- `method`: One of `snapshot`, `fee_state`, `latest_with_effect`
+- `finality`: `settled` (read at or below the chain's finalized block) or `unsettled` (above it)
+
 **Fee Flow Metrics (v0.6 ConsensusMainWithFees)**
 
 Note: there are no dedicated appeal-bond metrics. No node runtime path submits appeals — appellants are external clients funding bonds from their own wallets. If a validator appeal duty ever ships, the method-labeled gas/submission metrics above cover it under `method="topUpAndSubmitAppeal"` with no code change.
@@ -2526,7 +2631,7 @@ docker ps | grep genlayer-node-webdriver
 
 If not running, start it:
 ```bash
-task docker:webdriver:docker-compose:up:detach
+task docker:webdriver:up
 ```
 
 **Metrics Not Updating**
@@ -2571,6 +2676,26 @@ The token is the value of `GENLAYERNODE_NODE_OPERATOR_TOKEN` on the node process
   Only `genvm` may be given to another operator. `all` and `ops` carry the vote salts this node generated and the nonce ownership of its operator key; restoring either onto a different node would make that node act on votes it never cast and nonce slots it never signed. The node refuses to start against an operation store stamped with another operator, but that guard runs at startup, not at copy time — treat a non-portable archive accordingly.
 
   Every archive carries a `snapshot.json` manifest recording the format version, the scopes inside, the rollup block the GenVM store was captured at, and — for `all` and `ops` — the operator address that produced it.
+
+  Manifest version remains `1`. `finalizedRoot` contains a `0x`-prefixed,
+  32-byte chain-trie proof. The cursor and root are
+  read from the completed GenVM checkpoint opened read-only, so they describe
+  the archived files even while live replay advances. An absent root is
+  unavailable, not a zero root. For a pristine empty store, the empty root is
+  `Keccak256(0x000000)`, the proof of an empty root branch. Replay from genesis
+  maintains the finalized trie, including an empty root before any finalization.
+  Every GenVM snapshot past genesis has this field unless its datadir predates
+  root maintenance. Such datadirs require a resync from genesis to obtain roots;
+  continuing replay or restoring their snapshots does not reconstruct missing history.
+
+  The trie maps each address to the storage root of its latest finalized
+  transaction with a storage effect. Only canonical replay finalization updates
+  it, identically on full nodes and validators. A failed execution, a decision
+  without storage state, or a successful execution whose proof equals its
+  predecessor leaves the entry unchanged (and does not insert an absent address).
+  A first empty storage generation also leaves the entry absent.
+  Storage and root writes share one reversible batch, so a canonical reorg rolls
+  both back. Speculative execution, acceptance and appeals do not update this root.
 
 - `destDir` (string, optional): Absolute path on the node's filesystem, which must resolve to a location inside the configured snapshot directory (`node.admin.snapshot_dir`, default `<datadir>/snapshots`). When set, switches to write-to-path mode; when omitted or empty, the snapshot is streamed back as `application/gzip`. Paths outside the snapshot directory are rejected with `400`.
 
@@ -2620,6 +2745,7 @@ curl -X POST http://127.0.0.1:9153/snapshot \
   -H "X-Admin-Auth: $GENLAYERNODE_NODE_OPERATOR_TOKEN" \
   -H "Content-Type: application/json" \
   -d '{"destDir": "/var/lib/genlayer/data/node/snapshots/bradbury-100"}'
+```
 
 Take only the portable half, to hand to another operator:
 
@@ -2628,7 +2754,6 @@ curl -sS -X POST http://localhost:9153/snapshot \
   -H "Authorization: Bearer $OPERATOR_TOKEN" \
   -H 'Content-Type: application/json' \
   -d '{"scope": "genvm"}' -o genvm-snapshot.tar.gz
-```
 ```
 
 **Example Response — Write-to-Path Mode:**
@@ -2655,6 +2780,50 @@ HTTP/1.1 204 No Content
 - The snapshot includes the full chain database (SSTables, MANIFEST, WAL) at the moment of capture. Treat the artifact as sensitive — anyone holding it can reconstruct the node's state.
 - Token comparison is constant-time and length-padded so neither the value nor the length of the secret can be inferred from response timing.
 - Rotation: update `GENLAYERNODE_NODE_OPERATOR_TOKEN` and restart the node. Tokens are read once at startup and not hot-reloaded.
+
+**Restore A Portable Snapshot:**
+
+```bash
+genlayernode snapshot restore genvm-snapshot.tar.gz --datadir /var/lib/genlayer/restored
+# An extracted snapshot directory is also accepted
+genlayernode run --config /path/to/network.yaml --config /path/to/restore-overlay.yaml
+```
+
+The overlay sets `datadir: /var/lib/genlayer/restored` and keeps the default
+`node.genvmdb: genvm.db` and `node.opsdb: ops.db`. Use the source deployment's
+network configuration; the manifest does not identify the network. The restore
+command requires an absent or empty datadir, validates version 1 and exactly
+`scope=genvm`, checks the manifest cursor and any roots against the checkpoint,
+and installs the files at `<datadir>/genvm.db`. It refuses links, unexpected
+archive entries, and nonportable scopes. It creates no operation store; normal
+startup creates a fresh `ops.db` and resumes replay at the durable cursor + 1.
+Archives are trusted local input with no extraction size cap. Written files and
+directories are fsynced before installation, and the datadir is fsynced before
+and after the rename.
+
+Non-default `node.genvmdb` paths are not supported by restore. A rootless snapshot
+with a non-zero cursor is accepted with a CLI warning: the restored node will not
+maintain roots and needs a resync from genesis for root comparisons.
+
+To capture an exact replay boundary, run in full mode with
+`consensus.sync_halt_block` set to the target block and wait for
+`genlayer_node_sync_halted == 1` before requesting the snapshot. See the
+[configuration guide](../../deploy/configuration.md#consensus-configuration)
+for halt health and restart semantics. Restore verifies the checkpoint's
+metadata, not the correctness of its historical execution. Compare snapshots
+captured at the same halt block with `sync-check.sh --expect-root` or
+`--reference-snapshot`; restoring at N and replaying to M preserves the same
+finalized root as replaying from genesis to M.
+
+`sync-check.sh --network bradbury --checkpoint N --checkpoint M --halt-at H`
+captures an ascending chain on one datadir, saving `snapshots/<block>.tar.gz`
+and `.json` under its work directory. Every output requires a finalized root.
+`--reference-dir <dir>` compares available `<block>.tar.gz` references and
+`checkpoints.json` records each halt, including mismatches before exit 4.
+Without `--halt-at`, the final segment reaches its boot head; the timeout covers
+all segments. `--config` overrides network defaults, and `--genvm-root` selects
+the GenVM directory. The Task equivalent uses `NETWORK`, comma-separated
+`CHECKPOINTS`, `HALT_AT`, `REFERENCE_DIR`, and `GENVM_ROOT`.
 
 **Forward-compatibility note:** when the zero-downtime upgrade controller (Phase 3) lands, `/snapshot` will additionally accept a second role (`upgrade`) so the controller can drive the snapshot + stop + start sequence with its own credential. The operator-token path documented here remains the same — no migration is required for operator tooling.
 
