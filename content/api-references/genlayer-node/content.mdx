@@ -24,7 +24,7 @@ ${debugMethods.join('\n\n')}
 
 ## Ethereum Compatibility
 
-The GenLayer Node also supports Ethereum-compatible methods that are proxied to the underlying infrastructure. These methods follow the standard [Ethereum JSON-RPC specification](https://ethereum.org/en/developers/docs/apis/json-rpc/) and are prefixed with `eth_`.
+The GenLayer Node also supports Ethereum-compatible methods that are proxied to the underlying GenLayer Chain, an Arbitrum Orbit chain. These methods follow the standard [Ethereum JSON-RPC specification](https://ethereum.org/en/developers/docs/apis/json-rpc/) and are prefixed with `eth_`.
 
 **Examples of supported Ethereum methods:**
 
@@ -33,12 +33,6 @@ The GenLayer Node also supports Ethereum-compatible methods that are proxied to 
 - `eth_sendRawTransaction`
 - `eth_call`
 - And other standard Ethereum JSON-RPC methods
-
-## zkSync Compatibility
-
-[zkSync-compatible](https://docs.zksync.io/zksync-protocol/api/zks-rpc) methods are also supported and proxied to the underlying infrastructure. These methods are prefixed with `zks_`.
-
-The default `config.yaml` turns the `zksync` group off (`node.rpc.endpoints.zksync.enabled: false`). Set it to `true` to forward `zks_*` calls.
 
 ## Usage Examples
 
