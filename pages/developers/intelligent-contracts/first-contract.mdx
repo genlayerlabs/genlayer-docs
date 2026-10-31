@@ -15,6 +15,28 @@ First of all, you need to place a magic comment with the version of GenVM you wi
 ```
 It is similar to Solidity's `pragma solidity`. The hash after the colon identifies the exact version of the Python runtime to use, ensuring your contract always runs against the same environment.
 
+
+<Callout type="error">
+GenVM parses the **entire contiguous block** of leading `#` lines as a single JSON document — not just the first line. If you add another comment directly below the version comment with no blank line between them, the parser tries to read both lines as one JSON value and rejects the contract.
+</Callout>
+
+Always leave a blank line after the version comment before any other comment or code:
+
+```py
+# { "Depends": "py-genlayer:1jb45aa8ynh2a9c9xn3b7qqh8sm5q93hwfp7jqmwsfhh8jpz09h6" }
+
+# Anything you want to say about the contract.
+from genlayer import *
+```
+
+This is broken — the missing blank line merges the two lines into the JSON parse, and the contract will fail even though the version comment itself is well-formed:
+
+```py
+# { "Depends": "py-genlayer:1jb45aa8ynh2a9c9xn3b7qqh8sm5q93hwfp7jqmwsfhh8jpz09h6" }
+# Anything you want to say about the contract.
+from genlayer import *
+```
+
 ### Importing the Standard Library
 After the version comment, you can import the GenLayer standard library:
 ```py
