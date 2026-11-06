@@ -10,13 +10,13 @@ With **greybox**, the operator picks the models and their order by hand, in two 
 
 Greyboxing is deliberately per-validator — validators are expected to diverge in provider choice, so there is no single "correct" chain to converge on.
 
-**Default text chain:** deepseek-v3.2 → qwen3-235b → claude-haiku-4.5 → kimi-k2 → glm-5 → llama-3.3 (heurist) → llama-3.3 (ionet)
+**Default text chain:** Unhardcoded `route:genvm-validator` (only with `UNHARDCODED_API_KEY`) → deepseek-v3.2 → qwen3-235b → claude-haiku-4.5 → kimi-k2 → glm-5 → llama-3.3 (heurist) → llama-3.3 (ionet)
 
-**Default image chain:** gpt-5.1-mini → gemini-3-flash → claude-haiku-4.5
+**Default image chain:** gpt-5.4-mini → gemini-3-flash → claude-haiku-4.5
 
 Chain order is determined by the `meta.greybox` priority numbers on each model in the YAML. Lower number = higher priority. You can change the order by editing these numbers — no Lua changes needed.
 
-OpenRouter is the primary aggregator. If it fails, the node falls back to direct provider APIs (heurist, ionet).
+With `UNHARDCODED_API_KEY` set, the Unhardcoded route is tried first, and OpenRouter is next. OpenRouter is the primary aggregator otherwise. If it fails, the node falls back to direct provider APIs (heurist, ionet).
 
 ## Prerequisites
 
@@ -43,7 +43,7 @@ echo "OPENROUTERKEY=sk-or-v1-your-key-here" >> ${ENV_FILE}
 
 ### 3. Apply the release LLM config
 
-The tarball ships with a unified config that includes all backends (openrouter, morpheus, heurist, ionet, etc.).
+The tarball ships with a unified config that includes all backends (openrouter, unhardcoded, morpheus, heurist, ionet, etc.). A backend whose key is not set in `.env` is disabled at start, and the chains skip it: set `UNHARDCODED_API_KEY` to put the Unhardcoded route first in the text chain.
 
 `NODE_DIR` is the directory of your node release (where you extracted the
 tarball). On a host with the `/opt/genlayer-node/bin` symlink layout, it is

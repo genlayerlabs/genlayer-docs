@@ -84,7 +84,20 @@ If **no** condition has been observed at all, `status` is `unknown` — nothing 
 
 A condition can never exceed the liveness cap its catalog entry declares. The GenVM conditions are capped at `degraded`, so a dead LLM provider returns **200**: that node is still booted, synced and voting — it votes Timeout on the transactions it cannot execute, which is the designed behaviour rather than an outage. Failing the endpoint would pull a working validator out of a load balancer.
 
-`consensus.ban`, `chain.rpc`, `chain.websocket` and `chain.sync` are capped at `unavailable`, because each of them stops the node doing its job.
+503 means the node cannot make progress or cannot act. Only four conditions can return it:
+
+| Condition | Reason | 503 when |
+|---|---|---|
+| `chain.rpc` | `chain_rpc_unreachable` | The HTTP endpoint has failed every check for 30 seconds. The node cannot submit a duty, read a receipt or read its nonce. |
+| `chain.websocket` | `websocket_disconnected` | The WebSocket endpoint has failed every check for 30 seconds. The node receives no new chain heads and no contract events. |
+| `chain.sync` | `sync_blocked`, `sync_block_unreadable` | The chain head is above the synced block and the synced block has not moved for 5 minutes. See below. |
+| `node.disk` | `disk_space_critical` | 2% or less of the disk is free. The node cannot write new blocks or receipts. |
+
+A shorter transport failure is `suspect`, then `degraded` (HTTP 200). The checks run when a client calls this endpoint, so the 30 seconds are measured in time, not in checks.
+
+`consensus.ban` and `consensus.operator_funds` are capped at `warning`. A banned node, and a node whose operator balance is below the critical amount (reason `operator_balance_critical`), still syncs and serves; leaving rotation or a restart fixes neither.
+
+`consensus.prime` and `node.snapshot_age` are capped at `warning`.
 
 `consensus.stake` is capped at `warning`: below the minimum self-stake the node keeps syncing, and only the consensus contracts do not select the validator for duties. The reason is `self_stake_pending` when a pending self-stake deposit covers the gap (it becomes stake at the validator's prime in a later epoch), and `self_stake_below_minimum` otherwise.
 
@@ -131,14 +144,14 @@ that owns the manager configuration. Observed `genvm.web` results still apply.
 }
 ```
 
-**Example: the validator is banned — HTTP 503**
+**Example: the validator is banned — HTTP 200**
 
 ```json
 {
-  "status": "unavailable",
+  "status": "warning",
   "conditions": {
     "consensus.ban": {
-      "state": "unavailable",
+      "state": "warning",
       "reason": "validator_banned",
       "impact": "The consensus contracts do not select this validator for a round. The node earns nothing.",
       "action": "Wait for the stated epoch. If the ban is permanent, restake with a new validator.",
@@ -155,14 +168,17 @@ that owns the manager configuration. Observed `genvm.web` results still apply.
 
 **`chain.sync` — 503 only when the sync is blocked**
 
-Depth is not a fault. A node syncing from genesis is millions of blocks behind and healthy while its synced block advances. The node reports 503 only when its sync cannot get past a block.
+Depth is not a fault. A node syncing from genesis is millions of blocks behind and healthy while its synced block advances. A quiet chain is not a fault either: when the chain head is at the synced block there is nothing to sync, however long no block arrives.
+
+The sync is blocked when the chain head is above the synced block and the synced block has not moved for 5 minutes. The node reads the chain head with a request (`eth_blockNumber`), not only from its head subscription, so a subscription that stopped delivering heads is also seen. The 5 minutes start when there is a block to sync: a failure at a block, an unreadable block, or the first check that saw the head above the synced block.
 
 | Reason | State | HTTP | When |
 |---|---|---|---|
 | `sync_lagging` | `warning` | 200 | 1–100 blocks behind for 30 s, or the sync cursor cannot be read |
 | `sync_catching_up` | `degraded` | 200 | More than 100 blocks behind, at any depth |
-| `sync_blocked` | `unavailable` | **503** | The sync has failed at the same block for 5 minutes (`details`: `failing_block`, `failures`, `failing_seconds`) |
-| `sync_block_unreadable` | `unavailable` | **503** | The node cannot read the logs of a block (`details`: `unreadable_block`, `unreadable_seconds`) |
+| `sync_block_unreadable` | `degraded` | 200 | The node cannot read the logs of a block, for less than 5 minutes (`details`: `unreadable_block`, `unreadable_seconds`) |
+| `sync_blocked` | `unavailable` | **503** | The sync is blocked (`details`: `chain_head`, `blocked_seconds`; `failing_block`, `failures`, `failing_seconds` when the sync loop failed at a block) |
+| `sync_block_unreadable` | `unavailable` | **503** | The sync is blocked below a block the node cannot read (`details`: as `sync_blocked`, plus `unreadable_block`, `unreadable_seconds`) |
 
 The node never skips a duty because it is behind. It votes Timeout only on a transaction that reads state it has not synced; a new contract deploy still runs.
 

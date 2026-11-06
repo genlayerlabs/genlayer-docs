@@ -3,10 +3,15 @@
 # Docker refuses with "container name ... is already in use". With it, `up -d`
 # from the new version's directory recreates the old version's containers.
 name: genlayer-node
+# Images from other projects are pinned by their multi-arch index digest
+# (name:tag@sha256:...): Docker pulls the digest, the tag is for people. This
+# file is inside the signed release tarball, so its SHA256SUMS signature covers
+# these digests. The node image is signed with cosign by the release instead
+# (release/README.md, "Verify the image").
 services:
   webdriver-container:
     container_name: genlayer-node-webdriver
-    image: yeagerai/genlayer-genvm-webdriver:0.0.12
+    image: yeagerai/genlayer-genvm-webdriver:0.0.12@sha256:2de2cb87c851b9e634535ab94bc3f19202d1b5700f733fb255acd759518f37e8
     shm_size: 2gb
     security_opt:
       - no-new-privileges:true
@@ -73,7 +78,7 @@ services:
   # so keep DOCKER_HOST set to keep those panels populated. Disabling metrics
   # permits removing the node's DOCKER_HOST; Alloy still needs this gateway.
   docker-socket-proxy:
-    image: tecnativa/docker-socket-proxy:v0.5.0
+    image: tecnativa/docker-socket-proxy:v0.5.0@sha256:1f5038b54f06c3e18422902cf00ba21803d1c97805aae032e5e6673d532d3459
     container_name: genlayer-node-docker-proxy
     environment:
       CONTAINERS: 1 # GET /containers/{json,inspect,stats} — read-only via POST=0
