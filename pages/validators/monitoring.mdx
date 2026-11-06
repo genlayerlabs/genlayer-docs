@@ -147,7 +147,7 @@ HEALTHCHECK_AUTO_RESTART=true
   #   Set SCRAPE_TARGETS_JSON in .env
   #   docker compose --profile monitoring up -d
   alloy:
-    image: grafana/alloy:v1.21.2
+    image: grafana/alloy:v1.21.3@sha256:8ab871206bd2d8f89277f53abffee5f452a293980788d52f85fa183a87a505a4
     init: true
     container_name: genlayer-node-alloy
     labels:
