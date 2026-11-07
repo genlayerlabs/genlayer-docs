@@ -1,5 +1,11 @@
 # Changelog
 
+## v0.6.0-rc.5
+
+### Bug fixes
+
+- A committee member now calls `processIdleness` one commit slot after the commit window ends, so the nodes outside the committee replace an idle leader first, with `leaderIdleness`
+
 ## v0.6.0-rc.4
 
 Before you upgrade, check the alert rules and readiness probes that read `/health`. A banned validator (`consensus.ban`) and an operator balance below the critical amount (`consensus.operator_funds`) are now `warning` with HTTP 200, not 503: read those conditions to alert on them. A chain RPC or WebSocket endpoint that fails every check for 30 seconds now returns 503 (`chain_rpc_unreachable`, `websocket_disconnected`), where it returned 200. An unreadable block (`sync_block_unreadable`) is `degraded` (200) for its first 5 minutes, and 503 after that.
