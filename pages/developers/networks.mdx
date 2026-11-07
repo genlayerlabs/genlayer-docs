@@ -7,7 +7,7 @@ import AddToWallet from '../../components/AddToWallet'
 
 # Networks
 
-GenLayer operates as two layers: the **GenLayer RPC** handles intelligent contract operations (`gen_*` methods), while the **GenLayer Chain** is the underlying Arbitrum Orbit L2 that handles standard Ethereum operations (`eth_*` methods). The GenLayer RPC also passes through supported `eth_*` calls to the underlying chain, so you can use either endpoint for standard wallet operations.
+GenLayer operates as two layers: the **GenLayer RPC** handles intelligent contract operations (`gen_*` methods), while the **GenLayer Chain** is the underlying Arbitrum Orbit L2—settling to Ethereum, with GEN as its native gas token—that handles standard Ethereum operations (`eth_*` methods). The GenLayer RPC also passes through supported `eth_*` calls to the underlying chain, so you can use either endpoint for standard wallet operations. See [GenLayer Chain integration](/understand-genlayer-protocol/core-concepts/rollup-integration) for how the chain, bridge, and settlement work.
 
 For the full RPC reference, see [GenLayer Node API](/api-references/genlayer-node).
 
@@ -94,7 +94,7 @@ Local development with full control. Requires [GenLayer Studio](/developers/inte
 
 ## GenLayer Chain (L2)
 
-The underlying Arbitrum Orbit L2 for Bradbury Phase 2. You typically don't need to interact with this directly — the GenLayer RPC passes through supported `eth_*` calls. But if you need direct L2 access (e.g., token transfers, contract debugging at the EVM level), you can add this chain to your wallet.
+The underlying Arbitrum Orbit L2 for Bradbury Phase 2. GEN is its native currency, so balances and gas are in GEN. You typically don't need to interact with this directly — the GenLayer RPC passes through supported `eth_*` calls. But if you need direct L2 access (e.g., token transfers, contract debugging at the EVM level), you can add this chain to your wallet.
 
 | Setting | Value |
 |:--|:--|
