@@ -78,6 +78,10 @@ curl -s http://localhost:9153/metrics | grep genlayer_node_
   For production validators, we recommend setting up a complete monitoring stack with Prometheus and Grafana. This enables real-time visibility into your validator's performance and helps identify issues before they impact your validator's operation.
 </Callout>
 
+<Callout type="info">
+  Alert on the `/health` `zksync-connectivity` check and on sync lag (`gen_syncing` → `blocksBehind`). These two signals are what turn a silent problem into a paged incident — see [Rollup / Sequencer Outage](/validators/rollup-outage) and [State Recovery & Re-sync](/validators/state-recovery) for what to do when they fire.
+</Callout>
+
 ## Logs and Metrics Forwarding
 
 You can forward your logs and metrics to external systems for centralized monitoring and alerting by using the service `alloy` provided in the `docker-compose.yaml` from the extracted tarball.
