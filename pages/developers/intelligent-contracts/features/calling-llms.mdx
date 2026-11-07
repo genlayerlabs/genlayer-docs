@@ -135,13 +135,13 @@ def parse_score(response: dict) -> int:
                 break
 
     if raw is None:
-        raise gl.UserError(f"Missing 'score' key. Got keys: {list(response.keys())}")
+        raise gl.vm.UserError(f"Missing 'score' key. Got keys: {list(response.keys())}")
 
     # Coerce to int — handles "3", "3.5", floats, whitespace
     try:
         return max(0, int(round(float(str(raw).strip()))))
     except (ValueError, TypeError):
-        raise gl.UserError(f"Non-numeric score: {raw}")
+        raise gl.vm.UserError(f"Non-numeric score: {raw}")
 ```
 
 ### JSON Cleanup
@@ -157,7 +157,7 @@ def clean_llm_json(text: str) -> dict:
     first = text.find("{")
     last = text.rfind("}")
     if first == -1 or last == -1:
-        raise gl.UserError(f"No JSON object found in response")
+        raise gl.vm.UserError(f"No JSON object found in response")
     text = text[first:last + 1]
     text = re.sub(r",(?!\s*?[\{\[\"'\w])", "", text)  # Remove trailing commas
     return json.loads(text)
@@ -179,7 +179,7 @@ When using LLMs inside `run_nondet_unsafe`, consider how errors affect consensus
 def leader_fn():
     result = gl.nondet.exec_prompt(prompt, response_format="json")
     if not isinstance(result, dict):
-        raise gl.UserError(f"LLM returned non-dict: {type(result)}")
+        raise gl.vm.UserError(f"LLM returned non-dict: {type(result)}")
     return result
 ```
 
