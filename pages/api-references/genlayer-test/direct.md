@@ -259,7 +259,7 @@ Stop the current prank.
 
 Context manager expecting the next call to revert.
 
-Catches ContractRollback (gl.rollback) and any Exception raised
+Catches gl.UserError and any Exception raised
 by contract code (ValueError, RuntimeError, etc.). If *message*
 is given, the exception text must contain it.
 
