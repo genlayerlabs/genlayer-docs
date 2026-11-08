@@ -1,0 +1,145 @@
+---
+description: "Pearl for GenLayer validators: API key, authentication, supported models, and GenVM LLM backend setup."
+---
+
+# Using Pearl with GenLayer Validators
+
+Pearl is a Layer 1 blockchain secured by Proof-of-Useful-Work: its miners run AI inference, and mining is a by-product of the matrix multiplication that the models need. Pearl serves open-weight models through an OpenAI-compatible API, so GenLayer validators can call them without running their own GPU infrastructure.
+
+This guide explains how GenLayer validators can get a Pearl API key, authenticate requests, and add Pearl as an LLM backend in GenVM.
+
+---
+
+## Why Pearl
+
+Pearl gives validators:
+
+- Open-weight frontier models, served by Pearl's mainnet miners
+- An OpenAI-compatible API, which GenVM supports through the `openai-compatible` provider
+- Models with JSON output, and models with image input
+- Large context windows (about 1M tokens)
+
+---
+
+## Resources
+
+- [Pearl Website](https://pearlresearch.ai)
+- API base URL: `https://inference.pearlresearch.ai/v1`
+
+---
+
+## 1. Get an API Key
+
+GenLayer validators can get a Pearl API key from the GenLayer team.
+
+Each key belongs to an organization, and usage is metered against that organization's credits.
+
+---
+
+## 2. Authenticate Requests
+
+The Pearl API uses Bearer token authentication.
+
+Include your API key as a Bearer token in the `Authorization` header. You can verify your key is working by listing the available models:
+
+```bash
+curl https://inference.pearlresearch.ai/v1/models \
+  -H "Authorization: Bearer $PEARL_API_KEY"
+```
+
+Requests without a valid key return `401`.
+
+---
+
+## 3. Run Your First Model from a Validator
+
+Pearl provides an OpenAI-compatible inference endpoint for running language models.
+
+**Endpoint:** `https://inference.pearlresearch.ai/v1/chat/completions`
+
+### Example request from a validator environment:
+
+```bash
+curl https://inference.pearlresearch.ai/v1/chat/completions \
+  -H "Authorization: Bearer $PEARL_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "model": "deepseek-ai/DeepSeek-V4.1-Flash-1017",
+    "messages": [
+      {
+        "role": "user",
+        "content": "Explain decentralized AI infrastructure in one sentence."
+      }
+    ]
+  }'
+```
+
+The response uses the OpenAI chat completions format. The model output is in `choices[0].message.content`.
+
+---
+
+## 4. Supported Models
+
+These models are available to GenLayer validators:
+
+| Model | JSON output | Image input |
+|---|---|---|
+| `deepseek-ai/DeepSeek-V4.1-Flash-1017` | Yes | Yes |
+| `deepseek-ai/DeepSeek-V4-Pro-0813` | Yes | No |
+| `zai-org/GLM-5.3` | Yes | No |
+| `zai-org/GLM-5.3-Flash` | Yes | Yes |
+
+To see the models that your key can use, call `/v1/models` as in step 2.
+
+---
+
+## Best Practices
+
+For validator deployments:
+- Use a dedicated API key for each validator
+- Store the key in environment variables
+- Avoid committing API keys to source control
+
+**Example:**
+
+```bash
+export PEARL_API_KEY=your_api_key_here
+```
+
+This variable is for your own API calls, such as the curl examples above. GenVM does not read it out of the box: Pearl is not a built-in backend in the GenVM LLM configs that ship with the node.
+
+---
+
+## Use Pearl as a GenVM LLM Backend
+
+To let your validator's GenVM send prompts to Pearl, add it as an `openai-compatible` backend in `genvm-module-llm.yaml`, reading the key from the variable above:
+
+```yaml
+backends:
+  pearl:
+    enabled: true
+    host: https://inference.pearlresearch.ai   # GenVM adds /v1/chat/completions
+    provider: openai-compatible
+    key: ${ENV[PEARL_API_KEY]}
+    models:
+      deepseek-ai/DeepSeek-V4.1-Flash-1017:
+        supports_json: true
+        supports_image: true
+      deepseek-ai/DeepSeek-V4-Pro-0813:
+        supports_json: true
+        supports_image: false
+      zai-org/GLM-5.3:
+        supports_json: true
+        supports_image: false
+      zai-org/GLM-5.3-Flash:
+        supports_json: true
+        supports_image: true
+```
+
+Set `host` to `https://inference.pearlresearch.ai`, without `/v1`. GenVM adds `/v1/chat/completions` to the host.
+
+Then:
+- Put `PEARL_API_KEY` in the node's environment (with Docker, in `.env`) and restart the node. A running node does not see new environment variables.
+- Run `./bin/genlayernode doctor` to check that the backend answers.
+
+See [GenVM Configuration](/validators/genvm-configuration) for the backend format and how the node orders backends.
