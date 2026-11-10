@@ -1,0 +1,128 @@
+---
+description: "How Studio v0.123 runs GenVM v0.2 and v0.3 side by side, how it picks the line for a new deploy, and how to move a deployed contract from v0.2 to v0.3."
+---
+
+import { Callout } from 'nextra-theme-docs'
+
+# GenVM Version Lines
+
+Studio v0.123 runs two GenVM executor lines side by side:
+
+| Line | What runs on it |
+|:--|:--|
+| **v0.2.x** (retained) | Every contract deployed before the upgrade, and new deploys of code written for v0.2 |
+| **v0.3.x** (newest) | Every other new deploy |
+
+The retained line exists so that projects can keep running, and keep deploying, unchanged v0.2 code while they port it to v0.3. This page explains which line a contract runs on, how to move a contract to v0.3, and what to expect when v0.2 deploys close.
+
+The API changes between the two lines are covered by the [GenVM SDK migration guide](https://sdk.genlayer.com/main/executors/v0.3/python-sdk/migration-guide.html). This page covers what happens to your deployed contracts and your deploy pipeline.
+
+## Deployed contracts stay on their line
+
+A contract is pinned to an executor line when it is deployed, and it keeps that line for its whole life:
+
+- Contracts deployed before the upgrade run on v0.2. Their reads and writes keep working after the upgrade with no action on your side.
+- There is no in-place upgrade from v0.2 to v0.3. The two lines lay out `gl.storage.Root` and contract storage differently, so a v0.2 contract cannot be switched to the v0.3 executor and keep its state.
+
+<Callout type="warning">
+Do not use the [upgradability](/developers/intelligent-contracts/features/upgradability) mechanism to write v0.3 code into a v0.2 contract. The contract stays pinned to the v0.2 executor, which does not ship v0.3 runners, so every call to it will fail. Code upgrades only work within a line.
+</Callout>
+
+## How Studio picks the line for a new deploy
+
+For every new deploy, Studio reads the code and selects the **v0.2** line when either of these is true:
+
+1. **The first line is a v0.2 version header**, for example `# v0.2.16`. The header is a comment (`#`, `//` or `--`) holding `v0.2.` plus a patch number or `*`, optionally followed by a prerelease suffix, and nothing else.
+2. **The runner spec declares a runner that only v0.2 ships.** The runner spec is the `runner.json` file when the contract is a zip package. Otherwise it is the leading comment block: the consecutive comment lines at the top of the file, joined and read as JSON. Studio collects every `Depends` value in the spec. If any of them is a runner that the v0.2 line ships and the v0.3 line does not, such as `py-genlayer:1jb45aa8ynh2a9c9xn3b7qqh8sm5q93hwfp7jqmwsfhh8jpz09h6`, the deploy goes to v0.2.
+
+Everything else goes to the **newest** line (v0.3).
+
+A few details matter in practice:
+
+- When the first line is a version header such as `# v0.1.0`, Studio skips it and reads `Depends` from the lines below it. A `# v0.1.0` header does not select a line by itself.
+- Runner aliases and hashes the Studio does not know go to the newest line.
+- If the newest line ships every runner your code declares, the code runs on the newest line.
+- The same rules apply to fee estimates (simulated deploys), schema reads, and contracts deployed by other contracts.
+
+This means a project can redeploy its existing, unchanged v0.2 code after the upgrade without adding a header, as long as the code pins a v0.2 runner hash.
+
+### Examples
+
+This contract deploys on **v0.2**, because of its header:
+
+```python
+# v0.2.16
+# { "Depends": "py-genlayer:1jb45aa8ynh2a9c9xn3b7qqh8sm5q93hwfp7jqmwsfhh8jpz09h6" }
+
+from genlayer import *
+
+
+class Storage(gl.Contract):
+    ...
+```
+
+This contract also deploys on **v0.2**: the `# v0.1.0` line is skipped and the `Depends` entry names a v0.2-only runner:
+
+```python
+# v0.1.0
+# { "Depends": "py-genlayer:1jb45aa8ynh2a9c9xn3b7qqh8sm5q93hwfp7jqmwsfhh8jpz09h6" }
+
+from genlayer import *
+
+
+class Storage(gl.Contract):
+    ...
+```
+
+This contract deploys on **v0.3**:
+
+```python
+# v0.3.0
+# { "Depends": "py-genlayer:babwp9t37jw9g4j2bccgn14g6x7x9s1f7dsmh7emvz735pz4zxa0" }
+
+import genlayer as gl
+
+
+class Storage(gl.contract.Contract):
+    ...
+```
+
+The current v0.3 runner hashes are listed in the [v0.3 changelog](https://sdk.genlayer.com/main/executors/v0.3/python-sdk/changelog.html) and on the [available runners](https://sdk.genlayer.com/main/executors/v0.3/python-sdk/available-runners.html) page.
+
+## Migrate a contract from v0.2 to v0.3
+
+Because there is no in-place upgrade, migrating means deploying a new v0.3 contract and moving your users to it.
+
+1. **Port the code.** Follow the [SDK migration guide](https://sdk.genlayer.com/main/executors/v0.3/python-sdk/migration-guide.html) for the API changes (imports, `gl.contract.Contract`, storage types, `gl.vm.run_nondet_default`, `gl.vm.UserError` payloads and more).
+2. **Switch the runner.** Remove any `# v0.2.x` header and declare the v0.3 runner, for example `py-genlayer:babwp9t37jw9g4j2bccgn14g6x7x9s1f7dsmh7emvz735pz4zxa0`. Check every `Depends` entry, including library runners and the `runner.json` of zip packages: one leftover v0.2-only runner sends the whole deploy to v0.2.
+3. **Test on a v0.123 Studio.** Run your tests against a local Studio v0.123 or [studio-dev](https://studio-dev.genlayer.com) before deploying to a shared Studio.
+4. **Deploy the new contract.** It gets a new address. The old v0.2 contract keeps running at its address.
+5. **Move the state.** Nothing is copied for you. Read the old contract through its view methods and write the data into the new one, through constructor arguments or an import method that only an admin can call. Balances held by the old contract stay at the old address, so they move only if the old contract has a method that can send them out.
+6. **Repoint clients.** Update every frontend, backend, script and contract that stores the old address. Contracts that call the old address need their own migration or an admin setter.
+7. **Retire the old contract.** If it has a pause or admin switch, use it so that users stop writing to the old address.
+
+<Callout type="info">
+Plan the state move before you deploy. A v0.2 contract that has no way to export its data or withdraw its balance cannot be emptied after the fact, so add those methods to any v0.2 contract you still redeploy during the window.
+</Callout>
+
+## Fix `runner malformed`
+
+`runner malformed` (full code `invalid_contract runner malformed`, or `invalid_contract malformed_runner` on v0.2) means the deploy reached an executor line that does not ship a runner the code declares. Common causes:
+
+| Cause | Fix |
+|:--|:--|
+| v0.3 code with a `# v0.2.x` first line | Remove the header or change it to `# v0.3.0`. |
+| v0.2 code that declares a runner alias or a hash the Studio does not know, so it went to the newest line | Pin a v0.2 runner hash, such as `py-genlayer:1jb45aa8ynh2a9c9xn3b7qqh8sm5q93hwfp7jqmwsfhh8jpz09h6`, or add a `# v0.2.16` first line. |
+| A hash from an earlier v0.3 release candidate | Use the current hashes from the [v0.3 changelog](https://sdk.genlayer.com/main/executors/v0.3/python-sdk/changelog.html). |
+| `Depends` entries from both lines in one contract | Use runners from a single line. |
+| A v0.2 deploy after v0.2 deploys closed on that Studio | Migrate the contract to v0.3. |
+
+## v0.2 deploy window
+
+The retained v0.2 line is a transition window, not a permanent second target:
+
+- **Now:** new deploys of v0.2 code are accepted, so existing projects keep working while they port to v0.3.
+- **Later:** new v0.2 deploys will be closed, one Studio at a time. The date for each Studio will be announced in advance. After that, a deploy that selects v0.2 is rejected.
+- **Always:** contracts already deployed on v0.2 keep running. Closing deploys does not stop reads or writes to existing v0.2 contracts.
+
+Start new contracts on v0.3, and migrate the v0.2 contracts you still change or redeploy before the window closes on the Studios you use.
