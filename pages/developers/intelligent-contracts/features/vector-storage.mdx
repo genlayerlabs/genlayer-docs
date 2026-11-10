@@ -2,6 +2,8 @@
 description: "Vector Store in GenLayer stores embeddings, computes similarity, manages metadata, and supports CRUD in Intelligent Contracts."
 ---
 
+import { Callout } from "nextra-theme-docs";
+
 # Vector Store
 Vector Store is a GenLayer feature for Intelligent Contracts that stores text as vector embeddings, retrieves entries, and calculates text similarity efficiently. Developers can use Vector Store for natural language processing (NLP) tasks such as context-aware applications and indexing text data for semantic search.
 
@@ -12,7 +14,7 @@ The Vector Store provides several powerful features for managing text data:
 You can store text data as vector embeddings, which are mathematical representations of the text, allowing for efficient similarity comparisons. Each stored text is associated with a vector and metadata.
 
 #### 2. Similarity Calculation
-The Vector Store allows you to calculate the similarity between a given text and stored vectors using cosine similarity. This is useful for finding the most semantically similar texts, enabling applications like recommendation systems or text-based search.
+The Vector Store lets you find the nearest neighbors of a query vector via `knn()`. You must choose a distance metric as part of `VecDB`'s type parameters — `gle.EuclideanDistance` is the common choice — since there's no default. This is useful for finding the most semantically similar texts, enabling applications like recommendation systems or text-based search.
 
 #### 3. Metadata Management
 Along with the text and vectors, you can store additional metadata (any data type) associated with each text entry. This allows developers to link additional information (e.g., IDs or tags) to the text for retrieval.
@@ -24,30 +26,79 @@ The Vector Store provides standard CRUD (Create, Read, Update, Delete) operation
 To use the Vector Store in your Intelligent Contracts, you will interact with its methods to add and retrieve text data, calculate similarities, and manage vector storage. Below are the details of how to use this feature.
 
 #### Importing Vector Store
-First, import the VectorStore class from the standard library in your contract:
+
+`VecDB` and the embedding generators live in the `genlayer_embeddings` package (the `py-lib-genlayer-embeddings` runner). Import it as a whole module — the individual class names are **not** re-exported from the top-level `genlayer` package:
 
 ```python
-from backend.node.genvm.std.vector_store import VectorStore
+import genlayer_embeddings as gle
 ```
 
-#### Creating a Contract with Vector Store
-Here’s an example of a contract using the Vector Store for indexing and searching text logs:
+<Callout type="warning" emoji="⚠️">
+  `genlayermodelwrappers` and `from backend.node.genvm.std.vector_store import VectorStore` are **not** valid imports against the current SDK — those names don't exist in the published `genlayer_embeddings` package. If you see them in an older example, replace them with `import genlayer_embeddings as gle` as shown below.
+</Callout>
+
+`VecDB` also needs `numpy` imported *before* you import `genlayer` (whichever form you use — `import genlayer as gl` or `from genlayer import *`), per its own docstring:
 
 ```python
+import numpy as np
+import genlayer as gl
+from genlayer.types import *
+from genlayer.storage import TreeMap
+import genlayer_embeddings as gle
+```
+
+#### `VecDB[T, S, V, D]` type parameters
+
+`VecDB` takes four type parameters:
+
+| Param | Meaning | Example |
+|---|---|---|
+| `T` | Element dtype of the stored vectors | `np.float32` |
+| `S` | Vector dimension (as a `typing.Literal[...]`) | `typing.Literal[384]` |
+| `V` | The value/metadata type stored alongside each vector | `StoreValue` (your own dataclass) |
+| `D` | Distance metric class implementing the `Distance` protocol | `gle.EuclideanDistance` |
+
+`genlayer_embeddings` ships three ready-made metrics — `gle.EuclideanDistance`, `gle.ManhattanDistance`, `gle.ChebyshevDistance` — all true metrics safe for the cover-tree pruning `knn()` relies on.
+
+#### `VecDBElement` reference
+
+`VecDB.knn()` yields `VecDBElement` instances, and `VecDB.get_by_id()` returns one directly. `VecDBElement` isn't constructed by contract code — you always get one back from a `VecDB` method — but here's what's on it:
+
+| Member | Type | Description |
+|---|---|---|
+| `.key` | `np.ndarray` | The stored vector itself (property, read-only) |
+| `.id` | `int` | The element's unique id within the `VecDB` (property, read-only) |
+| `.value` | `V` (your value type) | The metadata stored alongside the vector. **Settable** — `element.value = new_val` updates it in place |
+| `.distance` | depends on the metric | Distance from the query point. Only populated on results from `knn()`; `None` on results from `get_by_id()` |
+| `.remove()` | — | Removes this element from the `VecDB` |
+
+#### Creating a Contract with Vector Store
+Here's a complete, verified example — the same `LogIndexer` contract used in GenLayer's own test suite — indexing and searching text logs by semantic similarity:
+
+<Callout type="info" emoji="ℹ️">
+  This includes a small fix over the original example: `add_log`/`update_log` now reset `removed_log_ids[key] = False` when reusing an existing entry, so a `log_id` you `remove_log()` and then re-add becomes visible to `get_closest_vector()` again. Without it, a removed-then-re-added entry stays permanently hidden — see [genlayer-studio#1755](https://github.com/genlayerlabs/genlayer-studio/pull/1755).
+</Callout>
+
+```python
+# v0.3.0
 # {
 #   "Seq": [
-#     { "Depends": "py-lib-genlayermodelwrappers:1jb45aa8ynh2a9c9xn3b7qqh8sm5q93hwfp7jqmwsfhh8jpz09h6" },
-#     { "Depends": "py-genlayer:1jb45aa8ynh2a9c9xn3b7qqh8sm5q93hwfp7jqmwsfhh8jpz09h6" }
+#     { "Depends": "py-lib-genlayer-embeddings:kr2rb2dcp01mw9khpg3tg2jasx4f82mcsy3eg08rjj1zdcm9q350" },
+#     { "Depends": "py-genlayer:9b8kjyda2ycxyq4ea6g4yfpnydxhd52gqba5rb8dw7krkh5mn9p0" }
 #   ]
 # }
 
-from genlayer import *
-import genlayermodelwrappers
 import numpy as np
+import genlayer as gl
+from genlayer.types import *
+from genlayer.storage import TreeMap
+import genlayer_embeddings as gle
+
 from dataclasses import dataclass
+import typing
 
 
-@allow_storage
+@gl.storage.allow
 @dataclass
 class StoreValue:
     log_id: u256
@@ -55,14 +106,19 @@ class StoreValue:
 
 
 # contract class
-class LogIndexer(gl.Contract):
-    vector_store: VecDB[np.float32, typing.Literal[384], StoreValue]
+class LogIndexer(gl.contract.Contract):
+    # The v0.3 embeddings runner's VecDB takes an explicit metric type.
+    vector_store: gle.VecDB[
+        np.float32, typing.Literal[384], StoreValue, gle.EuclideanDistance
+    ]
+    log_vector_ids: TreeMap[u256, u32]
+    removed_log_ids: TreeMap[u256, bool]
 
     def __init__(self):
         pass
 
     def get_embedding_generator(self):
-        return genlayermodelwrappers.SentenceTransformer("all-MiniLM-L6-v2")
+        return gle.SentenceTransformer("all-MiniLM-L6-v2")
 
     def get_embedding(
         self, txt: str
@@ -72,36 +128,71 @@ class LogIndexer(gl.Contract):
     @gl.public.view
     def get_closest_vector(self, text: str) -> dict | None:
         emb = self.get_embedding(text)
-        result = list(self.vector_store.knn(emb, 1))
-        if len(result) == 0:
-            return None
-        result = result[0]
-        return {
-            "vector": list(str(x) for x in result.key),
-            "similarity": str(1 - result.distance),
-            "id": result.value.log_id,
-            "text": result.value.text,
-        }
+        for result in self.vector_store.knn(emb, len(self.vector_store)):
+            log_id = result.value.log_id
+            if log_id in self.removed_log_ids and self.removed_log_ids[log_id]:
+                continue
+            if log_id not in self.log_vector_ids:
+                continue
+            if self.log_vector_ids[log_id] != result.id:
+                continue
+            return {
+                "vector": list(str(x) for x in result.key),
+                "similarity": str(1 - result.distance),
+                "id": result.value.log_id,
+                "text": result.value.text,
+            }
+        return None
 
     @gl.public.write
     def add_log(self, log: str, log_id: int) -> None:
+        key = log_id
+        if key in self.log_vector_ids:
+            # VecDBElement.key (the stored vector used by knn()) is
+            # read-only - only .value can be updated in place. Re-embedding
+            # requires removing the stale entry and inserting a fresh one,
+            # otherwise a changed log stays ranked by its old embedding.
+            self.vector_store.get_by_id(self.log_vector_ids[key]).remove()
+
         emb = self.get_embedding(log)
-        self.vector_store.insert(emb, StoreValue(text=log, log_id=u256(log_id)))
+        vector_id = self.vector_store.insert(emb, StoreValue(text=log, log_id=key))
+        self.log_vector_ids[key] = vector_id
+        self.removed_log_ids[key] = False
 
     @gl.public.write
     def update_log(self, log_id: int, log: str) -> None:
+        key = log_id
+        if key in self.log_vector_ids:
+            # See add_log: .key is read-only, must remove+reinsert to
+            # actually re-embed rather than leaving the stale vector.
+            self.vector_store.get_by_id(self.log_vector_ids[key]).remove()
+
         emb = self.get_embedding(log)
-        for elem in self.vector_store.knn(emb, 2):
-            if elem.value.text == log:
-                elem.value.log_id = u256(log_id)
+        vector_id = self.vector_store.insert(emb, StoreValue(text=log, log_id=key))
+        self.log_vector_ids[key] = vector_id
+        self.removed_log_ids[key] = False
 
     @gl.public.write
     def remove_log(self, id: int) -> None:
-        for el in self.vector_store:
-            if el.value.log_id == id:
-                el.remove()
-
+        key = id
+        if key in self.log_vector_ids:
+            self.removed_log_ids[key] = True
 ```
 
+`SentenceTransformer(model_name)` returns a plain callable (`str -> np.ndarray`), not a class instance — call it directly as `self.get_embedding_generator()(txt)` like the example above. It caches the loaded model internally, so repeated calls with the same model name are cheap.
 
+<Callout type="warning" emoji="⚠️">
+  `"similarity": str(1 - result.distance)` in the example above is **not** a normalized `[0, 1]` similarity score for `EuclideanDistance` — Euclidean distance is unbounded, so `1 - distance` can go negative for distant results. Treat it as a rough inverse-distance rank (higher still means closer), not a percentage or a bounded score.
+</Callout>
 
+## Debugging a Could not load contract schema error
+
+GenLayer Studio currently shows a generic **"Could not load contract schema"** banner with no further detail when the constructor-parameters step fails — this covers import errors, wrong `VecDB` type parameters, and any other exception the contract raises while GenVM introspects it, not just Vector Store issues.
+
+The real Python traceback isn't lost — it's captured server-side and logged at INFO level (GenVM execution failures are treated as contract errors, not infrastructure errors, so they don't show up as ERROR-level logs). To see it:
+
+```bash copy
+docker compose logs jsonrpc -f
+```
+
+Look for the log line immediately after your deploy/schema-load attempt — it includes the captured `stdout` and GenVM execution log, which for an import or type error will show the underlying Python exception and stack trace.
