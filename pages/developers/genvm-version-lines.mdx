@@ -105,6 +105,28 @@ Because there is no in-place upgrade, migrating means deploying a new v0.3 contr
 Plan the state move before you deploy. A v0.2 contract that has no way to export its data or withdraw its balance cannot be emptied after the fact, so add those methods to any v0.2 contract you still redeploy during the window.
 </Callout>
 
+### Migrate with minimal downtime
+
+You do not have to migrate a contract that already works: deployed v0.2 contracts keep running after v0.2 deploys close. Migrate when you need to change or redeploy the code, and put new features in new v0.3 contracts next to the old ones when you can.
+
+When you do migrate, run the old and new contracts side by side so that only writes pause, and only for the final sync:
+
+1. **Prepare.** Give the v0.3 contract an admin-only import method that loads state in batches. Make every client read the contract address from configuration (an environment variable, your API or an on-chain registry) so you can switch it without rebuilding the frontend.
+2. **Deploy in parallel.** Deploy the v0.3 contract while the v0.2 contract keeps serving users.
+3. **Backfill.** Copy the existing state from the old contract's view methods into the new one. Record a checkpoint of what you copied.
+4. **Freeze writes.** Stop writes to the old contract, with its pause switch if it has one, or in your application by disabling write actions or queueing them in your backend. Wait until the old contract's pending transactions are finalized: an appeal can still change state after a transaction is accepted.
+5. **Sync the delta.** Copy only what changed since the checkpoint, then compare the views of both contracts.
+6. **Switch.** Point clients at the new address, resume writes, and send any queued writes to the new contract.
+7. **Keep the old contract.** It stays available for reads and history.
+
+The freeze lasts as long as the delta sync. Append-only data, such as logs, counters or increasing IDs, makes the delta cheap to find. If you cannot tell what changed, plan for a full copy during the freeze.
+
+<Callout type="warning">
+Copy the resulting state; do not replay old transactions against the new contract. Writes that call an LLM or the web are non-deterministic and can produce a different result when run again. For the same reason, writing to both contracts during the transition can leave them out of sync.
+</Callout>
+
+For systems of several contracts, such as a factory with child contracts or a bridge, migrate the contracts together and in dependency order. A contract that stores another contract's address needs an admin setter for the new address, or it has to be migrated too. A v0.3 factory deploys v0.3 children only when the child code declares v0.3 runners; children are routed by their own code, as described in [How Studio picks the line](#how-studio-picks-the-line-for-a-new-deploy).
+
 ## Fix `runner malformed`
 
 `runner malformed` (full code `invalid_contract runner malformed`, or `invalid_contract malformed_runner` on v0.2) means the deploy reached an executor line that does not ship a runner the code declares. Common causes:
