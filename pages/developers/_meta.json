@@ -1,6 +1,7 @@
 {
   "networks": "Networks & RPCs",
   "consensus-v06-migration": "Consensus v0.6 Migration",
+  "genvm-version-lines": "GenVM Version Lines",
   "intelligent-contracts": "Intelligent Contracts",
   "decentralized-applications": "Frontend & SDK Integration",
   "error-reference": "Error & Revert Reference",
