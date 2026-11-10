@@ -27,6 +27,10 @@ The release-candidate stack is deployed at [studio-dev.genlayer.com](https://stu
 
 Use the JavaScript `studioDevnet` definition or CLI `studio-dev` alias supplied by the matching RC. Do not point the stable `studionet` chain object at the preview RPC: chain identity and consensus contract addresses must move together.
 
+## GenVM v0.2 and v0.3
+
+Studio v0.123 adds the GenVM v0.3 executor line and keeps v0.2 for existing contracts. Contracts deployed before the upgrade stay on v0.2, unchanged v0.2 code can still be deployed during a transition window, and moving a contract to v0.3 means redeploying it at a new address. See [GenVM Version Lines](/developers/genvm-version-lines) for how Studio picks the line for a new deploy, how to migrate, and how to fix `runner malformed`.
+
 ## Migrate fee submission
 
 On a fee-charging deployment, every deploy and write must carry a `FeesDistribution` and its quoted fee value. The recommended path is:
@@ -85,6 +89,7 @@ Use the SDK's `isSuccessful` helper or Transaction Kit's normalized outcome. Tra
 - Display deposit, consumed fees, and final refund as different values.
 - Require both successful status and execution result before showing an application action as complete.
 - Re-run profile tests whenever contract code, GenVM, Studio, or the fee policy changes.
+- Start new contracts on GenVM v0.3 and plan the redeploy of v0.2 contracts before v0.2 deploys close; see [GenVM Version Lines](/developers/genvm-version-lines).
 
 <Callout type="warning">
 Studio-dev is a release-candidate environment and may reset. Move durable production-like testing to Bradbury only after the compatible v0.6 stack has been promoted there.
