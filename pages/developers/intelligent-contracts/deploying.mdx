@@ -82,6 +82,23 @@ Deploy to different networks based on your development stage:
 
 [Explore Network Configuration →](./deploying/network-configuration)
 
+## Known Limitations
+
+### Bradbury: per-transaction gas ceiling (~20KB practical source-size limit)
+
+TestnetBradbury enforces a **fixed 16,777,216 (2^24) gas limit per transaction** — a `zksync-os` runtime chain config value (`DEFAULT_MAX_TX_GAS_LIMIT`, added for [EIP-7825](https://eips.ethereum.org/EIPS/eip-7825) alignment). This is a hard cap on the transaction itself, not on the block (Bradbury's block gas limit is unaffected).
+
+`eth_estimateGas` does **not** enforce this cap — simulation skips the check — so an estimate can return a plausible-looking number (e.g. 28–32M) for a deployment that will actually be rejected. The rejection only appears at `eth_sendRawTransaction`, as `gas limit too high`, with no revert reason. If you *do* manage to sign a transaction near the 2^24 boundary, it can be accepted by the RPC but still run out of gas during execution — same ceiling, hit from the other side.
+
+**Practical impact:** Python Intelligent Contracts need roughly **730 gas per byte of source** to deploy. At a fixed 16,777,216-gas ceiling, that puts source contracts above **roughly 20KB** at risk of being undeployable on Bradbury as currently configured, regardless of what gas limit you request.
+
+**Workarounds:**
+- Split a large contract into multiple smaller contracts, keeping each deploy under the effective size ceiling.
+- If you're near the boundary, don't trust `eth_estimateGas` alone — test the actual `eth_sendRawTransaction` at your target gas limit, since simulation won't warn you.
+- This is a runtime config value, not something baked into the network by a fork — it can be raised by whoever administers Bradbury's chain config, without requiring a network upgrade.
+
+This was root-caused through a multi-person community investigation in [genlayer-cli#419](https://github.com/genlayerlabs/genlayer-cli/issues/419), including a full binary search of the boundary and a `debug_traceTransaction`-confirmed out-of-gas trace pinpointing the exact mechanism in `zksync-os`.
+
 ## Development Workflow
 
 Follow this recommended progression:
