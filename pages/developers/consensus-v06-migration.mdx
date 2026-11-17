@@ -27,6 +27,89 @@ The release-candidate stack is deployed at [studio-dev.genlayer.com](https://stu
 
 Use the JavaScript `studioDevnet` definition or CLI `studio-dev` alias supplied by the matching RC. Do not point the stable `studionet` chain object at the preview RPC: chain identity and consensus contract addresses must move together.
 
+## Switch SDK versions at the upgrade
+
+A hosted Studio moves from v0.121 to v0.123 in one step, and the two versions need different SDK lines: the v0.6 SDKs do not deploy against v0.121, and on a fee-charging v0.123 Studio the earlier SDKs have every deploy and write rejected because they send no fees. If your app cannot be down in between, ship one build that carries both SDK lines and picks one at runtime.
+
+### Detect the Studio version
+
+Call the `sim_getFeeConfig` RPC method. Only Studio v0.123 and later implement it.
+
+| Response | Meaning | What to do |
+|:--|:--|:--|
+| A `result` object | Studio is on v0.123 | Use the v0.6 SDK line |
+| Error code `-32601` (method not found) | Studio is still on v0.121 | Keep using your current SDK |
+| Network error, timeout, HTTP error, or any other RPC error | Unknown | Do not switch. Retry, and fail the write if it keeps happening |
+
+Decide on whether the method exists, not on the `enabled` field of the result. `enabled` only says whether that Studio charges fees. The v0.6 SDK line works against both gasless and fee-charging v0.123 Studios, so use it whenever the method exists.
+
+<Callout type="warning">
+Treat network failures as "unknown", never as "old Studio". During the upgrade the RPC can be unreachable for a few minutes; an app that falls back to the old SDK on any failure sends writes the upgraded Studio rejects.
+</Callout>
+
+### Example
+
+Install the v0.6 SDK next to the one you already use, under an alias:
+
+```bash
+npm install genlayer-js-v2@npm:genlayer-js@2
+```
+
+While v2 is still a release candidate, name the exact version instead of `2`, for example `genlayer-js@2.0.0-rc.3`.
+
+Then probe before each deploy or write:
+
+```ts
+type StudioLine = "v0.6" | "legacy";
+
+let cached: StudioLine | undefined;
+
+export async function detectStudioLine(rpcUrl: string): Promise<StudioLine> {
+  // An upgraded Studio never goes back, so only the "v0.6" answer is cached.
+  if (cached === "v0.6") return cached;
+
+  const response = await fetch(rpcUrl, {
+    method: "POST",
+    headers: { "content-type": "application/json" },
+    body: JSON.stringify({ jsonrpc: "2.0", id: 1, method: "sim_getFeeConfig", params: [] }),
+    signal: AbortSignal.timeout(10_000),
+  });
+  if (!response.ok) {
+    throw new Error(`Studio RPC returned HTTP ${response.status}`);
+  }
+
+  const body = await response.json();
+  if (body.result) {
+    cached = "v0.6";
+    return cached;
+  }
+  if (body.error?.code === -32601) return "legacy";
+  throw new Error(`Unexpected sim_getFeeConfig response: ${JSON.stringify(body.error)}`);
+}
+```
+
+```ts
+const line = await detectStudioLine("https://studio.genlayer.com/api");
+
+if (line === "v0.6") {
+  const { createClient } = await import("genlayer-js-v2");
+  // v0.6 path: estimate fees and submit them with the transaction
+} else {
+  const { createClient } = await import("genlayer-js");
+  // current path, unchanged
+}
+```
+
+`detectStudioLine` throws when it cannot tell. Let that error stop the write, or retry it with a delay; do not catch it and continue on either path.
+
+### Python
+
+One Python environment cannot hold two versions of `genlayer-py`. Run the same probe with any HTTP client, and either keep the two paths in separate environments or deploy the build pinned to `genlayer-py` v0.19 as soon as the probe returns a result.
+
+### After the upgrade
+
+Once every Studio your app talks to answers `sim_getFeeConfig`, remove the old SDK and the probe. The v0.6 path then follows the rest of this guide, starting with fee submission below.
+
 ## Migrate fee submission
 
 On a fee-charging deployment, every deploy and write must carry a `FeesDistribution` and its quoted fee value. The recommended path is:
