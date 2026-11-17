@@ -1,5 +1,5 @@
 ---
-description: "How Studio v0.123 runs GenVM v0.2 and v0.3 side by side, how it picks the line for a new deploy, and how to move a deployed contract from v0.2 to v0.3."
+description: "How Studio v0.123 runs GenVM v0.2 and v0.4 side by side, how it picks the line for a new deploy, and how to move a deployed contract to v0.4."
 ---
 
 import { Callout } from 'nextra-theme-docs'
@@ -11,21 +11,25 @@ Studio v0.123 runs two GenVM executor lines side by side:
 | Line | What runs on it |
 |:--|:--|
 | **v0.2.x** (retained) | Every contract deployed before the upgrade, and new deploys of code written for v0.2 |
-| **v0.3.x** (newest) | Every other new deploy |
+| **v0.4.x** (newest) | Every other new deploy |
 
-The retained line exists so that projects can keep running, and keep deploying, unchanged v0.2 code while they port it to v0.3. This page explains which line a contract runs on, how to move a contract to v0.3, and what to expect when v0.2 deploys close.
+The retained line exists so that projects can keep running, and keep deploying, unchanged v0.2 code while they port it to v0.4. This page explains which line a contract runs on, how to move a contract to v0.4, and what to expect when v0.2 deploys close.
 
-The API changes between the two lines are covered by the [GenVM SDK migration guide](https://sdk.genlayer.com/main/executors/v0.3/python-sdk/migration-guide.html). This page covers what happens to your deployed contracts and your deploy pipeline.
+<Callout type="warning">
+GenVM v0.3 is not part of Studio v0.123. Contracts deployed with a v0.3 runner, which was only possible on studio-dev, stop working, reads included, and their state does not carry over. Redeploy them on v0.4; see [Migrate a contract from v0.3 to v0.4](#migrate-a-contract-from-v03-to-v04).
+</Callout>
+
+The API changes between the lines are covered by the [GenVM SDK migration guide](https://sdk.genlayer.com/main/executors/v0.4/python-sdk/migration-guide.html). This page covers what happens to your deployed contracts and your deploy pipeline.
 
 ## Deployed contracts stay on their line
 
 A contract is pinned to an executor line when it is deployed, and it keeps that line for its whole life:
 
 - Contracts deployed before the upgrade run on v0.2. Their reads and writes keep working after the upgrade with no action on your side.
-- There is no in-place upgrade from v0.2 to v0.3. The two lines lay out `gl.storage.Root` and contract storage differently, so a v0.2 contract cannot be switched to the v0.3 executor and keep its state.
+- There is no in-place upgrade from v0.2 to v0.4. The two lines lay out `gl.storage.Root` and contract storage differently, so a v0.2 contract cannot be switched to the v0.4 executor and keep its state.
 
 <Callout type="warning">
-Do not use the [upgradability](/developers/intelligent-contracts/features/upgradability) mechanism to write v0.3 code into a v0.2 contract. The contract stays pinned to the v0.2 executor, which does not ship v0.3 runners, so every call to it will fail. Code upgrades only work within a line.
+Do not use the [upgradability](/developers/intelligent-contracts/features/upgradability) mechanism to write v0.4 code into a v0.2 contract. The contract stays pinned to the v0.2 executor, which does not ship v0.4 runners, so every call to it will fail. Code upgrades only work within a line.
 </Callout>
 
 ## How Studio picks the line for a new deploy
@@ -33,9 +37,9 @@ Do not use the [upgradability](/developers/intelligent-contracts/features/upgrad
 For every new deploy, Studio reads the code and selects the **v0.2** line when either of these is true:
 
 1. **The first line is a v0.2 version header**, for example `# v0.2.16`. The header is a comment (`#`, `//` or `--`) holding `v0.2.` plus a patch number or `*`, optionally followed by a prerelease suffix, and nothing else.
-2. **The runner spec declares a runner that only v0.2 ships.** The runner spec is the `runner.json` file when the contract is a zip package. Otherwise it is the leading comment block: the consecutive comment lines at the top of the file, joined and read as JSON. Studio collects every `Depends` value in the spec. If any of them is a runner that the v0.2 line ships and the v0.3 line does not, such as `py-genlayer:1jb45aa8ynh2a9c9xn3b7qqh8sm5q93hwfp7jqmwsfhh8jpz09h6`, the deploy goes to v0.2.
+2. **The runner spec declares a runner that only v0.2 ships.** The runner spec is the `runner.json` file when the contract is a zip package. Otherwise it is the leading comment block: the consecutive comment lines at the top of the file, joined and read as JSON. Studio collects every `Depends` value in the spec. If any of them is a runner that the v0.2 line ships and the newest line does not, such as `py-genlayer:1jb45aa8ynh2a9c9xn3b7qqh8sm5q93hwfp7jqmwsfhh8jpz09h6`, the deploy goes to v0.2.
 
-Everything else goes to the **newest** line (v0.3).
+Everything else goes to the **newest** line (v0.4).
 
 A few details matter in practice:
 
@@ -74,11 +78,10 @@ class Storage(gl.Contract):
     ...
 ```
 
-This contract deploys on **v0.3**:
+This contract deploys on **v0.4**:
 
 ```python
-# v0.3.0
-# { "Depends": "py-genlayer:babwp9t37jw9g4j2bccgn14g6x7x9s1f7dsmh7emvz735pz4zxa0" }
+# { "Depends": "py-genlayer:kzybg95x1gn21dw72m7hyg0maaap04n4nx55j9yt6fkdqxtz6bz0" }
 
 import genlayer as gl
 
@@ -87,14 +90,21 @@ class Storage(gl.contract.Contract):
     ...
 ```
 
-The current v0.3 runner hashes are listed in the [v0.3 changelog](https://sdk.genlayer.com/main/executors/v0.3/python-sdk/changelog.html) and on the [available runners](https://sdk.genlayer.com/main/executors/v0.3/python-sdk/available-runners.html) page.
+The v0.4 runners are:
 
-## Migrate a contract from v0.2 to v0.3
+| Runner | Use it for |
+|:--|:--|
+| `py-genlayer:kzybg95x1gn21dw72m7hyg0maaap04n4nx55j9yt6fkdqxtz6bz0` | Single-file Python contracts |
+| `py-genlayer-multi:ys9w7shpvsdswe2fhrxh7agke954catkqb28cngq5924zw9bzx80` | Multi-file (zip) Python contracts |
 
-Because there is no in-place upgrade, migrating means deploying a new v0.3 contract and moving your users to it.
+The full list of v0.4 runner hashes, including library runners, is in the [v0.4 changelog](https://sdk.genlayer.com/main/executors/v0.4/python-sdk/changelog.html) and on the [available runners](https://sdk.genlayer.com/main/executors/v0.4/python-sdk/available-runners.html) page.
 
-1. **Port the code.** Follow the [SDK migration guide](https://sdk.genlayer.com/main/executors/v0.3/python-sdk/migration-guide.html) for the API changes (imports, `gl.contract.Contract`, storage types, `gl.vm.run_nondet_default`, `gl.vm.UserError` payloads and more).
-2. **Switch the runner.** Remove any `# v0.2.x` header and declare the v0.3 runner, for example `py-genlayer:babwp9t37jw9g4j2bccgn14g6x7x9s1f7dsmh7emvz735pz4zxa0`. Check every `Depends` entry, including library runners and the `runner.json` of zip packages: one leftover v0.2-only runner sends the whole deploy to v0.2.
+## Migrate a contract from v0.2 to v0.4
+
+Because there is no in-place upgrade, migrating means deploying a new v0.4 contract and moving your users to it.
+
+1. **Port the code.** Follow the [SDK migration guide](https://sdk.genlayer.com/main/executors/v0.4/python-sdk/migration-guide.html) for the API changes (imports, `gl.contract.Contract`, storage types, `gl.vm.run_nondet_default`, `gl.vm.UserError` payloads and more). Apply every section that lies between v0.2 and v0.4, including the v0.3 to v0.4 changes listed [below](#migrate-a-contract-from-v03-to-v04): code written against the v0.3 API does not run on v0.4 as is.
+2. **Switch the runner.** Remove any `# v0.2.x` header and declare the v0.4 runner: `py-genlayer:kzybg95x1gn21dw72m7hyg0maaap04n4nx55j9yt6fkdqxtz6bz0`, or `py-genlayer-multi:ys9w7shpvsdswe2fhrxh7agke954catkqb28cngq5924zw9bzx80` for a zip package. Check every `Depends` entry, including library runners and the `runner.json` of zip packages: one leftover v0.2-only runner sends the whole deploy to v0.2.
 3. **Test on a v0.123 Studio.** Run your tests against a local Studio v0.123 or [studio-dev](https://studio-dev.genlayer.com) before deploying to a shared Studio.
 4. **Deploy the new contract.** It gets a new address. The old v0.2 contract keeps running at its address.
 5. **Move the state.** Nothing is copied for you. Read the old contract through its view methods and write the data into the new one, through constructor arguments or an import method that only an admin can call. Balances held by the old contract stay at the old address, so they move only if the old contract has a method that can send them out.
@@ -107,12 +117,12 @@ Plan the state move before you deploy. A v0.2 contract that has no way to export
 
 ### Migrate with minimal downtime
 
-You do not have to migrate a contract that already works: deployed v0.2 contracts keep running after v0.2 deploys close. Migrate when you need to change or redeploy the code, and put new features in new v0.3 contracts next to the old ones when you can.
+You do not have to migrate a contract that already works: deployed v0.2 contracts keep running after v0.2 deploys close. Migrate when you need to change or redeploy the code, and put new features in new v0.4 contracts next to the old ones when you can.
 
 When you do migrate, run the old and new contracts side by side so that only writes pause, and only for the final sync:
 
-1. **Prepare.** Give the v0.3 contract an admin-only import method that loads state in batches. Make every client read the contract address from configuration (an environment variable, your API or an on-chain registry) so you can switch it without rebuilding the frontend.
-2. **Deploy in parallel.** Deploy the v0.3 contract while the v0.2 contract keeps serving users.
+1. **Prepare.** Give the v0.4 contract an admin-only import method that loads state in batches. Make every client read the contract address from configuration (an environment variable, your API or an on-chain registry) so you can switch it without rebuilding the frontend.
+2. **Deploy in parallel.** Deploy the v0.4 contract while the v0.2 contract keeps serving users.
 3. **Backfill.** Copy the existing state from the old contract's view methods into the new one. Record a checkpoint of what you copied.
 4. **Freeze writes.** Stop writes to the old contract, with its pause switch if it has one, or in your application by disabling write actions or queueing them in your backend. Wait until the old contract's pending transactions are finalized: an appeal can still change state after a transaction is accepted.
 5. **Sync the delta.** Copy only what changed since the checkpoint, then compare the views of both contracts.
@@ -125,7 +135,71 @@ The freeze lasts as long as the delta sync. Append-only data, such as logs, coun
 Copy the resulting state; do not replay old transactions against the new contract. Writes that call an LLM or the web are non-deterministic and can produce a different result when run again. For the same reason, writing to both contracts during the transition can leave them out of sync.
 </Callout>
 
-For systems of several contracts, such as a factory with child contracts or a bridge, migrate the contracts together and in dependency order. A contract that stores another contract's address needs an admin setter for the new address, or it has to be migrated too. A v0.3 factory deploys v0.3 children only when the child code declares v0.3 runners; children are routed by their own code, as described in [How Studio picks the line](#how-studio-picks-the-line-for-a-new-deploy).
+For systems of several contracts, such as a factory with child contracts or a bridge, migrate the contracts together and in dependency order. A contract that stores another contract's address needs an admin setter for the new address, or it has to be migrated too. A v0.4 factory deploys v0.4 children only when the child code declares v0.4 runners; children are routed by their own code, as described in [How Studio picks the line](#how-studio-picks-the-line-for-a-new-deploy).
+
+## Migrate a contract from v0.3 to v0.4
+
+This applies only to contracts written for GenVM v0.3, which was only available on studio-dev before this release. v0.3 contracts cannot be read or called on Studio v0.123, so their state cannot be copied from the old address. Redeploy them on v0.4 and recreate the state they need.
+
+Make these changes to the code:
+
+1. **Switch the runner.** Replace the v0.3 runner hash (`py-genlayer:babwp9t37...` or an earlier release candidate hash) with `py-genlayer:kzybg95x1gn21dw72m7hyg0maaap04n4nx55j9yt6fkdqxtz6bz0`, or with `py-genlayer-multi:ys9w7shpvsdswe2fhrxh7agke954catkqb28cngq5924zw9bzx80` for a zip package.
+
+2. **Salted deploys.** The `salt_nonce` argument of `gl.contract.deploy` is replaced by `salted`:
+
+   ```python
+   # v0.3
+   address = gl.contract.deploy(code=source, salt_nonce=42)
+
+   # v0.4
+   address = gl.contract.deploy(code=source, salted=gl.contract.Salted(42))
+   ```
+
+   `salted=gl.contract.Salted(n)` deploys deterministically and returns the predicted address. A plain integer, `salted=n`, also deploys deterministically but returns `None`. A salt of `0` raises an error instead of meaning "not salted"; omit `salted` for a regular deploy. Salted addresses now follow the settlement chain's `CREATE2` factory, so they differ from the addresses v0.3 returned for the same salt.
+
+3. **Remove `__receive__`.** v0.4 has no receive hook. A contract class that defines or inherits `__receive__` raises `TypeError` when it is loaded. To accept value, expose a named payable method:
+
+   ```python
+   # v0.3
+   def __receive__(self):
+       ...
+
+   # v0.4
+   @gl.public.write.payable
+   def deposit(self) -> None:
+       ...
+   ```
+
+   A call with an empty method name now fails with `ValueError('empty method name')`, with or without value, and does not reach any fallback.
+
+4. **Send value through `gl.chain.Account`.** Intelligent Contract proxies no longer have `emit_transfer`:
+
+   ```python
+   # v0.3
+   gl.contract.get_at(address).emit_transfer(amount)
+
+   # v0.4
+   gl.chain.Account(address).emit_transfer(amount)
+   ```
+
+   The transfer is applied on finalization and never runs the recipient's code. The `on` and `use_balance` arguments are gone; the value still comes from the sending contract's balance. EVM contract proxies keep their `emit_transfer(value)` method.
+
+5. **Undecorate the fallback methods.** `__handle_undefined_method__` must not carry a `gl.public` decorator; decorating it, or any other method whose name starts with `__`, raises `TypeError`. A call with value to an undefined method is refused unless the contract defines `__handle_undefined_method_payable__`:
+
+   ```python
+   # v0.3
+   @gl.public.write.payable
+   def __handle_undefined_method__(self, method_name, args, kwargs): ...
+
+   # v0.4
+   def __handle_undefined_method_payable__(self, method_name, args, kwargs): ...
+   ```
+
+   Without value, `__handle_undefined_method__` is called if you define it, and `__handle_undefined_method_payable__` otherwise.
+
+6. **Check `gl.vm.unpack_result` calls.** It now raises `TypeError` when given anything other than a VM result, such as the value `gl.vm.run_nondet` already returns unwrapped.
+
+The [SDK migration guide](https://sdk.genlayer.com/main/executors/v0.4/python-sdk/migration-guide.html) lists the remaining, smaller changes.
 
 ## Fix `runner malformed`
 
@@ -133,18 +207,18 @@ For systems of several contracts, such as a factory with child contracts or a br
 
 | Cause | Fix |
 |:--|:--|
-| v0.3 code with a `# v0.2.x` first line | Remove the header or change it to `# v0.3.0`. |
+| v0.4 code with a `# v0.2.x` first line | Remove the header. |
 | v0.2 code that declares a runner alias or a hash the Studio does not know, so it went to the newest line | Pin a v0.2 runner hash, such as `py-genlayer:1jb45aa8ynh2a9c9xn3b7qqh8sm5q93hwfp7jqmwsfhh8jpz09h6`, or add a `# v0.2.16` first line. |
-| A hash from an earlier v0.3 release candidate | Use the current hashes from the [v0.3 changelog](https://sdk.genlayer.com/main/executors/v0.3/python-sdk/changelog.html). |
+| A v0.3 runner hash, such as `py-genlayer:babwp9t37...` | Port the code to v0.4 and use a v0.4 runner hash; see [Migrate a contract from v0.3 to v0.4](#migrate-a-contract-from-v03-to-v04). |
 | `Depends` entries from both lines in one contract | Use runners from a single line. |
-| A v0.2 deploy after v0.2 deploys closed on that Studio | Migrate the contract to v0.3. |
+| A v0.2 deploy after v0.2 deploys closed on that Studio | Migrate the contract to v0.4. |
 
 ## v0.2 deploy window
 
 The retained v0.2 line is a transition window, not a permanent second target:
 
-- **Now:** new deploys of v0.2 code are accepted, so existing projects keep working while they port to v0.3.
+- **Now:** new deploys of v0.2 code are accepted, so existing projects keep working while they port to v0.4.
 - **Later:** new v0.2 deploys will be closed, one Studio at a time. The date for each Studio will be announced in advance. After that, a deploy that selects v0.2 is rejected.
 - **Always:** contracts already deployed on v0.2 keep running. Closing deploys does not stop reads or writes to existing v0.2 contracts.
 
-Start new contracts on v0.3, and migrate the v0.2 contracts you still change or redeploy before the window closes on the Studios you use.
+Start new contracts on v0.4, and migrate the v0.2 contracts you still change or redeploy before the window closes on the Studios you use.
