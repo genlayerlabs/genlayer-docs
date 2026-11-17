@@ -141,65 +141,77 @@ For systems of several contracts, such as a factory with child contracts or a br
 
 This applies only to contracts written for GenVM v0.3, which was only available on studio-dev before this release. v0.3 contracts cannot be read or called on Studio v0.123, so their state cannot be copied from the old address. Redeploy them on v0.4 and recreate the state they need.
 
-Make these changes to the code:
+Make these changes to the code.
 
-1. **Switch the runner.** Replace the v0.3 runner hash (`py-genlayer:babwp9t37...` or an earlier release candidate hash) with `py-genlayer:kzybg95x1gn21dw72m7hyg0maaap04n4nx55j9yt6fkdqxtz6bz0`, or with `py-genlayer-multi:ys9w7shpvsdswe2fhrxh7agke954catkqb28cngq5924zw9bzx80` for a zip package.
+### Switch the runner
 
-2. **Salted deploys.** The `salt_nonce` argument of `gl.contract.deploy` is replaced by `salted`:
+Replace the v0.3 runner hash (`py-genlayer:babwp9t37...` or an earlier release candidate hash) with `py-genlayer:kzybg95x1gn21dw72m7hyg0maaap04n4nx55j9yt6fkdqxtz6bz0`, or with `py-genlayer-multi:ys9w7shpvsdswe2fhrxh7agke954catkqb28cngq5924zw9bzx80` for a zip package.
 
-   ```python
-   # v0.3
-   address = gl.contract.deploy(code=source, salt_nonce=42)
+### Salted deploys
 
-   # v0.4
-   address = gl.contract.deploy(code=source, salted=gl.contract.Salted(42))
-   ```
+The `salt_nonce` argument of `gl.contract.deploy` is replaced by `salted`:
 
-   `salted=gl.contract.Salted(n)` deploys deterministically and returns the predicted address. A plain integer, `salted=n`, also deploys deterministically but returns `None`. A salt of `0` raises an error instead of meaning "not salted"; omit `salted` for a regular deploy. Salted addresses now follow the settlement chain's `CREATE2` factory, so they differ from the addresses v0.3 returned for the same salt.
+```python
+# v0.3
+address = gl.contract.deploy(code=source, salt_nonce=42)
 
-3. **Remove `__receive__`.** v0.4 has no receive hook. A contract class that defines or inherits `__receive__` raises `TypeError` when it is loaded. To accept value, expose a named payable method:
+# v0.4
+address = gl.contract.deploy(code=source, salted=gl.contract.Salted(42))
+```
 
-   ```python
-   # v0.3
-   def __receive__(self):
-       ...
+`salted=gl.contract.Salted(n)` deploys deterministically and returns the predicted address. A plain integer, `salted=n`, also deploys deterministically but returns `None`. A salt of `0` raises an error instead of meaning "not salted"; omit `salted` for a regular deploy. Salted addresses now follow the settlement chain's `CREATE2` factory, so they differ from the addresses v0.3 returned for the same salt.
 
-   # v0.4
-   @gl.public.write.payable
-   def deposit(self) -> None:
-       ...
-   ```
+### Remove `__receive__`
 
-   A call with an empty method name now fails with `ValueError('empty method name')`, with or without value, and does not reach any fallback.
+v0.4 has no receive hook. A contract class that defines or inherits `__receive__` raises `TypeError` when it is loaded. To accept value, expose a named payable method:
 
-4. **Send value through `gl.chain.Account`.** Intelligent Contract proxies no longer have `emit_transfer`:
+```python
+# v0.3
+def __receive__(self):
+    ...
 
-   ```python
-   # v0.3
-   gl.contract.get_at(address).emit_transfer(amount)
+# v0.4
+@gl.public.write.payable
+def deposit(self) -> None:
+    ...
+```
 
-   # v0.4
-   gl.chain.Account(address).emit_transfer(amount)
-   ```
+A call with an empty method name now fails with `ValueError('empty method name')`, with or without value, and does not reach any fallback.
 
-   The transfer is applied on finalization and never runs the recipient's code. The `on` and `use_balance` arguments are gone; the value still comes from the sending contract's balance. EVM contract proxies keep their `emit_transfer(value)` method.
+### Send value through `gl.chain.Account`
 
-5. **Undecorate the fallback methods.** `__handle_undefined_method__` must not carry a `gl.public` decorator; decorating it, or any other method whose name starts with `__`, raises `TypeError`. A call with value to an undefined method is refused unless the contract defines `__handle_undefined_method_payable__`:
+Intelligent Contract proxies no longer have `emit_transfer`:
 
-   ```python
-   # v0.3
-   @gl.public.write.payable
-   def __handle_undefined_method__(self, method_name, args, kwargs): ...
+```python
+# v0.3
+gl.contract.get_at(address).emit_transfer(amount)
 
-   # v0.4
-   def __handle_undefined_method_payable__(self, method_name, args, kwargs): ...
-   ```
+# v0.4
+gl.chain.Account(address).emit_transfer(amount)
+```
 
-   Without value, `__handle_undefined_method__` is called if you define it, and `__handle_undefined_method_payable__` otherwise.
+The transfer is applied on finalization and never runs the recipient's code. The `on` and `use_balance` arguments are gone; the value still comes from the sending contract's balance. EVM contract proxies keep their `emit_transfer(value)` method.
 
-6. **Check `gl.vm.unpack_result` calls.** It now raises `TypeError` when given anything other than a VM result, such as the value `gl.vm.run_nondet` already returns unwrapped.
+### Undecorate the fallback methods
 
-The [SDK migration guide](https://sdk.genlayer.com/main/executors/v0.4/python-sdk/migration-guide.html) lists the remaining, smaller changes.
+`__handle_undefined_method__` must not carry a `gl.public` decorator; decorating it, or any other method whose name starts with `__`, raises `TypeError`. A call with value to an undefined method is refused unless the contract defines `__handle_undefined_method_payable__`:
+
+```python
+# v0.3
+@gl.public.write.payable
+def __handle_undefined_method__(self, method_name, args, kwargs): ...
+
+# v0.4
+def __handle_undefined_method_payable__(self, method_name, args, kwargs): ...
+```
+
+Without value, `__handle_undefined_method__` is called if you define it, and `__handle_undefined_method_payable__` otherwise.
+
+### Check `gl.vm.unpack_result` calls
+
+It now raises `TypeError` when given anything other than a VM result, such as the value `gl.vm.run_nondet` already returns unwrapped.
+
+v0.3 only existed as release candidates, so a contract built on an earlier candidate may need more changes than these. The [SDK migration guide](https://sdk.genlayer.com/main/executors/v0.4/python-sdk/migration-guide.html) lists them under "Within v0.3: Release-Candidate Changes".
 
 ## Fix `runner malformed`
 
