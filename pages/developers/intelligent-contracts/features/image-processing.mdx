@@ -42,6 +42,58 @@ class ReceiptVerifier(gl.Contract):
 
 The `images` parameter accepts a sequence of raw `bytes` (e.g., PNG/JPEG data) or `gl.nondet.Image` objects.
 
+## Passing User-Supplied Images
+
+Raw image bytes are convenient for small test fixtures and controlled inputs, but avoid pushing large image files directly through transaction calldata. Large payloads are harder to submit, review, and reproduce across environments. Prefer passing a stable external reference that validators can independently fetch.
+
+A common pattern is:
+
+1. Upload the image to a public HTTPS URL or a content-addressed location such as IPFS.
+2. Pass the URL, and optionally a content hash, to the contract.
+3. Fetch or render the URL inside the non-deterministic block.
+4. Send the fetched image or screenshot to `gl.nondet.exec_prompt(images=[...])`.
+
+```python
+import hashlib
+
+from genlayer import *
+
+class ImageClaimVerifier(gl.Contract):
+    result: str
+
+    def __init__(self):
+        self.result = "pending"
+
+    @gl.public.write
+    def verify_claim_image(self, image_url: str, expected_sha256: str, claim: str) -> None:
+        def leader_fn():
+            res = gl.nondet.web.get(image_url)
+            image_bytes = res.body
+
+            if hashlib.sha256(image_bytes).hexdigest() != expected_sha256:
+                raise gl.UserError("Image hash does not match the submitted reference")
+
+            return gl.nondet.exec_prompt(
+                f"Does this image support the claim: {claim}? "
+                "Respond as JSON: {{\"supports_claim\": true/false}}",
+                images=[image_bytes],
+                response_format="json",
+            )
+
+        def validator_fn(leaders_res) -> bool:
+            if not isinstance(leaders_res, gl.vm.Return):
+                return False
+            my_result = leader_fn()
+            return my_result["supports_claim"] == leaders_res.calldata["supports_claim"]
+
+        result = gl.vm.run_nondet_unsafe(leader_fn, validator_fn)
+        self.result = "accepted" if result["supports_claim"] else "rejected"
+```
+
+<Callout type="info">
+  For screenshots of web pages, use `gl.nondet.web.render(url, mode='screenshot')` instead of uploading screenshot bytes yourself. For user-uploaded files, keep the file off-chain and pass only the URL and hash on-chain.
+</Callout>
+
 ## Capturing Screenshots from the Web
 
 Combine [web access](/developers/intelligent-contracts/features/web-access) with image processing to screenshot a webpage and analyze it:
