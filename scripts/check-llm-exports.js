@@ -41,9 +41,16 @@ for (const [name, content] of [
   ['full-documentation.txt', fullDocs],
   ['api-references/llms-full.txt', apiBundle],
 ]) {
-  const leak = content.match(/<(Callout|Cards|CustomCard|Tabs)[\s>]/);
+  const leak = content.match(/<(Callout|Cards|CustomCard|Tabs|Image|img)[\s>]/);
   if (leak) {
     failures.push(`JSX leaked into ${name}: found "${leak[0].trim()}" — check cleanMdxContent()`);
+  }
+  // Relative links are unusable once the markdown leaves the site (copied
+  // into a chat, fetched by an agent) — they must be absolute
+  const prose = content.replace(/```[\s\S]*?```|~~~[\s\S]*?~~~|`[^`\n]*`/g, '');
+  const relative = prose.match(/\]\((?!https?:|mailto:|#)[^)\s]+\)/);
+  if (relative) {
+    failures.push(`relative link in ${name}: "${relative[0]}" — check absolutizeLinks()`);
   }
 }
 
