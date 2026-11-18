@@ -17,7 +17,7 @@ jobs:
     # its browsers. Move back to ubuntu-latest after upgrading @playwright/test to
     # a release that supports 26.04.
     runs-on: ubuntu-24.04
-    timeout-minutes: 30
+    timeout-minutes: 40
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -40,12 +40,12 @@ jobs:
       - name: Install Playwright system dependencies (Chromium)
         id: playwright-deps
         continue-on-error: true
-        timeout-minutes: 8
+        timeout-minutes: 12
         run: npx playwright install-deps chromium
 
       - name: Retry Playwright system dependencies (Chromium)
         if: steps.playwright-deps.outcome == 'failure'
-        timeout-minutes: 8
+        timeout-minutes: 10
         run: |
           sudo dpkg --configure -a
           npx playwright install-deps chromium
