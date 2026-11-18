@@ -173,6 +173,10 @@ requireText(workflow, "https://studio-dev.genlayer.com/api", "canonical Studio-d
 requireText(workflow, "`studioDevnet`", "Studio-dev SDK chain");
 requireText(workflow, "genlayer network info", "pre-signing network verification");
 requireText(workflow, "genlayer deploy --contract", "CLI deployment step");
+requireText(workflow, "genlayer account create --name", "required --name option for account creation");
+if (/genlayer account create(?! --name)/.test(read(workflow))) {
+  failures.push(`${workflow}: genlayer account create without required --name option`);
+}
 forbidText(workflow, "testnetBradbury", "pre-v0.40 Bradbury alias");
 
 const valueTransfers = "pages/developers/intelligent-contracts/features/value-transfers.mdx";

@@ -64,7 +64,7 @@ genlayer network info
 The Studio UI signs with its own accounts. To deploy from the CLI or from scripts, create a local account and fund it on the selected environment:
 
 ```bash
-genlayer account create   # creates an encrypted keystore
+genlayer account create --name studio-dev-account   # creates an encrypted keystore (--name is required)
 genlayer account          # shows the address, balance, and active network
 ```
 
