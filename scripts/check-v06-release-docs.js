@@ -167,6 +167,14 @@ requireText(deploying, "verify the execution result", "execution-aware deploymen
 requireText(deploying, "genlayer network set studio-dev", "Studio-dev network selection");
 forbidText(deploying, "testnetBradbury", "pre-v0.40 Bradbury alias");
 
+const workflow = "pages/developers/decentralized-applications/dapp-development-workflow.mdx";
+requireText(workflow, "genlayer network set studio-dev", "Studio-dev network selection");
+requireText(workflow, "https://studio-dev.genlayer.com/api", "canonical Studio-dev RPC");
+requireText(workflow, "`studioDevnet`", "Studio-dev SDK chain");
+requireText(workflow, "genlayer network info", "pre-signing network verification");
+requireText(workflow, "genlayer deploy --contract", "CLI deployment step");
+forbidText(workflow, "testnetBradbury", "pre-v0.40 Bradbury alias");
+
 const valueTransfers = "pages/developers/intelligent-contracts/features/value-transfers.mdx";
 requireText(valueTransfers, "wallet must cover `value + feeValue`", "separate user value and protocol fee funding");
 

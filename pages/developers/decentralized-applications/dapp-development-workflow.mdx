@@ -16,10 +16,91 @@ It provides an interactive environment that serves as a comprehensive sandbox fo
 
 The platform runs a simulated network with customizable validators that accurately mirror the GenLayer consensus mechanism. This feature allows developers to test their contracts under conditions that closely resemble the actual blockchain environment, ensuring reliable deployment outcomes.
 
-### Getting Started:
-1. **Set Up the Studio**: Run `genlayer init` and `genlayer up` for a local validator network, or use hosted [Studionet](https://studio.genlayer.com/). Use [Studio-dev](https://studio-dev.genlayer.com/) with matching release-candidate tooling when validating the next stack.
-2. **Write Your First Contract**: Intelligent Contracts in GenLayer are written in Python and can use GenVM capabilities such as LLM calls and web integration. See [Your First Intelligent Contract](/developers/intelligent-contracts/first-intelligent-contract).
-3. **Deploy and Test**: Deploy your Intelligent Contracts through the Studio interface and test them in the simulated network.
+### Choose a Studio environment
+
+Each Studio environment is a separate chain with its own RPC, chain ID, and consensus deployment. Pick one for the current stage and select it explicitly in every tool you use: the Studio UI, the CLI, and the SDK.
+
+| Environment | Studio UI | RPC | Chain ID | CLI alias | GenLayerJS chain | Use it for |
+|:--|:--|:--|:--|:--|:--|:--|
+| Localnet | `http://localhost:8080` | `http://localhost:4000/api` | 61127 | `localnet` | `localnet` | Full control, resets, custom validators and providers |
+| Studionet | [studio.genlayer.com](https://studio.genlayer.com) | `https://studio.genlayer.com/api` | 61999 | `studionet` | `studionet` | Zero-setup hosted development |
+| Studio-dev | [studio-dev.genlayer.com](https://studio-dev.genlayer.com) | `https://studio-dev.genlayer.com/api` | 61997 | `studio-dev` | `studioDevnet` | Validating the next release candidate only |
+
+See [Networks](/developers/networks) for explorers, faucets, and wallet settings.
+
+### Step 1: Connect to the environment
+
+**Hosted (Studionet or Studio-dev)**
+
+1. Open [studio.genlayer.com](https://studio.genlayer.com), or [studio-dev.genlayer.com](https://studio-dev.genlayer.com) for the release-candidate stack. Nothing needs to be installed.
+2. Fund the Studio account with the 💧 faucet button in the account selector.
+3. To work with the same environment from a terminal, install the CLI and select the matching alias:
+
+```bash
+npm install -g genlayer
+genlayer network set studionet   # or: genlayer network set studio-dev
+genlayer network info            # confirm the RPC and chain ID before signing
+```
+
+The `studio-dev` alias exists only in the matching release-candidate CLI/SDK. If `genlayer network list` does not show it, upgrade the tooling. Never point the `studionet` alias at the Studio-dev RPC: the chain IDs and consensus deployments differ.
+
+**Local (Localnet)**
+
+1. Install Docker 26+ and the CLI, then start the local stack:
+
+```bash
+npm install -g genlayer
+genlayer init                  # choose LLM providers and the number of validators
+genlayer up                    # starts validators, the RPC, and the Studio UI
+genlayer network set localnet
+genlayer network info
+```
+
+2. Open `http://localhost:8080` for the Studio UI. Tests, scripts, and frontends connect to `http://localhost:4000/api`.
+3. Run `genlayer up --reset-db` when you need a clean chain. See [Development Setup](/developers/intelligent-contracts/tooling-setup) for all `init` and `up` options.
+
+### Step 2: Prepare an account for CLI and SDK deployments
+
+The Studio UI signs with its own accounts. To deploy from the CLI or from scripts, create a local account and fund it on the selected environment:
+
+```bash
+genlayer account create   # creates an encrypted keystore
+genlayer account          # shows the address, balance, and active network
+```
+
+Balances are per chain: GEN on Studionet does not exist on Studio-dev or Localnet.
+
+### Step 3: Write your contract
+
+Intelligent Contracts are Python files that can use GenVM capabilities such as LLM calls and web access. Start with [Your First Intelligent Contract](/developers/intelligent-contracts/first-intelligent-contract), either in the Studio editor or in a local `contracts/` folder.
+
+### Step 4: Deploy
+
+**From the Studio UI**
+
+1. Upload the file with **Add From File** and open it in the editor ([Loading a Contract](/developers/intelligent-contracts/tools/genlayer-studio/loading-contract)).
+2. Open **Run and Debug**, check the detected **Constructor Inputs**, and click **Deploy** ([Deploy Contracts](/developers/intelligent-contracts/tools/genlayer-studio/deploying-contract)).
+3. When the deployment finalizes, the contract address and its methods appear in the same panel.
+
+**From the CLI**
+
+```bash
+genlayer network set studionet   # or: localnet / studio-dev
+genlayer deploy --contract contracts/my_contract.py --args "Hello" 42
+```
+
+The CLI prints the transaction hash and the contract address. See [CLI Deployment](/developers/intelligent-contracts/deploying/cli-deployment) for argument types.
+
+**From a deploy script or GenLayerJS**
+
+Create the client with the chain object that matches the environment (`localnet`, `studionet`, or `studioDevnet` from `genlayer-js/chains`), estimate fees from your fee profile, deploy, and wait for finalization. [Deploy Scripts](/developers/intelligent-contracts/deploying/deploy-scripts) has a complete example; use it for multi-contract deployments or constructor arguments the CLI cannot express.
+
+### Step 5: Verify and interact
+
+1. Confirm that the deployment finalized and that its execution result is successful. A returned transaction hash on its own does not mean the deployment succeeded.
+2. Look up the transaction or contract address in the environment's explorer ([Networks](/developers/networks)).
+3. Call the contract from Studio, from the CLI (`genlayer call` / `genlayer write`), or from your frontend, using the same environment you deployed to.
+4. Hosted Studio environments can be reset. Keep contract sources and deploy scripts in your repository so you can redeploy, and do not depend on Studio-dev state.
 
 ---
 
