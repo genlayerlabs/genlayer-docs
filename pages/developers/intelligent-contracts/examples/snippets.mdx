@@ -1,0 +1,237 @@
+---
+description: "Explained code snippets for common Intelligent Contract patterns: factory deployment, passing web content to an LLM, and reading from and writing to another contract."
+---
+
+import { Callout } from 'nextra-theme-docs'
+
+# Code Snippets
+
+This page collects short, complete contracts for patterns that come up in almost every GenLayer project. Each snippet is followed by a line-by-line explanation of what it does and why.
+
+| Snippet | What it shows |
+| --- | --- |
+| [Factory Pattern](#factory-pattern) | Deploying child contracts from a parent contract with `gl.deploy_contract()` |
+| [Pass Web Content to an LLM](#pass-web-content-to-an-llm) | Fetching a page with `gl.nondet.web.get()` and asking an LLM about it |
+| [Read from Another Contract](#read-from-another-contract) | Calling another contract's view methods with `.view()` |
+| [Write to Another Contract](#write-to-another-contract) | Sending a write call to another contract with `.emit()` |
+
+For the reference behind these snippets, see [Interacting with Intelligent Contracts](/developers/intelligent-contracts/features/interacting-with-intelligent-contracts), [Web Access](/developers/intelligent-contracts/features/web-access), [Calling LLMs](/developers/intelligent-contracts/features/calling-llms) and the [Equivalence Principle](/developers/intelligent-contracts/equivalence-principle).
+
+## Factory Pattern
+
+A factory is a contract that deploys other contracts. Use it when you need many instances of the same contract, for example one escrow per deal or one market per question, and want a single on-chain registry of every instance.
+
+```python
+# { "Depends": "py-genlayer:1jb45aa8ynh2a9c9xn3b7qqh8sm5q93hwfp7jqmwsfhh8jpz09h6" }
+
+from genlayer import *
+
+
+CHILD_CODE = """
+# { "Depends": "py-genlayer:1jb45aa8ynh2a9c9xn3b7qqh8sm5q93hwfp7jqmwsfhh8jpz09h6" }
+
+from genlayer import *
+
+
+class Market(gl.Contract):
+    question: str
+    owner: Address
+
+    def __init__(self, question: str, owner: str):
+        self.question = question
+        self.owner = Address(owner)
+
+    @gl.public.view
+    def get_question(self) -> str:
+        return self.question
+"""
+
+
+class MarketFactory(gl.Contract):
+    markets: DynArray[Address]
+
+    def __init__(self):
+        pass
+
+    @gl.public.write
+    def create_market(self, question: str) -> None:
+        child_address = gl.deploy_contract(
+            code=CHILD_CODE.encode("utf-8"),
+            args=[question, gl.message.sender_address.as_hex],
+            salt_nonce=u256(len(self.markets) + 1),
+            on="accepted",
+        )
+        self.markets.append(child_address)
+
+    @gl.public.view
+    def get_markets(self) -> list[str]:
+        return [address.as_hex for address in self.markets]
+```
+
+### How it works
+
+- **`CHILD_CODE`**: the source of the contract the factory deploys. It is a regular contract, including its own `Depends` header, stored as a string. You can also read it from a file bundled with the factory, or accept it as a constructor argument and keep it in storage.
+- **`markets: DynArray[Address]`**: the factory's registry. Every deployed child address is appended here so clients can discover all instances by calling `get_markets()`.
+- **`gl.deploy_contract(...)`** deploys a new contract:
+  - `code` is the child source as `bytes`, hence `.encode("utf-8")`.
+  - `args` are passed to the child's `__init__`. Here the caller of `create_market` becomes the market owner. `gl.message.sender_address` is the account that called the factory, not the factory itself.
+  - `salt_nonce` makes the deployment deterministic: the child address is derived from the factory address and the salt, and `gl.deploy_contract` returns it immediately. Each salt can be used only once per factory, so the snippet derives it from the number of markets already created. The value must not be `0`; with `0` the address is assigned by consensus and `gl.deploy_contract` returns `None`.
+  - `on="accepted"` deploys the child as soon as the factory transaction is accepted. Use `on="finalized"` (the default) if the child must not exist until the factory transaction can no longer be appealed.
+- **Deployment is asynchronous**: the child is created in a separate transaction after `create_market` completes, so you cannot call the child in the same transaction that deploys it.
+
+<Callout type="info">
+Deployed children are immutable. To change their logic, deploy new children with updated code from the factory. See [Upgradability](/developers/intelligent-contracts/features/upgradability) if a single instance must be upgradable.
+</Callout>
+
+## Pass Web Content to an LLM
+
+The most common Intelligent Contract pattern: fetch a web page, give its content to an LLM, and store the LLM's decision on-chain. Validators must agree on the result, so the decision is wrapped in a [non-deterministic block](/developers/intelligent-contracts/features/non-determinism) with a validator function.
+
+```python
+# { "Depends": "py-genlayer:1jb45aa8ynh2a9c9xn3b7qqh8sm5q93hwfp7jqmwsfhh8jpz09h6" }
+
+from genlayer import *
+import json
+
+
+class PageClassifier(gl.Contract):
+    labels: TreeMap[str, str]
+
+    def __init__(self):
+        pass
+
+    @gl.public.write
+    def classify(self, url: str) -> None:
+        def leader_fn() -> str:
+            page = gl.nondet.web.get(url).body.decode("utf-8")
+            prompt = f"""
+            Read the web page below and classify its main topic.
+            Answer with one of: "finance", "sports", "technology", "other".
+
+            Page content:
+            {page[:5000]}
+
+            Respond only with JSON: {{"label": "<one of the labels>"}}
+            """
+            result = gl.nondet.exec_prompt(prompt, response_format="json")
+            return result["label"]
+
+        def validator_fn(leader_result) -> bool:
+            if not isinstance(leader_result, gl.vm.Return):
+                return False
+            return leader_result.calldata == leader_fn()
+
+        self.labels[url] = gl.vm.run_nondet_unsafe(leader_fn, validator_fn)
+
+    @gl.public.view
+    def get_label(self, url: str) -> str:
+        return self.labels.get(url, "")
+```
+
+### How it works
+
+- **`gl.nondet.web.get(url)`** fetches the page. The response `body` is `bytes`, so it is decoded to text before it goes into the prompt. Use `gl.nondet.web.render(url, mode="text")` instead for pages that need a browser to run JavaScript.
+- **`page[:5000]`** truncates the content. Web pages can be large, and a shorter prompt is cheaper and keeps the LLM focused. Pick a limit that fits your use case.
+- **`gl.nondet.exec_prompt(prompt, response_format="json")`** runs the prompt and returns the parsed JSON as a `dict`, so there is no manual `json.loads()` on the LLM output.
+- **The leader returns only the label**, not the whole page or the LLM's wording. Returning a small, well-defined value is what makes consensus possible: two validators can easily agree on `"sports"`, but never on two paragraphs of free text.
+- **`validator_fn`** runs on every validator. It rejects the leader's result if the leader failed (`leader_result` is not a `gl.vm.Return`), then fetches the page and asks the LLM itself, and agrees only if it gets the same label.
+- **`gl.vm.run_nondet_unsafe(leader_fn, validator_fn)`** ties the two together and returns the agreed label, which is then written to storage. Storage writes happen outside the non-deterministic functions.
+
+<Callout type="warning">
+Web content is untrusted input. A page can contain text that tries to override your instructions. Constrain the output to a fixed set of values, as above, and read [Prompt Injection](/developers/intelligent-contracts/security-and-best-practices/prompt-injection) before using this pattern with user-supplied URLs.
+</Callout>
+
+If the LLM output is free text and two validators cannot be expected to produce the same value, see [non-comparative validation](/developers/intelligent-contracts/equivalence-principle) and the [GitHub Profile Summary](/developers/intelligent-contracts/examples/github-profile-summary) example.
+
+## Read from Another Contract
+
+A contract can call the view methods of any other Intelligent Contract and use the returned value in the same transaction.
+
+```python
+# { "Depends": "py-genlayer:1jb45aa8ynh2a9c9xn3b7qqh8sm5q93hwfp7jqmwsfhh8jpz09h6" }
+
+from genlayer import *
+
+
+@gl.contract_interface
+class Token:
+    class View:
+        def get_balance_of(self, owner: str) -> int: ...
+
+    class Write:
+        pass
+
+
+class BalanceReader(gl.Contract):
+    token: Address
+    last_balance: u256
+
+    def __init__(self, token: str):
+        self.token = Address(token)
+        self.last_balance = u256(0)
+
+    @gl.public.write
+    def record_balance(self, owner: str) -> None:
+        balance = Token(self.token).view().get_balance_of(owner)
+        self.last_balance = u256(balance)
+
+    @gl.public.view
+    def get_balance(self, owner: str) -> int:
+        return gl.get_contract_at(self.token).view().get_balance_of(owner)
+```
+
+### How it works
+
+- **`@gl.contract_interface`** describes the methods of the other contract. Methods under `View` can be called with `.view()`, methods under `Write` with `.emit()`. The interface only gives you type checking and IDE autocompletion; the method bodies are `...`.
+- **`Token(self.token)`** creates a typed reference to the contract at that address.
+- **`gl.get_contract_at(self.token)`**, used in `get_balance`, is the untyped alternative. It needs no interface and lets you call any method by name, but without type checking. Both produce the same calls at runtime.
+- **`.view().get_balance_of(owner)`** calls the view method synchronously and returns its result immediately. The call cannot modify the other contract's state.
+- **Reads work from both write and view methods**: `record_balance` stores the value it read, while `get_balance` simply passes it through.
+- **Arguments and return values** must be types that can be encoded as calldata, such as `int`, `str`, `bool`, `bytes`, `Address`, lists and dicts.
+
+## Write to Another Contract
+
+A contract cannot change another contract's state directly. Instead, it emits a message: a write call that is executed as a separate transaction after the current one.
+
+```python
+# { "Depends": "py-genlayer:1jb45aa8ynh2a9c9xn3b7qqh8sm5q93hwfp7jqmwsfhh8jpz09h6" }
+
+from genlayer import *
+
+
+@gl.contract_interface
+class Counter:
+    class View:
+        def get_count(self) -> int: ...
+
+    class Write:
+        def increment(self, amount: int) -> None: ...
+
+
+class CounterCaller(gl.Contract):
+    counter: Address
+
+    def __init__(self, counter: str):
+        self.counter = Address(counter)
+
+    @gl.public.write
+    def bump(self, amount: int) -> None:
+        Counter(self.counter).emit(on="finalized").increment(amount)
+
+    @gl.public.write
+    def bump_untyped(self, amount: int) -> None:
+        gl.get_contract_at(self.counter).emit(on="accepted").increment(amount)
+```
+
+### How it works
+
+- **`.emit(...)`** returns a proxy for the target's write methods. Calling `increment(amount)` on it does not run `increment` now: it queues a message that runs `increment` on the `Counter` contract in a new transaction once the current transaction is accepted or finalized.
+- **Nothing is returned**: because the call runs later, you cannot use its result in `bump`. If you need a value back, read it later with `.view()`, or have the target contract emit a message back to the caller.
+- **`on="finalized"`** (the default) sends the message only after the current transaction can no longer be appealed. This is the safe choice.
+- **`on="accepted"`** sends the message as soon as the transaction is accepted, which is faster. If the transaction is then appealed and re-executed, the message can be sent again, so the receiving method must tolerate duplicate calls. See [Accepted vs Finalized](/developers/intelligent-contracts/features/interacting-with-intelligent-contracts#accepted-vs-finalized).
+- **Sending value**: `emit(value=u256(100))` also transfers GEN with the call. The receiving method must be marked `@gl.public.write.payable`. See [Value Transfers](/developers/intelligent-contracts/features/value-transfers).
+- **Sender**: inside `increment`, `gl.message.sender_address` is the address of `CounterCaller`, not the account that called `bump`.
+
+<Callout type="info">
+To call a contract on the EVM chain instead of another Intelligent Contract, use `@gl.evm.contract_interface`. See [Interacting with EVM Contracts](/developers/intelligent-contracts/features/interacting-with-evm-contracts).
+</Callout>
