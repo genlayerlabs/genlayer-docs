@@ -48,7 +48,7 @@ for (const [name, content] of [
   // Relative links are unusable once the markdown leaves the site (copied
   // into a chat, fetched by an agent) — they must be absolute
   const prose = content.replace(/```[\s\S]*?```|~~~[\s\S]*?~~~|`[^`\n]*`/g, '');
-  const relative = prose.match(/\]\((?!https?:|mailto:|#)[^)\s]+\)/);
+  const relative = prose.match(/\]\((?!https?:|mailto:)[^)\s]+\)/);
   if (relative) {
     failures.push(`relative link in ${name}: "${relative[0]}" — check absolutizeLinks()`);
   }

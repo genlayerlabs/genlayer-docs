@@ -220,9 +220,10 @@ function cleanMdxContent(content) {
 }
 
 // Resolve a link target the way a browser would on the live page, so the
-// exported markdown stays usable when read outside docs.genlayer.com
+// exported markdown stays usable when read outside docs.genlayer.com.
+// Fragment-only links (#section) become <page-url>#section.
 function absolutizeUrl(href, pageUrl) {
-  if (!href || /^(#|[a-z][a-z0-9+.-]*:)/i.test(href)) return href;
+  if (!href || /^[a-z][a-z0-9+.-]*:/i.test(href)) return href;
   try {
     return new URL(href, pageUrl).toString();
   } catch {
@@ -240,7 +241,9 @@ function absolutizeLinks(markdown, pageUrl) {
       if (i % 2 === 1) return segment;
       return segment
         .replace(/(\]\()(<?)([^)\s>]+)/g, (_, open, angle, href) => `${open}${angle}${fix(href)}`)
-        .replace(/^(\s*\[[^\]]+\]:\s*)(\S+)/gm, (_, prefix, href) => `${prefix}${fix(href)}`)
+        .replace(/^(\s*\[[^\]]+\]:\s*)(?:<([^>\n]*)>|(\S+))/gm, (_, prefix, angled, bare) =>
+          angled !== undefined ? `${prefix}<${fix(angled)}>` : `${prefix}${fix(bare)}`
+        )
         .replace(/\b(href|src)=(["'])([^"']*)\2/g, (_, attr, q, href) => `${attr}=${q}${fix(href)}${q}`);
     })
     .join('');
@@ -449,4 +452,8 @@ function generateFullDocs() {
   );
 }
 
-generateFullDocs();
+if (require.main === module) {
+  generateFullDocs();
+}
+
+module.exports = { absolutizeUrl, absolutizeLinks, cleanMdxContent };
