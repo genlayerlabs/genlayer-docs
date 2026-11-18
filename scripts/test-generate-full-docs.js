@@ -1,5 +1,6 @@
 const assert = require('assert');
 const { absolutizeLinks, cleanMdxContent } = require('./generate-full-docs');
+const { findRelativeLink } = require('./check-llm-exports');
 
 // Unit tests for the markdown export transforms in generate-full-docs.js
 const PAGE = 'https://docs.genlayer.com/developers/intelligent-contracts/tooling-setup';
@@ -29,3 +30,16 @@ assert.strictEqual(
   '![Morpheus](/morpheus.png)'
 );
 console.log('ok - <img> converted to markdown image');
+
+// Integration: everything the converter emits must pass the build checker,
+// and the checker must still catch links the converter would have fixed
+for (const [name, input] of cases) {
+  const output = absolutizeLinks(input, PAGE);
+  assert.strictEqual(findRelativeLink(output), null, `checker rejects converter output: ${name}`);
+}
+console.log('ok - checker accepts all converter output');
+
+for (const bad of ['[x](/y)', '[x](<./y>)', '[x](#frag)', '![i](img.png)']) {
+  assert.ok(findRelativeLink(bad), `checker misses relative link: ${bad}`);
+}
+console.log('ok - checker flags relative links (bare and angle-bracketed)');

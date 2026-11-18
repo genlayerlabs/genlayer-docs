@@ -5,6 +5,22 @@ const path = require('path');
 // once missing from llms-full.txt for months without anyone noticing.
 // Runs right after generate-full-docs.js in dev/build.
 
+// Returns the first inline markdown link/image whose destination is not an
+// absolute URL, or null. Destinations may be bare or wrapped in <...>.
+// Fenced and inline code are ignored.
+function findRelativeLink(content) {
+  const prose = content.replace(/```[\s\S]*?```|~~~[\s\S]*?~~~|`[^`\n]*`/g, '');
+  for (const match of prose.matchAll(/\]\(\s*(?:<([^>\n]*)>|([^)\s]+))/g)) {
+    const destination = match[1] ?? match[2];
+    if (!/^(https?:|mailto:)/.test(destination)) return match[0];
+  }
+  return null;
+}
+
+module.exports = { findRelativeLink };
+// Allow the helpers above to be required by tests without running the checks
+if (require.main !== module) return;
+
 const PUBLIC = path.join(process.cwd(), 'public');
 const failures = [];
 
@@ -47,10 +63,9 @@ for (const [name, content] of [
   }
   // Relative links are unusable once the markdown leaves the site (copied
   // into a chat, fetched by an agent) — they must be absolute
-  const prose = content.replace(/```[\s\S]*?```|~~~[\s\S]*?~~~|`[^`\n]*`/g, '');
-  const relative = prose.match(/\]\((?!https?:|mailto:)[^)\s]+\)/);
+  const relative = findRelativeLink(content);
   if (relative) {
-    failures.push(`relative link in ${name}: "${relative[0]}" — check absolutizeLinks()`);
+    failures.push(`relative link in ${name}: "${relative}" — check absolutizeLinks()`);
   }
 }
 
