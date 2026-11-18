@@ -91,7 +91,9 @@ The most common Intelligent Contract pattern: fetch a web page, give its content
 # { "Depends": "py-genlayer:1jb45aa8ynh2a9c9xn3b7qqh8sm5q93hwfp7jqmwsfhh8jpz09h6" }
 
 from genlayer import *
-import json
+
+
+LABELS = ("finance", "sports", "technology", "other")
 
 
 class PageClassifier(gl.Contract):
@@ -106,7 +108,7 @@ class PageClassifier(gl.Contract):
             page = gl.nondet.web.get(url).body.decode("utf-8")
             prompt = f"""
             Read the web page below and classify its main topic.
-            Answer with one of: "finance", "sports", "technology", "other".
+            Answer with exactly one of: {", ".join(LABELS)}.
 
             Page content:
             {page[:5000]}
@@ -114,12 +116,20 @@ class PageClassifier(gl.Contract):
             Respond only with JSON: {{"label": "<one of the labels>"}}
             """
             result = gl.nondet.exec_prompt(prompt, response_format="json")
-            return result["label"]
+            label = result.get("label") if isinstance(result, dict) else None
+            if label not in LABELS:
+                raise gl.vm.UserError(f"LLM returned an invalid label: {label!r}")
+            return label
 
         def validator_fn(leader_result) -> bool:
             if not isinstance(leader_result, gl.vm.Return):
                 return False
-            return leader_result.calldata == leader_fn()
+            if leader_result.calldata not in LABELS:
+                return False
+            try:
+                return leader_result.calldata == leader_fn()
+            except gl.vm.UserError:
+                return False
 
         self.labels[url] = gl.vm.run_nondet_unsafe(leader_fn, validator_fn)
 
@@ -133,8 +143,9 @@ class PageClassifier(gl.Contract):
 - **`gl.nondet.web.get(url)`** fetches the page. The response `body` is `bytes`, so it is decoded to text before it goes into the prompt. Use `gl.nondet.web.render(url, mode="text")` instead for pages that need a browser to run JavaScript.
 - **`page[:5000]`** truncates the content. Web pages can be large, and a shorter prompt is cheaper and keeps the LLM focused. Pick a limit that fits your use case.
 - **`gl.nondet.exec_prompt(prompt, response_format="json")`** runs the prompt and returns the parsed JSON as a `dict`, so there is no manual `json.loads()` on the LLM output.
+- **The label is checked against `LABELS`**: asking for one of four labels in the prompt does not guarantee the LLM complies. The leader raises `gl.vm.UserError` if the response is not a `dict` or its `label` is not in the allowed set, so an off-list answer such as `"hacked"` is never returned.
 - **The leader returns only the label**, not the whole page or the LLM's wording. Returning a small, well-defined value is what makes consensus possible: two validators can easily agree on `"sports"`, but never on two paragraphs of free text.
-- **`validator_fn`** runs on every validator. It rejects the leader's result if the leader failed (`leader_result` is not a `gl.vm.Return`), then fetches the page and asks the LLM itself, and agrees only if it gets the same label.
+- **`validator_fn`** runs on every validator. It rejects the leader's result if the leader failed (`leader_result` is not a `gl.vm.Return`) or returned a label outside `LABELS`. Otherwise it fetches the page, asks the LLM itself and agrees only if it gets the same valid label. Checking the leader's value too means that a faulty or malicious leader cannot get an off-list label accepted, even if a validator's LLM happens to give the same answer.
 - **`gl.vm.run_nondet_unsafe(leader_fn, validator_fn)`** ties the two together and returns the agreed label, which is then written to storage. Storage writes happen outside the non-deterministic functions.
 
 <Callout type="warning">
