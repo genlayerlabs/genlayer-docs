@@ -47,7 +47,7 @@ Use your own key to operate the node yourself, or a separate hot key for cold/ho
 - `validatorPrime()` is automatically called by your validator node each epoch
 - Monitor priming for proper activation within 2 epochs
 - The operator must be a nonzero address. If you register a separate hot key, it must be unused by any validator wallet, including your own. If you register the caller's own key, that address can operate multiple wallets.
-- To rotate the operator later, the owner calls `initiateOperatorTransfer` on the ValidatorWallet, then `completeOperatorTransfer` after the operator-transfer delay (or `cancelOperatorTransfer`)
+- To rotate the operator later, the owner calls `initiateOperatorTransfer` on the ValidatorWallet. After the operator-transfer delay, the owner or the pending operator calls `completeOperatorTransfer`. Only the owner can call `cancelOperatorTransfer`.
 
 **Post-Join Steps:**
 1. Save the `validatorWallet` address
@@ -144,8 +144,8 @@ In these Solidity examples, the contract calling `genStaking` owns the delegatio
 ### Joining as a Delegator
 
 **Requirements:**
-- Minimum delegation: **42 GEN** per validator
-- Target validator must be a registered validator
+- Minimum delegation: **42 GEN** per validator (your total delegation to that validator)
+- Target validator must be a registered validator; otherwise the call reverts with `ValidatorNotActive`
 - Can delegate to multiple validators
 
 **Basic Delegation:**
@@ -187,6 +187,7 @@ genStaking.delegatorJoin{value: 500 ether}(validatorWallet);
 **Important Notes:**
 - Follows the **epoch +2 activation rule**
 - The validator's node automatically calls `validatorPrime()`
+- Any non-zero top-up is accepted as long as your total delegation to that validator meets the minimum
 - Rewards automatically compound
 
 ### Withdrawing as a Delegator
@@ -266,14 +267,14 @@ Epoch 0 is the **bootstrapping period** before the network becomes operational. 
 | Rule | Normal Epochs (2+) | Epoch 0 |
 |------|-------------------|---------|
 | Validator minimum stake | 42,000 GEN | No minimum to join |
-| Delegator minimum stake | 42 GEN | No minimum to join |
+| Delegator minimum stake | 42 GEN | No minimum |
 | Activation delay | +2 epochs | Active in epoch 2 |
 | validatorPrime required | Yes, each epoch | Not required |
 | Share calculation | Based on existing ratio | 1:1 (shares = input) |
 | Transaction processing | Yes | No (bootstrapping only) |
 
 <Callout type="warning">
-  **Activation requires meeting minimums**: While you can join with any amount during epoch 0, your stake will only be **activated in epoch 2** if it meets the minimum requirements (42,000 GEN for validators, 42 GEN for delegators). Stakes below the minimum remain registered but inactive.
+  **Validator activation requires the validator minimum**: While validators can join with any amount during epoch 0, a validator is only **eligible in epoch 2** if its own stake meets the validator minimum (42,000 GEN). Validators below it remain registered but inactive. Epoch 0 delegations of any amount are recorded and priced immediately; whether they earn depends on the validator they back being eligible.
 </Callout>
 
 ### Validators in Epoch 0
@@ -324,7 +325,7 @@ genStaking.delegatorJoin{value: 10 ether}(validatorWallet);
 **Key behaviors:**
 
 1. **No minimum delegation**: Any non-zero amount accepted
-2. **Registered for epoch 2**: Delegation is recorded and will become active when epoch 2 begins
+2. **Recorded immediately**: The delegation is recorded and priced in the validator's pool when you join, and is not rechecked against the 42 GEN minimum when epoch 2 begins. It takes part from epoch 2 if its validator is eligible
 3. **No rewards in epoch 0**: Since no transactions are processed, no rewards are earned during epoch 0
 
 **Is a delegation made in epoch 0 active in epoch 2?**
@@ -346,7 +347,7 @@ Epoch N+2: validatorPrime() activates the deposit → NOW ACTIVE
 ```
 Epoch 0: validatorJoin() or delegatorJoin() called → stake registered (not yet active)
          No transactions processed, no consensus
-Epoch 2: Stakes become active (if minimum met), network operational, validatorPrime() required
+Epoch 2: Validators meeting the validator minimum and their delegations become active, network operational, validatorPrime() required
 ```
 
 ### Share Calculation in Epoch 0
@@ -368,8 +369,8 @@ This is because there's no existing stake pool to calculate a ratio against. Sta
 
 When the network advances from epoch 0 to epoch 2:
 
-1. **Epoch 0 stakes that meet minimums become active** - validators need 42,000 GEN, delegators need 42 GEN
-2. **Normal minimum requirements apply** for new joins/deposits
+1. **Epoch 0 validators that meet the validator minimum (42,000 GEN) become active**, together with the delegations to them. Epoch 0 delegations are not rechecked against the 42 GEN minimum
+2. **Normal minimum requirements apply** for new joins/deposits, including the 42 GEN delegator minimum
 3. **+2 epoch activation delay** applies to all new deposits
 4. **validatorPrime() becomes mandatory** for validators to remain in the selection pool
 5. **Existing validators** must ensure their nodes begin calling `validatorPrime()` in epoch 2
@@ -469,10 +470,12 @@ validatorWallet.validatorClaim();
 | Error | Cause | Solution |
 |-------|-------|----------|
 | `ValidatorBelowMinimumStake` | Stake below 42,000 GEN | Deposit at least 42,000 GEN when joining |
-| `InvalidOperatorAddress` | Zero operator, or deposit not sent through a joined ValidatorWallet | Register a valid operator key; deposit through `validatorWallet.validatorDeposit()` |
+| `InvalidOperatorAddress` | Zero operator, or deposit not sent from a factory ValidatorWallet | Register a valid operator key; deposit through `validatorWallet.validatorDeposit()` |
+| `ValidatorNotJoined` | Deposit from a factory ValidatorWallet that never joined | Join with `validatorJoin()` first |
+| `ValidatorNotActive` | Delegation to an address that is not a registered validator | Check the ValidatorWallet address |
 | `OperatorAlreadyAssigned` | The separate hot key already operates a validator wallet | Use an unused hot key, or register the caller's own key for self-operation |
 | `ValidatorMayNotDepositZeroValue` | Zero deposit amount | Deposit a non-zero amount |
-| `ValidatorSlashInProgress` | A deposit or claim reverted during an active slash | Retry after priming finishes processing the slash |
+| `ValidatorSlashInProgress` | A deposit, exit or claim reverted during an active slash | Retry after priming finishes processing the slash |
 | `ValidatorExitExceedsShares` | Exiting more shares than owned | Check shares with `validatorSelfSharesOf()` |
 | `DelegatorExitWouldBeBelowMinimum` | Partial exit would leave less than the minimum delegation | Exit all shares or keep at least the minimum |
 | `UnauthorizedDelegatorClaim` | Claim sent by an address other than the delegator | Send `delegatorClaim()` from the delegator's address |
