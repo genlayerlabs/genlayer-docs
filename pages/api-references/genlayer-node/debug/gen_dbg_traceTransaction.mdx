@@ -17,14 +17,15 @@ Retrieves the full execution trace for a transaction, including the return data,
 | Field | Type | Description |
 |-------|------|-------------|
 | `transaction_id` | string | Transaction hash |
-| `result_code` | number | 0=success, 1=user error, 2=VM error |
+| `result_code` | number | 0=success, 1=user error, 2=VM error, 3=internal error |
 | `return_data` | string | Hex-encoded contract return data |
 | `stdout` | string | Standard output captured during execution |
 | `stderr` | string | Standard error captured during execution |
 | `genvm_log` | array | Detailed GenVM execution log entries |
 | `storage_proof` | string | Hex-encoded storage proof hash |
 | `run_time` | string | Execution duration |
-| `eq_outputs` | array | Hex-encoded equivalence principle outputs |
+| `leader_public_data` | string | Hex-encoded leader data; its encoding is defined by the GenVM specification |
+| `stored_at` | string (optional) | ISO 8601 timestamp of when the trace was stored; omitted when not available |
 
 **Example:**
 
@@ -58,7 +59,7 @@ Retrieves the full execution trace for a transaction, including the return data,
     ],
     "storage_proof": "0x99ff0d9125e1fc9531a11262e15aeb2c60509a078c4cc4c64cefdfb06ff68647",
     "run_time": "0s",
-    "eq_outputs": []
+    "leader_public_data": "0x0e076e645f6f75747305"
   },
   "id": 1
 }
@@ -67,5 +68,7 @@ Retrieves the full execution trace for a transaction, including the return data,
 **Notes:**
 
 - If the trace isn't stored locally (e.g., the node restarted or data was pruned), the endpoint will replay the transaction automatically.
-- This endpoint is in the `genlayer_debug` group and must be enabled in the node configuration.
-- Use `result_code` to determine execution outcome: 0 = contract returned successfully, 1 = contract raised a user error, 2 = GenVM encountered an error.
+- **Retention.** Operators bound the trace store with `node.trace.retention_blocks` (default 1,000,000 blocks; `0` disables). A trace below the retention watermark is gone, so this endpoint falls back to a live replay — reconstructed from the latest on-chain view, and not byte-identical to the stored artifact. A single trace larger than `node.trace.max_trace_bytes` (default 32 MB) is never stored, which produces the same fallback.
+- **Field bound.** The free-form execution-output fields (`return_data`, `stdout`, `stderr`, `genvm_log`) carry whatever the replayed contract emitted, so their size is contract-controlled. Each is capped at `node.trace.max_debug_field_bytes` (default 256 KB; `0` takes the default). When a field is cut, the truncation is marked in-band — a trailing `...[truncated: N of M bytes omitted from gen_dbg trace]` on a string field, or a final `{"truncated": "..."}` entry on `genvm_log` — so the reply stays honest rather than silently short.
+- This endpoint is in the `genlayer_debug` group, which is **disabled by default**. Enable it deliberately, and only on an RPC bind that untrusted callers cannot reach: it replays a transaction through GenVM and returns internal execution output, so it is debug tooling, not a public API.
+- Use `result_code` to determine execution outcome: 0 = contract returned successfully, 1 = contract raised a user error, 2 = GenVM encountered an error, 3 = internal error.

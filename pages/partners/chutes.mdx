@@ -169,6 +169,33 @@ For validator deployments:
 export CHUTES_API_KEY=your_api_key_here
 ```
 
+This variable is for your own API calls, such as the curl examples above. GenVM does not read it out of the box: Chutes is not a built-in backend in the GenVM LLM configs that ship with the node.
+
+---
+
+## Use Chutes as a GenVM LLM Backend
+
+To let your validator's GenVM send prompts to Chutes, add it as an `openai-compatible` backend in `genvm-module-llm.yaml`, reading the key from the variable above:
+
+```yaml
+backends:
+  chutes:
+    enabled: true
+    host: https://llm.chutes.ai   # GenVM adds /v1/chat/completions
+    provider: openai-compatible
+    key: ${ENV[CHUTES_API_KEY]}
+    models:
+      model_team/model_name:      # a model from https://llm.chutes.ai/v1/models
+        supports_json: true       # set both flags to match the model
+        supports_image: false
+```
+
+Then:
+- Put `CHUTES_API_KEY` in the node's environment (with Docker, in `.env`) and restart the node. A running node does not see new environment variables.
+- Run `./bin/genlayernode doctor` to check that the backend answers.
+
+See [GenVM Configuration](/validators/genvm-configuration) for the backend format and how the node orders backends.
+
 ---
 
 ## Next Steps

@@ -1,28 +1,21 @@
 ---
-description: "Web Data Access in Intelligent Contracts lets GenLayer contracts fetch, validate, and use live web data without oracles."
+description: "Learn how Intelligent Contracts retrieve web content and validate time-varying external data without a single oracle."
 ---
 
-# Web Data Access in Intelligent Contracts
+# Web access
 
-Web Data Access in Intelligent Contracts is GenLayer's capability for contracts to directly retrieve and use web data without relying on oracles. This enables blockchain applications to respond to real-world events while validators use equivalence validation to check retrieved data for consistency.
+Intelligent Contracts can retrieve web pages and HTTP resources inside non-deterministic blocks. This lets a contract evaluate public evidence without relying on one oracle to publish a preselected value.
 
-## Overview
+Direct access does not make web data deterministic or inherently trustworthy. Sources can change between requests, return personalized content, fail, or contain adversarial instructions. The contract must define which sources and evidence count and how validators assess the leader's result.
 
-GenLayer enables Intelligent Contracts to directly access and interact with web data, removing the need for oracles and allowing for real-time data integration into blockchain applications.
+## Validation patterns
 
-## Key Features
+- Retrieve the same source independently and compare a structured fact.
+- Require multiple independent sources for a claim.
+- Check provenance, timestamps, status codes, and expected content shape.
+- Render a page when important information depends on client-side behavior.
+- Return a defined failure result when evidence is unavailable or inconsistent.
 
-- **Direct Web Access**: Contracts can retrieve data from web sources.
-- **Dynamic Applications**: Access to web data allows for applications that respond to external events and real-world data.
-- **Equivalence Validation**: Retrieved data is validated across validators to ensure consistency.
+Prefer stable, authoritative sources and extract only the facts the contract needs. Where possible, validate hashes, signatures, or other objective evidence before using qualitative interpretation.
 
-## Implementation
-
-1. **Data Retrieval Functions**: GenLayer provides mechanisms for fetching web data within contracts.
-2. **Data Parsing and Validation**: Contracts must parse web data and validate it according to defined equivalence criteria.
-3. **Security Measures**: Contracts should handle potential security risks such as untrusted data sources and ensure data integrity.
-
-## Considerations
-
-- **Network Dependencies**: Reliance on external web sources introduces dependencies that may affect contract execution.
-- **Performance Impact**: Web data retrieval may introduce latency and affect transaction processing times.
+For current APIs and examples, see [web access](/developers/intelligent-contracts/features/web-access) and [non-determinism](/developers/intelligent-contracts/features/non-determinism).

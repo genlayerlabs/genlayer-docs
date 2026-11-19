@@ -1,47 +1,72 @@
 ---
-description: "Rollup Integration explains how GenLayer uses Ethereum rollups to scale GenVM execution, lower fees, and inherit Ethereum security."
+description: "Learn how GenLayer Chain, its consensus contracts, validator nodes, GenVM, and Ethereum settlement fit together."
 ---
 
-# Rollup Integration
+# GenLayer Chain integration
 
-Rollup Integration is how GenLayer uses Ethereum rollups, such as ZKSync or Polygon CDK, to improve scalability and compatibility with existing Ethereum infrastructure. By moving execution off-chain while anchoring results to Ethereum, this integration helps optimize transaction throughput and reduce fees while maintaining the security guarantees of the Ethereum mainnet.
+GenLayer Chain is an EVM-compatible chain built with the ZK Stack. It hosts ordinary Solidity contracts and the consensus contracts that coordinate Intelligent Contract execution. GenVM is a separate execution environment operated by nodes; it is not an EVM precompile or an Ethereum rollup execution engine.
 
-## Key Aspects of Rollup Integration
+```mermaid
+%%{init: {"flowchart": {"curve": "basis", "nodeSpacing": 48, "rankSpacing": 54, "htmlLabels": true}}}%%
+flowchart TB
+    Client(["Wallet or application"])
+    Ethereum[("Ethereum")]
 
-### Scalability
-- **High Transaction Throughput**: Rollups allow GenLayer to process a much higher number of transactions per second compared to Layer 1 solutions.
-- **Reduced Congestion**: By moving computation off-chain, GenLayer helps alleviate congestion on the Ethereum mainnet.
+    subgraph Onchain["Onchain layer"]
+        Chain["GenLayer Chain<br/>EVM + consensus contracts"]
+    end
 
-### Cost Efficiency
-- **Lower Transaction Fees**: Users benefit from significantly reduced gas fees compared to direct Layer 1 transactions.
-- **Batched Submissions**: Transactions are batched and submitted to the Ethereum mainnet, distributing costs across multiple operations.
+    subgraph Offchain["Validator execution layer"]
+        direction LR
+        Node["GenLayer node"] <--> VM["GenVM"]
+    end
 
-### Security
-- **Ethereum Security Inheritance**: While execution happens off-chain, the security of assets and final state is guaranteed by Ethereum's robust consensus mechanism.
-- **Fraud Proofs/Validity Proofs**: Depending on the specific rollup solution (Optimistic or ZK), security is ensured through either fraud proofs or validity proofs.
+    Client -->|"EVM JSON-RPC"| Chain
+    Client -->|"GenLayer JSON-RPC"| Node
+    Ethereum <-->|"bridge and settlement"| Chain
+    Chain -->|"events and reads"| Node
+    Node -->|"signed consensus transaction"| Chain
 
-## How Rollup Integration Works with GenLayer
+    classDef actor fill:#F7F8FC,stroke:#8B95A7,color:#202536,stroke-width:1.5px;
+    classDef settlement fill:#FFF4E5,stroke:#D58A16,color:#583705,stroke-width:2px;
+    classDef chain fill:#EFEDFF,stroke:#6D5DF5,color:#251E63,stroke-width:2px;
+    classDef compute fill:#EAF7FF,stroke:#2686C4,color:#113F59,stroke-width:2px;
+    class Client actor;
+    class Ethereum settlement;
+    class Chain chain;
+    class Node,VM compute;
+    style Onchain fill:#F8F7FF,stroke:#B9B0FF,stroke-width:1px
+    style Offchain fill:#F5FBFF,stroke:#A8D7F2,stroke-width:1px
+    linkStyle default stroke:#7C879C,stroke-width:1.8px;
+```
 
-1. **Transaction Submission**: Users submit transactions to the rollup.
+## What lives on GenLayer Chain
 
-2. **Transaction Execution**: Transactions are executed within the GenVM environment.
+The chain provides ordering, availability, and an authoritative state machine for consensus. Its contracts record:
 
-3. **Consensus**: The rollup layer implements the Optimistic Democracy mechanism to reach consensus on the state updates.
+- Intelligent Contract transactions and per-contract queues;
+- activator, leader, and committee assignments;
+- proposal, commit, reveal, decision, and appeal state;
+- validator staking, fees, and penalties; and
+- Ghost contracts that connect EVM accounts to Intelligent Contracts.
 
-4. **State Updates**: The rollup layer maintains an up-to-date state of all accounts and contracts.
+Because consensus actions are chain transactions, validators do not need a separate peer-to-peer network to agree on an Intelligent Contract result. Chain time and state determine whether a phase is open or a participant is idle.
 
-5. **Batch Submission**: Periodically, batches of transactions and state updates are submitted to the Ethereum mainnet.
+## What lives in GenVM
 
-6. **Verification**: The Ethereum network verifies the integrity of the submitted data, ensuring its validity.
+Intelligent Contract code and state execute in GenVM. Nodes reconstruct the accepted Intelligent Contract state by following GenLayer Chain events and replaying the corresponding state transitions. The consensus contracts store commitments and lifecycle data; they do not execute Python contract logic.
 
-## Benefits for Developers and Users
+## Ghost contracts bridge the environments
 
-- **Ethereum Compatibility**: Developers can leverage existing Ethereum tools and infrastructure.
-- **Improved User Experience**: Lower fees and faster transactions lead to a better overall user experience.
+Every Intelligent Contract has a Ghost contract on GenLayer Chain at the same address. A Ghost:
 
-## Considerations
+- receives EVM transactions addressed to the Intelligent Contract;
+- holds its native GEN balance on the EVM side;
+- forwards Intelligent Contract calls to the consensus system; and
+- delivers on-acceptance and on-finalization messages to EVM recipients.
 
-- **Withdrawal Periods**: Depending on the rollup solution, there might be waiting periods for withdrawing assets back to the Ethereum mainnet.
-- **Rollup-Specific Features**: Different rollup solutions may offer unique features or limitations that developers should be aware of.
+The shared address gives wallets and EVM contracts one destination even though execution and balances span two environments. See [accounts and addresses](/understand-genlayer-protocol/core-concepts/accounts-and-addresses) and [messages](/developers/intelligent-contracts/features/messages).
 
-By integrating with Ethereum rollups, GenLayer combines the innovative capabilities of Intelligent Contracts with the scalability and efficiency of Layer 2 solutions, creating a powerful platform for next-generation decentralized applications.
+## Settlement and protocol finality are different
+
+GenLayer Chain inherits its rollup settlement properties from its ZK Stack and Ethereum configuration. Separately, an Intelligent Contract transaction reaches **protocol finality** only after its consensus decision and appeal window complete. Applications must use the Intelligent Contract transaction status—not only the enclosing EVM transaction receipt—to determine whether an outcome is final.

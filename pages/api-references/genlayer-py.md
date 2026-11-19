@@ -1,190 +1,106 @@
+---
+description: "Use the GenLayer Python SDK for fee-funded transactions, lifecycle reads, appeals, and contract interaction."
+---
+
 # GenLayerPY
 
+`genlayer-py` is the Python client for GenLayer RPC, Intelligent Contracts, fee estimation, appeals, and transaction lifecycle.
 
+## Install
 
-## About
-
-GenLayerPY SDK is a python library designed for developers building decentralized applications (Dapps) on the GenLayer protocol. This SDK provides a comprehensive set of tools to interact with the GenLayer network, including client creation, transaction handling, event subscriptions, and more, all while leveraging the power of web3.py as the underlying blockchain client.
-
-## Prerequisites
-
-Before installing GenLayerPY SDK, ensure you have the following prerequisites installed:
-
-- Python (>=3.12)
-
-
-## ️ Installation and Usage
-
-To install the GenLayerPY SDK, use the following command:
 ```bash
-$ pip install genlayer-py
+pip install genlayer-py
 ```
 
-Here’s how to initialize the client and connect to the GenLayer Simulator:
+For the Consensus v0.6 preview, install the explicit v0.19 release candidate published in the release notes. PyPI prerelease versions are not selected by every unconstrained installer, so pin the RC directly.
 
-### Reading a Transaction
+## Create a client
+
 ```python
-from genlayer_py import create_client
+from genlayer_py import create_account, create_client
 from genlayer_py.chains import localnet
-
-client = create_client(
-    chain=localnet,
-)
-
-transaction_hash = "0x..."
-
-transaction = client.get_transaction(hash=transaction_hash)
-
-```
-
-### Waiting for Transaction Receipt
-```python
-from genlayer_py import create_client
-from genlayer_py.chains import localnet
-from genlayer_py.types import TransactionStatus
-
-client = create_client(chain=localnet)
-
-# Get simplified receipt (default - removes binary data, keeps execution results)
-receipt = client.wait_for_transaction_receipt(
-    transaction_hash="0x...",
-    status=TransactionStatus.FINALIZED,
-    full_transaction=False  # Default - simplified for readability
-)
-
-# Get complete receipt with all fields
-full_receipt = client.wait_for_transaction_receipt(
-    transaction_hash="0x...",
-    status=TransactionStatus.FINALIZED,
-    full_transaction=True  # Complete receipt with all internal data
-)
-```
-
-### Reading a contract
-```python
-from genlayer_py import create_client
-from genlayer_py.chains import localnet
-
-client = create_client(
-    chain=localnet,
-)
-
-result = client.read_contract(
-    address=contract_address,
-    function_name='get_complete_storage',
-    args=[],
-    state_status='accepted'
-)
-```
-
-### Writing a transaction
-```python
-from genlayer_py.chains import localnet
-from genlayer_py import create_client, create_account
-
-client = create_client(
-    chain=localnet,
-)
 
 account = create_account()
+client = create_client(chain=localnet, account=account)
+```
 
-transaction_hash = client.write_contract(
-    account=account,
-    transaction=transaction,
+Use the matching v0.19 RC's Studio-dev chain definition for the v0.123 preview. Do not substitute stable Studionet: Studio-dev is chain ID 61997 and has its own consensus deployment.
+
+## Read a contract
+
+```python
+value = client.read_contract(
     address=contract_address,
-    function_name='account',
-    args=['new_storage'],
-    value=0, // value is optional, if you want to send some native token to the contract
-)
-receipt = client.wait_for_transaction_receipt(
-    hash=transaction_hash,
-    status=TransactionStatus.FINALIZED, // or ACCEPTED
-    full_transaction=False  // False by default - returns simplified receipt for better readability
+    function_name="get_storage",
+    args=[],
 )
 ```
 
-### Checking execution results
-
-A transaction can be finalized by consensus but still have a failed execution. Always check `tx_execution_result` before reading contract state:
+## Estimate and submit a write
 
 ```python
-from genlayer_py import create_client, create_account
-from genlayer_py.chains import testnet_bradbury
-from genlayer_py.types import TransactionStatus, ExecutionResult
-
-client = create_client(chain=testnet_bradbury, account=create_account())
-
-receipt = client.wait_for_transaction_receipt(
-    transaction_hash=tx_hash,
-    status=TransactionStatus.FINALIZED,
+estimate = client.estimate_transaction_fees(
+    {
+        "leaderTimeunitsAllocation": 125,
+        "validatorTimeunitsAllocation": 250,
+        "executionBudgetPerRound": 786_500,
+        "totalMessageFees": 0,
+        "appealRounds": 1,
+        "rotations": [1, 1],
+    }
 )
 
-if receipt.get("tx_execution_result_name") == ExecutionResult.FINISHED_WITH_RETURN.value:
-    # Execution succeeded — safe to read state
-    result = client.read_contract(
-        address=contract_address,
-        function_name="get_storage",
-        args=[],
+tx_id = client.write_contract(
+    address=contract_address,
+    function_name="update_storage",
+    args=["new value"],
+    fees={
+        "distribution": estimate["distribution"],
+        "feeValue": estimate["feeValue"],
+    },
+)
+```
+
+For applications, generate those allocation inputs from a checked-in [`fee-profile.json`](/developers/decentralized-applications/fee-profiling-and-estimation). The SDK still reads live prices and caps when it produces the final estimate.
+
+Studio can also simulate one concrete write and derive a recommended preset:
+
+```python
+recommended = client.estimate_transaction_fees_for_write(
+    address=contract_address,
+    function_name="update_storage",
+    args=["new value"],
+)
+```
+
+Use simulation during profiling and development rather than before every production user action.
+
+## Wait for the right outcome
+
+```python
+from genlayer_py.transactions import is_successful
+
+receipt = client.wait_for_finalization(tx_id)
+if not is_successful(receipt):
+    raise RuntimeError(
+        f"Transaction did not succeed: "
+        f"{receipt['status_name']} / {receipt['tx_execution_result_name']}"
     )
-elif receipt.get("tx_execution_result_name") == ExecutionResult.FINISHED_WITH_ERROR.value:
-    # Execution failed — contract state was not modified
-    raise RuntimeError("Contract execution failed")
-else:
-    # NOT_VOTED — execution hasn't completed
-    print("Execution result not yet available")
 ```
 
-### Fetching emitted messages and triggered transactions
+`wait_for_decision` waits for a stored decision. `wait_for_finalization` also waits for fee settlement and refunds. `get_transaction_lifecycle` exposes the stored/projected state and protocol resolution action when the backend supports the advanced lifecycle RPC.
 
-Transactions can emit messages to other contracts. These messages create new child transactions when processed:
+## Appeal a decision
 
 ```python
-tx = client.get_transaction(transaction_hash=tx_hash)
-
-# Messages emitted by the contract during execution
-print(tx["messages"])
-# [{"messageType": 1, "recipient": "0x...", "value": 0, "data": "0x...", "onAcceptance": True, "saltNonce": 0}, ...]
-
-# Child transaction IDs created from those messages (separate call)
-child_tx_ids = client.get_triggered_transaction_ids(transaction_hash=tx_hash)
-print(child_tx_ids)
-# ["0xabc...", "0xdef..."]
+charge = client.get_appeal_charge(tx_id)
+client.appeal_transaction(tx_id, value=charge)
 ```
 
-### Debugging transaction execution
+The charge includes the bond and induced-work funding. `appeal_transaction` resolves and binds the active decision and uses the safe `topUpAndSubmitAppeal` path. `get_min_appeal_bond` is a deprecated compatibility alias that also returns the complete charge.
 
-Use `debug_trace_transaction` to inspect the full execution trace of a transaction, including return data, errors, and GenVM logs:
+## API reference
 
-```python
-trace = client.debug_trace_transaction(
-    transaction_hash=tx_hash,
-    round=0,  # optional, defaults to 0
-)
-
-print(trace["result_code"])   # 0=success, 1=user error, 2=VM error
-print(trace["return_data"])   # hex-encoded contract return data
-print(trace["stderr"])        # standard error output
-print(trace["genvm_log"])     # detailed GenVM execution logs
-```
-
-## Key Features
-
-* **Client Creation**: Easily create and configure a client to connect to GenLayer’s network.
-* **Transaction Handling**: Send and manage transactions on the GenLayer network.
-* **Gas Estimation**: Estimate gas fees for executing transactions on GenLayer.
-
-_* under development_
-
-
-## Documentation
-
-For detailed information on how to use GenLayerPY SDK, please refer to our [documentation](https://docs.genlayer.com/api-references/genlayer-py).
-
-
-## Contributing
-
-We welcome contributions to GenLayerPY SDK! Whether it's new features, improved infrastructure, or better documentation, your input is valuable. Please read our [CONTRIBUTING](https://github.com/genlayerlabs/genlayer-py/blob/main/CONTRIBUTING.md) guide for guidelines on how to submit your contributions.
-
-## License
-
-This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
+- [Client methods and enums](./genlayer-py/api)
+- [Fee Profiling & Estimation](/developers/decentralized-applications/fee-profiling-and-estimation)
+- [Consensus v0.6 migration guide](/developers/consensus-v06-migration)

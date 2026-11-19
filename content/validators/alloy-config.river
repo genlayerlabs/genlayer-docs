@@ -55,6 +55,65 @@ loki.source.file "genlayer" {
 }
 
 // Write logs to central Loki instance
+// Read opted-in WebDriver/Alloy recovery events through the existing read-only
+// Docker proxy. Containers log their own restart attempts before exiting.
+discovery.docker "health_recovery" {
+  host = "http://docker-socket-proxy:2375"
+  refresh_interval = "5s"
+
+  filter {
+    name = "label"
+    values = [
+      "com.genlayer.health-recovery.logs=true",
+    ]
+  }
+}
+
+discovery.relabel "health_recovery" {
+  targets = discovery.docker.health_recovery.targets
+
+  rule {
+    source_labels = ["__meta_docker_container_label_com_docker_compose_project"]
+    target_label = "compose_project"
+  }
+
+  rule {
+    source_labels = ["__meta_docker_container_label_com_genlayer_network"]
+    target_label = "network"
+  }
+
+  rule {
+    source_labels = ["network"]
+    regex = ""
+    target_label = "network"
+    replacement = "unknown"
+  }
+}
+
+loki.source.docker "health_recovery" {
+  // Docker's TCP transport keeps the log stream open. With an HTTP(S) host,
+  // Alloy bounds the entire stream by refresh_interval and repeatedly reopens it.
+  host = "tcp://docker-socket-proxy:2375"
+  targets = discovery.relabel.health_recovery.output
+  refresh_interval = "5s"
+  labels = {
+    job = "genlayer-node",
+    component = "health-recovery",
+    instance = sys.env("NODE_ID"),
+    validator_name = sys.env("VALIDATOR_NAME"),
+  }
+  forward_to = [loki.process.health_recovery.receiver]
+}
+
+// Collect only restart events, not Alloy's own operational log stream.
+loki.process "health_recovery" {
+  stage.match {
+    selector = "{component=\"health-recovery\"} != \"found to be unhealthy - Restarting container now\""
+    action = "drop"
+  }
+  forward_to = [loki.write.central.receiver]
+}
+
 loki.write "central" {
   endpoint {
     url = sys.env("CENTRAL_LOKI_URL")

@@ -8,7 +8,7 @@ GenLayer Studio limitations are Studio-specific caveats for building and testing
 
 ## Gas Usage
 
-Studio is gasless for EVM-compatible wallet flows. `eth_gasPrice` returns `0`, `eth_estimateGas` returns a compatibility estimate, and transaction receipts should not be used to benchmark live-network gas usage or fees.
+Studio's EVM-compatible wallet layer is gasless: `eth_gasPrice` returns `0`, and `eth_estimateGas` returns a compatibility estimate. Consensus v0.6 protocol fees are a separate layer and can still be enabled for Intelligent Contract transactions. Read those through the GenLayer fee estimate and finalized receipt; do not use `eth_gasPrice` or the outer EVM receipt to decide that a Studio deployment has no protocol fees.
 
 ## Chain-Layer and EVM Parity
 

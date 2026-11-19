@@ -1,0 +1,210 @@
+---
+description: "Network keeper roles are the permissionless GenLayer functions anyone can call to keep the network live — inflation relay, epoch advancement, validator priming, appeals, finalization, and cleanup — with their triggers, rewards, and risks."
+---
+import { Callout } from "nextra-theme-docs";
+
+# Network Keeper Roles
+
+A **keeper role** is a permissionless smart-contract function that the GenLayer network needs someone to call in order to keep running — advancing epochs, relaying inflation across the L1↔L2 bridge, priming validators, finalizing transactions, and cleaning up expired state. None of these functions require special privileges: **anyone can call them**, from a validator operator to an independent community bot.
+
+Today the GenLayer Foundation operates a baseline set of these keepers so the network stays live without any community involvement. But because the functions are permissionless, community keepers can run them too — either as a backstop when Foundation services lag, or to earn the rewards attached to some roles. Running keepers is a way to contribute to network liveness and, where a reward exists, to be paid for it.
+
+<Callout type="info" emoji="💡">
+  Most keeper work is already automated. Validator nodes finalize transactions and prime validators as part of normal operation, and epoch advancement plus token burning fire automatically inside `epochAdvance()`. The roles below matter most as a **liveness backstop**: they document what can be triggered manually if the automated path stalls, and which triggers carry a reward.
+</Callout>
+
+## Role Summary
+
+| Role | Function | Who may call | Reward | Risk if idle |
+|---|---|---|---|---|
+| **Inflation relayer** | `GEN.executeL2Message()` (L1) | Anyone (permissionless) | `incentivePercentage` × epoch inflation, minted to caller. | **Epoch progression halts network-wide.** L2 cannot advance past `inflationEpoch`. |
+| **Epoch advancer** | `Staking.epochAdvance()` (L2) | Anyone (permissionless) | None | Epochs stop advancing; fees/inflation are not distributed. |
+| **Validator primer** | `Staking.validatorPrime(validator)` (L2) | Anyone, on behalf of a validator | 1% of any slash that fires (only when a slash is pending and caller ≠ validator). Healthy validator → none. | Validator misses selection; pending slashes go unenforced. |
+| **Appellant** | SDK/CLI appeal operation (`topUpAndSubmitAppeal`) | Anyone (permissionless, payable) | Successful appeal returns 2.5× the bond: principal plus 1.5× profit. | Incorrect results are not challenged. |
+| **Finalizer** | SDK/CLI finalization operation (`finalizeTransaction(txId, expectedDecisionId)` on-chain) | Anyone (permissionless) | None | Transactions do not settle; fees and appeal payouts are not released. |
+| **Stuck-tx healer** | `advanceStuckTransaction(txId)` | Anyone (permissionless) | None | A transaction whose stored status lags its computed status stays stuck. |
+| **Burn trigger** | `StakingInflation.burn()` (L2) | Anyone (permissionless) | None | Burnable GEN accumulates instead of leaving supply (only if below the auto-burn threshold). |
+| **Quarantine GC** | `StakingBan.cleanupExpiredQuarantines()` (L2) | Anyone (permissionless) | None | Expired quarantine records are not reclaimed (storage bloat only). |
+
+<Callout type="info">
+  **Scope.** This page covers only permissionless keeper functions. Governance-gated actions — unbanning validators (`QUARANTINE_MANAGER_ROLE`), admin/emergency ("red-button") surfaces — are **not** keeper roles and are restricted to authorized operators.
+</Callout>
+
+---
+
+## Inflation Relayer
+
+**Function:** `GEN.executeL2Message(batchNumber, txIndex, batchIndex, message, proof, l2GasPrice, l2GasLimit)` on the **L1** GEN token contract.
+
+Each epoch's inflation makes a round trip: the L2 Staking contract requests it, L1 mints and bridges it back, and L2 receives it. The middle step — proving the L2→L1 message on L1 and relaying it — **cannot happen on-chain**, because zkSync L2→L1 messages can only be proved after the L2 batch has finalized on L1 (roughly an hour on real networks). Someone has to call `executeL2Message()` off-chain to complete the round trip.
+
+<Callout type="error" emoji="🛑">
+  **This role gates the entire network's epoch progression.** The L2 `Staking.epochAdvance()` can only move forward while `epoch + 1 <= inflationEpoch`, and `inflationEpoch` only rises when `executeL2Message()` is successfully relayed on L1. **If no one relays inflation, epoch progression halts network-wide** once the current epoch catches up to `inflationEpoch`. This is the single most important keeper to keep running.
+</Callout>
+
+**When to call:** whenever an inflation request message is pending relay. Pre-check any candidate message — and estimate the reward — with the L1 view helper:
+
+```solidity
+// Returns (pending, rewards): whether the message still needs relaying,
+// and the estimated GEN reward for relaying it.
+(bool pending, uint256 rewards) = GEN.isL2MessagePending(
+    batchNumber, txIndex, batchIndex, message
+);
+```
+
+**Reward:** on a successful INFLATION relay, the caller is paid
+
+```
+reward = totalInflation × incentivePercentage / 10000
+```
+
+minted to `msg.sender` on L1, emitting `IncentiveRewardPaid(caller, reward)`. The reward is **carved out of** that epoch's inflation, not minted on top — total new supply is `fees + totalInflation` regardless of the incentive.
+
+**Cadence:** relay each pending inflation message shortly after its L2 batch finalizes on L1 (about hourly on testnet, gated by batch finalization). Relaying is idempotent per target epoch — a duplicate request for an already-requested epoch is a safe no-op — so a keeper that occasionally double-submits does no harm.
+
+---
+
+## Epoch Advancer
+
+**Function:** `Staking.epochAdvance()` on the L2 Staking contract.
+
+Advances the network from the current epoch to the next. On each advance it distributes the finalized epoch's fees and inflation to validators, developers, and the DAO, requests the next window of inflation from L1 (see [Inflation Relayer](#inflation-relayer)), and — when the burn threshold is met — auto-triggers [token burning](#burn-trigger).
+
+**When to call:** once the current epoch's minimum duration has elapsed and its transactions are resolved. In normal operation this is driven automatically; a keeper only needs to step in if advancement stalls.
+
+**Reward:** none. `epochAdvance()` pays no caller incentive.
+
+**Cadence:** at most once per epoch boundary. Advancement will not run ahead of the inflation bridge — see the halts-chain warning above — so a stalled `inflationEpoch` is diagnosed at the inflation relayer, not here.
+
+---
+
+## Validator Primer
+
+**Function:** `Staking.validatorPrime(validator)` on the L2 Staking contract, callable by anyone on behalf of any validator.
+
+Priming rolls a validator's stake forward for the upcoming epoch — committing staged deposits and withdrawals, distributing rewards, and **lazily enforcing any pending slash** against that validator. A validator's own node primes it automatically each epoch; the permissionless surface exists so that a validator with a pending slash cannot escape enforcement simply by not priming itself.
+
+**When to call:** to enforce a slash that a validator is avoiding, or as a backstop if a validator's node has stopped priming. Priming is also what activates deposits (see the [Staking Contract Guide](/developers/staking-guide#depositing-as-a-validator)).
+
+**Reward:** when priming applies a pending slash **and the caller is not the validator being primed**, the caller receives
+
+```
+callerReward = slashedAmount × 100 / 10000   // SLASH_CALLER_INCENTIVE_BPS = 100 = 1%
+```
+
+deducted from the epoch's slashed pool before the remainder is burned. Priming a **healthy** validator (no pending slash) pays **nothing** — do not expect a reward for routine priming.
+
+**Cadence:** validators prime themselves each epoch, so a keeper only needs to target validators that (a) have an enactable pending slash and are not priming, or (b) have stopped priming entirely. Related permissionless storage-cleanup helpers — `validatorClean(...)` and `delegatorClean(...)` — reclaim finalized deposit/withdrawal records and carry no reward.
+
+<Callout type="info">
+  Slashing is time-locked and lazy: a recorded penalty becomes enactable only 2 epochs after the event, and is applied at the next priming. A validator that **exits before being primed** can avoid a pending slash; the caller incentive exists partly to pay third parties to prime-and-slash before that happens.
+</Callout>
+
+---
+
+## Appellant
+
+**Function:** the public SDK/CLI appeal operation, which calls the payable `ConsensusMain.topUpAndSubmitAppeal()` path.
+
+Anyone may post a bond to appeal a transaction they believe was decided incorrectly, triggering re-evaluation by a fresh validator set. Unlike the other keeper roles, this one is **economically self-motivated**: a correct appeal is profitable, and a frivolous one forfeits the bond.
+
+**When to call:** when you have evidence that a finalized-pending transaction's result is wrong and are willing to stake a bond on it. Read the current appeal charge first with the CLI:
+
+```bash
+genlayer appeal-bond <txId>             # bond + induced-work funding
+genlayer appeal <txId> --bond <amount>  # exact charge is calculated if omitted
+```
+
+Despite its historical command name, `appeal-bond` reports the full appeal charge: the bond plus the funding required for the work the appeal induces. The SDK and CLI bind the operation to the active decision and use `topUpAndSubmitAppeal`; direct `submitAppeal` is only for a low-level, already-funded round.
+
+**Reward:** a **successful** appeal returns the principal plus profit equal to **1.5× the bond**, or **2.5× the bond in total**, settled on finalization. The induced-work funding pays for the scheduled round and is not multiplied as appellant profit. A failed appeal forfeits the bond for protocol distribution. See [Appeal Process](/understand-genlayer-protocol/core-concepts/optimistic-democracy/appeal-process).
+
+**Cadence:** event-driven — appeal only when you have specific evidence of an incorrect result, never speculatively.
+
+---
+
+## Finalizer
+
+**Function:** the SDK/CLI finalization operation, which resolves the active decision and calls `finalizeTransaction(txId, expectedDecisionId)` on the consensus contract (`nonReentrant`).
+
+Settles a transaction once its acceptance window has passed and no successful appeal is outstanding: it releases fees, pays out any successful appellant, and marks the transaction final.
+
+**When to call:** after a transaction's acceptance window closes. This is normally driven by validator nodes as part of consensus, so a keeper only needs to step in if finalization is lagging. It can also be invoked from the CLI:
+
+```bash
+genlayer finalize <txId>
+```
+
+**Reward:** none. Finalization pays no caller incentive; its purpose is liveness, not profit.
+
+**Cadence:** as needed to clear transactions whose windows have elapsed but which have not been finalized by validator nodes.
+
+---
+
+## Stuck-Tx Healer
+
+**Function:** `advanceStuckTransaction(txId)` on the consensus contract's finalization phase — permissionless by design.
+
+Some transactions can end up with a **stored status that lags their computed status** — for example, a timeout has effectively occurred but the on-chain record has not caught up. `advanceStuckTransaction()` recomputes the current status and writes the catch-up, unblocking the transaction. It has no queue-head precondition (any stuck transaction can be healed, not just the head of the pending queue), is idempotent (a no-op on any transaction that is not in a pending family), and **does not itself finalize** — it is strictly a liveness improvement, not a privilege.
+
+**When to call:** when a specific transaction appears wedged — its stored state is behind where its timing says it should be. Safe to call speculatively because non-applicable transactions are no-ops. Emits `AdvanceStuckTransactionAttempted`.
+
+**Reward:** none.
+
+**Cadence:** on demand, in response to a stuck transaction. Because it is idempotent, a keeper can retry without side effects.
+
+---
+
+## Burn Trigger
+
+**Function:** `StakingInflation.burn()` on the L2 Staking contract.
+
+Removes accumulated burnable GEN (unclaimed inflation, the post-incentive slashed pool, and unclaimable developer-inflation surplus) from supply by bridging it out of L2 and burning it on L1.
+
+**When to call:** almost never manually. Burning fires **automatically inside `epochAdvance()`** whenever the accumulated `burning` balance meets the configured `burnThreshold`. The manual call is a **fallback** for flushing balances that sit **below** the threshold, or when threshold automation is disabled (`burnThreshold = 0`, the default).
+
+<Callout type="info">
+  Completing a burn on L1 requires two further off-chain operator steps (`finalizeWithdrawal` then a BURN-payload `executeL2Message`) that pair with the L2 emission. Those steps do **not** pay the inflation relayer reward. See the staking system specification for the full burn flow.
+</Callout>
+
+**Reward:** none.
+
+**Cadence:** only when clearing sub-threshold balances; otherwise leave it to the automatic path.
+
+---
+
+## Quarantine GC
+
+**Function:** `StakingBan.cleanupExpiredQuarantines(startIndex, maxIterations)` on the L2 Staking contract.
+
+Paginated garbage collection that reclaims **expired** quarantine records. It only removes quarantines that have already elapsed — it does **not** unban validators or alter any active quarantine (unbanning is a governance action, out of scope for keepers).
+
+**When to call:** periodically, to keep quarantine storage from bloating after many quarantine cycles. The `startIndex`/`maxIterations` pagination lets a keeper bound gas per call and sweep the set across several transactions.
+
+**Reward:** none — this is pure storage hygiene.
+
+**Cadence:** low-frequency housekeeping; there is no liveness deadline.
+
+---
+
+## Running a Keeper
+
+**Network endpoints and contract addresses.** Keepers need the L2 Staking / consensus contract address and the L1 GEN token address for the target network. The L2 consensus `AddressManager` address and the chain RPC/WebSocket URLs for each testnet live in the [Network-Specific Consensus Configuration](/validators/setup-guide#network-specific-consensus-configuration) section of the setup guide. From the CLI, `genlayer network info` prints the active network's configuration and contract addresses.
+
+**Reference implementations.** The consensus repository ships reference scripts for the multi-step relay flows — the inflation relayer's proof-fetch-and-execute logic lives at `scripts/consensus_flows/staking/executeL2Message.ts`, alongside companion scripts for the other staking flows. Use these as a starting point for a production keeper: they show how to fetch the L2 receipt, poll `zks_getL2ToL1LogProof` until the batch is finalized, and submit the L1 call.
+
+**Practical guidance:**
+
+- **Prioritize the inflation relayer.** It is the only keeper whose absence halts the whole network, and the only one that pays a standing reward. Everything else is a backstop to already-automated behavior.
+- **Check for a reward before assuming one.** Only the inflation relayer (via `incentivePercentage`), the validator primer (only on an actually-enforced slash), and the appellant (only on a successful appeal) ever pay. The rest are unpaid liveness/hygiene work.
+- **Expect idempotency.** Inflation relays, stuck-tx healing, and quarantine GC are all safe to retry or double-submit — duplicate or non-applicable calls are no-ops, not errors.
+- **Watch gas vs. reward.** For the paid roles, compare the estimated reward (e.g. `isL2MessagePending`'s `rewards`, or the pending slash amount) against the transaction cost before submitting.
+
+## Related Resources
+
+- [Setup Guide](/validators/setup-guide) — running a validator node and its network configuration
+- [Staking Contract Guide](/developers/staking-guide) — direct Solidity interactions, `validatorPrime()`, and the epoch model
+- [Staking Concepts](/understand-genlayer-protocol/core-concepts/optimistic-democracy/staking) — epochs, shares vs. stake, reward distribution
+- [Slashing](/understand-genlayer-protocol/core-concepts/optimistic-democracy/slashing) — penalties, the 80/20 split, and lazy enforcement
+- [Appeal Process](/understand-genlayer-protocol/core-concepts/optimistic-democracy/appeal-process) — how appeals re-evaluate a transaction
+- [GenLayer CLI](/api-references/genlayer-cli) — `appeal`, `appeal-bond`, `finalize`, and `network info` commands

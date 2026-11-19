@@ -12,16 +12,16 @@ Executes a new message call immediately without creating a transaction on the bl
   - `data` (string, required): The encoded function call data
   - `type` (string, required): The type of call (`"read"`, `"write"`, or `"deploy"`)
   - `blockNumber` (string, optional): The block number to query at (hex-encoded). If not provided, uses latest block
-  - `status` (string, optional): The transaction status filter (`"finalized"` or `"accepted"`). If not provided, uses accepted state
+  - `status` (string, optional): The transaction status filter (`"finalized"` or `"decided"`). If not provided, uses decided state
   - `value` (string, optional): The value to send with the call (hex-encoded)
-  - `leader_results` (array of strings or null, optional): When provided, GenVM runs in validator mode (executing `validator_fn` instead of `leader_fn` in `run_nondet` calls). Each element is a hex-encoded equivalence output from a previous leader execution. When omitted or null, GenVM runs in leader mode
+  - `leader_public_data` (string or null, optional): Hex-encoded data returned by a previous leader execution. Its encoding is defined by the GenVM specification. When provided, GenVM runs in validator mode; when omitted or null, GenVM runs in leader mode
 
 **Returns:** A structured JSON object containing execution results and debug information
 
 **Response Fields:**
 
 - `data` (string): Hex-encoded return value from contract execution
-- `eqOutputs` (array of strings): Equivalence outputs from GenVM execution, each as a hex-encoded string. These are deterministic outputs used for consensus validation. Populated in leader mode; empty in validator mode
+- `leaderPublicData` (string): Hex-encoded leader data whose encoding is defined by the GenVM specification. Populated in leader mode; empty in validator mode
 - `status` (object): Execution status
   - `code` (number): Status code (0=success, 1=user error, 2=vm error, 3=internal error)
   - `message` (string): Human-readable status message
@@ -36,9 +36,10 @@ Executes a new message call immediately without creating a transaction on the bl
   - `recipient` (string): Recipient address
   - `value` (string): Value in hex format
   - `data` (string): Message data as hex-encoded string
-  - `onAcceptance` (boolean): Whether message is sent on acceptance
+  - `onAcceptance` (boolean): Whether message is sent on acceptance. Always `false` for an external message (`messageType` 0): external messages on acceptance are not supported yet
   - `saltNonce` (string): Salt nonce in hex format
-- `nondetDisagreementCallNo` (number or null): When running in validator mode (with `leader_results`), indicates which `run_nondet` call the validator disagreed on. Null when there is no disagreement or when running in leader mode
+- `nondetDisagreementCallNo` (number or null): When running in validator mode (with `leader_public_data`), indicates which `run_nondet` call the validator disagreed on. Null when there is no disagreement or when running in leader mode
+- `syncedBlock` (string): Hex-encoded block number that GenVM has synced to. Indicates data freshness — responses are based on state up to this block
 
 **Example - Deploy Call:**
 
@@ -66,7 +67,7 @@ Executes a new message call immediately without creating a transaction on the bl
   "jsonrpc": "2.0",
   "result": {
     "data": "00",
-    "eqOutputs": [],
+    "leaderPublicData": "0e076e645f6f75747305",
     "status": {
       "code": 0,
       "message": "success"
@@ -116,7 +117,7 @@ Executes a new message call immediately without creating a transaction on the bl
 }
 ```
 
-**Example - Read Call (Latest Accepted State):**
+**Example - Read Call (Latest Decided State):**
 
 ```json
 {
@@ -149,7 +150,7 @@ Executes a new message call immediately without creating a transaction on the bl
       "from": "0xf6A60752C24Cd3BFcAf8d387a5EB62d3746F44EE",
       "to": "0xCe5712E63fd5475288aB1B7c0a368B9417357b81",
       "blockNumber": "0x151ec5",
-      "status": "accepted"
+      "status": "decided"
     }
   ],
   "id": 1
@@ -185,7 +186,7 @@ When a contract emits internal messages (e.g., a router contract forwarding call
   "jsonrpc": "2.0",
   "result": {
     "data": "00",
-    "eqOutputs": [],
+    "leaderPublicData": "0e076e645f6f75747305",
     "status": {
       "code": 0,
       "message": "success"
@@ -229,7 +230,7 @@ When a contract emits internal messages (e.g., a router contract forwarding call
 **Notes:**
 
 - The `blockNumber` parameter can be either hex-encoded with a `0x` prefix (e.g., `"0x151ec5"`) or decimal (e.g., `"1384133"`)
-- Valid `status` values are `"accepted"` (default) and `"finalized"`
-- When both parameters are omitted, the call executes against the latest accepted state
+- Valid `status` values are `"decided"` (default) and `"finalized"`
+- When both parameters are omitted, the call executes against the latest decided state
 - For `read` and `write` type calls, if the contract doesn't exist at the specified block/status combination, an error is returned with code `-32001` (Resource not found) and message `"contract not found at address 0x..."`
 - For `deploy` type calls, the `status` and `blockNumber` parameters are not used for contract state validation since no contract exists yet

@@ -1,12 +1,12 @@
 ---
-description: "Deploying Intelligent Contracts on GenLayer: CLI deployment, deploy scripts, network configuration, and workflow guidance."
+description: "Deploy Intelligent Contracts with the CLI or GenLayerJS, including v0.6 fee estimation, network selection, and outcome verification."
 ---
 import { Callout } from 'nextra-theme-docs'
 import { Card, Cards } from 'nextra-theme-docs'
 
 # Deploying Intelligent Contracts
 
-Deploying Intelligent Contracts on GenLayer means choosing a deployment method and network for moving Python-based contracts from local development toward testnet use. This guide covers local development through testnet deployment, including CLI direct deployment, deploy scripts, network configuration, and how to use each approach effectively.
+Deploying an Intelligent Contract creates a consensus transaction. On a Consensus v0.6 deployment, that transaction needs a fee distribution and enough protocol-fee value, just like a write. Choose the network deliberately, estimate from a measured fee profile, then wait for finalization **and verify the execution result** before using the contract address.
 
 ## Quick Start
 
@@ -40,25 +40,31 @@ Get started quickly with these essential deployment options:
 GenLayer offers two primary deployment methods:
 
 ### CLI Direct Deployment
-Perfect for quick deployments and simple contracts. Deploy with a single command:
+The CLI is the shortest path for a single contract. Select and inspect the network first:
 
 ```bash
+genlayer network set studio-dev
+genlayer network info
 genlayer deploy --contract contracts/my_contract.py --args "Hello World" 42
 ```
+
+The v0.6-compatible CLI resolves the deploy entry in `fee-profile.json`, estimates it against current network prices, and submits the required fee fields. Use the matching release candidate when targeting Studio-dev.
 
 [Learn more about CLI Deployment →](./deploying/cli-deployment)
 
 ### Deploy Scripts
-Ideal for complex workflows, multi-contract deployments, and testnet environments:
+Use ordered scripts for multi-contract deployments and follow-up configuration. The complete guide includes a copyable helper that converts profile quantities into a live estimate:
 
 ```typescript
-export default async function main(client: GenLayerClient<any>) {
-  // Deploy and configure multiple contracts
-  const mainContract = await deployContract(client, "contracts/main.py", []);
-  const helperContract = await deployContract(client, "contracts/helper.py", [mainContract]);
-  
-  await configureContracts(client, mainContract, helperContract);
-}
+const estimate = await quoteProfile(client, feeProfile.deploy);
+const txId = await client.deployContract({
+  code,
+  args: [],
+  fees: {
+    distribution: estimate.distribution,
+    feeValue: estimate.feeValue,
+  },
+});
 ```
 
 [Learn more about Deploy Scripts →](./deploying/deploy-scripts)
@@ -69,10 +75,10 @@ Deploy to different networks based on your development stage:
 
 | Network | Purpose | When to Use |
 |---------|---------|-------------|
-| **Localnet** | Local development | Development, debugging, initial testing |
-| **Studionet** | Hosted development | Team collaboration, quick prototyping |
-| **TestnetAsimov** | Infrastructure testing | Stability, scalability, and stress testing |
-| **TestnetBradbury** | AI/LLM testing | Real AI workloads and intelligent contract testing |
+| **Localnet** | Local development | Fast, resettable testing and fee profiling |
+| **Studionet** | Stable hosted Studio | Collaboration and stable hosted examples |
+| **Studio-dev** | v0.123 / v0.6 preview | Release-candidate compatibility testing |
+| **Bradbury** | Persistent public testnet | Production-like application validation |
 
 [Explore Network Configuration →](./deploying/network-configuration)
 
@@ -80,21 +86,23 @@ Deploy to different networks based on your development stage:
 
 Follow this recommended progression:
 
-1. **Develop locally** on `localnet` with full control
-2. **Test collaboratively** on `studionet` with your team  
-3. **Validate thoroughly** on `testnetBradbury` in a production-like environment with real AI workloads
+1. **Develop and measure locally** on `localnet`.
+2. **Commit the generated fee profile** and test its low, standard, and high policies.
+3. **Test the release candidate** on `studio-dev` with matching SDK and CLI RCs.
+4. **Use Studionet or Bradbury** when you need the corresponding stable hosted environment.
 
 <Callout emoji="💡">
-  Start with CLI deployment for simple contracts, then graduate to deploy scripts as your projects become more complex.
+  `studio-next.genlayer.com`, if enabled, is a browser alias for the preview. SDKs, CLI profiles, and wallets should keep using the canonical Studio-dev RPC and chain ID rather than treating it as a separate network.
 </Callout>
 
 ## What's Next?
 
 After deploying your contracts:
 
-1. **Test Contract Functions**: Use `genlayer call` and `genlayer write` to interact with deployed contracts
-2. **Monitor Transactions**: Check transaction receipts with `genlayer receipt <txId>`
-3. **Build Frontend**: Integrate with your deployed contracts using [GenLayerJS](https://github.com/yeagerai/genlayer-js)
-4. **Debug Issues**: Use the [Debugging Guide](./debugging) if you encounter problems
+1. **Verify the deployment outcome**: finalization does not by itself mean successful execution.
+2. **Record the transaction ID and address**: resume tracking the same transaction after interruption; do not blindly redeploy.
+3. **Exercise writes with the same fee profile**: use [Writing to Intelligent Contracts](/developers/decentralized-applications/writing-data).
+4. **Integrate the frontend**: use [Transaction Kit](/developers/decentralized-applications/transaction-kit-integration) or the low-level SDK.
+5. **Diagnose fee failures**: see [Fee Outcomes and Debugging](/developers/decentralized-applications/fee-outcomes-and-debugging).
 
 Ready to start deploying? Choose your preferred method and dive into the detailed guides!

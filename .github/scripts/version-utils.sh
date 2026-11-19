@@ -24,9 +24,10 @@ detect_latest_version() {
     # Fetch all tags
     git fetch --tags
     
-    # Get latest stable version tag
+    # Latest release tag: a release candidate counts until its stable release
+    # exists (scripts/lib/release-versions.js). The sed pair sorts v0.6.0-rc.N below v0.6.0.
     local latest_tag
-    latest_tag=$(git tag -l | grep -E '^v[0-9]+\.[0-9]+\.[0-9]+$' | sort -V | tail -n1)
+    latest_tag=$(git tag -l | grep -E '^v[0-9]+\.[0-9]+\.[0-9]+(-rc\.[0-9]+)?$' | sed 's/-rc/~rc/' | sort -V | sed 's/~rc/-rc/' | tail -n1)
     
     # Cleanup
     cd /

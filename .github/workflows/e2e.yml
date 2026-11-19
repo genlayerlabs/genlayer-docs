@@ -13,8 +13,11 @@ concurrency:
 jobs:
   test:
     name: Playwright E2E
-    runs-on: ubuntu-latest
-    timeout-minutes: 30
+    # Pinned: ubuntu-latest is Ubuntu 26.04, where Playwright 1.55 cannot install
+    # its browsers. Move back to ubuntu-latest after upgrading @playwright/test to
+    # a release that supports 26.04.
+    runs-on: ubuntu-24.04
+    timeout-minutes: 40
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -28,8 +31,28 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
-      - name: Install Playwright browsers and system dependencies
-        run: npx playwright install --with-deps
+      # Only Chromium is used (see playwright.config.ts). Installing every
+      # browser's system packages pulls ~180 apt packages, and the runner's
+      # Ubuntu mirror intermittently serves them at a few KB/s, so a stalled
+      # download used to consume the whole job timeout. Bound the apt step and
+      # retry it once: a fresh attempt usually gets a healthy connection and
+      # reuses the packages already downloaded.
+      - name: Install Playwright system dependencies (Chromium)
+        id: playwright-deps
+        continue-on-error: true
+        timeout-minutes: 12
+        run: npx playwright install-deps chromium
+
+      - name: Retry Playwright system dependencies (Chromium)
+        if: steps.playwright-deps.outcome == 'failure'
+        timeout-minutes: 10
+        run: |
+          sudo dpkg --configure -a
+          npx playwright install-deps chromium
+
+      - name: Install Playwright Chromium
+        timeout-minutes: 5
+        run: npx playwright install chromium
 
       - name: Run e2e tests
         run: npm run test:e2e

@@ -6,6 +6,13 @@
 - Add gen_getContractCode endpoint
 - Return full VMResult data from gen_call
 
+### Misc
+
+- Inject txID into context for automatic log propagation
+- Enable validator idle reveal idleness
+- Add profiling with pyroscope
+- Fix to handle zksync local-node compatibility
+
 ### Bug fixes
 
 - Check pending queue head before activation
@@ -24,10 +31,3 @@
 - Prevent panic on closing done channel during event processing
 - Handle new consensus ResultType
 - New behavior for finalizing epochs
-
-### Misc
-
-- Inject txID into context for automatic log propagation
-- Enable validator idle reveal idleness
-- Add profiling with pyroscope
-- Fix to handle zksync local-node compatibility

@@ -2,6 +2,8 @@
 description: "DApp Development Workflow with GenLayer covers Studio, local testing, deployment workflow, and GenLayerJS frontend integration."
 ---
 
+import { Callout } from 'nextra-theme-docs'
+
 # DApp Development Workflow with GenLayer
 
 DApp development with GenLayer is the lifecycle for creating, testing, deploying, and connecting decentralized applications built with Intelligent Contracts. This guide explains how developers can move from using **GenLayer Studio** for their first Intelligent Contract to an advanced local development workflow, then finish by building a frontend application with **GenLayerJS**.
@@ -16,10 +18,140 @@ It provides an interactive environment that serves as a comprehensive sandbox fo
 
 The platform runs a simulated network with customizable validators that accurately mirror the GenLayer consensus mechanism. This feature allows developers to test their contracts under conditions that closely resemble the actual blockchain environment, ensuring reliable deployment outcomes.
 
-### Getting Started:
-1. **Set Up the Studio**: Developers initialize the Studio using `genlayer cli` command `genlayer init` which configures the environment and spawns a local validator network. GenLayer Studio is also available as a hosted instace at [studio.genlayer.com](https://studio.genlayer.com/).
-2. **Write Your First Contract**: Intelligent Contracts in GenLayer are written in Python, utilizing its extensive libraries and GenVM capabilities like LLM calls and web integration. Refer to [Your First Contract](/developers/intelligent-contracts/your-first-contract) guide for more information.
-3. **Deploy and Test**: Deploy your Intelligent Contracts through the Studio interface and test them in the simulated network.
+### Choose a Studio environment
+
+Each Studio environment is a separate chain with its own RPC, chain ID, and consensus deployment. Pick one for the current stage and select it explicitly in every tool you use: the Studio UI, the CLI, and the SDK.
+
+| Environment | Studio UI | RPC | Chain ID | CLI alias | GenLayerJS chain | Use it for |
+|:--|:--|:--|:--|:--|:--|:--|
+| Localnet | `http://localhost:8080` | `http://localhost:4000/api` | 61127 | `localnet` | `localnet` | Full control, resets, custom validators and providers |
+| Studionet | [studio.genlayer.com](https://studio.genlayer.com) | `https://studio.genlayer.com/api` | 61999 | `studionet` | `studionet` | Zero-setup hosted development |
+| Studio-dev | [studio-dev.genlayer.com](https://studio-dev.genlayer.com) | `https://studio-dev.genlayer.com/api` | 61997 | `studio-dev` | `studioDevnet` | Validating the next release candidate only |
+
+See [Networks](/developers/networks) for explorers, faucets, and wallet settings.
+
+<Callout type="warning">
+Environments running **Studio v0.123 or later** charge protocol fees on deploys and writes. Earlier Studio versions do not. The fee-specific steps below apply only to environments on v0.123 or later.
+
+**Current status:** Studio-dev runs v0.123; Studionet and a Localnet started with `genlayer init` run earlier versions.
+
+For Studio v0.123 or later, use GenLayer CLI **v0.40.0 or later**, the first release that sends fee options. v0.40.0 is currently published only as a release candidate (`genlayer@rc`, for example 0.40.0-rc.6), so install it explicitly. `npm install -g genlayer@latest` still installs the pre-fee 0.39 line, which matches earlier Studio versions.
+</Callout>
+
+### Step 1: Connect to the environment
+
+**Hosted (Studionet or Studio-dev)**
+
+1. Open [studio.genlayer.com](https://studio.genlayer.com), or [studio-dev.genlayer.com](https://studio-dev.genlayer.com) for the release-candidate stack. Nothing needs to be installed.
+2. Fund the Studio account with the 💧 faucet button in the account selector.
+3. To work with the same environment from a terminal, install the CLI and select the matching alias:
+
+```bash
+# Environment on Studio before v0.123: current stable CLI
+npm install -g genlayer@latest
+
+# Environment on Studio v0.123 or later: CLI v0.40.0 or later, currently the release candidate
+npm install -g genlayer@rc       # for example 0.40.0-rc.6
+
+genlayer network set studionet   # or: genlayer network set studio-dev
+
+genlayer --version
+genlayer network info            # confirm the RPC and chain ID before signing
+```
+
+The `studio-dev` alias exists only in the matching release-candidate CLI/SDK. If `genlayer network list` does not show it, upgrade the tooling. Never point the `studionet` alias at the Studio-dev RPC: the chain IDs and consensus deployments differ.
+
+**Local (Localnet)**
+
+1. Install Docker 26+ and the CLI, then start the local stack:
+
+```bash
+npm install -g genlayer@latest
+genlayer init                  # choose LLM providers and the number of validators
+genlayer up                    # starts validators, the RPC, and the Studio UI
+genlayer network set localnet
+genlayer network info
+```
+
+2. Open `http://localhost:8080` for the Studio UI. Tests, scripts, and frontends connect to `http://localhost:4000/api`.
+3. Run `genlayer up --reset-db` when you need a clean chain. See [Development Setup](/developers/intelligent-contracts/tooling-setup) for all `init` and `up` options.
+
+### Step 2: Prepare an account for CLI and SDK deployments
+
+The Studio UI signs with its own browser accounts, and the 💧 button only funds those. To deploy from the CLI or from scripts, create a local account:
+
+```bash
+genlayer account create --name studio-dev-account   # creates an encrypted keystore (--name is required)
+genlayer account          # shows the address, balance, and active network
+```
+
+Funding is optional for deploys and writes. On Studio v0.123 or later, if the sender's balance is below the fee deposit, Studio credits the shortfall before debiting it, so a new account with 0 GEN can deploy and write. Earlier Studio versions do not charge a deposit at all.
+
+Fund the account only if you want it to hold a GEN balance, for example to send GEN with `genlayer account send`. Studio cannot import a CLI keystore, so fund its address with `sim_fundAccount`, the same RPC method the 💧 button calls. Pass the address from `genlayer account` and an amount in wei (here 100 GEN), and send the request to the RPC of the environment you selected:
+
+```bash
+# Studionet: https://studio.genlayer.com/api
+# Studio-dev: https://studio-dev.genlayer.com/api
+# Localnet:   http://localhost:4000/api
+curl -s https://studio.genlayer.com/api \
+  -H 'Content-Type: application/json' \
+  -d '{"jsonrpc":"2.0","id":1,"method":"sim_fundAccount","params":["<your-cli-address>",100000000000000000000]}'
+
+genlayer account          # the balance now includes the funded GEN
+```
+
+You can also send GEN from another funded CLI account with `genlayer account send <address> 100gen`. Balances are per chain: GEN on Studionet does not exist on Studio-dev or Localnet.
+
+### Step 3: Write your contract
+
+Intelligent Contracts are Python files that can use GenVM capabilities such as LLM calls and web access. Start with [Your First Intelligent Contract](/developers/intelligent-contracts/first-intelligent-contract), either in the Studio editor or in a local `contracts/` folder.
+
+### Step 4: Deploy
+
+**From the Studio UI**
+
+1. Upload the file with **Add From File** and open it in the editor ([Loading a Contract](/developers/intelligent-contracts/tools/genlayer-studio/loading-contract)).
+2. Open **Run and Debug**, check the detected **Constructor Inputs**, and click **Deploy** ([Deploy Contracts](/developers/intelligent-contracts/tools/genlayer-studio/deploying-contract)).
+3. When the deployment finalizes, the contract address and its methods appear in the same panel.
+
+**From the CLI**
+
+On an environment running Studio before v0.123 (see the current status above), deploy without fee options:
+
+```bash
+genlayer deploy --contract contracts/my_contract.py
+```
+
+On an environment running Studio v0.123 or later, every deploy needs a fee distribution. The RPC does not reject a deploy without one: the transaction is mined with a failed receipt. Pass a fee profile instead. Generate it with the genlayer-test 0.30 prerelease, which is the first version with the `--fee-profile` flag:
+
+```bash
+pip install --pre "genlayer-test>=0.30.0rc2"
+gltest --network studio_devnet --fee-profile fee-profile.json   # runs your tests against Studio-dev and writes the measured profile
+```
+
+Use the genlayer-test network name of the environment you deploy to; for Studio-dev it is `studio_devnet`, while the CLI alias is `studio-dev`. The profile has a `deploy` entry only if your tests deploy the contract, so include at least one test that deploys it. The CLI uses that entry together with current network prices:
+
+```bash
+genlayer network set studio-dev   # or another environment on Studio v0.123 or later
+genlayer deploy \
+  --contract contracts/my_contract.py \
+  --fee-profile fee-profile.json
+```
+
+The contract from Step 3 has no constructor parameters, so the command passes no `--args`. For contracts whose `__init__` takes parameters, add `--args` with values in the same order and types, for example `--args "Hello" 42`.
+
+The CLI prints the transaction hash and the contract address. See [Fee Profiling and Estimation](/developers/decentralized-applications/fee-profiling-and-estimation) to generate the profile and choose a `--fee-preset`, and [CLI Deployment](/developers/intelligent-contracts/deploying/cli-deployment) for argument types.
+
+**From a deploy script or GenLayerJS**
+
+Create the client with the chain object that matches the environment (`localnet`, `studionet`, or `studioDevnet` from `genlayer-js/chains`), deploy (on Studio v0.123 or later, with fees estimated from your fee profile), and wait for finalization. [Deploy Scripts](/developers/intelligent-contracts/deploying/deploy-scripts) has a complete example; use it for multi-contract deployments or constructor arguments the CLI cannot express.
+
+### Step 5: Verify and interact
+
+1. Confirm that the deployment finalized and that its execution result is successful. A returned transaction hash on its own does not mean the deployment succeeded.
+2. Look up the transaction or contract address in the environment's explorer ([Networks](/developers/networks)).
+3. Call the contract from Studio, from the CLI (`genlayer call` / `genlayer write`), or from your frontend, using the same environment you deployed to.
+4. Hosted Studio environments can be reset. Keep contract sources and deploy scripts in your repository so you can redeploy, and do not depend on Studio-dev state.
 
 ---
 
@@ -35,7 +167,7 @@ As projects transforms to real-world applications, developers should migrate to 
 ### Workflow Steps:
 1. **Set Up Your Local Environment**: Developers can start with the GenLayer boilerplate project, which includes pre-configured templates for local testing.
 2. **Write Tests**: Tests are written in Python, focusing on validating contract functionality and ensuring consensus integrity. The boilerplate includes sample tests to accelerate development.
-3. **Simulate Transactions**: Run detailed simulations to observe how contracts behave under various network conditions, ensuring robust performance.
+3. **Profile Transaction Paths**: Cover normal, expensive, message-emitting, and failure branches in tests, then generate a `fee-profile.json` for application submissions.
 
 ---
 
@@ -59,11 +191,15 @@ Refer to [GenLayerJS](/developers/decentralized-applications/genlayer-js) guide 
 Use the SDK's high-level APIs to interact with deployed contracts. For instance, retrieve user balances or update contract state seamlessly.
 Refer to [Reading Data](/developers/decentralized-applications/reading-data) and [Writing Data](/developers/decentralized-applications/writing-data) guides for more information.
 
-3. **Monitor Transactions**:
+3. **Estimate and Review Fees**:
 
-Developers can subscribe to events or query transaction statuses, ensuring users are kept informed of transaction progress and outcomes.
+Use the measured profile plus current network prices to show a quote before signing. [Transaction Kit](/developers/decentralized-applications/transaction-kit-integration) supplies the fee-review and wallet flow for React, Vue, or a headless frontend.
 
-4. **Build the User Interface**:
+4. **Monitor Transactions**:
+
+Track the returned transaction ID to a decision or finalization. Treat the operation as successful only when its status and execution result both indicate success.
+
+5. **Build the User Interface**:
 
 Combine GenLayerJS with popular frontend frameworks (like React or Angular) to create intuitive interfaces.
 

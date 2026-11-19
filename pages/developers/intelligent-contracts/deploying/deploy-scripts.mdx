@@ -1,257 +1,159 @@
 ---
-description: "Deploy Scripts guide complex Intelligent Contract deployments with ordered TypeScript or JavaScript scripts."
+description: "Create ordered, fee-aware TypeScript deploy scripts for Intelligent Contracts."
 ---
+
 import { Callout } from 'nextra-theme-docs'
 
 # Deploy Scripts
 
-Deploy scripts are TypeScript or JavaScript files used to automate more complex Intelligent Contract deployment workflows. Use deploy scripts when a deployment needs ordered steps, configuration, initialization, or multiple operations beyond a simple deploy command.
+Deploy scripts automate multi-contract deployments, constructor configuration, and follow-up writes. The CLI loads TypeScript or JavaScript files from `deploy/` in filename order and passes a configured GenLayerJS client to each script.
 
-## Script Structure
+## File order
 
-Create TypeScript or JavaScript files in the `deploy/` directory:
-
-```
+```text
 your-project/
 ├── deploy/
 │   ├── 001_deploy_main_contract.ts
-│   ├── 002_setup_configuration.ts
-│   └── 003_initialize_data.ts
-└── contracts/
-    └── my_contract.py
+│   ├── 002_deploy_helper_contract.ts
+│   └── 003_configure_contracts.ts
+├── contracts/
+└── fee-profile.json
 ```
 
-<Callout emoji="⚠️">
-  Deploy scripts are executed in alphabetical order. Use numeric prefixes (001_, 002_) to control execution order.
+Use numeric prefixes because scripts execute alphabetically. A later script should not assume an earlier transaction merely returned an ID; the earlier script must wait for and verify its required lifecycle outcome.
+
+## Fee-aware deploy helper
+
+On a fee-charging deployment, raw `deployContract` and `writeContract` calls need the estimate produced from the matching profile entry. This helper converts a JSON profile entry into live estimate options:
+
+```typescript
+import type { GenLayerClient } from 'genlayer-js/types';
+
+type ProfileEntry = {
+  leaderTimeunitsAllocation: string;
+  validatorTimeunitsAllocation: string;
+  executionBudgetPerRound: string;
+  totalMessageFees?: string;
+  rotationsPerRound?: string;
+};
+
+async function quoteProfile(
+  client: GenLayerClient<any>,
+  entry: ProfileEntry,
+  appealRounds = 1n,
+) {
+  const rotationsPerRound = BigInt(entry.rotationsPerRound ?? '0');
+  return client.estimateTransactionFees({
+    leaderTimeunitsAllocation: BigInt(entry.leaderTimeunitsAllocation),
+    validatorTimeunitsAllocation: BigInt(entry.validatorTimeunitsAllocation),
+    executionBudgetPerRound: BigInt(entry.executionBudgetPerRound),
+    totalMessageFees: BigInt(entry.totalMessageFees ?? '0'),
+    appealRounds,
+    rotations: Array.from(
+      { length: Number(appealRounds) + 1 },
+      () => rotationsPerRound,
+    ),
+  });
+}
+```
+
+The committed profile supplies measured quantities; `estimateTransactionFees` reads current network prices and ceilings. See [Fee Profiling and Estimation](/developers/decentralized-applications/fee-profiling-and-estimation).
+
+## Basic deploy script
+
+```typescript
+import { readFileSync } from 'node:fs';
+import { isSuccessful } from 'genlayer-js';
+import type { DecodedDeployData, GenLayerClient } from 'genlayer-js/types';
+import feeProfile from '../fee-profile.json';
+
+export default async function main(client: GenLayerClient<any>) {
+  const code = new Uint8Array(
+    readFileSync(new URL('../contracts/my_contract.py', import.meta.url)),
+  );
+  const estimate = await quoteProfile(client, feeProfile.deploy);
+
+  const txId = await client.deployContract({
+    code,
+    args: [],
+    fees: {
+      distribution: estimate.distribution,
+      feeValue: estimate.feeValue,
+    },
+  });
+
+  const transaction = await client.waitForFinalization({ hash: txId });
+  if (!isSuccessful(transaction)) {
+    throw new Error(
+      `Deployment failed: ${transaction.statusName} / ${transaction.txExecutionResultName}`,
+    );
+  }
+
+  const decoded = transaction.txDataDecoded as DecodedDeployData | undefined;
+  const contractAddress = decoded?.contractAddress ?? transaction.recipient;
+  if (!contractAddress) throw new Error('Finalized deployment has no contract address');
+
+  console.log('Contract deployed', { txId, contractAddress });
+  return contractAddress;
+}
+```
+
+<Callout type="info">
+`initializeConsensusSmartContract()` is deprecated on the v2 client. The consensus deployment comes from the selected chain definition; deploy scripts should not initialize or reset it.
 </Callout>
 
-## Basic Deploy Script
+## Multi-step configuration
 
-Here's a template for a deploy script (`deploy/deployScript.ts`):
-
-```typescript
-import { readFileSync } from "fs";
-import path from "path";
-import { 
-  TransactionHash, 
-  TransactionStatus, 
-  GenLayerClient, 
-  DecodedDeployData, 
-  GenLayerChain 
-} from "genlayer-js/types";
-import { testnetBradbury } from "genlayer-js/chains";
-
-export default async function main(client: GenLayerClient<any>) {
-  // Read the contract file
-  const filePath = path.resolve(process.cwd(), "contracts/my_contract.py");
-  const contractCode = new Uint8Array(readFileSync(filePath));
-
-  // Initialize consensus
-  await client.initializeConsensusSmartContract();
-
-  // Deploy the contract
-  const deployTransaction = await client.deployContract({
-    code: contractCode,
-    args: [], // Constructor arguments
-  });
-
-  // Wait for deployment confirmation
-  const receipt = await client.waitForTransactionReceipt({
-    hash: deployTransaction as TransactionHash,
-    retries: 200,
-  });
-
-  // Check deployment success
-  if (
-    receipt.statusName !== TransactionStatus.ACCEPTED &&
-    receipt.statusName !== TransactionStatus.FINALIZED
-  ) {
-    throw new Error(`Deployment failed. Receipt: ${JSON.stringify(receipt)}`);
-  }
-  
-  // Receipt structure differs between testnet and localnet/studionet
-  const deployedContractAddress = 
-    (client.chain as GenLayerChain).id !== testnetBradbury.id
-      ? receipt.data.contract_address
-      : (receipt.txDataDecoded as DecodedDeployData)?.contractAddress;
-
-  console.log("Contract deployed successfully!", {
-    "Transaction Hash": deployTransaction,
-    "Contract Address": deployedContractAddress,
-  });
-
-  return deployedContractAddress;
-}
-```
-
-## Advanced Deploy Script with Configuration
+Use the same rule for follow-up writes: select the method profile, estimate against the live policy, submit, and verify the execution result.
 
 ```typescript
-import { readFileSync } from "fs";
-import path from "path";
-import { 
-  TransactionHash, 
-  TransactionStatus, 
-  GenLayerClient,
-  DecodedDeployData,
-  GenLayerChain
-} from "genlayer-js/types";
-import { testnetBradbury } from "genlayer-js/chains";
-
-export default async function main(client: GenLayerClient<any>) {
-  console.log("🚀 Starting deployment process...");
-
-  // Deploy main contract
-  const mainContractAddress = await deployContract(
-    client,
-    "contracts/main_contract.py",
-    ["Initial Config", 1000]
-  );
-
-  // Deploy helper contract
-  const helperContractAddress = await deployContract(
-    client,
-    "contracts/helper_contract.py",
-    [mainContractAddress]
-  );
-
-  // Configure the main contract
-  await configureContract(client, mainContractAddress, helperContractAddress);
-
-  console.log("✅ Deployment completed successfully!");
-  console.log({
-    mainContract: mainContractAddress,
-    helperContract: helperContractAddress,
-  });
-}
-
-async function deployContract(
-  client: GenLayerClient<any>,
-  contractPath: string,
-  args: any[] = []
-): Promise<string> {
-  const filePath = path.resolve(process.cwd(), contractPath);
-  const contractCode = new Uint8Array(readFileSync(filePath));
-
-  await client.initializeConsensusSmartContract();
-
-  const deployTransaction = await client.deployContract({
-    code: contractCode,
-    args,
-  });
-
-  const receipt = await client.waitForTransactionReceipt({
-    hash: deployTransaction as TransactionHash,
-    retries: 200,
-  });
-
-  // Check deployment success
-  if (
-    receipt.statusName !== TransactionStatus.ACCEPTED &&
-    receipt.statusName !== TransactionStatus.FINALIZED
-  ) {
-    throw new Error(`Deployment failed for ${contractPath}. Receipt: ${JSON.stringify(receipt)}`);
-  }
-
-  // Receipt structure differs between testnet and localnet/studionet
-  const deployedContractAddress = 
-    (client.chain as GenLayerChain).id !== testnetBradbury.id
-      ? receipt.data.contract_address
-      : (receipt.txDataDecoded as DecodedDeployData)?.contractAddress;
-
-  return deployedContractAddress;
-}
-
 async function configureContract(
   client: GenLayerClient<any>,
-  mainAddress: string,
-  helperAddress: string
+  mainAddress: `0x${string}`,
+  helperAddress: `0x${string}`,
 ) {
-  // Example configuration call
-  const hash = await client.writeContract({
-    address: mainAddress as any,
-    functionName: "setHelperContract",
-    args: [helperAddress],
-    value: 0n,
+  const args = [helperAddress];
+  const estimate = await quoteProfile(
+    client,
+    feeProfile.methods.setHelperContract,
+  );
+
+  const txId = await client.writeContract({
+    address: mainAddress,
+    functionName: 'setHelperContract',
+    args,
+    fees: {
+      distribution: estimate.distribution,
+      feeValue: estimate.feeValue,
+    },
   });
 
-  await client.waitForTransactionReceipt({
-    hash,
-    retries: 100,
-    interval: 5000,
-  });
+  const transaction = await client.waitForFinalization({ hash: txId });
+  if (!isSuccessful(transaction)) {
+    throw new Error(
+      `Configuration failed: ${transaction.statusName} / ${transaction.txExecutionResultName}`,
+    );
+  }
 }
 ```
 
-## Running Deploy Scripts
+Keep all addresses and transaction IDs in the deployment output or a deployment manifest. If a process stops after submission, resume tracking the recorded transaction ID instead of blindly sending the same deploy or write again.
 
-Execute all deploy scripts in order:
+## Run scripts
+
+Select and verify the network before executing the directory:
 
 ```bash
+genlayer network set studio-dev
+genlayer network info
 genlayer deploy
 ```
 
-The CLI will automatically:
-1. Find all `.ts` and `.js` files in the `deploy/` directory
-2. Sort them numerically by filename prefix (001_, 002_, etc.)
-3. Execute them in order
-4. Pass a configured GenLayer client to each script
+For stable Studio use `studionet`; for a local stack use `localnet`. Studio-dev requires the matching release-candidate CLI and SDK. See [Network Configuration](./network-configuration).
 
-## Script Organization
+## Related
 
-### Recommended File Naming
-
-```
-deploy/
-├── 001_core_contracts.ts      # Core infrastructure
-├── 002_token_contracts.ts     # Token-related contracts  
-├── 003_governance.ts          # Governance setup
-├── 004_configure_system.ts    # System configuration
-└── 999_verify_deployment.ts   # Post-deployment verification
-```
-
-## Error Handling
-
-Always include proper error handling in deploy scripts:
-
-```typescript
-export default async function main(client: GenLayerClient<any>) {
-  try {
-    await client.initializeConsensusSmartContract();
-    
-    const deployTransaction = await client.deployContract({
-      code: contractCode,
-      args: [],
-    });
-
-    const receipt = await client.waitForTransactionReceipt({
-      hash: deployTransaction as TransactionHash,
-      retries: 200,
-    });
-
-    // Check deployment success
-    if (
-      receipt.statusName !== TransactionStatus.ACCEPTED &&
-      receipt.statusName !== TransactionStatus.FINALIZED
-    ) {
-      throw new Error(`Deployment failed: ${JSON.stringify(receipt)}`);
-    }
-
-    // Receipt structure differs between testnet and localnet/studionet
-    const deployedContractAddress = 
-      (client.chain as GenLayerChain).id !== testnetBradbury.id
-        ? receipt.data.contract_address
-        : (receipt.txDataDecoded as DecodedDeployData)?.contractAddress;
-
-    return deployedContractAddress;
-  } catch (error) {
-    console.error("Deployment failed:", error);
-    throw error;
-  }
-}
-```
-
-## Next Steps
-
-- Learn about different [Network Configuration](./network-configuration)
-- Configure CLI deployments with [CLI Deployment](./cli-deployment) 
+- [CLI Deployment](./cli-deployment)
+- [Network Configuration](./network-configuration)
+- [Writing to Intelligent Contracts](/developers/decentralized-applications/writing-data)
+- [Fee Outcomes and Debugging](/developers/decentralized-applications/fee-outcomes-and-debugging)

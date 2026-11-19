@@ -1,36 +1,72 @@
 ---
-description: "Accounts and addresses in GenLayer: EOAs, contract accounts, 0x addresses, keys, transactions, gas, and security"
+description: "Understand GenLayer EOAs, EVM contracts, Intelligent Contracts, Ghost contracts, addresses, and transaction queues."
 ---
 
-# Accounts and Addressing
+# Accounts and addresses
 
-Accounts in GenLayer are entities that can hold tokens, deploy Intelligent Contracts, and initiate transactions on the network. GenLayer supports Externally Owned Accounts controlled by private keys and Contract Accounts associated with deployed Intelligent Contracts, each using addresses typically represented as `0x`-prefixed hexadecimal strings.
+GenLayer uses Ethereum-style, `0x`-prefixed addresses. The meaning of an address depends on whether it identifies an externally owned account (EOA), an EVM contract, or an Intelligent Contract and its Ghost.
 
-## Overview
+## Account types
 
-Accounts are fundamental to interacting with the GenLayer network. They represent users or entities that can hold tokens, deploy Intelligent Contracts, and initiate transactions.
+| Account | Controlled or executed by | Can initiate an EVM transaction? | Where code runs |
+| --- | --- | --- | --- |
+| EOA | A private key or smart-account policy | Yes | No contract code |
+| EVM contract | EVM bytecode | Through calls and messages | GenLayer Chain |
+| Intelligent Contract | GenVM code | Through its Ghost and message system | GenVM |
 
-## Types of Accounts
+## Intelligent Contracts and Ghosts share an address
 
-1. **Externally Owned Accounts (EOAs)**: 
-   - Controlled by private keys
-   - Can initiate transactions and hold tokens
+Deploying an Intelligent Contract creates a Ghost contract on GenLayer Chain and the corresponding Intelligent Contract in GenVM. Both use the same address.
 
-2. **Contract Accounts**: 
-   - Associated with deployed Intelligent Contracts
-   - Have their own addresses and code
+```mermaid
+%%{init: {"flowchart": {"curve": "basis", "nodeSpacing": 44, "rankSpacing": 50, "htmlLabels": true}}}%%
+flowchart TB
+    Sender(["EOA or EVM contract"])
+    Address{"Address<br/>0xABC…"}
 
-## Account Addresses
+    subgraph ChainLayer["GenLayer Chain"]
+        direction LR
+        Ghost["Ghost contract<br/>0xABC…"] --> Consensus["Consensus contracts"]
+    end
 
-- **Address Format**: GenLayer uses a specific address format, typically represented as a hexadecimal string prefixed with `0x`.
-- **Public and Private Keys**: Addresses are derived from public keys, which in turn are generated from private keys kept securely by the account owner.
+    subgraph ExecutionLayer["Validator execution"]
+        direction LR
+        Node["Validator nodes"] --> IC["Intelligent Contract<br/>0xABC… · GenVM"]
+    end
 
-## Interacting with Intelligent Contracts
+    Sender -->|"call"| Address --> Ghost
+    Consensus --> Node
+    Address -. "same logical address" .-> IC
 
-- **Transaction Sending**: Accounts initiate transactions to call functions on Intelligent Contracts or transfer tokens.
-- **Gas Fees**: Transactions require gas fees to be processed.
+    classDef actor fill:#F7F8FC,stroke:#8B95A7,color:#202536,stroke-width:1.5px;
+    classDef address fill:#FFF4E5,stroke:#D58A16,color:#583705,stroke-width:2px;
+    classDef chain fill:#EFEDFF,stroke:#6D5DF5,color:#251E63,stroke-width:2px;
+    classDef compute fill:#EAF7FF,stroke:#2686C4,color:#113F59,stroke-width:2px;
+    class Sender actor;
+    class Address address;
+    class Ghost,Consensus chain;
+    class Node,IC compute;
+    style ChainLayer fill:#F8F7FF,stroke:#B9B0FF,stroke-width:1px
+    style ExecutionLayer fill:#F5FBFF,stroke:#A8D7F2,stroke-width:1px
+    linkStyle default stroke:#7C879C,stroke-width:1.8px;
+```
 
-## Account Management
+The Ghost is an EVM-facing proxy for protocol integration, not a second copy of the Intelligent Contract logic. It holds the address's native GEN balance on GenLayer Chain and forwards calls into consensus. If GenVM deployment fails, the Ghost can remain as the address placeholder for a later successful deployment.
 
-- **Creating Accounts**: Users can create new accounts using wallets or development tools provided by GenLayer.
-- **Security Practices**: Users must securely manage their private keys, as losing them can result in loss of access to their funds.
+## Accounts also define execution order
+
+The consensus system maintains state and queues for each Intelligent Contract recipient. Transactions addressed to the same Intelligent Contract pass through the active proposal and voting phases sequentially. This keeps later state changes from overtaking an earlier unresolved state change.
+
+Transactions to different Intelligent Contracts can progress independently.
+
+## Keys and security
+
+An EOA address is derived from its public key and controlled by the corresponding private key. Never put a private key or recovery phrase in contract code, frontend source, logs, or documentation examples. Use a wallet or managed signer to sign transactions.
+
+Validator accounts use a separate owner/operator model. See [staking](/understand-genlayer-protocol/core-concepts/optimistic-democracy/staking) for those roles.
+
+## Related developer guides
+
+- [Deploy an Intelligent Contract](/developers/intelligent-contracts/deploying)
+- [Call Intelligent Contracts](/developers/decentralized-applications/writing-data)
+- [Messages and Ghost contracts](/developers/intelligent-contracts/features/messages)

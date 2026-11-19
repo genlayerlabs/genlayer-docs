@@ -1,0 +1,176 @@
+---
+description: "Developer NFT Rewards explains how GenLayer credits contract deployers with a share of transaction fees and epoch inflation, and how to read and claim those rewards with GenLayerJS."
+---
+
+import { Callout } from "nextra-theme-docs";
+
+# Developer NFT Rewards
+
+GenLayer rewards the people who build on it. The first time you deploy an Intelligent Contract, the network mints a **Developer NFT** to your deploying address. That NFT accrues rewards from the activity your contracts generate, and you claim those rewards on-chain whenever you like.
+
+This page covers what the Developer NFT is, how it earns, and how to read and claim rewards with [GenLayerJS](/developers/decentralized-applications/genlayer-js).
+
+<Callout type="info">
+  The Developer NFT is minted automatically on your first contract deployment — there is no separate registration step. You get **one NFT per developer address**.
+</Callout>
+
+## What the Developer NFT is
+
+- It is minted to the **deployer** (the address that sends the deploy transaction) the first time that address deploys a contract.
+- There is exactly **one NFT per developer address**. Deploying again from the same address does not mint a second NFT.
+- Every later contract deployed from that address is linked to the same NFT, so activity across all of the developer's contracts accrues to one reward account.
+- The NFT is the account that accumulates and holds your claimable rewards. Only the NFT owner can claim.
+
+Each NFT tracks:
+
+| Field | Meaning |
+|-------|---------|
+| `nftId` | The on-chain id of your Developer NFT. |
+| `developer` | The address that owns the NFT. |
+| `claimableRewards` | Fee rewards accumulated so far and not yet claimed. |
+| `lastClaimedEpoch` | The last epoch whose inflation rewards you have claimed. |
+| `ghosts` | The contract ("ghost") addresses associated with this NFT. |
+
+## How rewards are earned
+
+Developer rewards come from two independent sources.
+
+### 1. Fee share
+
+The developer reserve is **10% of the transaction's time-unit fee pool**. Storage, receipt, and message-fee buckets are not included in this split. For a recipient contract linked to a Developer NFT, the reserve is credited **when the transaction finalizes** — not at acceptance.
+
+- Credited per transaction, as soon as that transaction reaches finalization.
+- No epoch has to close first — fee rewards become claimable immediately.
+- Rewards are attributed to the epoch in which the transaction was **created**, which matters for the inflation share below.
+
+### 2. Inflation share
+
+Each epoch, GenLayer sets aside **10% of that epoch's inflation** into a pool for developers. That pool is split across Developer NFTs **pro-rata by the fees each NFT's contracts generated during the epoch**, with one important limit:
+
+<Callout type="info">
+  Your inflation reward for an epoch is **capped at 1× the fees your contracts earned that epoch**. If your contracts earned no fees in an epoch, you earn no inflation for that epoch — the unclaimed portion of the pool is burned.
+</Callout>
+
+In practice, on a low-traffic network the developer inflation pool is larger than the total fees generated, so each NFT typically receives an inflation reward roughly equal to its own fee earnings for the epoch (that is, up to a **2× effect**: your fee share plus a matching inflation share).
+
+### When rewards become claimable
+
+| Reward source | Claimable when |
+|---------------|----------------|
+| Fee share | Immediately, at each transaction's finalization. |
+| Inflation share | Once the epoch is **finalized** (a finalized epoch lags the current epoch by at least one step). |
+
+The current, unfinalized epoch is never included in claimable inflation.
+
+## Reading and claiming with GenLayerJS
+
+All of the following use the standard GenLayerJS client. The NFT contract address is resolved automatically from the network's on-chain address registry — you don't pass it yourself.
+
+```typescript
+import { testnetBradbury } from "genlayer-js/chains";
+import { createClient, createAccount } from "genlayer-js";
+
+const account = createAccount(); // or createAccount(privateKey)
+const client = createClient({
+  chain: testnetBradbury,
+  account,
+});
+```
+
+### Look up your Developer NFT
+
+`getDeveloperNft` returns the full reward record for a developer address, or `null` if that address has never deployed a contract.
+
+```typescript
+const nft = await client.getDeveloperNft({ developer: account.address });
+
+if (nft === null) {
+  console.log("This address has no Developer NFT yet — deploy a contract first.");
+} else {
+  console.log("NFT id:", nft.nftId);
+  console.log("Unclaimed fee rewards:", nft.claimableRewards);
+  console.log("Last claimed epoch:", nft.lastClaimedEpoch);
+  console.log("Contracts (ghosts):", nft.ghosts);
+}
+```
+
+The returned shape is:
+
+```typescript
+interface DeveloperNft {
+  nftId: bigint;
+  developer: `0x${string}`;
+  claimableRewards: bigint;
+  lastClaimedEpoch: bigint;
+  ghosts: `0x${string}`[];
+}
+```
+
+### Check claimable rewards
+
+Fee rewards and inflation rewards are read separately.
+
+```typescript
+// All-time accumulated fee rewards not yet claimed.
+const feeRewards = await client.getClaimableRewardsFromFees({
+  nftId: nft.nftId,
+});
+
+// Inflation rewards over the next `numberOfEpochsToClaim` finalized epochs,
+// starting from lastClaimedEpoch + 1.
+const inflationRewards = await client.getClaimableRewardsFromInflation({
+  nftId: nft.nftId,
+  numberOfEpochsToClaim: 50n,
+});
+
+console.log("Claimable from fees:", feeRewards);        // bigint (wei)
+console.log("Claimable from inflation:", inflationRewards); // bigint (wei)
+```
+
+<Callout type="info">
+  `getClaimableRewardsFromInflation` requires **two** arguments: the `nftId` and how many epochs to look ahead. It only counts epochs that are already finalized; the current epoch is excluded.
+</Callout>
+
+### Claim rewards
+
+There are two ways to claim.
+
+**Claim available rewards** — sweeps all accumulated fee rewards plus at most 50 finalized inflation epochs:
+
+```typescript
+const txHash = await client.claimNftRewards({
+  nftId: nft.nftId,
+});
+```
+
+**Claim a bounded number of epochs** — useful when many epochs have accumulated:
+
+```typescript
+const txHash = await client.claimNftEpochs({
+  nftId: nft.nftId,
+  numberOfEpochsToClaim: 50n,
+});
+```
+
+<Callout type="warning">
+  A single claim processes **at most 50 epochs of inflation** at a time. If more than 50 finalized epochs have accumulated since your last claim, call either claim operation repeatedly to clear them in batches. The read view `getClaimableRewardsFromInflation` does **not** enforce this 50-epoch cap, so it can report more than a single claim will actually pay out — size your claim accordingly.
+</Callout>
+
+Both claim methods return the EVM transaction hash. Only the NFT owner can claim; claiming when there is nothing to claim reverts.
+
+## Gotchas
+
+<Callout type="info">
+  **One NFT covers all deployments from its developer address.** The first deployment mints the NFT and links its contract; every later deployment links another contract to that same NFT. Use a different developer address only when you intentionally want a separate NFT and reward account.
+</Callout>
+
+- **Zero-fee epochs earn no inflation.** Because the inflation share is capped at 1× your fee earnings for the epoch, an epoch in which your contracts generated no fees pays no inflation — that share is burned, not carried forward.
+- **Claims sweep all fee rewards at once.** Any claim (`claimNftRewards` or `claimNftEpochs`) empties your entire accumulated fee balance, even if you only meant to claim a few epochs of inflation. There is no partial fee claim.
+- **Inflation lags fees.** Fee rewards are claimable the moment a transaction finalizes; inflation for an epoch only becomes claimable after that epoch is finalized, which is at least one step behind the current epoch.
+
+## Related
+
+- [GenLayer JS](/developers/decentralized-applications/genlayer-js) — client setup and configuration.
+- [Reading Data from Intelligent Contracts](/developers/decentralized-applications/reading-data)
+- [Writing Data to Intelligent Contracts](/developers/decentralized-applications/writing-data)
+- [Staking Contract Guide](/developers/staking-guide) — the sibling reward system for validators and delegators.

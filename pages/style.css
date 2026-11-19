@@ -44,6 +44,49 @@ img {
     color: #BCA2FF !important;
 }
 
+/* Give protocol diagrams a consistent, readable canvas. Mermaid adds the
+   aria-roledescription attribute after rendering, so this stays scoped to
+   diagrams without requiring a custom MDX wrapper. */
+main div:has(> svg[aria-roledescription]) {
+    margin: 1.75rem 0 2rem;
+    padding: clamp(1rem, 3vw, 1.75rem);
+    overflow-x: auto;
+    border: 1px solid rgba(109, 93, 245, 0.18);
+    border-radius: 14px;
+    background:
+        radial-gradient(circle at top right, rgba(109, 93, 245, 0.09), transparent 42%),
+        #fbfbfe;
+}
+
+main svg[aria-roledescription] {
+    display: block;
+    margin: 0 auto !important;
+}
+
+main svg[aria-roledescription] .node rect,
+main svg[aria-roledescription] .actor {
+    rx: 8px;
+    ry: 8px;
+}
+
+main svg[aria-roledescription] .edgeLabel {
+    border-radius: 4px;
+    color: #4b5563 !important;
+    background-color: rgba(251, 251, 254, 0.94) !important;
+}
+
+.dark main div:has(> svg[aria-roledescription]) {
+    border-color: rgba(188, 162, 255, 0.24);
+    background:
+        radial-gradient(circle at top right, rgba(188, 162, 255, 0.12), transparent 42%),
+        rgba(17, 18, 28, 0.72);
+}
+
+.dark main svg[aria-roledescription] .edgeLabel {
+    color: #e5e7eb !important;
+    background-color: rgba(17, 18, 28, 0.94) !important;
+}
+
 /* Prevent long method names from wrapping in sidebar */
 nav.nextra-sidebar-container a span,
 aside a span {

@@ -60,3 +60,16 @@ Returns the GenVM sync status, indicating how far the node's local GenVM state i
 - This endpoint always returns an object (never `false` like `eth_syncing`)
 - Use `blocksBehind == 0` to determine if the node is fully synced
 - When the node is catching up, `gen_call` requests without an explicit `blockNumber` will serve data at the `syncedBlock` rather than waiting for full sync
+
+**cURL Example:**
+
+```bash
+curl -X POST http://localhost:9151 \
+  -H "Content-Type: application/json" \
+  -d '{
+    "jsonrpc": "2.0",
+    "method": "gen_syncing",
+    "params": [],
+    "id": 1
+  }'
+```

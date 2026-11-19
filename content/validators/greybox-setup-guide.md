@@ -1,18 +1,22 @@
 # Greybox LLM Strategy — Validator Setup Guide
 
-Switch your GenLayer node from random LLM provider selection to deterministic ordered fallback via OpenRouter.
+Switch your GenLayer node from the default auto-generated provider chain to a curated, operator-controlled fallback chain via OpenRouter.
 
 ## What is Greybox?
 
-By default, the node picks a random LLM provider for each call. With **greybox**, the node uses a fixed priority chain configured via `meta.greybox` fields in the YAML config.
+The default policy (`genvm-llm-default.lua`) is already deterministic: it auto-builds a single chain over every enabled model, ordered by provider `meta.priority` **descending**, and falls through to the next candidate on any failure. What it is not is *curated* — it takes whatever models are enabled, in one undifferentiated chain.
 
-**Default text chain:** deepseek-v3.2 → qwen3-235b → claude-haiku-4.5 → kimi-k2 → glm-5 → llama-3.3 (heurist) → llama-3.3 (ionet)
+With **greybox**, the operator picks the models and their order by hand, in two independent chains (text and image), configured via `meta.greybox` fields on each model in the YAML. Note the two knobs run in opposite directions: `meta.priority` is highest-first, `meta.greybox` is lowest-first.
 
-**Default image chain:** gpt-5.1-mini → gemini-3-flash → claude-haiku-4.5
+Greyboxing is deliberately per-validator — validators are expected to diverge in provider choice, so there is no single "correct" chain to converge on.
+
+**Default text chain:** Unhardcoded `route:genvm-validator` (only with `UNHARDCODED_API_KEY`) → deepseek-v3.2 → qwen3-235b → claude-haiku-4.5 → kimi-k2 → glm-5 → llama-3.3 (heurist) → llama-3.3 (ionet)
+
+**Default image chain:** gpt-5.4-mini → gemini-3-flash → claude-haiku-4.5
 
 Chain order is determined by the `meta.greybox` priority numbers on each model in the YAML. Lower number = higher priority. You can change the order by editing these numbers — no Lua changes needed.
 
-OpenRouter is the primary aggregator. If it fails, the node falls back to direct provider APIs (heurist, ionet).
+With `UNHARDCODED_API_KEY` set, the Unhardcoded route is tried first, and OpenRouter is next. OpenRouter is the primary aggregator otherwise. If it fails, the node falls back to direct provider APIs (heurist, ionet).
 
 ## Prerequisites
 
@@ -39,35 +43,39 @@ echo "OPENROUTERKEY=sk-or-v1-your-key-here" >> ${ENV_FILE}
 
 ### 3. Apply the release LLM config
 
-The tarball ships with a unified config that includes all backends (openrouter, morpheus, heurist, ionet, etc.).
+The tarball ships with a unified config that includes all backends (openrouter, unhardcoded, morpheus, heurist, ionet, etc.). A backend whose key is not set in `.env` is disabled at start, and the chains skip it: set `UNHARDCODED_API_KEY` to put the Unhardcoded route first in the text chain.
+
+`NODE_DIR` is the directory of your node release (where you extracted the
+tarball). On a host with the `/opt/genlayer-node/bin` symlink layout, it is
+`/opt/genlayer-node/<version>`.
 
 ```bash
-VERSION=$(readlink /opt/genlayer-node/bin | sed 's|/bin||; s|.*/||')
+NODE_DIR=/path/to/your/node/release
 
-cp /opt/genlayer-node/${VERSION}/third_party/genvm/config/genvm-modules-llm-release.yaml \
-   /opt/genlayer-node/${VERSION}/third_party/genvm/config/genvm-module-llm.yaml
+cp ${NODE_DIR}/opt/genvm/current/config/genvm-modules-llm-release.yaml \
+   ${NODE_DIR}/opt/genvm/current/config/genvm-module-llm.yaml
 ```
 
 ### 4. Switch to greybox strategy
 
 ```bash
 sed -i 's/genvm-llm-default\.lua/genvm-llm-greybox.lua/' \
-  /opt/genlayer-node/${VERSION}/third_party/genvm/config/genvm-module-llm.yaml
+  ${NODE_DIR}/opt/genvm/current/config/genvm-module-llm.yaml
 ```
 
 ### 5. Verify the config
 
 ```bash
 # Check lua script path
-grep lua_script_path /opt/genlayer-node/${VERSION}/third_party/genvm/config/genvm-module-llm.yaml
+grep lua_script_path ${NODE_DIR}/opt/genvm/current/config/genvm-module-llm.yaml
 # Expected: lua_script_path: ${exeDir}/../config/genvm-llm-greybox.lua
 
 # Check openrouter is present
-grep -A2 'openrouter:' /opt/genlayer-node/${VERSION}/third_party/genvm/config/genvm-module-llm.yaml
+grep -A2 'openrouter:' ${NODE_DIR}/opt/genvm/current/config/genvm-module-llm.yaml
 # Expected: enabled: true
 
 # Check the greybox Lua file exists
-ls -la /opt/genlayer-node/${VERSION}/third_party/genvm/config/genvm-llm-greybox.lua
+ls -la ${NODE_DIR}/opt/genvm/current/config/genvm-llm-greybox.lua
 ```
 
 ### 6. Start the node
@@ -92,13 +100,13 @@ greybox: success    provider: openrouter    model: deepseek/deepseek-v3.2    is_
 
 ## Switching Back to Default
 
-To revert to random provider selection:
+To revert to the default generated chain:
 
 ```bash
 sudo systemctl stop genlayer-node
 
 sed -i 's/genvm-llm-greybox\.lua/genvm-llm-default.lua/' \
-  /opt/genlayer-node/${VERSION}/third_party/genvm/config/genvm-module-llm.yaml
+  ${NODE_DIR}/opt/genvm/current/config/genvm-module-llm.yaml
 
 sudo systemctl start genlayer-node
 ```
@@ -174,4 +182,16 @@ After editing the YAML, restart the LLM module (see "Updating Greybox on a Runni
 **All models exhausted error:**
 - OpenRouter may be down or your key is invalid
 - Check your key at https://openrouter.ai/settings/keys
+- Run `./bin/genlayernode doctor` from `${NODE_DIR}` — the "LLM Providers" section probes each enabled backend and reports which ones actually answer, rather than only whether a key variable is set
 - Fallback providers (heurist, ionet) also need valid keys if you want fallback to work
+
+**Configure more than one provider.** A backend only enters the fallback chain
+if its key is set, so a node set up with OpenRouter alone has no fallback: when
+that provider goes down or is decommissioned, the chain exhausts immediately.
+The node stays up and keeps voting, but it votes Timeout on every transaction
+needing an LLM, and Timeout votes are penalized. `doctor` warns when only one
+backend is usable.
+
+Note that a key added to `.env` needs a node restart to take effect — a running
+process cannot pick up environment changes. Editing `genvm-module-llm.yaml`
+does not.

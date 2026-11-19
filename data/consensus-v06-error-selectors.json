@@ -1,0 +1,1454 @@
+[
+  {
+    "signature": "NotAppealsContract()",
+    "selector": "0xa5a4297b"
+  },
+  {
+    "signature": "NotAValidatorWallet()",
+    "selector": "0xc1952ed0"
+  },
+  {
+    "signature": "NotBeneficiary()",
+    "selector": "0x644d871f"
+  },
+  {
+    "signature": "NotConsensus()",
+    "selector": "0x70f64de5"
+  },
+  {
+    "signature": "NotConsensusOrIdleness()",
+    "selector": "0xa82180be"
+  },
+  {
+    "signature": "NotConsensusOrIdlenessOrTransactions()",
+    "selector": "0x1e3f968f"
+  },
+  {
+    "signature": "NotConsensusOrTransactions()",
+    "selector": "0xe6533a27"
+  },
+  {
+    "signature": "NotCreator()",
+    "selector": "0x93687c0b"
+  },
+  {
+    "signature": "NotDaoContract()",
+    "selector": "0xe6a497af"
+  },
+  {
+    "signature": "NotEnoughValidators()",
+    "selector": "0xae575a88"
+  },
+  {
+    "signature": "NotFunded()",
+    "selector": "0xd5ef09ba"
+  },
+  {
+    "signature": "NotGenConsensus()",
+    "selector": "0xfd9abcdc"
+  },
+  {
+    "signature": "NotIdleness()",
+    "selector": "0x878f6816"
+  },
+  {
+    "signature": "NotOperator()",
+    "selector": "0x7c214f04"
+  },
+  {
+    "signature": "NotRevocable()",
+    "selector": "0x9414820d"
+  },
+  {
+    "signature": "NotRevoked()",
+    "selector": "0x73f7ab1e"
+  },
+  {
+    "signature": "NotRevoker()",
+    "selector": "0x2ad3d44f"
+  },
+  {
+    "signature": "NotStaking()",
+    "selector": "0x890fec52"
+  },
+  {
+    "signature": "AppealBondTooLow()",
+    "selector": "0xb44cda7b"
+  },
+  {
+    "signature": "AppealNotActive()",
+    "selector": "0x6565b6bf"
+  },
+  {
+    "signature": "AppealNotAllowed()",
+    "selector": "0xb94e4c42"
+  },
+  {
+    "signature": "AppealRoundAlreadyExists()",
+    "selector": "0x93a19b27"
+  },
+  {
+    "signature": "AppealRoundNotPermitted()",
+    "selector": "0x6ecc8d59"
+  },
+  {
+    "signature": "IndexOutOfBounds()",
+    "selector": "0x4e23d035"
+  },
+  {
+    "signature": "BatchSizeExceeded(uint256,uint256)",
+    "selector": "0xf80a4845"
+  },
+  {
+    "signature": "BeaconAlreadyDeployed()",
+    "selector": "0xa1900dfe"
+  },
+  {
+    "signature": "BeaconNotDeployed()",
+    "selector": "0x261438ca"
+  },
+  {
+    "signature": "OperatorTransferNotReady()",
+    "selector": "0xde4e791a"
+  },
+  {
+    "signature": "TransferFailed()",
+    "selector": "0x90b8ec18"
+  },
+  {
+    "signature": "WalletDeploymentFailed()",
+    "selector": "0x6e09c9eb"
+  },
+  {
+    "signature": "NoBurning()",
+    "selector": "0x96191d45"
+  },
+  {
+    "signature": "ReductionFactorCannotBeZero()",
+    "selector": "0x2e980407"
+  },
+  {
+    "signature": "CallerNotActivator()",
+    "selector": "0xb56aa94e"
+  },
+  {
+    "signature": "CallerNotAuthorized()",
+    "selector": "0xc183bcef"
+  },
+  {
+    "signature": "CallerNotConsensus()",
+    "selector": "0x47820187"
+  },
+  {
+    "signature": "CallerNotGenConsensus()",
+    "selector": "0xf8beed7d"
+  },
+  {
+    "signature": "CallerNotGovernance()",
+    "selector": "0xf2be30fb"
+  },
+  {
+    "signature": "CallerNotLeader(address,address)",
+    "selector": "0x3558c9da"
+  },
+  {
+    "signature": "CallerNotMessages()",
+    "selector": "0x7e3d1f98"
+  },
+  {
+    "signature": "CallerNotOwner()",
+    "selector": "0x5cd83192"
+  },
+  {
+    "signature": "CallerNotSender()",
+    "selector": "0xf5963d65"
+  },
+  {
+    "signature": "CallerNotTransactions()",
+    "selector": "0xae49b478"
+  },
+  {
+    "signature": "CanNotAppeal()",
+    "selector": "0xb39cdfbe"
+  },
+  {
+    "signature": "UnfinishedTxCounterUnderflow()",
+    "selector": "0x8894ba94"
+  },
+  {
+    "signature": "DelegatorBelowMinimumStake()",
+    "selector": "0x944516fc"
+  },
+  {
+    "signature": "DelegatorExitExceedsShares()",
+    "selector": "0x64d3ea58"
+  },
+  {
+    "signature": "DelegatorExitUnrepresentableShares()",
+    "selector": "0xac2489dc"
+  },
+  {
+    "signature": "DelegatorExitWouldBeBelowMinimum()",
+    "selector": "0x5f9ff6b2"
+  },
+  {
+    "signature": "DelegatorMayNotExitWithZeroShares()",
+    "selector": "0x161fa299"
+  },
+  {
+    "signature": "DelegatorMayNotJoinTwoValidatorsSimultaneously()",
+    "selector": "0x48a6b5ba"
+  },
+  {
+    "signature": "DelegatorMayNotJoinWithZeroValue()",
+    "selector": "0xba5cb6d8"
+  },
+  {
+    "signature": "DelegatorMustExitAllWhenBelowMinimum()",
+    "selector": "0x44d4da44"
+  },
+  {
+    "signature": "EpochAdvanceNotReady()",
+    "selector": "0xe7295fed"
+  },
+  {
+    "signature": "EpochAlreadyFinalized()",
+    "selector": "0x3366263c"
+  },
+  {
+    "signature": "EpochDurationCannotBeZero()",
+    "selector": "0xfd06e181"
+  },
+  {
+    "signature": "EpochDurationOverflow()",
+    "selector": "0x270bd26d"
+  },
+  {
+    "signature": "EpochNotFinalized()",
+    "selector": "0x8cf75707"
+  },
+  {
+    "signature": "EpochNotFinished()",
+    "selector": "0xec766557"
+  },
+  {
+    "signature": "PendingTribunals(uint256)",
+    "selector": "0x773c68a6"
+  },
+  {
+    "signature": "PreviousEpochNotFinalizable()",
+    "selector": "0x93b7eb86"
+  },
+  {
+    "signature": "AllocationRestrictedTxCannotAcceptMessageFees()",
+    "selector": "0x35ebdf50"
+  },
+  {
+    "signature": "FailedFeeTransfer()",
+    "selector": "0x24a8ac13"
+  },
+  {
+    "signature": "FeeSettlementNotCompleted()",
+    "selector": "0x1432a761"
+  },
+  {
+    "signature": "FeeValueMustBeNonZero(uint256)",
+    "selector": "0x632be5a1"
+  },
+  {
+    "signature": "InsufficientFees()",
+    "selector": "0x8d53e553"
+  },
+  {
+    "signature": "InsufficientFeesForRound()",
+    "selector": "0x0c35bf69"
+  },
+  {
+    "signature": "MessageFeeParamsMismatch()",
+    "selector": "0x67b02b3b"
+  },
+  {
+    "signature": "MessageFeesReportMismatch()",
+    "selector": "0x86515990"
+  },
+  {
+    "signature": "MessageFeesTotalMustBeNonZero()",
+    "selector": "0xf79991cb"
+  },
+  {
+    "signature": "OnlyFeeManager()",
+    "selector": "0x8f1dbd6c"
+  },
+  {
+    "signature": "UseBalanceFeeReservationExceeded(bytes32,uint256,uint256)",
+    "selector": "0xde234cf9"
+  },
+  {
+    "signature": "OnlyConsensusCanCall()",
+    "selector": "0x6c6fe28a"
+  },
+  {
+    "signature": "AccountsArrayEmpty()",
+    "selector": "0xb1d0b181"
+  },
+  {
+    "signature": "AmountMustBeGreaterThan0()",
+    "selector": "0x35f61689"
+  },
+  {
+    "signature": "InitialMintAlreadyCalled()",
+    "selector": "0xacf9028d"
+  },
+  {
+    "signature": "L2BaseGasCostQueryFailed()",
+    "selector": "0x7dc9c5e2"
+  },
+  {
+    "signature": "L2MessageAlreadyInvoked()",
+    "selector": "0x21d83750"
+  },
+  {
+    "signature": "L2MessageProvenFailed()",
+    "selector": "0xfd0ae327"
+  },
+  {
+    "signature": "L2TransactionRequestFailed()",
+    "selector": "0x1efae811"
+  },
+  {
+    "signature": "TotalDistributionMustBe100()",
+    "selector": "0x16904932"
+  },
+  {
+    "signature": "InvalidAddress()",
+    "selector": "0xe6c4247b"
+  },
+  {
+    "signature": "InvalidAmount()",
+    "selector": "0x2c5211c6"
+  },
+  {
+    "signature": "InvalidAppealBond()",
+    "selector": "0xc59a6168"
+  },
+  {
+    "signature": "InvalidAppealRounds()",
+    "selector": "0x2b4f0027"
+  },
+  {
+    "signature": "InvalidAppealRoundState()",
+    "selector": "0x1a5d319a"
+  },
+  {
+    "signature": "InvalidAtEpoch()",
+    "selector": "0x90dce792"
+  },
+  {
+    "signature": "InvalidBanPeriod()",
+    "selector": "0xa2fc7bbd"
+  },
+  {
+    "signature": "InvalidCliffUnlockBps()",
+    "selector": "0x7f2d8c3d"
+  },
+  {
+    "signature": "InvalidCommitHash()",
+    "selector": "0x173d238e"
+  },
+  {
+    "signature": "InvalidCommittedValidators()",
+    "selector": "0xcbf18bce"
+  },
+  {
+    "signature": "InvalidDeploymentWithSalt()",
+    "selector": "0xaceab4a1"
+  },
+  {
+    "signature": "InvalidGhostContract()",
+    "selector": "0x1d41354d"
+  },
+  {
+    "signature": "InvalidIdleReplacementIndex(address,uint256,uint256)",
+    "selector": "0x4424217a"
+  },
+  {
+    "signature": "InvalidInflationThresholds()",
+    "selector": "0x4774d828"
+  },
+  {
+    "signature": "InvalidInternalMessageReference()",
+    "selector": "0x46eee7e3"
+  },
+  {
+    "signature": "InvalidL2GasParams()",
+    "selector": "0x21e1b5c9"
+  },
+  {
+    "signature": "InvalidNonce()",
+    "selector": "0x756688fe"
+  },
+  {
+    "signature": "InvalidNumber(uint256)",
+    "selector": "0xc5d83cde"
+  },
+  {
+    "signature": "InvalidNumberOfEpochsToClaim()",
+    "selector": "0xb9a8ce44"
+  },
+  {
+    "signature": "InvalidNumOfValidators()",
+    "selector": "0xc4be27c5"
+  },
+  {
+    "signature": "InvalidOffset()",
+    "selector": "0x01da1572"
+  },
+  {
+    "signature": "InvalidOperatorAddress()",
+    "selector": "0xeb32d3bf"
+  },
+  {
+    "signature": "InvalidPageSize()",
+    "selector": "0xe5b7db2e"
+  },
+  {
+    "signature": "InvalidPeriodDuration()",
+    "selector": "0x9e11b5e6"
+  },
+  {
+    "signature": "InvalidPhaseTimeoutBounds()",
+    "selector": "0x7cee0061"
+  },
+  {
+    "signature": "InvalidPossessionProof()",
+    "selector": "0xbabbd7de"
+  },
+  {
+    "signature": "InvalidPrimingSelfStakeBps()",
+    "selector": "0xe481a6f8"
+  },
+  {
+    "signature": "InvalidProcessingBlock()",
+    "selector": "0xd1ba0787"
+  },
+  {
+    "signature": "InvalidRecipient()",
+    "selector": "0x9c8d2cd2"
+  },
+  {
+    "signature": "InvalidRevealData()",
+    "selector": "0xbc03c4b4"
+  },
+  {
+    "signature": "InvalidRevealLeaderData()",
+    "selector": "0x92c313ee"
+  },
+  {
+    "signature": "InvalidSender()",
+    "selector": "0xddb5de5e"
+  },
+  {
+    "signature": "InvalidSlashDelay()",
+    "selector": "0x9589cd8b"
+  },
+  {
+    "signature": "InvalidSlashPercentage()",
+    "selector": "0x37814740"
+  },
+  {
+    "signature": "InvalidStakingAddress()",
+    "selector": "0x7caa6460"
+  },
+  {
+    "signature": "InvalidStakingContract()",
+    "selector": "0x3d8c6f98"
+  },
+  {
+    "signature": "InvalidStopTimestamp()",
+    "selector": "0xde8f8fd4"
+  },
+  {
+    "signature": "InvalidTimestamp()",
+    "selector": "0xb7d09497"
+  },
+  {
+    "signature": "InvalidTimestampType()",
+    "selector": "0x099d113d"
+  },
+  {
+    "signature": "InvalidTransactionInitialization(bytes32)",
+    "selector": "0x551b05e7"
+  },
+  {
+    "signature": "InvalidTransactionStatus()",
+    "selector": "0xf8062102"
+  },
+  {
+    "signature": "InvalidTribunalAppealStatus()",
+    "selector": "0x37c1c7d4"
+  },
+  {
+    "signature": "InvalidTxExecutionHash()",
+    "selector": "0x22a529c0"
+  },
+  {
+    "signature": "InvalidValidator()",
+    "selector": "0x682a6e7c"
+  },
+  {
+    "signature": "InvalidValidatorsLength()",
+    "selector": "0x5d67a037"
+  },
+  {
+    "signature": "InvalidVersion()",
+    "selector": "0xa9146eeb"
+  },
+  {
+    "signature": "InvalidVote()",
+    "selector": "0xd5dd0c66"
+  },
+  {
+    "signature": "InvalidVoteType()",
+    "selector": "0x8eed55d1"
+  },
+  {
+    "signature": "InvalidWeightParams()",
+    "selector": "0xa17d9e68"
+  },
+  {
+    "signature": "IdlenessError()",
+    "selector": "0xc35cc440"
+  },
+  {
+    "signature": "CanOnlyTriggerInflationMaxEpochsInFuture()",
+    "selector": "0xdfaaa5b2"
+  },
+  {
+    "signature": "CanOnlyTriggerInflationMaxTenEpochsInFuture()",
+    "selector": "0xa9f9ed6c"
+  },
+  {
+    "signature": "InflationAlreadyInitialized()",
+    "selector": "0x9ded3b15"
+  },
+  {
+    "signature": "InflationAlreadyReceived()",
+    "selector": "0x719a0d39"
+  },
+  {
+    "signature": "InflationInitialized()",
+    "selector": "0x067f34cf"
+  },
+  {
+    "signature": "InflationInvalidAmount()",
+    "selector": "0x3c1f1f16"
+  },
+  {
+    "signature": "InflationNotReadyToBeRealized()",
+    "selector": "0x7d8fa225"
+  },
+  {
+    "signature": "InflationRequestFailed()",
+    "selector": "0xced05c45"
+  },
+  {
+    "signature": "MaxNumberOfValidatorsReached()",
+    "selector": "0x9ce3911d"
+  },
+  {
+    "signature": "MaxNumOfIterationsInPendingQueueReached()",
+    "selector": "0x357bf18b"
+  },
+  {
+    "signature": "MaxNumOfMessagesExceeded(uint256,uint256)",
+    "selector": "0x3838b192"
+  },
+  {
+    "signature": "AddingTransactionToUndeterminedQueueFailed()",
+    "selector": "0x5bd3cd8c"
+  },
+  {
+    "signature": "DecisionQueueTimestampMismatch(bytes32,uint256,uint256)",
+    "selector": "0x2c36b5ad"
+  },
+  {
+    "signature": "IllegalQueueMigration(bytes32,uint8,uint8)",
+    "selector": "0xe788332f"
+  },
+  {
+    "signature": "NumOfMessagesIssuedTooHigh()",
+    "selector": "0x5013bc2a"
+  },
+  {
+    "signature": "PendingQueueFull(address,uint256)",
+    "selector": "0xd48a82a3"
+  },
+  {
+    "signature": "QueueHeadExceedsTail()",
+    "selector": "0x698f39ad"
+  },
+  {
+    "signature": "RemovingTransactionFromPendingQueueFailed()",
+    "selector": "0x866b818f"
+  },
+  {
+    "signature": "TransactionCanNotBeAddedToAcceptedQueue()",
+    "selector": "0xcdcfa366"
+  },
+  {
+    "signature": "TransactionCanNotBeAddedToPendingQueue()",
+    "selector": "0x406a3bbb"
+  },
+  {
+    "signature": "TransactionCanNotBeAddedToUndeterminedQueue()",
+    "selector": "0x69842b0a"
+  },
+  {
+    "signature": "TransactionNotAtAcceptedQueueHead()",
+    "selector": "0x3e714edf"
+  },
+  {
+    "signature": "TransactionNotAtPendingQueueHead()",
+    "selector": "0x0844056a"
+  },
+  {
+    "signature": "TransactionNotAtUndeterminedQueueHead()",
+    "selector": "0x3d40531f"
+  },
+  {
+    "signature": "TransactionNotInPendingQueue()",
+    "selector": "0x7b9ea34f"
+  },
+  {
+    "signature": "MockZkSyncBridgeCallFailedToL2()",
+    "selector": "0x9a245636"
+  },
+  {
+    "signature": "DeveloperAlreadyHasNFT()",
+    "selector": "0xa74b28d1"
+  },
+  {
+    "signature": "DeveloperCannotBeZeroAddress()",
+    "selector": "0x7e3f46bd"
+  },
+  {
+    "signature": "DeveloperHasNoNFT()",
+    "selector": "0x70849322"
+  },
+  {
+    "signature": "DeveloperHasNoRewards()",
+    "selector": "0xdf6b47b0"
+  },
+  {
+    "signature": "GhostAlreadyHasNFT()",
+    "selector": "0x36bd0868"
+  },
+  {
+    "signature": "GhostCannotBeZeroAddress()",
+    "selector": "0x4d8d14c5"
+  },
+  {
+    "signature": "NotNFTOwner()",
+    "selector": "0x4088c61c"
+  },
+  {
+    "signature": "AccessControlUnauthorizedAccount(address,bytes32)",
+    "selector": "0xe2517d3f"
+  },
+  {
+    "signature": "AllocationCommitmentMissing()",
+    "selector": "0xbe77b500"
+  },
+  {
+    "signature": "AllocationDuplicateKey()",
+    "selector": "0xbb598087"
+  },
+  {
+    "signature": "AllocationLifecycleBudgetInsufficient()",
+    "selector": "0x00583b33"
+  },
+  {
+    "signature": "AllocationSubtreeHashMismatch()",
+    "selector": "0xdda17044"
+  },
+  {
+    "signature": "AllocationSubtreeRequired()",
+    "selector": "0x47db53f3"
+  },
+  {
+    "signature": "AllocationTreeBudgetInconsistent()",
+    "selector": "0x328bfb08"
+  },
+  {
+    "signature": "AllocationTreeMalformed()",
+    "selector": "0x7fecd5b1"
+  },
+  {
+    "signature": "AllocationTreeTooDeep()",
+    "selector": "0x48668d66"
+  },
+  {
+    "signature": "AlreadyClaimed()",
+    "selector": "0x646cf558"
+  },
+  {
+    "signature": "AlreadyFunded()",
+    "selector": "0x5adf6387"
+  },
+  {
+    "signature": "AlreadyRevoked()",
+    "selector": "0x905e7107"
+  },
+  {
+    "signature": "AlreadySettled()",
+    "selector": "0x560ff900"
+  },
+  {
+    "signature": "AlreadyUnlocked()",
+    "selector": "0x5090d6c6"
+  },
+  {
+    "signature": "ArrayLengthMismatch()",
+    "selector": "0xa24a13a6"
+  },
+  {
+    "signature": "AttemptIdentityMismatch(bytes32,bytes32)",
+    "selector": "0x6045a383"
+  },
+  {
+    "signature": "BudgetTooLow()",
+    "selector": "0x305e533c"
+  },
+  {
+    "signature": "BurnTransferFailed()",
+    "selector": "0xaac1169b"
+  },
+  {
+    "signature": "ContributionTooLarge(uint256,uint256)",
+    "selector": "0x058baee9"
+  },
+  {
+    "signature": "DaoAlreadyRegistered()",
+    "selector": "0x8fd0c2bc"
+  },
+  {
+    "signature": "DecisionBasisMismatch(bytes32,uint256,uint256)",
+    "selector": "0x1b98edb6"
+  },
+  {
+    "signature": "DecisionEffectiveAtInFuture(bytes32,uint256,uint256)",
+    "selector": "0xe56cb5fe"
+  },
+  {
+    "signature": "EqOutputsTooLarge(uint256,uint256)",
+    "selector": "0x6f4a4557"
+  },
+  {
+    "signature": "ExecutionBudgetExceeded(uint256,uint256)",
+    "selector": "0x57df8523"
+  },
+  {
+    "signature": "ExternalBudgetInvalid()",
+    "selector": "0x8b434eea"
+  },
+  {
+    "signature": "ExternalGasLimitBelowMinimum()",
+    "selector": "0xf5963b64"
+  },
+  {
+    "signature": "ExternalGasLimitOrPriceZero()",
+    "selector": "0xbf35c24e"
+  },
+  {
+    "signature": "ExternalMessageFreezeExceeded(bytes32,uint256,uint256)",
+    "selector": "0x05684868"
+  },
+  {
+    "signature": "ExternalOnAcceptanceNotSupported()",
+    "selector": "0xa54ce0b6"
+  },
+  {
+    "signature": "FinalizedCountExceedsIssued()",
+    "selector": "0x34bffaee"
+  },
+  {
+    "signature": "ForcedTransferFault()",
+    "selector": "0xae656f8c"
+  },
+  {
+    "signature": "FunctionNotFound(bytes4)",
+    "selector": "0x5416eb98"
+  },
+  {
+    "signature": "FundingMismatch()",
+    "selector": "0xb84a1afb"
+  },
+  {
+    "signature": "GovernanceInsufficientValue(uint256,uint256)",
+    "selector": "0xf498db0c"
+  },
+  {
+    "signature": "GovernanceInvalidDelay()",
+    "selector": "0xd1132ebc"
+  },
+  {
+    "signature": "GovernanceOperationExpired(address,bytes4,bytes,uint256,uint256)",
+    "selector": "0x11515806"
+  },
+  {
+    "signature": "GovernanceOperationNotFound(address,bytes4,bytes,uint256)",
+    "selector": "0x8ff7bbe1"
+  },
+  {
+    "signature": "GovernanceOperationPending(address,bytes4,bytes,uint256)",
+    "selector": "0xc7eef27f"
+  },
+  {
+    "signature": "GovernanceTargetIsNotAContract(address)",
+    "selector": "0x83e02672"
+  },
+  {
+    "signature": "GovernanceTimelockPending(address,bytes4,bytes,uint256,uint256)",
+    "selector": "0x2189e680"
+  },
+  {
+    "signature": "IllegalStatusTransition(bytes32,uint8,uint8)",
+    "selector": "0xe1081528"
+  },
+  {
+    "signature": "IncentivePercentageTooHigh()",
+    "selector": "0xaf188845"
+  },
+  {
+    "signature": "InsufficientActiveValidators(uint256,uint256)",
+    "selector": "0xb5e5b936"
+  },
+  {
+    "signature": "InsufficientAppealFunding(uint256,uint256)",
+    "selector": "0x96631b91"
+  },
+  {
+    "signature": "InsufficientAvailablePool(uint256,uint256)",
+    "selector": "0xdaf0d2c0"
+  },
+  {
+    "signature": "InsufficientBalance()",
+    "selector": "0xf4d678b8"
+  },
+  {
+    "signature": "InsufficientBondCustody()",
+    "selector": "0xebab1869"
+  },
+  {
+    "signature": "InsufficientContractBalance()",
+    "selector": "0x786e0a99"
+  },
+  {
+    "signature": "InsufficientGasForInternalMessageCreation(uint256,uint256,uint256,address)",
+    "selector": "0xb2c9bc63"
+  },
+  {
+    "signature": "InsufficientInflationFunds()",
+    "selector": "0x58d77d2a"
+  },
+  {
+    "signature": "InsufficientValue()",
+    "selector": "0x11011294"
+  },
+  {
+    "signature": "InternalMessagePayloadUnavailable()",
+    "selector": "0x69244346"
+  },
+  {
+    "signature": "InvariantViolation(uint256)",
+    "selector": "0xa1a97e55"
+  },
+  {
+    "signature": "JudicialCapacityReservationActive(address)",
+    "selector": "0x655891ba"
+  },
+  {
+    "signature": "JudicialCapacityReservationMissing(address)",
+    "selector": "0x08f16b5f"
+  },
+  {
+    "signature": "JudicialQuarantineCauseActive(address)",
+    "selector": "0x1e6f3cc1"
+  },
+  {
+    "signature": "LegacyProposeReceiptRetired()",
+    "selector": "0xa4ec1c31"
+  },
+  {
+    "signature": "Locked()",
+    "selector": "0x0f2e5b6c"
+  },
+  {
+    "signature": "ManualUnlockNotRequired()",
+    "selector": "0x90173285"
+  },
+  {
+    "signature": "MaxPriceExceeded(uint256,uint256)",
+    "selector": "0xb4132db3"
+  },
+  {
+    "signature": "MaxValidatorsCannotBeZero()",
+    "selector": "0x83c27a2d"
+  },
+  {
+    "signature": "MaxValidatorsExceedsSafeLimit(uint256,uint256)",
+    "selector": "0x5449cfab"
+  },
+  {
+    "signature": "MessageAllocationBudgetInsufficient()",
+    "selector": "0x67d6a6b3"
+  },
+  {
+    "signature": "MessageAllocationsNotEqualBudget()",
+    "selector": "0x9659e275"
+  },
+  {
+    "signature": "MessageBudgetExceeded(uint256,uint256)",
+    "selector": "0xd67553bd"
+  },
+  {
+    "signature": "MessageDeclaredBudgetInsufficient()",
+    "selector": "0x7f295162"
+  },
+  {
+    "signature": "MessageEffectCommitLengthMismatch(uint256,uint256)",
+    "selector": "0x69d6a5d1"
+  },
+  {
+    "signature": "MessageEffectDescriptorMismatch(bytes32,bytes32,bytes32,bytes32)",
+    "selector": "0x1d0de3df"
+  },
+  {
+    "signature": "MessageEmissionPhaseMismatch()",
+    "selector": "0x5ca1f1d8"
+  },
+  {
+    "signature": "MessageGenerationSetMismatch(bytes32,uint256,bytes32,bytes32)",
+    "selector": "0xd1d4bb02"
+  },
+  {
+    "signature": "MessageNoMatchingAllocation()",
+    "selector": "0x4e4b3c38"
+  },
+  {
+    "signature": "MinimumStakeTransitionActive(uint64)",
+    "selector": "0x06d6cbfc"
+  },
+  {
+    "signature": "MinimumStakeTransitionConfigLocked()",
+    "selector": "0x478289fb"
+  },
+  {
+    "signature": "MinimumStakeTransitionCursorMismatch(uint24,uint24)",
+    "selector": "0x8b610290"
+  },
+  {
+    "signature": "MinimumStakeTransitionIdentityMismatch(uint64,uint64,bytes32,bytes32)",
+    "selector": "0xc2feee5c"
+  },
+  {
+    "signature": "MinimumStakeTransitionInvalidStatus(MinimumStakeTransitionStatus)",
+    "selector": "0xfad9cebb"
+  },
+  {
+    "signature": "MinimumStakeTransitionNotActive()",
+    "selector": "0x0db97f7e"
+  },
+  {
+    "signature": "MirrorFieldOverflow()",
+    "selector": "0xab5f8856"
+  },
+  {
+    "signature": "NoPendingOperator()",
+    "selector": "0x9c2af11f"
+  },
+  {
+    "signature": "NoPendingRefund()",
+    "selector": "0xfb093898"
+  },
+  {
+    "signature": "NoPreviousEpoch()",
+    "selector": "0x9fa56a5b"
+  },
+  {
+    "signature": "NoValidatorWallet()",
+    "selector": "0x62b7e683"
+  },
+  {
+    "signature": "OperatorAlreadyAssigned()",
+    "selector": "0x5acd21ba"
+  },
+  {
+    "signature": "OperatorAlreadyUsed()",
+    "selector": "0x229d6af4"
+  },
+  {
+    "signature": "OutOfGas()",
+    "selector": "0x77ebef4d"
+  },
+  {
+    "signature": "OwnableUnauthorizedAccount(address)",
+    "selector": "0x118cdaa7"
+  },
+  {
+    "signature": "PendingIssuedSlotMismatch(address,uint256,uint256)",
+    "selector": "0xe03bc2f5"
+  },
+  {
+    "signature": "PercentageOutOfRange(uint256)",
+    "selector": "0xafd5d0b0"
+  },
+  {
+    "signature": "PermanentQuarantineNeedsOwnerPardon()",
+    "selector": "0x7801306b"
+  },
+  {
+    "signature": "PhaseDeadlineNotInitialized(bytes32,uint8)",
+    "selector": "0xbd2704b2"
+  },
+  {
+    "signature": "PhaseTimeoutOutOfBounds(uint256,uint256,uint256)",
+    "selector": "0xdb0c8dfe"
+  },
+  {
+    "signature": "PubKeyIsZero()",
+    "selector": "0x46e80dd3"
+  },
+  {
+    "signature": "PubKeyMismatch()",
+    "selector": "0x203f11f1"
+  },
+  {
+    "signature": "PubKeyNotOnCurve()",
+    "selector": "0x65858cdf"
+  },
+  {
+    "signature": "ReadFailure(uint256,bytes)",
+    "selector": "0x7e5e2d9e"
+  },
+  {
+    "signature": "RecoverRangeBeyondIssued()",
+    "selector": "0x82eacf35"
+  },
+  {
+    "signature": "RecoverRangeInvalid()",
+    "selector": "0xd1402d7e"
+  },
+  {
+    "signature": "ReentrancyGuardReentrantCall()",
+    "selector": "0x3ee5aeb5"
+  },
+  {
+    "signature": "RegistryFull()",
+    "selector": "0xd1071567"
+  },
+  {
+    "signature": "RemedySelectionPlanMismatch(bytes32,bytes32)",
+    "selector": "0xba21e405"
+  },
+  {
+    "signature": "RemedySelectionSourceDrift()",
+    "selector": "0xa73be52b"
+  },
+  {
+    "signature": "ResolutionBasisMismatch()",
+    "selector": "0x1e302f9f"
+  },
+  {
+    "signature": "ResolutionPlanMismatch(uint8,uint8)",
+    "selector": "0x86edcb1d"
+  },
+  {
+    "signature": "RevealDeadlineElapsed(bytes32,uint256,uint256)",
+    "selector": "0x78763ab2"
+  },
+  {
+    "signature": "RollupBudgetBelowFloor()",
+    "selector": "0xa70732ee"
+  },
+  {
+    "signature": "RoundPlanMismatch(bytes32,bytes32)",
+    "selector": "0xa0835b01"
+  },
+  {
+    "signature": "RoundSnapshotSealed(bytes32,uint256)",
+    "selector": "0x2c586f2e"
+  },
+  {
+    "signature": "SelectionAuthorityPinned(uint256)",
+    "selector": "0xc8fef2eb"
+  },
+  {
+    "signature": "SelectionMutationInProgress()",
+    "selector": "0xf2539721"
+  },
+  {
+    "signature": "SpendFailed()",
+    "selector": "0x5435f21a"
+  },
+  {
+    "signature": "StakingInvariantNotConfigured()",
+    "selector": "0x6d31b9f3"
+  },
+  {
+    "signature": "SubmittedMessagesTooLarge(uint256,uint256)",
+    "selector": "0xdc8b19e1"
+  },
+  {
+    "signature": "TooManyMessages()",
+    "selector": "0x1ec0b2f7"
+  },
+  {
+    "signature": "TopUpCannotExtendSchedule()",
+    "selector": "0x49449933"
+  },
+  {
+    "signature": "TransactionAlreadyAccepted()",
+    "selector": "0x7bdaa2b4"
+  },
+  {
+    "signature": "TransactionAlreadyExists(bytes32)",
+    "selector": "0x8ce457d6"
+  },
+  {
+    "signature": "TransactionInRecomputation()",
+    "selector": "0x00ebaa7c"
+  },
+  {
+    "signature": "TransitionCallerEdgeNotAllowed(address,uint8,uint8)",
+    "selector": "0x8d0b4cad"
+  },
+  {
+    "signature": "TransitionEndpointNotAllowed(uint8,uint8)",
+    "selector": "0x78425d91"
+  },
+  {
+    "signature": "TribunalAlreadyFinalized()",
+    "selector": "0x6cb27c0f"
+  },
+  {
+    "signature": "TribunalNotFound()",
+    "selector": "0x609bbfa8"
+  },
+  {
+    "signature": "Unauthorized()",
+    "selector": "0x82b42900"
+  },
+  {
+    "signature": "UnauthorizedDelegatorClaim()",
+    "selector": "0xdcc541d1"
+  },
+  {
+    "signature": "UnauthorizedInflationRequest()",
+    "selector": "0x7d8f3b9e"
+  },
+  {
+    "signature": "UnbanCapExceeded(uint256,uint256,uint256)",
+    "selector": "0x1d49490f"
+  },
+  {
+    "signature": "UnfinishedTransactions()",
+    "selector": "0xf082b82d"
+  },
+  {
+    "signature": "UnknownGenAction()",
+    "selector": "0xe43351e0"
+  },
+  {
+    "signature": "UnknownStakingError()",
+    "selector": "0x109ce524"
+  },
+  {
+    "signature": "ValidatorDoesNotExist()",
+    "selector": "0xe51315d2"
+  },
+  {
+    "signature": "ValidatorMustNotBeDelegator()",
+    "selector": "0x85d35a02"
+  },
+  {
+    "signature": "ValidatorWalletAlreadyDeployed()",
+    "selector": "0xb9ceb484"
+  },
+  {
+    "signature": "ValueBackingMismatch(uint256,uint256)",
+    "selector": "0xf23d468d"
+  },
+  {
+    "signature": "VestingAlreadyExists()",
+    "selector": "0xe7075d2a"
+  },
+  {
+    "signature": "VestingAlreadyStopped()",
+    "selector": "0xd731022d"
+  },
+  {
+    "signature": "VestingDeploymentFailed()",
+    "selector": "0x0f5cc9de"
+  },
+  {
+    "signature": "VestingDoesNotExist()",
+    "selector": "0x57fd8e07"
+  },
+  {
+    "signature": "VestingNotStopped()",
+    "selector": "0x6e32bb06"
+  },
+  {
+    "signature": "WithdrawExceedsVested()",
+    "selector": "0x8b6a4865"
+  },
+  {
+    "signature": "WrongRecomputationTransaction()",
+    "selector": "0x4d1fe80e"
+  },
+  {
+    "signature": "ZeroAddress(string)",
+    "selector": "0xeac0d389"
+  },
+  {
+    "signature": "ZeroAmount()",
+    "selector": "0x1f2a2005"
+  },
+  {
+    "signature": "ZeroTotalWeight()",
+    "selector": "0x098404de"
+  },
+  {
+    "signature": "ZeroValue()",
+    "selector": "0x7c946ed7"
+  },
+  {
+    "signature": "RandomSeedAlreadySet()",
+    "selector": "0x7d6b9724"
+  },
+  {
+    "signature": "SlashGovernanceDelayPassed()",
+    "selector": "0x06de1175"
+  },
+  {
+    "signature": "SlashPercentageTooHigh()",
+    "selector": "0x0edf5154"
+  },
+  {
+    "signature": "SlashRevokedToRemoveTooHigh(uint256,uint256)",
+    "selector": "0x217f3b2e"
+  },
+  {
+    "signature": "OnlyGEN()",
+    "selector": "0x6a10007b"
+  },
+  {
+    "signature": "OnlyIdleness()",
+    "selector": "0xf2c0764c"
+  },
+  {
+    "signature": "OnlyIdlenessOrTribunal()",
+    "selector": "0xfcde63e9"
+  },
+  {
+    "signature": "OnlyStakingContract()",
+    "selector": "0xd807afce"
+  },
+  {
+    "signature": "OnlyStakingRouter()",
+    "selector": "0x25cbc0a7"
+  },
+  {
+    "signature": "OnlyTransactions()",
+    "selector": "0x516257a3"
+  },
+  {
+    "signature": "OnlyTransactionsOrTribunal()",
+    "selector": "0x6c4db06b"
+  },
+  {
+    "signature": "OnlyTribunal()",
+    "selector": "0x811befe9"
+  },
+  {
+    "signature": "EmptyTransaction()",
+    "selector": "0x260c9d62"
+  },
+  {
+    "signature": "FailedTransferCall()",
+    "selector": "0x3825f587"
+  },
+  {
+    "signature": "FinalizationNotAllowed()",
+    "selector": "0xe1b3b3b7"
+  },
+  {
+    "signature": "FinalizationWindowForRevealingNotOpened()",
+    "selector": "0xabc07e66"
+  },
+  {
+    "signature": "TransactionCanNotBeFinalized()",
+    "selector": "0xd9be37ca"
+  },
+  {
+    "signature": "TransactionNotAcceptedNorUndetermined()",
+    "selector": "0x90cb8b61"
+  },
+  {
+    "signature": "TransactionNotFinalized()",
+    "selector": "0xe4e81f79"
+  },
+  {
+    "signature": "TransactionNotFound()",
+    "selector": "0x31fb878f"
+  },
+  {
+    "signature": "TransactionNotFound(bytes32)",
+    "selector": "0x925fea73"
+  },
+  {
+    "signature": "TransactionNotTerminal()",
+    "selector": "0x1d3a409a"
+  },
+  {
+    "signature": "TransactionStillValid()",
+    "selector": "0xc4afd8fa"
+  },
+  {
+    "signature": "DeepthoughtCallFailed()",
+    "selector": "0xbd5ac82f"
+  },
+  {
+    "signature": "FailedTransfer(address)",
+    "selector": "0x3f32e1dd"
+  },
+  {
+    "signature": "NFTMinterCallFailed()",
+    "selector": "0x64c31e4b"
+  },
+  {
+    "signature": "NFTMinterNotConfigured()",
+    "selector": "0xa0c98f30"
+  },
+  {
+    "signature": "NumberOfValidatorsExceedsAvailable()",
+    "selector": "0x9c637db9"
+  },
+  {
+    "signature": "ValidatorsConsumed()",
+    "selector": "0xeae94a56"
+  },
+  {
+    "signature": "ValidatorsUnavailable()",
+    "selector": "0xd0b5c3bb"
+  },
+  {
+    "signature": "LeaderResultHashAlreadySet()",
+    "selector": "0x584764ae"
+  },
+  {
+    "signature": "ValidatorAlreadyCommitted()",
+    "selector": "0xf8961aee"
+  },
+  {
+    "signature": "ValidatorAlreadyInTree()",
+    "selector": "0x45be71b6"
+  },
+  {
+    "signature": "ValidatorAlreadyJoined()",
+    "selector": "0x71d16bc6"
+  },
+  {
+    "signature": "ValidatorAlreadyRevealed()",
+    "selector": "0x00d6a91b"
+  },
+  {
+    "signature": "ValidatorAlreadyVoted()",
+    "selector": "0x6e271ebe"
+  },
+  {
+    "signature": "VoteAlreadyCommitted()",
+    "selector": "0xcf1c5b9c"
+  },
+  {
+    "signature": "VoteAlreadyRevealed()",
+    "selector": "0x3246ac36"
+  },
+  {
+    "signature": "AllValidatorsCommitted()",
+    "selector": "0xb467acd8"
+  },
+  {
+    "signature": "AllValidatorsConsumed()",
+    "selector": "0x54055ab9"
+  },
+  {
+    "signature": "ValidatorSelectionFailed()",
+    "selector": "0x1f90236d"
+  },
+  {
+    "signature": "ValidValidatorNotFound()",
+    "selector": "0x1c177f6c"
+  },
+  {
+    "signature": "ValidatorBelowMinimumStake()",
+    "selector": "0x0b294dc3"
+  },
+  {
+    "signature": "ValidatorExitExceedsShares()",
+    "selector": "0xfddb7740"
+  },
+  {
+    "signature": "ValidatorMayNotBeDelegator()",
+    "selector": "0x359b3ac0"
+  },
+  {
+    "signature": "ValidatorMayNotDepositZeroValue()",
+    "selector": "0xffb117c5"
+  },
+  {
+    "signature": "ValidatorMayNotJoinWithZeroValue()",
+    "selector": "0xd25ef26f"
+  },
+  {
+    "signature": "ValidatorNotActive()",
+    "selector": "0xa6ce15f6"
+  },
+  {
+    "signature": "ValidatorNotInTree()",
+    "selector": "0x8ee72f3f"
+  },
+  {
+    "signature": "ValidatorNotJoined()",
+    "selector": "0xffc673e8"
+  },
+  {
+    "signature": "ValidatorWithdrawalExceedsStake()",
+    "selector": "0xfb7f2a7f"
+  },
+  {
+    "signature": "NoIdleValidator()",
+    "selector": "0xede1b7ce"
+  },
+  {
+    "signature": "NonGenVMContract()",
+    "selector": "0xc1ba7c94"
+  },
+  {
+    "signature": "NoRotationsLeft()",
+    "selector": "0xe0bf2581"
+  },
+  {
+    "signature": "NoSenderForTransaction()",
+    "selector": "0xa0b18673"
+  },
+  {
+    "signature": "NoValidatorsAvailable()",
+    "selector": "0xc4e41c46"
+  },
+  {
+    "signature": "NoValidatorsFound()",
+    "selector": "0x9b7fa1e5"
+  }
+]

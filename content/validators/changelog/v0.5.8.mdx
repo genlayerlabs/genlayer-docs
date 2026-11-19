@@ -6,6 +6,12 @@
 - Add bounded sync wait for RPC readiness
 - Add per-IP per-method RPC rate limiting
 
+### Misc
+
+- Consolidate genvm configs
+- Add `gen_getTransactionStatus` docs
+- Add `gen_syncing` API docs and clarify RPC config group vs method precedence
+
 ### Bug fixes
 
 - Defer GenVM precompile to container startup to avoid AVX-512 incompatibility
@@ -18,9 +24,3 @@
 - Pass transaction value to GenVM
 - Standardize RPC error codes per EIP-1474
 - Retry tx lookup for RPC indexing lag
-
-### Misc
-
-- Consolidate genvm configs
-- Add `gen_getTransactionStatus` docs
-- Add `gen_syncing` API docs and clarify RPC config group vs method precedence
