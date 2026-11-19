@@ -9,7 +9,7 @@ An Intelligent Contract in GenLayer can contain non-deterministic blocks: regula
 - State of the Python interpreter is not passed back to the deterministic code (for instance, you won't see changes in global variables)
 
 ### Simple Case
-To illustrate how non-deterministic blocks work, this example gets a webpage as plain HTML and verifies that it has a link to the owner:
+To illustrate how non-deterministic blocks work, this example gets a webpage as plain HTML and checks whether the lowercase text `iana` appears anywhere in it. This is a simple content check: it does not look for a link, and it does not check where a link points or who owns the page:
 
 ```py
 example_web_address = 'https://example.org'
@@ -24,7 +24,7 @@ Here are a few important parts:
 1. It is **mandatory** to call `gl.nondet.web.render` (or `gl.nondet.web.get`) from a function invoked via `gl.eq_principle.*`, otherwise it will give an error
 2. Type annotations are not required
 3. `example_web_address` gets captured without the need to specify it explicitly
-4. We are getting the page in plain HTML, because we want text from a link (`<a>` HTML tag), which is not visible in the text representation
+4. We are getting the page in plain HTML, so the check runs on the page's markup and not only on its visible text. `'iana' in web_data` is a plain, case-sensitive substring test: it matches `iana` anywhere in the returned HTML (visible text, an attribute value such as an `href`, and so on). It does not parse `<a>` elements or validate their `href` values
 5. We are using `gl.eq_principle.strict_eq` because we return a `bool` (`True` or `False`), so there is no need to run LLMs or other complex computations: validators will agree _if_ they both get the exactly the same result, which makes sense for our case. However, if you wish to return more complex data (such as a text summary), you should use other `gl.eq_principle` methods. More on this topic on the next page
 
 ### As a Full Contract
