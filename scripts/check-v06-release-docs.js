@@ -182,6 +182,16 @@ requireText(workflow, "v0.40.0 or later", "minimum fee-aware CLI version");
 requireText(workflow, "--fee-profile fee-profile.json", "fee-aware CLI deploy");
 requireText(workflow, "/developers/decentralized-applications/fee-profiling-and-estimation", "fee profiling link");
 requireText(workflow, "sim_fundAccount", "CLI account funding on hosted Studio");
+requireText(workflow, "Funding is optional for deploys and writes", "Studio auto-covered fee deposit");
+forbidText(workflow, "The account needs GEN for the fee deposit", "mandatory funding claim");
+requireText(workflow, "Today only **Studio-dev** runs v0.123", "fee scope limited to v0.123 environments");
+requireText(workflow, 'pip install --pre "genlayer-test>=0.30.0rc2"', "genlayer-test fee-profile prerelease install");
+requireText(workflow, "only if your tests deploy the contract", "deploy entry requirement");
+requireText(workflow, "mined with a failed receipt", "fee-less deploy outcome");
+forbidText(workflow, "reject deploys that carry no fee distribution", "incorrect RPC rejection claim");
+if (/gltest[^\n]*--fee-profile(?!\s+\S+\.json)/.test(read(workflow))) {
+  failures.push(`${workflow}: gltest --fee-profile without an output path`);
+}
 if (/npm install -g genlayer(?=\s)/.test(read(workflow))) {
   failures.push(`${workflow}: unpinned "npm install -g genlayer" installs a pre-fee CLI`);
 }
