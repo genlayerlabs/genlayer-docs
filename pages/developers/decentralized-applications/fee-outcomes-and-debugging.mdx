@@ -1,0 +1,68 @@
+---
+description: "Interpret GenLayer transaction outcomes, fee refunds, gasless Studio behavior, and fee-related failures."
+---
+
+# Fee Outcomes and Debugging
+
+Applications should explain transaction outcomes in terms users or operators can act on. A submitted GenLayer transaction can be accepted by consensus, finalized later, rejected before execution or finish with a contract error.
+
+## Success rule
+
+A transaction is successful only when both are true:
+
+- the transaction status is `ACCEPTED` or `FINALIZED`
+- the execution result is `FINISHED_WITH_RETURN`
+
+Use `isSuccessful(tx)` from `genlayer-js` or the transaction-kit outcome surfaces instead of checking status alone. A transaction can be accepted by validators and still finish with a contract error.
+
+## User-facing outcomes
+
+| Status and result | Meaning | Surface it as |
+| --- | --- | --- |
+| `ACCEPTED` / `FINALIZED` + `FINISHED_WITH_RETURN` | Execution succeeded. | Done. Unused fee budget refunds at finalization. |
+| `UNDETERMINED` + any result | Validators could not reach a majority. | Treat as not executed, even if a leader result exists. |
+| Canceled at activation because `GENPerTimeUnit` exceeded its submitted ceiling | The transaction entered the queue, but could not lock an allowed time-unit price before work began. | Escrow is refunded. Re-estimate and resubmit with a fresh ceiling. |
+| Rejected at submission, such as `InsufficientFees`, `MaxPriceExceeded` for the current storage/receipt price, or an invalid fee shape | The transaction never entered the consensus queue. | Correct the quote or input and retry. |
+| `FINISHED_WITH_ERROR` | The contract reverted or errored. | Execution failed. Consensus fees may still be consumed. |
+
+## Gasless networks
+
+Some Studio deployments run gasless, with fee accounting disabled and all prices zero. The transaction kit detects this from the estimate:
+
+```typescript
+if (quote.gasless) {
+  // Show "No fees on this network" and submit without fee params.
+}
+```
+
+The same app code can work on gasless Studio and fee-charging networks. Do not hard-code a network name to decide whether fees are enabled; use the estimate result.
+
+## Refunds
+
+The initial deposit is a maximum budget, not the final cost. Unused budget is refunded when the transaction finalizes. Users should understand three numbers:
+
+- total deposit: what must be available when signing
+- spent fees: what the transaction actually consumed
+- refund: the unused part returned after finalization
+
+If an app tracks only until `decided`, it may not yet know the final refund. Use `finalized` tracking for screens or tools that need final fee settlement.
+
+## Explorer debugging
+
+Open the transaction in GenLayer Explorer and inspect the Fees section. It should show:
+
+- allocation versus consumed values
+- submitted price ceilings versus activation-locked and current prices
+- message fee budget and consumption
+- refunds by category
+- settlement status
+
+If a quote looks too large, check whether the transaction used a developer profile or network defaults. `PolicyQuote.source` is `developer` when a matching `fee-profile.json` entry was used and `network-default` otherwise.
+
+If a transaction failed even though the user accepted the quote, check:
+
+- whether a price cap was exceeded before execution
+- whether the method hit an unmeasured expensive branch
+- whether `totalMessageFees` was too low for emitted child transactions
+- whether the contract itself returned `FINISHED_WITH_ERROR`
+- whether the app tracked only status and ignored execution result

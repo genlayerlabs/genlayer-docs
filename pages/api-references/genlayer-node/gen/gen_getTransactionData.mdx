@@ -1,0 +1,132 @@
+### gen_getTransactionData
+
+Retrieves the on-chain transaction data for one round together with the contract execution outputs (`returnData`, `leaderPublicData`) recovered from the node's local trace store. If the node no longer holds the trace (restart, pruning), the on-chain fields are still returned with `returnData: null` — the transaction is never replayed.
+
+**Method:** `gen_getTransactionData`
+
+**Parameters:**
+
+- `request` (object, required):
+  - `txId` (`string`, required): The 32-byte transaction hash as a hexadecimal string with a `0x` prefix.
+  - `round` (`uint8`, optional): The consensus round whose execution outputs to return. Defaults to the latest round.
+
+**Returns:**
+
+An object with the on-chain transaction fields for the selected round plus the locally stored execution outputs:
+
+- `id` (`string`): The transaction ID as a hex string.
+- `sender` (`address`): The address of the sender.
+- `recipient` (`address`): The destination address of the transaction.
+- `activator` (`address`): The address of the validator that activated the transaction.
+- `status` (`uint8`): The current status of the transaction.
+- `statusName` (`string`): The ABI transaction status name for `status` (`Uninitialized`, `Pending`, `Proposing`, `Committing`, `Revealing`, `Accepted`, `Undetermined`, `Finalized`, `Canceled`, `AppealRevealing`, `AppealCommitting`, `ValidatorsTimeout`, `LeaderTimeout`, or `LeaderRevealing`).
+- `result` (`uint8`): The consensus result of the transaction (`0` Idle, `1` MajorityAgree, `2` MajorityDisagree, `3` MajorityTimeout, `4` DeterministicViolation, `5` NoMajority).
+- `resultName` (`string`): The ABI result name for `result`.
+- `txExecutionResult` (`uint8`): The leader execution vote result (`0` NotVoted, `1` FinishedWithReturn, `2` FinishedWithError, `3` Timeout, `4` NondetDisagree, `5` DeterministicViolation).
+- `txExecutionResultName` (`string`): The ABI vote type name for `txExecutionResult`.
+- `txCallData` (`string`): The transaction call data as a hex string.
+- `txExecutionHash` (`string`): The execution hash of the transaction as a hex string.
+- `eqBlocksOutputs` (`string`): The equivalent blocks outputs as a hex string.
+- `timestamps` (`object`): Object containing various timestamps:
+  - `Created` (`uint256`): When the transaction was created.
+  - `Pending` (`uint256`): When the transaction became pending.
+  - `Activated` (`uint256`): When the transaction was activated.
+  - `Proposed` (`uint256`): When the transaction was proposed.
+  - `Committed` (`uint256`): When the transaction was committed.
+  - `LastVote` (`uint256`): When the last vote was cast.
+  - `AppealSubmitted` (`uint256`): When an appeal was submitted.
+  - `LeaderRevealed` (`uint256`): When the leader was revealed.
+- `round` (`uint8`): The round the execution outputs belong to (the requested round, or the latest round when omitted).
+- `returnData` (`string|null`): The contract's return data as a `0x`-prefixed hex string, from the node's locally stored execution trace. `null` when the node holds no trace for the round — clients must handle `null` explicitly.
+- `leaderPublicData` (`string`): Leader data as a `0x`-prefixed hex string from the stored trace. Its encoding is defined by the GenVM specification. `0x` when no trace is available.
+
+**Example Request:**
+
+```json
+{
+  "jsonrpc": "2.0",
+  "method": "gen_getTransactionData",
+  "params": [
+    {
+      "txId": "0x635060dd514082096d18c8eb64682cc6a944f9ce1ae6982febf7a71e9f656f49"
+    }
+  ],
+  "id": 1
+}
+```
+
+**Example Response:**
+
+```json
+{
+  "jsonrpc": "2.0",
+  "id": 1,
+  "result": {
+    "id": "0x635060dd514082096d18c8eb64682cc6a944f9ce1ae6982febf7a71e9f656f49",
+    "sender": "0x5b70759760a85d92bf972b67ee8558e8e8da87d4",
+    "recipient": "0x73ca5a2b51edf506ceaf110a41780ec51294d89f",
+    "activator": "0xf27b07d36ff5b9dcd37fd3a09811d6456dd4483a",
+    "status": 7,
+    "statusName": "Finalized",
+    "result": 1,
+    "resultName": "MajorityAgree",
+    "txExecutionResult": 1,
+    "txExecutionResultName": "FinishedWithReturn",
+    "txCallData": "f5b31604617267730da4017570646174656420746573742073746f72616765066d6574686f64747570646174655f73746f7261676500",
+    "txExecutionHash": "0x76744dc491b1725eb2ba08cf516855c14aac310e36711368c04442fd39d61853",
+    "eqBlocksOutputs": "c0",
+    "timestamps": {
+      "Created": 1750774777,
+      "Pending": 1750774777,
+      "Activated": 1750774781,
+      "Proposed": 1750774786,
+      "Committed": 1750774791,
+      "LastVote": 1750774795,
+      "AppealSubmitted": 0,
+      "LeaderRevealed": 0
+    },
+    "round": 0,
+    "returnData": "0x00",
+    "leaderPublicData": "0x0e076e645f6f7574730d1b01aabb"
+  }
+}
+```
+
+**Notes:**
+
+- Multi-round appeal data (`roundData`) and fee accounting stay on `gen_getTransactionReceipt`; debug output (stdout, stderr, genvm_log) and trace replay stay on `gen_dbg_traceTransaction`.
+- `returnData` and `leaderPublicData` come from the node's local trace store only — a node that never executed the transaction (or pruned the trace) serves `returnData: null` and `leaderPublicData: "0x"` without replaying.
+- **Retention.** `returnData` and `leaderPublicData` come from the trace store, which operators bound with `node.trace.retention_blocks` (default 1,000,000 blocks; `0` disables). Past the watermark this endpoint answers from chain data with `returnData: null`, exactly as it does for a transaction the node never executed.
+- The trace is persisted asynchronously after a transaction is accepted, so a query issued immediately after acceptance can still return `returnData: null`. Clients that need the execution output should poll until it appears (or fall back to `gen_dbg_traceTransaction`, which replays on demand).
+- An explicit `round` beyond the rounds the transaction has returns a `-32001` error.
+- A malformed `txId` (not a 32-byte hex string) returns `-32602`; a transaction not found on-chain returns `-32001`.
+- This endpoint is in the `genlayer` group and is enabled by default.
+
+**cURL Example:**
+
+```bash
+# Latest round
+curl -X POST http://localhost:9151 \
+  -H "Content-Type: application/json" \
+  -d '{
+    "jsonrpc": "2.0",
+    "method": "gen_getTransactionData",
+    "params": [{
+      "txId": "0x635060dd514082096d18c8eb64682cc6a944f9ce1ae6982febf7a71e9f656f49"
+    }],
+    "id": 1
+  }'
+
+# Specific round
+curl -X POST http://localhost:9151 \
+  -H "Content-Type: application/json" \
+  -d '{
+    "jsonrpc": "2.0",
+    "method": "gen_getTransactionData",
+    "params": [{
+      "txId": "0x635060dd514082096d18c8eb64682cc6a944f9ce1ae6982febf7a71e9f656f49",
+      "round": 1
+    }],
+    "id": 1
+  }'
+```

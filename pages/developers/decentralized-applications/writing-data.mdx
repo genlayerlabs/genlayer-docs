@@ -1,248 +1,163 @@
 ---
-description: "Writing to Intelligent Contracts covers GenLayer write transactions, fees, gas, signing, receipts, and finalization."
+description: "Estimate, submit, and verify fee-funded writes to Intelligent Contracts with GenLayerJS."
 ---
+
+import { Callout } from 'nextra-theme-docs'
 
 # Writing to Intelligent Contracts
 
-Writing to an Intelligent Contract means sending a transaction that modifies the contract's state. Unlike read operations, write operations require fees and must be processed by the network before taking effect.
+A write changes Intelligent Contract state and enters the GenLayer consensus lifecycle. On a fee-charging deployment, estimate the transaction policy first, submit its `distribution` and `feeValue`, then verify both the consensus status and execution result.
 
-## Understanding Write Operations
+## Estimate and submit
 
-In GenLayer, functions that modify state:
-- Require a transaction to be sent to the network
-- Consume gas (computational resources)
-- Need time to be processed and finalized
-- Must be signed by an account with sufficient balance to pay for the transaction fees
-- Return a transaction hash immediately, but state changes are not instant
-
-## Basic Contract Writing
-
-Here's how to write to an Intelligent Contract:
+For a development-time write, Studio can simulate the concrete call and turn its observed execution and message use into an estimate:
 
 ```typescript
-import { simulator } from 'genlayer-js/chains';
-import { createClient, createAccount } from 'genlayer-js';
-import type { TransactionStatus } from 'genlayer-js/types';
+import { createAccount, createClient, isSuccessful } from 'genlayer-js';
+import { localnet } from 'genlayer-js/chains';
 
 const account = createAccount();
-const client = createClient({
-  chain: simulator,
-  account: account,
-});
+const client = createClient({ chain: localnet, account });
 
-// Send the transaction
-const transactionHash = await client.writeContract({
+const write = {
   address: contractAddress,
   functionName: 'update_storage',
   args: ['new_data'],
-  value: 0, // Optional: amount of native GEN tokens to send
+};
+
+const estimate = await client.estimateTransactionFeesForWrite(write);
+const txId = await client.writeContract({
+  ...write,
+  fees: {
+    distribution: estimate.distribution,
+    feeValue: estimate.feeValue,
+  },
 });
 
-// Wait for the transaction to be processed
-const receipt = await client.waitForTransactionReceipt({
-  hash: transactionHash,
-  status: TransactionStatus.FINALIZED, // or 'ACCEPTED'
-});
+const transaction = await client.waitForFinalization({ hash: txId });
+if (!isSuccessful(transaction)) {
+  throw new Error(
+    `Write failed: ${transaction.statusName} / ${transaction.txExecutionResultName}`,
+  );
+}
 ```
 
-### Parameters Explained
+`estimateTransactionFeesForWrite` is useful while developing and profiling because it performs a write simulation. For an application user flow, consume a checked-in [`fee-profile.json`](./fee-profiling-and-estimation) or use [Transaction Kit](./transaction-kit-integration) rather than simulating before every click.
 
-- `address`: The deployed contract's address
-- `functionName`: The name of the function to call
-- `args`: Array of arguments for the function
-- `value`: Amount of native tokens to send (in wei)
+## Write parameters
 
-## Transaction Lifecycle
+| Field | Meaning |
+|:--|:--|
+| `address` | Deployed Intelligent Contract address. |
+| `functionName` | Public write method name. |
+| `args` / `kwargs` | Positional or named calldata arguments. |
+| `value` | Optional GEN intentionally sent to a payable contract method. This is separate from the fee deposit. |
+| `fees` | Estimated `distribution` plus `feeValue` on a fee-charging deployment. |
+| `validUntil` | Optional latest activation time. It is not a finalization deadline. |
 
-1. **Transaction Creation**
-```typescript
-const transactionHash = await client.writeContract({
-  address: contractAddress,
-  functionName: 'mint_token',
-  args: [recipient, amount],
-});
-```
+## Payable writes
 
-2. **Transaction Status Monitoring**
-```typescript
-// Basic waiting
-const receipt = await client.waitForTransactionReceipt({
-  hash: transactionHash,
-  status: 'FINALIZED',
-});
-
-// Advanced monitoring with timeout
-const receipt = await client.waitForTransactionReceipt({
-  hash: transactionHash,
-  status: 'FINALIZED',
-  interval: 5_000, // check every 5 seconds
-  retries: 10, // maximum number of retries
-});
-```
-
-## Common Write Operations
-
-### Calling Payable Methods
-
-Send GEN with a write call using the `value` parameter:
+The user value and fee deposit are different amounts. To send 5 GEN to a payable method, include `value` while keeping the estimate in `fees`:
 
 ```typescript
-// Send 5 GEN to a payable method
-const hash = await client.writeContract({
+const call = {
   address: contractAddress,
   functionName: 'tip',
   args: [],
-  value: BigInt(5) * BigInt(10 ** 18), // 5 GEN in wei
+  value: 5n * 10n ** 18n,
+};
+
+const estimate = await client.estimateTransactionFeesForWrite(call);
+const txId = await client.writeContract({
+  ...call,
+  fees: {
+    distribution: estimate.distribution,
+    feeValue: estimate.feeValue,
+  },
 });
 ```
 
-The `value` is specified in wei (1 GEN = 10¹⁸ wei). The receiving contract method must be decorated with `@gl.public.write.payable`.
+The receiving method must be decorated with `@gl.public.write.payable`. The transaction's total wallet requirement is the user value plus the fee deposit.
 
-### Token Transfers
-```typescript
-// Sending tokens
-const hash = await client.writeContract({
-  address: tokenContractAddress,
-  functionName: 'transfer',
-  args: [recipientAddress, amount],
-});
-```
+## Browser wallets
 
-### State Updates
-```typescript
-// Updating user data
-const hash = await client.writeContract({
-  address: contractAddress,
-  functionName: 'update_user_profile',
-  args: [userId, newProfile],
-});
-```
-
-## Using a Browser Wallet (MetaMask)
-
-When building a browser dApp, transactions are signed by the user's wallet instead of a local private key. You need to:
-
-1. Create a client with the wallet's address and provider
-2. Switch the wallet to the correct GenLayer network
-3. Send transactions as usual
+Use an EIP-1193 provider for signing and connect it to the same chain definition used by the client:
 
 ```typescript
-import { createClient } from "genlayer-js";
-import { studionet } from "genlayer-js/chains";
-import { TransactionStatus } from "genlayer-js/types";
+import { createClient } from 'genlayer-js';
+import { studionet } from 'genlayer-js/chains';
 
-// Create client with wallet address (from your wallet connection flow)
 const client = createClient({
   chain: studionet,
   account: walletAddress as `0x${string}`,
+  provider: window.ethereum,
 });
 
-// Switch the wallet to the correct network — must be called before writing
-await client.connect("studionet");
+await client.connect('studionet');
 
-// Now write as usual — MetaMask will prompt for signing
-const txHash = await client.writeContract({
+const write = {
   address: contractAddress,
-  functionName: "create_profile",
-  args: ["alice", "Hello world"],
-  value: BigInt(0),
-});
+  functionName: 'create_profile',
+  args: ['alice', 'Hello world'],
+};
+const estimate = await client.estimateTransactionFeesForWrite(write);
 
-const receipt = await client.waitForTransactionReceipt({
-  hash: txHash,
-  status: TransactionStatus.ACCEPTED,
+const txId = await client.writeContract({
+  ...write,
+  fees: {
+    distribution: estimate.distribution,
+    feeValue: estimate.feeValue,
+  },
 });
 ```
 
-Available networks: `"localnet"`, `"studionet"`, `"testnetAsimov"`, `"testnetBradbury"`.
+The matching v2 release candidate also supplies the Studio-dev chain definition for chain ID 61997. Do not reuse `studionet` for the preview; chain identity, RPC, and consensus addresses must move together.
 
-> **Important:** If the wallet is on the wrong chain, the SDK will throw an error telling you which chain the wallet is on vs. which chain the client expects. Always call `client.connect()` before sending transactions.
+## Wait for the intended lifecycle point
 
-## Error Handling
+- `waitForDecision({ hash })` returns after a materialized decision. Use it for responsive UI that does not need final settlement yet.
+- `waitForFinalization({ hash })` waits for final fee settlement and refunds. Use it for accounting and durable completion.
+- `waitForTransactionReceipt({ waitUntil: 'decided' | 'finalized' })` is the generic form. Its old `status` option remains only for compatibility.
+
+An `ACCEPTED` or `FINALIZED` status does not prove that the contract returned successfully. Always use `isSuccessful(transaction)` or require `FINISHED_WITH_RETURN` as well as the accepted/finalized status.
+
+## Handle failures without duplicating writes
+
+Separate failures before submission from failures after a transaction ID exists:
 
 ```typescript
+let txId: `0x${string}` | undefined;
+
 try {
-  const hash = await client.writeContract({
-    address: contractAddress,
-    functionName: 'update_data',
-    args: ['new_data'],
+  const estimate = await client.estimateTransactionFeesForWrite(write);
+  txId = await client.writeContract({
+    ...write,
+    fees: {
+      distribution: estimate.distribution,
+      feeValue: estimate.feeValue,
+    },
   });
-
-  try {
-    const receipt = await client.waitForTransactionReceipt({
-      hash,
-      status: 'FINALIZED',
-    });
-    console.log('Transaction successful:', receipt);
-  } catch (waitError) {
-    console.error('Transaction failed or timed out:', waitError);
-  }
 } catch (error) {
-  if (error.message.includes('insufficient funds')) {
-    console.error('Not enough balance to pay for transaction');
-  } else if (error.message.includes('user rejected')) {
-    console.error('User rejected the transaction');
-  } else {
-    console.error('Error sending transaction:', error);
-  }
+  // No GenLayer transaction ID was returned. Re-estimate after fixing the
+  // wallet rejection, balance, stale fee policy, or invalid input.
+  throw error;
+}
+
+const transaction = await client.waitForFinalization({ hash: txId });
+if (!isSuccessful(transaction)) {
+  // Inspect this transaction. Do not blindly submit the same state-changing
+  // operation again: the first write may already have executed.
+  console.error(transaction.statusName, transaction.txExecutionResultName);
 }
 ```
 
-## Transaction Status Types
+<Callout type="warning">
+Once `writeContract` returns a transaction ID, a timeout in your process is not evidence that submission failed. Resume tracking that ID. Blind retries can create duplicate application actions.
+</Callout>
 
-GenLayer transactions can have different status requirements:
+## Related
 
-```typescript
-enum TransactionStatus {
-  PENDING = "PENDING",
-  CANCELED = "CANCELED",
-  PROPOSING = "PROPOSING",
-  COMMITTING = "COMMITTING",
-  REVEALING = "REVEALING",
-  ACCEPTED = "ACCEPTED",
-  FINALIZED = "FINALIZED",
-  UNDETERMINED = "UNDETERMINED",
-}
-
-// Wait for just acceptance (faster)
-const acceptedReceipt = await client.waitForTransactionReceipt({
-  hash: transactionHash,
-  status: TransactionStatus.ACCEPTED,
-});
-
-// Wait for full finalization
-const finalizedReceipt = await client.waitForTransactionReceipt({
-  hash: transactionHash,
-  status: TransactionStatus.FINALIZED,
-});
-```
-
-## Best Practices
-
-1. **Always Wait for Receipts**: Don't assume a transaction is successful just because you got a hash.
-2. **Handle Timeouts**: Set appropriate timeouts for transaction waiting.
-3. **Implement Retry Logic**: For important transactions, implement retry mechanisms:
-
-```typescript
-async function sendWithRetry(
-  client: GenLayerClient,
-  params: WriteContractParameters,
-  maxAttempts = 3
-): Promise<TransactionReceipt> {
-  for (let attempt = 1; attempt <= maxAttempts; attempt++) {
-    try {
-      const hash = await client.writeContract(params);
-      return await client.waitForTransactionReceipt({
-        hash,
-        status: 'FINALIZED',
-        timeout: 30_000 * attempt, // Increase timeout with each attempt
-      });
-    } catch (error) {
-      if (attempt === maxAttempts) throw error;
-      console.log(`Attempt ${attempt} failed, retrying...`);
-      await new Promise(resolve => setTimeout(resolve, 1000 * attempt));
-    }
-  }
-  throw new Error('Max retry attempts reached');
-}
-```
+- [Fee Profiling and Estimation](./fee-profiling-and-estimation)
+- [Fee Outcomes and Debugging](./fee-outcomes-and-debugging)
+- [Transaction Kit Integration](./transaction-kit-integration)
+- [Querying a Transaction](./querying-a-transaction)

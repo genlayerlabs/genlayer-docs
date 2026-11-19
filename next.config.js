@@ -70,6 +70,23 @@ const actualRedirects = [
   { old: "/overview", new: "/understand-genlayer-protocol" },
   { old: "/overview/:page*", new: "/understand-genlayer-protocol/:page*" },
 
+  {
+    old: "/understand-genlayer-protocol/what-are-intelligent-contracts",
+    new: "/understand-genlayer-protocol/what-is-genlayer",
+  },
+  {
+    old: "/understand-genlayer-protocol/what-makes-genlayer-different",
+    new: "/understand-genlayer-protocol/what-is-genlayer",
+  },
+  {
+    old: "/understand-genlayer-protocol/who-is-genlayer-for",
+    new: "/understand-genlayer-protocol/what-is-genlayer",
+  },
+  {
+    old: "/understand-genlayer-protocol/why-we-are-building-genlayer",
+    new: "/understand-genlayer-protocol/what-is-genlayer",
+  },
+
   { old: "/core-concepts", new: "/understand-genlayer-protocol/core-concepts" },
   { old: "/core-concepts/:page*", new: "/understand-genlayer-protocol/core-concepts/:page*" },
 
@@ -133,7 +150,7 @@ const actualRedirects = [
   },
   {
     old: "/overview/genlayer-different",
-    new: "/understand-genlayer-protocol/what-makes-genlayer-different",
+    new: "/understand-genlayer-protocol/what-is-genlayer",
   },
   {
     old: "/build-with-genlayer/use-cases",

@@ -1,0 +1,52 @@
+### gen_unsubscribe
+
+Cancels a subscription previously opened with `gen_subscribe`. The node stops sending notifications for that subscription and releases the resources backing it.
+
+**Method:** `gen_unsubscribe`
+
+**Transport:** WebSocket only, on the same connection that opened the subscription.
+
+**Parameters:**
+
+- `subscriptionId` (string, required): The id returned by `gen_subscribe`
+
+**Returns:** Boolean — `true` when a matching subscription was cancelled, `false` when the id is unknown on this connection
+
+**Example Request:**
+
+```json
+{
+  "jsonrpc": "2.0",
+  "method": "gen_unsubscribe",
+  "params": [
+    "b3f1c2de-9a44-4c1e-8f77-2b0a5d6e1c33"
+  ],
+  "id": 2
+}
+```
+
+**Example Response:**
+
+```json
+{
+  "jsonrpc": "2.0",
+  "result": true,
+  "id": 2
+}
+```
+
+**Notes:**
+
+- An unknown subscription id is not an error: the response is `result: false`, matching the `eth_unsubscribe` convention
+- Subscriptions are scoped to the connection that created them. One connection cannot cancel another's subscription, and an id from a closed connection always returns `false`
+- Explicit unsubscription is optional for cleanup: closing the WebSocket cancels every subscription on that connection automatically
+- A notification already in flight when the cancellation is processed may still arrive; treat the `true` response as "no further events will be produced", not as a barrier
+- A missing or non-string parameter returns error code `-32602`
+
+**wscat Example:**
+
+```bash
+wscat -c ws://localhost:9151/ws
+> {"jsonrpc":"2.0","method":"gen_unsubscribe","params":["b3f1c2de-9a44-4c1e-8f77-2b0a5d6e1c33"],"id":2}
+< {"jsonrpc":"2.0","result":true,"id":2}
+```

@@ -1,0 +1,85 @@
+---
+description: "How Consensus v0.6 records deterministic disagreement, freezes a tribunal electorate, and applies judicial restrictions and slashing."
+---
+
+import { Callout } from 'nextra-theme-docs'
+
+# Deterministic Violations & Tribunals
+
+GenLayer permits legitimate differences in non-deterministic work, but deterministic execution should produce the same result hash for every validator. When a consensus round classifies its result as a deterministic violation, the protocol opens a **tribunal** to decide whether the accused leader's result should be upheld or rejected.
+
+A tribunal is automatic and protocol-funded. It is not a user appeal, does not require an appellant bond, and does not replace the transaction's normal progress.
+
+## What the Contracts Prove
+
+Validators compute execution results off-chain and commit and reveal their votes and result hashes. The contracts compare those recorded hashes with the accused leader's result hash.
+
+<Callout type="info">
+“Deterministic violation” means a recorded deterministic-result disagreement. The EVM contracts do not re-execute the intelligent contract to prove which program output is semantically correct.
+</Callout>
+
+The tribunal runs in parallel with the transaction. It determines judicial and economic consequences for validator identities; it does not rewrite the transaction outcome that triggered it.
+
+## Creation-Frozen Electorate
+
+Tribunal creation pins the transaction, accused leader, relevant round, committee and vote generations, creation epoch, and the staking authority used to construct the electorate. The complete electorate can be materialized in bounded, permissionless pages so a large validator set does not have to be scanned in the transaction that detected the violation.
+
+The resulting participation target is `quorumSnapshot`, fixed at creation. The accused leader cannot vote. Votes from the original jury are sealed into the tribunal as evidence, and those jurors cannot cast a second tribunal vote. Other validators may participate only if both conditions hold:
+
+- their registry identity was included in the creation-frozen electorate; and
+- they remain live and available when they attempt to vote.
+
+A validator that becomes eligible only after creation cannot join this tribunal. Conversely, later exits or stake changes do not rewrite who was eligible at creation for abstention accounting. A validator that becomes barred before finalization is recorded separately so a protocol-enforced inability to reveal is not misclassified as a voluntary abstention.
+
+## Commit, Reveal, and Verdict
+
+After initialization completes, the tribunal uses commit and reveal windows. Original-jury votes count from their sealed round evidence; newly admitted tribunal voters commit and then reveal an `Agree` or `Disagree` vote relative to the accused leader's result.
+
+The verdict is calculated against the frozen participation target:
+
+- **Majority disagree** — strictly more than half of the frozen quorum rejects the leader's result.
+- **Majority agree** — strictly more than half supports the leader's result.
+- **No majority** — neither side reaches that strict threshold.
+
+The tribunal may advance early when its frozen quorum has revealed, or advance after the configured commit and reveal deadlines. Live validator-count movement does not dilute or enlarge the saved quorum.
+
+## Judicial Consequences
+
+Opening a tribunal immediately creates a judicial restriction for the accused leader. The staking layer preserves the exact capacity disposition so acquittal can restore only what that tribunal actually removed.
+
+- On **MajorityDisagree**, the protocol calls `convictJudicially`. The leader becomes non-restorable through the ordinary judicial-settlement path, and the permanent restriction remains until an authorized governance pardon clears it.
+- On **MajorityAgree**, the tribunal releases its judicial cause. The leader is restored only when no other open or convicted tribunal cause still applies.
+- On **NoMajority**, no tribunal slash is created and the non-convicting judicial cause is released through settlement.
+
+Verdict commitment is final even if the remaining consequence work cannot fit in one transaction. Permissionless, retryable settlement pages finish the bounded electorate and quarantine bookkeeping, while the staking slash cursor waits rather than retiring an incomplete tribunal.
+
+## Slashing Rules
+
+The v0.6 defaults are 500 basis points (5%) for the convicted leader and 100 basis points (1%) for a validator fault, subject to the configured maximum slash per validator and epoch. Tribunal slashes are enacted after the configured epoch delay.
+
+For **MajorityDisagree**:
+
+- the convicted leader is charged once for the transaction/round/leader identity, even if multiple accusation hashes produce separate tribunals;
+- original jurors and tribunal voters recorded as agreeing with the wrong leader are charged;
+- eligible abstainers can be charged; and
+- an original juror's missing vote is not charged twice when idleness already charged the same omission for that transaction.
+
+For **MajorityAgree**, only recorded `Disagree` votes against the vindicated leader are charged. Non-members and ordinary abstainers are not turned into accusers. **NoMajority** creates no tribunal slash.
+
+## Tribunal vs. Appeal
+
+| | Tribunal | User appeal |
+|:--|:--|:--|
+| Trigger | Automatic deterministic-violation result | Permissionless challenge to a finalized decision |
+| Funding | Protocol consensus flow | Caller pays the quoted bond and induced-work funding |
+| Question | Did validators agree or disagree with the accused leader's deterministic result? | Does the next round change the challenged application outcome? |
+| Effect | Judicial restriction and validator slashing | Additional appeal and execution rounds, with appellant reward or bond redistribution |
+| Transaction outcome | Runs in parallel; does not rewrite it | Can change the finalized decision class |
+
+## Related Concepts
+
+- [Appeals Process](/understand-genlayer-protocol/core-concepts/optimistic-democracy/appeal-process)
+- [Slashing](/understand-genlayer-protocol/core-concepts/optimistic-democracy/slashing)
+- [Staking](/understand-genlayer-protocol/core-concepts/optimistic-democracy/staking)
+- [Protocol Randomness](/understand-genlayer-protocol/core-concepts/optimistic-democracy/protocol-randomness)
+- [Equivalence Principle](/understand-genlayer-protocol/core-concepts/optimistic-democracy/equivalence-principle)

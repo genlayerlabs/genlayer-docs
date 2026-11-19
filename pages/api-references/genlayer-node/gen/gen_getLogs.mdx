@@ -1,0 +1,105 @@
+### gen_getLogs
+
+Queries GenLayer contract-emitted events, mirroring `eth_getLogs` semantics under the `gen_` namespace. Events are produced by intelligent contracts (`gl.chain.Event` subclasses calling `.emit()`), persisted by the node while syncing accepted blocks, and indexed by contract address and topics.
+
+**Method:** `gen_getLogs`
+
+**Parameters:**
+
+- `filter` (object, required):
+  - `fromBlock` (`string`, optional): First block of the range (inclusive), as a hex (`0x…`), decimal string, or `"latest"`. Block numbers are rollup (L2) block numbers — the same numbering `gen_syncing` reports. Defaults to the latest GenVM-synced block.
+  - `toBlock` (`string`, optional): Last block of the range (inclusive). Same format and default as `fromBlock`.
+  - `address` (`string | string[]`, optional): Restrict to events emitted by this contract address (or any of these addresses). Empty matches all addresses.
+  - `topics` (`array`, optional): Positional topic filters, at most 4 entries. Each position is `null` (wildcard), a 32-byte hex topic, or an array of topics (OR within the position). Positions match `eth_getLogs` semantics: an event matches when every constrained position matches; an event with fewer topics than a constrained position does not match.
+  - `blockHash` (`string`, optional): 32-byte rollup block hash selecting exactly one block (EIP-234). Mutually exclusive with `fromBlock`/`toBlock`. The node resolves the hash through the rollup RPC; an unknown hash returns error `-32001`.
+  - `status` (`string[]`, optional): Lifecycle stages to return, any of `"accepted"`, `"finalized"`, `"cancelled"`. Filters on the emitting transaction's **current** stage, not on the stage it held at `blockNumber`. Defaults to `["accepted", "finalized"]` — every event whose emitting round still stands. An unknown value returns error `-32602`.
+
+**Returns:**
+
+An array of log objects, ordered by block number, then transaction, then per-transaction event index:
+
+- `address` (`string`): Address of the emitting contract.
+- `topics` (`string[]`): The emitted topics, each a 32-byte hex string. `topics[0]` is the event signature topic: `keccak256` of the UTF-8 string `EventName(sortedIndexedFieldNames)` — GenLayer hashes the **sorted indexed field names without types**, unlike Solidity's typed signature. Remaining topics are the indexed field values (calldata-encoded, right-padded to 32 bytes, or keccak-hashed when longer).
+- `data` (`string`): Hex of the event payload. **Deviation from eth:** this is the GenVM **calldata** encoding of the event's keyword-argument map, not ABI encoding — decode it with a GenLayer SDK calldata codec.
+- `blockNumber` (`string`): Rollup block number (hex) of the block whose sync recorded the event.
+- `transactionHash` (`string`): 32-byte GenLayer transaction ID.
+- `logIndex` (`string`): **Deviation from eth:** index of the event **within its transaction** (hex), not within the block.
+- `round` (`number`): GenLayer extra — the consensus round of the executed result that emitted the event.
+- `status` (`string`): GenLayer extra — the emitting transaction's current lifecycle stage: `"accepted"`, `"finalized"`, or `"cancelled"`. **Not** the `gen_getTransactionStatus` vocabulary: that method's `"Canceled"` means a transaction cancelled before execution, whereas a `"cancelled"` log belongs to a transaction whose acceptance an appeal overturned and which is re-executed on a later round.
+- `removed` (`boolean`): Carries eth's meaning — the log is no longer part of the canonical set. `true` exactly when `status` is `"cancelled"`.
+
+`blockHash` and `transactionIndex` are omitted (not indexed node-side).
+
+**Semantics and limitations:**
+
+- GenLayer events follow their transaction's lifecycle: they become emitted when the transaction is **ACCEPTED**, become **FINALIZED** with it, and can be **CANCELLED** by a successful appeal. Events from **successful, accepted** executions are recorded at acceptance time (a reverted transaction emits no logs, matching EVM semantics).
+- **A log belongs to the block that emitted it.** `blockNumber` is always the acceptance block and `fromBlock`/`toBlock` select on it, so a log's block is stable while its `status` moves. Each log is returned exactly once per query, whatever combination of statuses is requested — including when a transaction is accepted and finalized within the same block.
+- **`status` is current, not as-of.** The same query run twice can report a different `status` for a log (accepted → finalized) or stop returning it (accepted → cancelled), the same way `gen_getTransactionStatus` reports current state.
+- **Default excludes cancelled logs.** A query with no `status` returns `["accepted", "finalized"]`. Events whose round was overturned on appeal are reachable with `status: ["cancelled"]`, where they carry `removed: true`.
+- **Retention.** Operators bound the store with `node.events.retention_blocks` (default 1,000,000 blocks; `0` disables). Queries below the retention watermark return no logs.
+- **Deviation from eth:** an event emitted inside a write-enabled sandbox (`allow_write_ops=True`) whose failure the contract catches still surfaces on the successful transaction — GenVM sandboxes are permission boundaries, not transactional ones, so caught-failure branch events are part of the transaction's log set (EVM drops reverted-sub-call logs).
+- Coverage requires the transaction to have executed on an executor that reports events in its result (all executors bundled with the currently pinned GenVM manager do); a future pin bundling a pre-2025-12 executor would not surface events for transactions it executes.
+- Results reflect **synced** state: a transaction accepted moments ago becomes queryable once the sync loop writes its block (same trailing semantics as `gen_getContractState` at `latest`).
+
+**Limits:**
+
+| Limit | Default | Config key |
+|---|---|---|
+| Block range per query | 10,000 blocks | `node.rpc.getlogs_max_block_range` |
+| Logs per response | 10,000 entries | `node.rpc.getlogs_max_results` |
+| Event retention | 1,000,000 blocks | `node.events.retention_blocks` |
+
+Both are node-configurable (operators may reduce them); exceeding either returns error `-32005` (`query exceeds limits: …` — distinct from HTTP rate limiting, which uses the same code). The method carries a default rate limit of 2 requests per second per IP, also configurable.
+
+**Errors:**
+
+- `-32602`: malformed filter (invalid hex, more than 4 topic positions, non-32-byte topic, `blockHash` combined with a block range, `fromBlock` greater than `toBlock`, unknown `status` value).
+- `-32005`: block range or result count over the configured cap.
+- `-32001`: `blockHash` unknown to the rollup.
+- `-32000`: internal failure (details are logged, not returned).
+
+**Example Request:**
+
+```json
+{
+  "jsonrpc": "2.0",
+  "method": "gen_getLogs",
+  "params": [
+    {
+      "fromBlock": "0x14e300",
+      "toBlock": "0x14e400",
+      "address": "0x73ca5a2b51edf506ceaf110a41780ec51294d89f",
+      "topics": [
+        "0x9f6dbb5f0f942152b8b254e69610e1c65e33a1bb61bd8f4bd88f0ec7bbe15c2f",
+        null
+      ]
+    }
+  ],
+  "id": 1
+}
+```
+
+**Example Response:**
+
+```json
+{
+  "jsonrpc": "2.0",
+  "id": 1,
+  "result": [
+    {
+      "address": "0x73ca5a2b51edf506ceaf110a41780ec51294d89f",
+      "topics": [
+        "0x9f6dbb5f0f942152b8b254e69610e1c65e33a1bb61bd8f4bd88f0ec7bbe15c2f",
+        "0x2a00000000000000000000000000000000000000000000000000000000000000"
+      ],
+      "data": "0x261674696d657374616d70014996d2c96e",
+      "blockNumber": "0x14e309",
+      "transactionHash": "0x635060dd514082096d18c8eb64682cc6a944f9ce1ae6982febf7a71e9f656f49",
+      "logIndex": "0x0",
+      "round": 0,
+      "status": "finalized",
+      "removed": false
+    }
+  ]
+}
+```

@@ -46,7 +46,7 @@ const EXCLUDED_FILES = [
 ];
 
 const CANON = `Project context — GenLayer documentation (docs.genlayer.com):
-GenLayer is the first Intelligent Blockchain: an L2 (on zkSync Elastic Chain, anchored to Ethereum) whose smart contracts — called Intelligent Contracts, written in Python — can natively access the web, call LLMs, and reach consensus on non-deterministic, subjective outcomes. Consensus mechanism: Optimistic Democracy; validators agree on non-deterministic outputs via the Equivalence Principle. Execution environment: GenVM. Dev tools: GenLayer CLI, GenLayer Studio (browser IDE), GenLayerJS / GenLayerPY SDKs, GenLayer Testing Suite (genlayer-test). Networks: Localnet, Studionet, Testnet Asimov.
+GenLayer is the first Intelligent Blockchain: an L2 (on zkSync Elastic Chain, anchored to Ethereum) whose smart contracts — called Intelligent Contracts, written in Python — can natively access the web, call LLMs, and reach consensus on non-deterministic, subjective outcomes. Consensus mechanism: Optimistic Democracy; validators agree on non-deterministic outputs via the Equivalence Principle. Execution environment: GenVM. Dev tools: GenLayer CLI, GenLayer Studio (browser IDE), GenLayerJS / GenLayerPY SDKs, GenLayer Testing Suite (genlayer-test). Networks: Localnet, Studionet, Testnet Bradbury.
 
 Canonical terminology — always use exactly these names: "Intelligent Contract" (never "AI contract" or "smart contract 2.0"), "Optimistic Democracy", "Equivalence Principle", "GenVM", "GenLayer Studio". You may read other files in this repository (e.g. public/llms.txt, sibling pages in the same directory) to stay consistent with how concepts are described elsewhere.`;
 

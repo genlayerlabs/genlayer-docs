@@ -42,6 +42,37 @@ class ReceiptVerifier(gl.Contract):
 
 The `images` parameter accepts a sequence of raw `bytes` (e.g., PNG/JPEG data) or `gl.nondet.Image` objects.
 
+## Sending Multiple Images
+
+Pass both images in the same `images` list to compare them in one prompt. The limit is two images per call. Refer to them in list order so the model can distinguish the first image from the second.
+
+This helper can be called from a contract method with two complete PNG/JPEG byte sequences, such as a product photo and a reference photo:
+
+{/* genvm-lint: required */}
+
+```python
+def compare_images(product_image: bytes, reference_image: bytes) -> bool:
+    def leader_fn():
+        result = gl.nondet.exec_prompt(
+            "Does the product in the first image match the product in the second image? "
+            'Respond as JSON: {"matches": true} or {"matches": false}.',
+            images=[product_image, reference_image],
+            response_format="json",
+        )
+        if not isinstance(result, dict) or not isinstance(result.get("matches"), bool):
+            raise gl.vm.UserError("Expected a boolean matches field")
+        return result["matches"]
+
+    def validator_fn(leaders_res) -> bool:
+        if not isinstance(leaders_res, gl.vm.Return):
+            return False
+        return isinstance(leaders_res.calldata, bool) and leader_fn() == leaders_res.calldata
+
+    return gl.vm.run_nondet_unsafe(leader_fn, validator_fn)
+```
+
+Each validator independently compares the images and checks the leader's boolean decision. Ambiguous photos can produce disagreement; choose a precise comparison criterion for your application. See [Calling LLMs](/developers/intelligent-contracts/features/calling-llms) for response validation patterns.
+
 ## Capturing Screenshots from the Web
 
 Combine [web access](/developers/intelligent-contracts/features/web-access) with image processing to screenshot a webpage and analyze it:

@@ -1,8 +1,30 @@
 ---
-description: "Transaction encoding, serialization, and signing in GenLayer for preparing raw transactions and RPC submission"
+description: "Learn how an Intelligent Contract request becomes signed EVM calldata and a GenLayer consensus transaction."
 ---
 
-# Transaction encoding, serialization, and signing
-Transaction encoding, serialization, and signing in GenLayer is the client-side process of packaging all three transaction types into a reliable, cross-platform, efficient format and signing them with the sender's private key to verify the sender's identity.
+# Encoding, signing, and submission
 
-Once prepared, the transaction is sent to the network via the `eth_sendRawTransaction` method on the RPC Server. This method performs the inverse process: it decodes and deserializes the transaction data, and then verifies the signature to ensure its authenticity. By handling all transaction types through `eth_sendRawTransaction`, GenLayer ensures that transactions are processed securely and efficiently while maintaining compatibility with Ethereum’s specification.
+Clients submit an Intelligent Contract request through an Ethereum-compatible transaction. The outer transaction uses standard EVM signing and serialization; its calldata contains the GenLayer-specific deployment or method call and fee configuration.
+
+## Submission layers
+
+1. The client encodes the Intelligent Contract method and arguments in the GenLayer call format.
+2. It packages that data and the protocol fee configuration into a call to the Ghost or consensus contracts.
+3. The caller signs the outer EVM transaction with its account key.
+4. The client serializes and sends the signed transaction through `eth_sendRawTransaction`.
+5. When the EVM call is included, the consensus contracts create the GenLayer transaction and emit its ID.
+
+The SDK and CLI perform these steps for normal application code. Use their high-level deployment and write methods instead of constructing consensus calldata by hand.
+
+## Two identifiers and two receipts
+
+The outer EVM transaction has an EVM transaction hash and receipt. The created Intelligent Contract transaction has a protocol transaction ID and consensus receipt. Do not assume that the two identifiers or their success fields are interchangeable.
+
+- The EVM receipt tells you whether the submission call executed on GenLayer Chain.
+- The GenLayer receipt tells you how Intelligent Contract consensus progressed and which execution result finalized.
+
+## Signing safety
+
+Signing proves authorization for the EVM transaction, including its destination, value, calldata, nonce, gas settings, and chain ID. Before asking a wallet to sign, a client should show the network, recipient, value, and expected action. Never transmit or log the caller's private key.
+
+For current code, use [GenLayerJS write calls](/developers/decentralized-applications/writing-data), [Intelligent Contract deployment](/developers/intelligent-contracts/deploying), and the [node RPC reference](/api-references/genlayer-node).

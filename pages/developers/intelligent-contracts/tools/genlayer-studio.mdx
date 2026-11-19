@@ -1,14 +1,28 @@
 ---
-description: "GenLayer Studio is a browser-based sandbox for developing and testing Intelligent Contracts in a local replica of the GenLayer network."
+description: "Use hosted or local GenLayer Studio to develop, deploy, and inspect Intelligent Contracts."
 ---
 
 import { Card, Cards, Callout, Bleed } from 'nextra-theme-docs'
 
 # GenLayer Studio
 
-GenLayer Studio is an interactive sandbox where developers explore the potential of GenLayer's Intelligent Contracts. It replicates the GenLayer network's execution environment and consensus algorithm, but offers a controlled and local environment to test different ideas and behaviors.
+GenLayer Studio is an interactive development environment for writing, deploying, and inspecting Intelligent Contracts. It combines a contract editor with accounts, a faucet, validator controls, transaction timelines, state inspection, and node logs.
 
-### What you can do with the GenLayer Studio:
+## Choose a Studio environment
+
+| Environment | Use it for | Web app | Chain ID |
+|:--|:--|:--|:--|
+| **Studionet** | Stable hosted development | [studio.genlayer.com](https://studio.genlayer.com) | 61999 |
+| **Studio development preview** | Release-candidate validation against the next Studio and consensus stack | [studio-dev.genlayer.com](https://studio-dev.genlayer.com) | 61997 |
+| **Local Studio** | Full local control, deterministic resets, custom validators and providers | `http://localhost:8080` | 61127 by default |
+
+<Callout type="warning">
+The development preview can be reset or redeployed without preserving state. Use the matching release-candidate SDK or CLI and the explicit Studio-dev network definition. The stable `studionet` preset points to a different chain and must not be reused for the preview.
+</Callout>
+
+If `studio-next.genlayer.com` is enabled as a second browser entry point for the same preview deployment, it is an alias for people, not a second SDK network. Programmatic clients should keep using the canonical `https://studio-dev.genlayer.com/api` endpoint. A genuinely independent canary would need its own chain ID, deployment, secrets, state, and network preset.
+
+## What you can do with Studio
 
 - **Experiment with Intelligent Contracts:** Intelligent Contracts leverage LLMs, such as GPT-4 or Llama3, to understand natural language and be capable of complex decision making.
 
@@ -16,7 +30,7 @@ GenLayer Studio is an interactive sandbox where developers explore the potential
 
 - **Code in Python:** Develop in a familiar, developer-friendly language, where memory and string management are not a big headache.
 
-### Explore the Studio
+## Explore Studio
 Here is a video introduction to help you get started with the GenLayer Studio:
 
 <Bleed>
@@ -31,8 +45,8 @@ Here is a video introduction to help you get started with the GenLayer Studio:
 </Bleed>
 
 
-### Intelligent Contract SDK
+## Intelligent Contract SDK
 
 <Callout emoji="💡">
-    Learn how to write your own Intelligent Contracts at [Intelligent Contracts](/build-with-genlayer/intelligent-contracts)
+    Learn how to write your own [Intelligent Contracts](/developers/intelligent-contracts/introduction), or review all RPC and wallet details on the [Networks](/developers/networks) page.
 </Callout>

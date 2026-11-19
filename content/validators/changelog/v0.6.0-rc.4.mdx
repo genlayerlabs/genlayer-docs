@@ -1,0 +1,26 @@
+## v0.6.0-rc.4
+
+Before you upgrade, check the alert rules and readiness probes that read `/health`. A banned validator (`consensus.ban`) and an operator balance below the critical amount (`consensus.operator_funds`) are now `warning` with HTTP 200, not 503: read those conditions to alert on them. A chain RPC or WebSocket endpoint that fails every check for 30 seconds now returns 503 (`chain_rpc_unreachable`, `websocket_disconnected`), where it returned 200. An unreadable block (`sync_block_unreadable`) is `degraded` (200) for its first 5 minutes, and 503 after that.
+
+### New features
+
+- `genlayernode doctor --only config` checks only the config files, merged in `--config` order as `run` merges them: it sends no request and writes nothing, so it runs without network
+  - with `rollup.genlayerchainrpckeyfile` set, it also reads that key file and fails when the file is missing or empty
+- The release signs the node image in both registries (`yeagerai/genlayer-node` and `ghcr.io/genlayerlabs/genlayer-node`) with cosign; `release/README.md` ("Verify the image") gives the `cosign verify` command
+- The release LLM config has an Unhardcoded backend, first in the greybox text chain: set `UNHARDCODED_API_KEY` in `.env` to use it; without the key, the chains are as before
+
+### Misc
+
+- `release/docker-compose.yaml` pins the WebDriver, docker-socket-proxy and Alloy images by digest, and updates Alloy to v1.21.3
+
+### Bug fixes
+
+- A node no longer stops its sync and its duties at a block whose bloom filter falsely matches the node's contracts: it reads that block once by its hash and continues; before, it waited until the chain head moved 1000 blocks past the block, or until a restart
+  - `genlayer_node_bloom_mismatch_settled_by_hash_total` counts the blocks settled this way
+- A transaction no longer stays in the commit phase with a vote missing when no validator outside the committee is online: a member that committed now calls `processIdleness` when the commit window ends
+- A replacement leader no longer drops its propose duty when its first try reverts with `InvalidValidator` in the same block as the leader change: it tries again while the contract still names it the leader
+- On a chain that makes blocks only when transactions arrive, the first block after a quiet period no longer sets the node to `hopelessly_behind` and pauses its sync, and a node at the chain head stays `synced` through a long quiet period
+
+### Security
+
+- `install.sh` and the `release/README.md` steps accept only a checksum signature made by the release workflow on a release line (`refs/heads/vX.Y`), not one made on any branch; use cosign v2.6.2 or later to verify

@@ -4,6 +4,12 @@
 
 - Resilient WS RPC for fallback path
 
+### Misc
+
+- Label RPC metrics with provider
+- Add chain nonce and desync gauges metrics
+- Log timestamps after acquireTransaction
+
 ### Bug fixes
 
 - Close activator-binding race
@@ -16,9 +22,3 @@
 - Make chain-submit buffer configurable and stop collapsing on short step_timeout
 - Add fault label to RPC error metric
 - Unwedge replay and filter sync
-
-### Misc
-
-- Label RPC metrics with provider
-- Add chain nonce and desync gauges metrics
-- Log timestamps after acquireTransaction

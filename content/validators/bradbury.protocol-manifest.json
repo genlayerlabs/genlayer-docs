@@ -1,0 +1,396 @@
+{
+  "version": 1,
+  "chainId": "4221",
+  "registry": "0x3F71AE080BD6270A91dBcc7960d88797828538E0",
+  "entries": [
+    {
+      "key": "Voting",
+      "addr": "0xB8E01fA102f91ec2E402CfBD23f162e088C2CD3A"
+    },
+    {
+      "key": "ValidatorPrimeUtils",
+      "addr": "0x1CDE9c9f3a17cBeB6bCFBE1fd732745309f81576"
+    },
+    {
+      "key": "VestingBeacon",
+      "addr": "0x6A5f7bb80b8760B8978e3E2D57a4639111ebba05"
+    },
+    {
+      "key": "Utils",
+      "addr": "0x215952B66D801c805e68E2503AfC751cAA84Af7c"
+    },
+    {
+      "key": "ConsensusMain",
+      "addr": "0x2E2766cbc3E5e61Ce93bBcdCBb3eAcB82082A019"
+    },
+    {
+      "key": "SnapshotSelectionKernel",
+      "addr": "0x84c06bc3d53c5859334BA32d707604750D761196"
+    },
+    {
+      "key": "GovernanceCouncilElections",
+      "addr": "0xFF203aBb22412c81Fa04Dfb1F9620790F7ca581c"
+    },
+    {
+      "key": "VestingFactory",
+      "addr": "0x82cA5e0e7A9345CF3ED5ee68A7fba41EF2202316"
+    },
+    {
+      "key": "IdlenessPhase",
+      "addr": "0xa2f3360c3359e45AD07E889018567BaBB914d3eB"
+    },
+    {
+      "key": "Rounds",
+      "addr": "0xe1B234B6959deA2AD0873fc7248a91a53a6185f9"
+    },
+    {
+      "key": "RandomnessUtils",
+      "addr": "0xd7DE7Feeed4B6f51D851AAf347CB0895D1275342"
+    },
+    {
+      "key": "ConsensusData",
+      "addr": "0xc5FA6f82BEe53598825d6edf7E3e24613082c75B"
+    },
+    {
+      "key": "IdlenessViews",
+      "addr": "0x0861c1c7ACAAA2a56c6c49FB13261171DcB10855"
+    },
+    {
+      "key": "Queues",
+      "addr": "0xBfE2ece1f2c62Ab3700C94Ed6bB76286bccC8CB3"
+    },
+    {
+      "key": "RemedySelectionKernel",
+      "addr": "0x0CB262aD8b7964CC88Ec3C96eb6E1474f16D5bf6"
+    },
+    {
+      "key": "ValidatorSlashSettlement",
+      "addr": "0x217530Bf7227CF6BC290Bab5ece5e9375E4fa3Cf"
+    },
+    {
+      "key": "MessagePaymentsTerminalHelpers",
+      "addr": "0x7534f102EF52EdC0FCb835eE58e8b15Df757092c"
+    },
+    {
+      "key": "Staking",
+      "addr": "0xD8fBa96C0dBB0257028dBc0107060b958e5c7113"
+    },
+    {
+      "key": "Transactions",
+      "addr": "0xaCe5e4191Bf408957538Caa9493aBB64F63D92c4"
+    },
+    {
+      "key": "Messages",
+      "addr": "0xD14B0489157FE420555F1e5A6AFBA031E978aCE5"
+    },
+    {
+      "key": "GovernanceVotingPower",
+      "addr": "0xc42590416fF93dD12a038b601088Ff2629559aBf"
+    },
+    {
+      "key": "StakingReadModel",
+      "addr": "0xf1fBdE733A9ceE2C0A44b8f724d944F89aE6D8A4"
+    },
+    {
+      "key": "SecurityCouncil",
+      "addr": "0x48713683CdB19ece4f6f9601Ffe64c8862827cFC"
+    },
+    {
+      "key": "ConsensusFinalizationHelpers",
+      "addr": "0xa2F211EE0D1CcC372695766a47c18af3C4FE46fC"
+    },
+    {
+      "key": "ValidatorUtils",
+      "addr": "0xe13742A806c532972964A25d5A3795FB1702eBc2"
+    },
+    {
+      "key": "TerminalRoundKernel",
+      "addr": "0x62d3aaBF65d58D51D32B8781C32ca40174a39a5F"
+    },
+    {
+      "key": "GhostManager",
+      "addr": "0x2E2766cbc3E5e61Ce93bBcdCBb3eAcB82082A019"
+    },
+    {
+      "key": "RoundsCreation",
+      "addr": "0x35A36496861b11199486121621EEb86E0528630C"
+    },
+    {
+      "key": "GovernanceClock",
+      "addr": "0xBDb6b4cAEdF3Bfca166745c2a4C16053351A57a6"
+    },
+    {
+      "key": "QueueStepUtils",
+      "addr": "0xb4d264c5f8D51FDfE48fd3b7dbd2F3943eC8c073"
+    },
+    {
+      "key": "GovernanceL1Bridge",
+      "addr": "0x94b1907087590241e3B55e6655A7EdaFfEC10300"
+    },
+    {
+      "key": "Slashing",
+      "addr": "0x9C30189686B7d6ec5e525eA6f155B57987d2086f"
+    },
+    {
+      "key": "RevealingPhase",
+      "addr": "0x88c6D8Ff2BC235eEf758014dd92C2E45D1E5C8F7"
+    },
+    {
+      "key": "Idleness",
+      "addr": "0x8f4167edC14Ce4E0640de65cF70DcdE3dfba9FF1"
+    },
+    {
+      "key": "TransactionFeesManager",
+      "addr": "0xd122de4CB6704C0FDdbb061275F0171e1119A429"
+    },
+    {
+      "key": "FeeManager",
+      "addr": "0x7678587A847712f2A96082AC07883A88D0fc7245"
+    },
+    {
+      "key": "FinalizationPhase",
+      "addr": "0x0c746f9c1b5F4cD135cB152fdb10CFd36d6560B5"
+    },
+    {
+      "key": "GhostBlueprint",
+      "addr": "0x450d2B06aB240773d1E23e69d0c5d616bEF4Ba2d"
+    },
+    {
+      "key": "CreationPhase",
+      "addr": "0x56a1517B263c849Be4a0c861540C14e1d51E6273"
+    },
+    {
+      "key": "ValidatorWalletBeacon",
+      "addr": "0xb9F17C1799DdCd26C0e621d65D8Ce0A3191B0495"
+    },
+    {
+      "key": "VestingBlueprint",
+      "addr": "0xd52998F07eF136d44B41Dc73c131492c8985e204"
+    },
+    {
+      "key": "FeeAppealHelpers",
+      "addr": "0x76F6ECdFb9256BD96bf7Da9Dc724873D8F78429f"
+    },
+    {
+      "key": "FeeProfileHelpers",
+      "addr": "0x7EBa83806Cd72ba96A10995840B4Aefc2802F8EF"
+    },
+    {
+      "key": "RoundsVoting",
+      "addr": "0xFBA6A1F9a1FB76Cdb1559241A7e0Ddeb4C1DF5a1"
+    },
+    {
+      "key": "ConsensusManager",
+      "addr": "0x3F748d4CbDA4FDfe8356690aFD73ac4cFc4eE56B"
+    },
+    {
+      "key": "RecoveryHelpers",
+      "addr": "0x2dAE85871C61b8896Ec0485050E66F2Cba4925fB"
+    },
+    {
+      "key": "MessageFeeAllocations",
+      "addr": "0x1B1eA007C42C1087d889233Ff7157237e7DAe3A9"
+    },
+    {
+      "key": "IGenLayerStaking",
+      "addr": "0xD8fBa96C0dBB0257028dBc0107060b958e5c7113"
+    },
+    {
+      "key": "ContributionLedger",
+      "addr": "0x9dC6642157b88da4E05ec2F57a186d5F2C03c106"
+    },
+    {
+      "key": "ActivationPhase",
+      "addr": "0x62541A8314b9112407E53B3bc5cf8970906E845c"
+    },
+    {
+      "key": "ArrayUtils",
+      "addr": "0x87B8BC807392DeD881b49d544032a3A8ac411613"
+    },
+    {
+      "key": "Vesting",
+      "addr": "0xd52998F07eF136d44B41Dc73c131492c8985e204"
+    },
+    {
+      "key": "ValidatorWalletBlueprint",
+      "addr": "0xAE308333af9e4aB7418E0CA6f1Fd5fAb8915BAf2"
+    },
+    {
+      "key": "FeesVerifier",
+      "addr": "0xE5DaA0860E1a1dc08a219762f96Fe2e5006504b3"
+    },
+    {
+      "key": "TribunalInitializationManager",
+      "addr": "0xb80D257061358fF158B6F3e68CE659a3b74443Ff"
+    },
+    {
+      "key": "GhostFactory",
+      "addr": "0x901ECAeFc35aed5Dd9967feF4E161d42199aAd9d"
+    },
+    {
+      "key": "ConsensusDataBigRounds",
+      "addr": "0xc0aB228Ba46b4825fcd6461ea56d5B732AcA0E3B"
+    },
+    {
+      "key": "AddressManager",
+      "addr": "0x3F71AE080BD6270A91dBcc7960d88797828538E0"
+    },
+    {
+      "key": "CommittingPhase",
+      "addr": "0xC08fDE7309d590e01FB93E37a808DEf2a8aB6bc2"
+    },
+    {
+      "key": "Governance",
+      "addr": "0x14b647BE7358aE0678DB5B60eC8B8fd90e895917"
+    },
+    {
+      "key": "AppealFundingHelpers",
+      "addr": "0x6ea7466625A45272AC786bdCbED179C6fBcEc376"
+    },
+    {
+      "key": "GovernanceGESRegistry",
+      "addr": "0x9a59348e756f9dD54C58B31ac764fB0130B51e06"
+    },
+    {
+      "key": "ConsensusMainWithFees",
+      "addr": "0x2E2766cbc3E5e61Ce93bBcdCBb3eAcB82082A019"
+    },
+    {
+      "key": "RoundsLight",
+      "addr": "0xe1B234B6959deA2AD0873fc7248a91a53a6185f9"
+    },
+    {
+      "key": "ConsensusProposalHelpers",
+      "addr": "0x06871c41b23D42E940dFD09CA84117d21dC88C8B"
+    },
+    {
+      "key": "FeeSplitUtils",
+      "addr": "0x868D93f0f6ee923DD609788842e635ae27A16A0D"
+    },
+    {
+      "key": "MinimumStakeTransitionManager",
+      "addr": "0x37f083c99A72e71B9f564B85cAE9eFa26ebA59F8"
+    },
+    {
+      "key": "GovernanceVoting",
+      "addr": "0xF4Fbb5C9FEe31cF45ECb37a3578699F8E88A52C3"
+    },
+    {
+      "key": "NFTMinter",
+      "addr": "0xEe307BCE38733cD16c15A13FE7e928BBE40e96E1"
+    },
+    {
+      "key": "ConsensusHelpers",
+      "addr": "0x9F757AeC38Bd4d217A3F05fC9c715112ca5279f6"
+    },
+    {
+      "key": "GenManager",
+      "addr": "0x3F748d4CbDA4FDfe8356690aFD73ac4cFc4eE56B"
+    },
+    {
+      "key": "DeepthoughtReserve",
+      "addr": "0x9d8c991Fe71d27589f004c24505f4ce4C6fD3F78"
+    },
+    {
+      "key": "ValidatorSlashProgress",
+      "addr": "0x71fD566E1143cf97d3448e641D7A04f1e2C6dE41"
+    },
+    {
+      "key": "GovernanceClassRegistry",
+      "addr": "0x172AE46D9eceE2f7c93c2e0226D78266DB77270f"
+    },
+    {
+      "key": "FeesProcessor",
+      "addr": "0x040a455CA9c6A8Cdc696F6fE603152692D4CA775"
+    },
+    {
+      "key": "FeeManagerHelpers",
+      "addr": "0x4b21cF7CDe9F4a72C618204aAA2509A1c37De2C6"
+    },
+    {
+      "key": "Gen",
+      "addr": "0x424242424b68330CcFb022881d25a6acC29852ea"
+    },
+    {
+      "key": "DelegatorUtils",
+      "addr": "0xddF2a0491745B238818bcc02CE71aD5145bfd93A"
+    },
+    {
+      "key": "TransitionEnforcer",
+      "addr": "0xA30098a857e9246268cf9c8E7F126bDa882289aC"
+    },
+    {
+      "key": "ValidatorWalletFactory",
+      "addr": "0x399FCBe6b442903cbA4d3B647B4b30EddF729314"
+    },
+    {
+      "key": "TransactionManager",
+      "addr": "0xaCe5e4191Bf408957538Caa9493aBB64F63D92c4"
+    },
+    {
+      "key": "MessagePaymentsHelpers",
+      "addr": "0x8101882d8a2Fea752Bf041Aaeb068C3B4FD62B97"
+    },
+    {
+      "key": "Appeals",
+      "addr": "0xdc953c3bCf8837987853ca05a78D52fFC3E18651"
+    },
+    {
+      "key": "ResolutionKernel",
+      "addr": "0x274663eB1F7E1c23E7192Fd102212F05dbb02e85"
+    },
+    {
+      "key": "ProposalPhase",
+      "addr": "0x44aFCc45720c6ab951BabB726C07A651De9aA4b3"
+    },
+    {
+      "key": "TribunalAppeal",
+      "addr": "0x7cf2D3Fa7f63F3547C5036dC955ba1a70235682a"
+    },
+    {
+      "key": "ValidatorSelectionUtils",
+      "addr": "0x549dC20c5F22D59b0F662Bb5bC800daE0a7b7a2F"
+    },
+    {
+      "key": "StakingData",
+      "addr": "0x8951E93ae3E95F44Bc700fd8D145d30f5eeD408E"
+    },
+    {
+      "key": "IdlenessHelpers",
+      "addr": "0x894B9b1Fbc238318f10200cbE03eBf6e2ccCa637"
+    },
+    {
+      "key": "Slash",
+      "addr": "0x9C30189686B7d6ec5e525eA6f155B57987d2086f"
+    },
+    {
+      "key": "FeesRecorder",
+      "addr": "0x8beE3d0b24e07183A840bd0B51041C1f71914797"
+    },
+    {
+      "key": "MessagePayments",
+      "addr": "0x5Ac4717C772107c335f2db699e2cDA4ebC192faE"
+    },
+    {
+      "key": "BatchTransactionHandler",
+      "addr": "0x318d04EbeB53d121e0a8566a9448ffE84af0D1C4"
+    },
+    {
+      "key": "StakingInvariant",
+      "addr": "0xf9F9bed2008EcD50AdbB101eA455CBe42F1b6Be4"
+    },
+    {
+      "key": "StakingViews",
+      "addr": "0xf1fBdE733A9ceE2C0A44b8f724d944F89aE6D8A4"
+    },
+    {
+      "key": "IdlenessCrank",
+      "addr": "0xea447c0a9656cf5C6983578Da910bb88eF8e0e30"
+    },
+    {
+      "key": "RoundsStorage",
+      "addr": "0x4038d4F72C7aAbA5a442cC0dA946012B9E3f4B8a"
+    }
+  ],
+  "commitment": "0x766bc682ffac57a2a540f92c667c1b33ec694deeb7627ca4f41e9759b9dbf524"
+}

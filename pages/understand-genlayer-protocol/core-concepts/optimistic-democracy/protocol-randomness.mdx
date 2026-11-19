@@ -1,0 +1,76 @@
+---
+description: "How Consensus v0.6 advances per-recipient randomness with ECVRF proofs and uses it for validator selection."
+---
+
+import { Callout } from 'nextra-theme-docs'
+
+# Protocol Randomness
+
+GenLayer uses an evolving random seed when it selects transaction activators, leaders, and validator committees. In Consensus v0.6, each recipient contract has its own seed chain, and ordinary seed advances are backed by an **elliptic-curve verifiable random function (ECVRF)** proof.
+
+This page describes the deployed contract behavior. It deliberately separates the cryptographic seed advance from the selection policy that consumes the seed.
+
+## ECVRF Seed Advances
+
+For a recipient address, `ConsensusManager` stores `recipientRandomSeed[recipient]`. The input for its next advance is:
+
+```text
+keccak256("GenLayer/ConsensusManager/seed-advance/v1" || current recipient seed)
+```
+
+The validator role responsible for the protocol action supplies an ECVRF proof and its registered operator public key. The contract:
+
+1. decodes the proof;
+2. checks that the proof's public key is the supplied registered operator key;
+3. verifies the proof against the domain-separated input; and
+4. stores the ECVRF output as the recipient's next seed.
+
+An ECVRF output is unique for a given key and input. A validator therefore cannot try many valid proofs for the same seed and choose the output that gives it a favorable committee. Its remaining choice is whether to publish the one valid proof or withhold it and enter the protocol's timeout path.
+
+<Callout type="info">
+The v0.6 seed advance is not an ordinary ECDSA-signature hash chain. Integrations that construct validator actions must produce the ECVRF proof expected by the validator-wallet and consensus interfaces.
+</Callout>
+
+## Per-Recipient Seed Chains
+
+Seeds are isolated by recipient contract rather than drawn from one global mutable value. Once a recipient seed has been initialized, the normal consensus path advances it through the ECVRF operation instead of resetting it.
+
+The domain tag prevents a proof made for seed advancement from being reused as a proof for another purpose under the same key. Including the current stored seed also makes old proofs invalid after the chain advances.
+
+The transaction records the random seed and the selection authority needed by its consensus flow. Later work on that transaction therefore uses its pinned state instead of silently following an unrelated, newer recipient seed.
+
+## From a Seed to a Committee
+
+Randomness supplies the unpredictable input; staking supplies the eligible population and its epoch-effective selection weights. Consensus derives successive draws from the transaction seed and selection context while excluding identities that are unavailable or already consumed by that selection.
+
+This distinction matters:
+
+- the ECVRF proves the seed advance and prevents proof grinding;
+- staking determines who is eligible and how selection weight is calculated; and
+- the transaction snapshot prevents membership and policy changes from rewriting an in-flight selection.
+
+Appeal committees can be much larger than an ordinary round. Their selection may therefore be prepared and completed through bounded, permissionless steps, but it remains tied to the transaction's pinned randomness and selection authority.
+
+## Guarantees and Limits
+
+The v0.6 design provides these practical properties:
+
+- **Unique proof output.** For one registered key and one seed-advance input, there is only one valid ECVRF output.
+- **Public verification.** The contract verifies both the proof and the operator-key binding.
+- **Purpose separation.** The domain tag binds the proof to GenLayer seed advancement.
+- **Replay resistance.** Advancing the stored seed changes the next proof input.
+- **Per-recipient isolation.** Activity on one contract does not directly advance another contract's seed chain.
+
+It does not turn the whole selection system into a threshold random beacon. In particular:
+
+- the responsible validator can publish or withhold its unique output, with withholding handled as a liveness failure; and
+- a recipient's first seed must be initialized from transaction-creation entropy before ECVRF advances take over.
+
+Those limits are different from proof grinding: withholding can delay progress, but it does not let the validator choose among multiple valid outputs for the same key and input.
+
+## Related Concepts
+
+- [Validators and Validator Roles](/understand-genlayer-protocol/core-concepts/validators-and-validator-roles)
+- [Staking](/understand-genlayer-protocol/core-concepts/optimistic-democracy/staking)
+- [Appeals Process](/understand-genlayer-protocol/core-concepts/optimistic-democracy/appeal-process)
+- [Deterministic Violations & Tribunals](/understand-genlayer-protocol/core-concepts/optimistic-democracy/deterministic-violations-and-tribunals)

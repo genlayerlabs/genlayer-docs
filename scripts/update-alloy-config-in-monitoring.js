@@ -3,6 +3,9 @@
 const fs = require('fs');
 const path = require('path');
 
+// A generator that cannot find its source or its target block fails the build.
+const fail = (msg) => { console.error(msg); process.exitCode = 1; };
+
 /**
  * Update the monitoring page with the latest alloy-config.river from the synced content.
  * Replaces the river code block in monitoring.mdx with the current alloy-config.river file.
@@ -13,12 +16,12 @@ function updateAlloyConfigInMonitoring() {
   const monitoringPath = path.join(projectRoot, 'pages/validators/monitoring.mdx');
 
   if (!fs.existsSync(alloyConfigPath)) {
-    console.error(`Alloy config file ${alloyConfigPath} does not exist`);
+    fail(`Alloy config file ${alloyConfigPath} does not exist`);
     return;
   }
 
   if (!fs.existsSync(monitoringPath)) {
-    console.error(`Monitoring file ${monitoringPath} does not exist`);
+    fail(`Monitoring file ${monitoringPath} does not exist`);
     return;
   }
 
@@ -32,13 +35,13 @@ function updateAlloyConfigInMonitoring() {
   if (riverPattern.test(monitoringContent)) {
     monitoringContent = monitoringContent.replace(
       riverPattern,
-      `$1${alloyConfigContent}$3`
+      (_, before, _old, after) => before + alloyConfigContent + after
     );
 
     fs.writeFileSync(monitoringPath, monitoringContent);
     console.log(`Updated monitoring alloy-config.river block at ${new Date().toISOString()}`);
   } else {
-    console.error('Could not find alloy-config.river code block pattern in monitoring.mdx');
+    fail('Could not find alloy-config.river code block pattern in monitoring.mdx');
   }
 }
 
