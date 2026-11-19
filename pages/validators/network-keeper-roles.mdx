@@ -105,7 +105,7 @@ deducted from the epoch's slashed pool before the remainder is burned. Priming a
 **Cadence:** validators prime themselves each epoch, so a keeper only needs to target validators that (a) have an enactable pending slash and are not priming, or (b) have stopped priming entirely. Related permissionless storage-cleanup helpers — `validatorClean(...)` and `delegatorClean(...)` — reclaim finalized deposit/withdrawal records and carry no reward.
 
 <Callout type="info">
-  Slashing is time-locked and lazy: a recorded penalty becomes enactable only 2 epochs after the event, and is applied at the next priming. A validator that **exits before being primed** can avoid a pending slash; the caller incentive exists partly to pay third parties to prime-and-slash before that happens.
+  **An exit keeps the withdrawn stake slashable for the epochs it backed.** A validator can claim the withdrawal only after it has been priced, the unbonding period has elapsed, and slashing for those epochs has been settled. If the validator stops priming, any keeper can call `validatorPrime(validator)` to advance settlement once the penalty’s review delay has elapsed (two epochs by default).
 </Callout>
 
 ---
