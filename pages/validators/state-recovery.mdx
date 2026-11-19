@@ -49,7 +49,7 @@ curl -s -X POST http://localhost:9151 \
 }
 ```
 
-`blocksBehind == 0` means fully synced. A large, **steadily shrinking** `blocksBehind` means the node is catching up normally — let it run. A value that is stuck or growing means the node cannot make progress and needs intervention.
+Compare two or more samples. An advancing `syncedBlock` means replay is making progress. A shrinking `blocksBehind` means it is catching up. If both heads advance at the same rate, lag stays constant. If the L2 head advances while `syncedBlock` stays fixed, investigate a replay stall.
 
 ### Check health and run diagnostics
 
@@ -64,7 +64,7 @@ curl -s http://localhost:9153/health
 `doctor` checks the configured GenLayer Chain HTTP and WebSocket endpoints alongside consensus configuration, GenVM and LLM connectivity. On Bradbury Phase 2 these endpoints serve the Orbit L2. Compare its head with another provider before starting local recovery. See [Chain / Sequencer Outage](/validators/rollup-outage).
 
 <Callout type="info">
-  A node that falls far enough behind (thousands of blocks, or no sync progress for several minutes) enters a **hopelessly-behind** state: it skips consensus duties and pauses its sync pipeline rather than voting on stale state. This is expected protective behavior. It leaves that state automatically once it makes forward progress, and an internal stall-watchdog restarts the sync pipeline if it wedges — but a node that can *never* catch up (for example, replay is slower than the chain advances, or a dependency is down) is the case this runbook addresses. If a node stays stuck with the pipeline paused, a **process restart** is the historical remedy of last resort.
+  In v0.6.0-rc.5, a validator continues its duties while replay is behind. It can process transactions that do not need missing state and vote Timeout when a transaction reads state it has not yet synced. The protocol may penalize a Timeout vote. Stop the original signer before starting a replacement. See the [node health reference](https://github.com/genlayerlabs/genlayer-node/blob/v0.6.0-rc.5/docs/api/ops/health.md).
 </Callout>
 
 ---
@@ -182,7 +182,7 @@ Set `datadir` in `replay-overlay.yaml` to the fresh directory chosen in step 1. 
 Watch `gen_syncing` and your logs. `blocksBehind` should fall steadily. Historical replay executes deterministic code in GenVM and returns the recorded leader output for nondeterministic calls. Replay itself makes no LLM or web-module calls and uses no LLM credits. The startup self-test and live duties that invoke an LLM still need a working provider. See the [release execution modes](https://github.com/genlayerlabs/genlayer-node/blob/v0.6.0-rc.5/docs/spec/genvm-execution-modes.md).
 
 <Callout type="warning" emoji="⚠️">
-  If `blocksBehind` is **not** shrinking, the node is not making progress. Check that the chain RPC serves historical blocks and receipts, inspect the GenVM manager logs, and check CPU, memory and disk capacity.
+  If `syncedBlock` stops advancing while new L2 blocks arrive, check that the chain RPC serves historical blocks and receipts, inspect the GenVM manager logs, and check CPU, memory and disk capacity. If `syncedBlock` still advances but lag grows, compare replay throughput with the rate of new blocks.
 </Callout>
 
 ---
@@ -192,11 +192,12 @@ Watch `gen_syncing` and your logs. `blocksBehind` should fall steadily. Historic
 Recovering the database restores the node — but if your validator was down long enough to miss its per-epoch **priming**, it may have been dropped from validator selection while it was offline. Rebuilding local state does not itself re-select you.
 
 - Validators must be **primed** each epoch (`validatorPrime()`) to remain eligible for selection. Missing priming does **not** lose your stake or rewards, but it excludes you from selection until priming resumes. See [Validator Priming](/understand-genlayer-protocol/core-concepts/optimistic-democracy/staking#epoch-activation-and-priming).
-- A validator that missed activity windows may appear in the **quarantined** set rather than the **active** set. Quarantine is an on-chain consensus mechanism, not a node-side flag — check your status with the CLI:
+- Check the active set, bans and quarantines separately. Repeated missed duties can lead to a temporary idleness ban. Other restrictions can outlast it. Use the CLI to inspect the on-chain status:
 
 ```bash copy
-# Is my validator active, or quarantined?
+# Check eligibility and both restriction lists
 genlayer staking active-validators
+genlayer staking banned-validators
 genlayer staking quarantined-validators
 genlayer staking validator-info --validator 0xYourValidatorWallet...
 ```
@@ -213,7 +214,7 @@ genlayer staking validator-info --validator 0xYourValidatorWallet...
 - **Restore refuses the archive or destination** — Verify the release format, `scope=genvm`, and an absent or empty destination for `--datadir`.
 - **`POST /snapshot` returns 401** — `GENLAYERNODE_NODE_OPERATOR_TOKEN` is unset or the header is wrong. Set the token on the node and restart; it is read once at startup and not hot-reloaded.
 - **Re-sync is extremely slow** — Expected for a full genesis replay: every historical Intelligent Contract is re-executed through GenVM. Confirm `consensus.genesis`, measure historical RPC latency and disk throughput, and tune the replay budget if the host has capacity.
-- **Recovered node runs but isn't selected for consensus** — You likely missed priming while down. Verify with `genlayer staking active-validators` / `quarantined-validators` and see [Validator Priming](/understand-genlayer-protocol/core-concepts/optimistic-democracy/staking#epoch-activation-and-priming).
+- **Recovered node runs but is not selected for consensus** — Check epoch priming, the active set, and both the ban and quarantine lists. See [Validator Priming](/understand-genlayer-protocol/core-concepts/optimistic-democracy/staking#epoch-activation-and-priming).
 
 ## Related
 
