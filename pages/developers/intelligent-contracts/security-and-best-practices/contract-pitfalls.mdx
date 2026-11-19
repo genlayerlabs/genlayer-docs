@@ -1,0 +1,124 @@
+---
+description: "Common Intelligent Contract pitfalls: re-roll attacks, front-running counterparties, refund loops, event argument order, storage closures, TreeMap costs and scaled integers."
+---
+
+import { Callout } from "nextra-theme-docs";
+
+# Common Contract Pitfalls
+
+Beyond validator design, these issues show up repeatedly in Intelligent
+Contracts that handle money or reputation.
+
+## Re-rolling non-deterministic judgments
+
+An LLM judgment is a sample. If the same subject can be judged again and
+again, a borderline (or bad) submission eventually gets a "yes".
+
+```python
+# Bug: can be called until it returns True
+@gl.public.write
+def judge(self, task_id: int) -> bool: ...
+```
+
+**Fix:** judge each subject once and record it, e.g.
+`self.evaluated[f"{bounty_id}:{pr_number}"] = u256(1)`. If a second opinion is
+legitimate, make it an explicit, bonded appeal.
+
+## Counterparties front-running a pending decision
+
+If the party who funded an escrow can cancel at any time, they can wait to
+see the work and cancel before it is judged.
+
+**Fix:** gate state transitions on status *and* time:
+
+```python
+if task.status != "OPEN" or now <= int(task.deadline):
+    raise gl.vm.UserError("[EXPECTED] cannot cancel now")
+```
+
+Also block cancellation during challenge/appeal windows.
+
+## Refund loops
+
+Looping over every funder to refund them makes the transaction cost grow with
+the number of funders and lets one failing transfer affect everyone.
+
+**Fix:** pull-based refunds — each funder calls `claim_refund()`; zero their
+balance *before* emitting the transfer.
+
+```python
+amount = self.contributions.get(key, u256(0))
+if amount == u256(0):
+    raise gl.vm.UserError("[EXPECTED] nothing to refund")
+self.contributions[key] = u256(0)
+_Payee(funder).emit_transfer(value=amount)
+```
+
+## Event indexed arguments are bound alphabetically
+
+`gl.Event` binds positional (indexed) constructor arguments to field names
+**in alphabetical order of the names**, not in declaration order:
+
+```python
+class Transfer(gl.Event):
+    def __init__(self, to: Address, from_: Address, /, **blob): ...
+
+Transfer(alice, bob).emit()   # emits from_=alice, to=bob  (swapped!)
+```
+
+<Callout type="warning">
+  Declare indexed event parameters in alphabetical order (and pass them in that
+  order), e.g. `def __init__(self, from_: Address, to: Address, /, **blob)`.
+  Add a test that asserts the emitted fields.
+</Callout>
+
+## Capturing storage inside non-deterministic closures
+
+Leader and validator functions run in a sandbox. Copy what they need from
+storage into plain local values first:
+
+```python
+repo, criteria = bounty.repo, bounty.criteria   # plain str values
+
+def leader_fn():
+    return evaluate(repo, criteria)
+```
+
+## `TreeMap` lookups are not free
+
+`TreeMap` is a balanced tree laid out in storage, so a lookup reads O(log n)
+storage slots. An index map pays off when a query touches a small fraction of
+records; when a query reads a large share of a collection, iterating a
+`DynArray` sequentially can be cheaper. Measure with your real data shape;
+don't add indexes by reflex.
+
+## Money and measurements as scaled integers
+
+- Amounts: `u256` in wei (1 GEN = 10¹⁸ wei).
+- Prices: integer × 10⁸; rainfall: tenths of a millimetre; percentages:
+  basis points (0–10 000).
+- Split payouts without losing dust: `a = total * bps // 10_000; b = total - a`.
+- Don't return Python floats from public methods; return scaled integers.
+
+## Return small results from non-deterministic blocks
+
+Whatever the leader returns travels through consensus and into the receipt.
+Extract decision fields inside the block instead of returning raw pages:
+a 20 KB page is hundreds of times larger than `{"verdict": ..., "reason": ...}`
+and cannot be compared reliably anyway.
+
+## Sending GEN to wallets
+
+Sending value to an externally owned account goes through an EVM-style
+interface (an *external message*), not `gl.get_contract_at`:
+
+```python
+@gl.evm.contract_interface
+class _Payee:
+    class View: pass
+    class Write: pass
+
+_Payee(recipient).emit_transfer(value=amount)
+```
+
+See [Value Transfers](/developers/intelligent-contracts/features/value-transfers).
