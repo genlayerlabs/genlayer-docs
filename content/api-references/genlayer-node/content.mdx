@@ -34,6 +34,10 @@ The GenLayer Node also supports Ethereum-compatible methods that are proxied to 
 - `eth_call`
 - And other standard Ethereum JSON-RPC methods
 
+## zkSync Compatibility
+
+The node can forward `zks_*` methods to an upstream that supports the [zkSync JSON-RPC API](https://docs.zksync.io/zksync-protocol/api/zks-rpc). Set `node.rpc.endpoints.zksync.enabled` to `true` to enable forwarding for a compatible upstream. Keep the default value of `false` on Bradbury Phase 2, which runs on Arbitrum Orbit.
+
 ## Usage Examples
 
 ### cURL

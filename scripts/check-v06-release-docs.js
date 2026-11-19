@@ -193,7 +193,7 @@ for (const relativePath of [
 
 for (const relativePath of [
   "pages/FAQ.mdx",
-  "pages/api-references/genlayer-node.mdx",
+  "pages/developers/decentralized-applications/architecture-overview.mdx",
   "pages/developers/networks.mdx",
   "pages/developers/staking-guide.mdx",
   "pages/understand-genlayer-protocol/what-is-genlayer.mdx",
@@ -202,7 +202,12 @@ for (const relativePath of [
 ]) {
   forbidText(relativePath, "zksync", "pre-Orbit zkSync reference");
   forbidText(relativePath, "ZK Stack", "pre-Orbit ZK Stack reference");
+  forbidText(relativePath, "ZK-stack", "pre-Orbit ZK Stack reference");
 }
+const nodeApi = "pages/api-references/genlayer-node.mdx";
+requireText(nodeApi, "## zkSync Compatibility", "preserved zkSync compatibility section anchor");
+requireText(nodeApi, "node.rpc.endpoints.zksync.enabled", "conditional zkSync upstream forwarding config");
+requireText(nodeApi, "default value of `false` on Bradbury Phase 2", "disabled zkSync forwarding on Orbit");
 requireText(keepers, "executeInflationRequest", "Orbit inflation request execution");
 forbidText(keepers, "executeL2Message", "zkSync inflation relay call");
 const stakingGuide = "pages/developers/staking-guide.mdx";
