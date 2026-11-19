@@ -178,17 +178,30 @@ if (/genlayer account create(?! --name)/.test(read(workflow))) {
   failures.push(`${workflow}: genlayer account create without required --name option`);
 }
 forbidText(workflow, "testnetBradbury", "pre-v0.40 Bradbury alias");
-requireText(workflow, "v0.40.0 or later", "minimum fee-aware CLI version");
 requireText(workflow, "--fee-profile fee-profile.json", "fee-aware CLI deploy");
 requireText(workflow, "/developers/decentralized-applications/fee-profiling-and-estimation", "fee profiling link");
 requireText(workflow, "sim_fundAccount", "CLI account funding on hosted Studio");
-requireText(workflow, "Funding is optional for deploys and writes", "Studio auto-covered fee deposit");
-forbidText(workflow, "The account needs GEN for the fee deposit", "mandatory funding claim");
-requireText(workflow, "Today only **Studio-dev** runs v0.123", "fee scope limited to v0.123 environments");
 requireText(workflow, 'pip install --pre "genlayer-test>=0.30.0rc2"', "genlayer-test fee-profile prerelease install");
-requireText(workflow, "only if your tests deploy the contract", "deploy entry requirement");
-requireText(workflow, "mined with a failed receipt", "fee-less deploy outcome");
-forbidText(workflow, "reject deploys that carry no fee distribution", "incorrect RPC rejection claim");
+
+// Release facts in prose are matched on plain text (Markdown emphasis and
+// line breaks removed) so rewording or reformatting does not fail the build.
+const workflowProse = read(workflow).replace(/[*_`]/g, "").replace(/\s+/g, " ");
+function requireFact(pattern, description) {
+  if (!pattern.test(workflowProse)) failures.push(`${workflow}: missing ${description}`);
+}
+function forbidFact(pattern, description) {
+  if (pattern.test(workflowProse)) failures.push(`${workflow}: contains stale ${description}`);
+}
+requireFact(/v0\.40\.0/, "minimum fee-aware CLI version");
+requireFact(/Studio v0\.123/, "Studio version that introduces fees");
+requireFact(/Studio-dev[^.]*v0\.123|v0\.123[^.]*Studio-dev/i, "fee scope limited to the Studio v0.123 environment");
+requireFact(/Studionet[^.]*(without|no) (protocol )?fees/i, "Studionet fee status");
+requireFact(/funding is optional|optional[^.]*fund/i, "optional CLI account funding");
+requireFact(/credits? the shortfall/i, "Studio auto-covered fee deposit");
+forbidFact(/account needs GEN for the fee deposit/i, "mandatory funding claim");
+requireFact(/deploy entry[^.]*tests? deploy/i, "deploy entry requirement");
+requireFact(/failed receipt/i, "fee-less deploy outcome");
+forbidFact(/(?<!not )reject(s|ed)? (a )?deploys? (that|without)/i, "incorrect RPC rejection claim");
 if (/gltest[^\n]*--fee-profile(?!\s+\S+\.json)/.test(read(workflow))) {
   failures.push(`${workflow}: gltest --fee-profile without an output path`);
 }
