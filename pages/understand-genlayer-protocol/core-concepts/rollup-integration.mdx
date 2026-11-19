@@ -9,7 +9,7 @@ import { Callout } from "nextra-theme-docs";
 GenLayer Chain is an EVM-compatible [Arbitrum Orbit](https://docs.arbitrum.io/launch-arbitrum-chain/a-gentle-introduction) chain that settles to Ethereum and uses GEN as its native gas token. It hosts ordinary Solidity contracts and the consensus contracts that coordinate Intelligent Contract execution. GenVM is a separate execution environment operated by nodes; it is not an EVM precompile or part of the rollup's execution engine.
 
 <Callout type="info">
-  Consensus v0.6 and later run on the Arbitrum Orbit GenLayer Chain, starting with Testnet Bradbury Phase 2. Check [Networks](/developers/networks) for the current endpoints.
+  Testnet Bradbury Phase 2 runs consensus v0.6 on Arbitrum Orbit and settles to Ethereum Sepolia. It uses [AnyTrust](https://docs.arbitrum.io/how-arbitrum-works/deep-dives/anytrust-protocol) for data availability. Normally, a committee stores the batch data and signs a certificate, which the sequencer posts to Sepolia. If the sequencer cannot obtain a certificate, it can post the full batch data to Sepolia. See [Networks](/developers/networks) for the current endpoints.
 </Callout>
 
 ```mermaid
@@ -87,7 +87,7 @@ The protocol uses the same path for its own token flows. Inflation is minted on 
 ## Blocks, time, and fees
 
 - **Block numbers.** The consensus contracts record GenLayer Chain block numbers, read through `ArbSys.arbBlockNumber()`. On Arbitrum chains, Solidity's `block.number` returns an approximate Ethereum block number instead, so do not compare it with consensus block fields. Phase windows and timeouts use block timestamps.
-- **EVM gas.** Gas on GenLayer Chain covers execution on the chain plus the cost of posting transaction data to the parent chain. Both components are charged in GEN.
+- **EVM gas.** Gas on GenLayer Chain covers execution on the chain and a share of the cost of posting batches to the parent chain. Both components are charged in GEN.
 - **Intelligent Contract fees.** The fee budget of an Intelligent Contract transaction is separate from the EVM gas of the enclosing transaction. See the [economic model](/understand-genlayer-protocol/core-concepts/economic-model).
 
 ## Integrating with GenLayer Chain
@@ -105,7 +105,7 @@ Exchanges, wallets, and indexers can treat GenLayer Chain as an Arbitrum-based E
 GenLayer Chain transactions reach several levels of confirmation:
 
 1. **Sequencer inclusion.** The chain's sequencer orders the transaction into a block. This is the confirmation most EVM tooling reports.
-2. **Ethereum settlement.** The chain posts its transaction data and state assertions to Ethereum. An assertion is confirmed after the challenge period; only then can its withdrawals and messages execute on Ethereum.
+2. **Ethereum settlement.** The rollup posts state assertions to its Ethereum parent chain. Once an assertion is confirmed after the challenge period, its withdrawals and messages can execute on the parent chain.
 3. **Protocol finality.** An Intelligent Contract transaction is final only after its consensus decision and appeal window complete.
 
 Applications must use the Intelligent Contract transaction status—not only the enclosing EVM transaction receipt—to determine whether an outcome is final. See [finality](/understand-genlayer-protocol/core-concepts/optimistic-democracy/finality).
