@@ -23,6 +23,8 @@ GenVM Configuration defines the LLM providers and web module settings a validato
   **[Chutes](/partners/chutes)** — create an account at [chutes.ai](https://chutes.ai) and generate an API key from settings.
 
   **[Morpheus](/partners/morpheus)** — obtain a [Morpheus API key](https://mor.org/) for DeepSeek, Llama, Qwen, and more via OpenAI-compatible API.
+
+  **[Pearl](/partners/pearl)** — get a Pearl API key from the GenLayer team for DeepSeek and GLM models via OpenAI-compatible API.
 </Callout>
 
 ## Hot-Reload
@@ -96,7 +98,7 @@ The `supports_json` and `supports_image` flags tell the Lua script which models 
 
 | Type | Description | Example services |
 |---|---|---|
-| `openai-compatible` | OpenAI-compatible chat/completions API | OpenAI, OpenRouter, Heurist, Comput3, Chutes, Morpheus, X.ai |
+| `openai-compatible` | OpenAI-compatible chat/completions API | OpenAI, OpenRouter, Heurist, Comput3, Chutes, Morpheus, Pearl, X.ai |
 | `ollama` | Ollama's native `/api/generate` endpoint | Local Ollama instance |
 | `anthropic` | Anthropic's Messages API | Claude models |
 | `google` | Google's Generative Language API | Gemini models |
@@ -168,6 +170,8 @@ Which keys are read depends on the LLM config you run. Two files ship in the Gen
 "Backend disabled" means the backend is in the file with `enabled: false`. Set it to `true` to use the key.
 
 Chutes has no built-in backend. To use it, add an `openai-compatible` backend with your own key variable (see [Chutes](/partners/chutes)).
+
+Pearl has no built-in backend either. To use it, add an `openai-compatible` backend that reads `PEARL_API_KEY` (see [Pearl](/partners/pearl)).
 
 <Callout type="info">
   Enabled backends without a configured API key will log warnings. Either set the key or disable the backend with `enabled: false`.
