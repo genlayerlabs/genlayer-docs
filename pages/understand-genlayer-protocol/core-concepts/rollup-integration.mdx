@@ -4,7 +4,7 @@ description: "Learn how GenLayer Chain, its consensus contracts, validator nodes
 
 # GenLayer Chain integration
 
-GenLayer Chain is an EVM-compatible chain built with the ZK Stack. It hosts ordinary Solidity contracts and the consensus contracts that coordinate Intelligent Contract execution. GenVM is a separate execution environment operated by nodes; it is not an EVM precompile or an Ethereum rollup execution engine.
+GenLayer Chain is an EVM-compatible Arbitrum Orbit L2 that settles to Ethereum. GEN is its native gas token. It hosts ordinary Solidity contracts and the consensus contracts that coordinate Intelligent Contract execution. GenVM is a separate execution environment operated by nodes; it is not an EVM precompile or an Ethereum rollup execution engine.
 
 ```mermaid
 %%{init: {"flowchart": {"curve": "basis", "nodeSpacing": 48, "rankSpacing": 54, "htmlLabels": true}}}%%
@@ -69,4 +69,8 @@ The shared address gives wallets and EVM contracts one destination even though e
 
 ## Settlement and protocol finality are different
 
-GenLayer Chain inherits its rollup settlement properties from its ZK Stack and Ethereum configuration. Separately, an Intelligent Contract transaction reaches **protocol finality** only after its consensus decision and appeal window complete. Applications must use the Intelligent Contract transaction status—not only the enclosing EVM transaction receipt—to determine whether an outcome is final.
+GenLayer Chain settles to Ethereum the way Arbitrum Orbit chains do. Its sequencer orders transactions. Its state is asserted on its parent chain without a validity proof: an assertion can be disputed during the chain's challenge period and is confirmed only after that period ends. A message from GenLayer Chain to Ethereum, such as a GEN withdrawal or an inflation request, can be executed through the canonical Outbox contract only after the assertion that contains it is confirmed. A sequencer receipt or an L2 event alone does not authorize an action on Ethereum.
+
+On Testnet Bradbury, the parent chain is Ethereum Sepolia and the chain runs in AnyTrust mode: a data availability committee stores transaction data, and the parent chain records the committee's certificates. See [Networks](/developers/networks) for each network's endpoints.
+
+Separately, an Intelligent Contract transaction reaches **protocol finality** only after its consensus decision and appeal window complete. Applications must use the Intelligent Contract transaction status—not only the enclosing EVM transaction receipt—to determine whether an outcome is final.

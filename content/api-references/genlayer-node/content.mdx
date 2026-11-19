@@ -34,11 +34,11 @@ The GenLayer Node also supports Ethereum-compatible methods that are proxied to 
 - `eth_call`
 - And other standard Ethereum JSON-RPC methods
 
-## zkSync Compatibility
+## Legacy `zksync` group (`zks_*`)
 
-[zkSync-compatible](https://docs.zksync.io/zksync-protocol/api/zks-rpc) methods are also supported and proxied to the underlying infrastructure. These methods are prefixed with `zks_`.
+The node still has an RPC group named `zksync`. It forwards any `zks_*` method unchanged to the GenLayer Chain RPC configured in `rollup.genlayerchainrpcurl`. The name is a legacy one: GenLayer Chain is now an Arbitrum Orbit L2, not a zkSync chain, and its RPC does not serve `zks_*` methods. An enabled group therefore returns the chain's "method not found" error (`-32601`) for these calls.
 
-The default `config.yaml` turns the `zksync` group off (`node.rpc.endpoints.zksync.enabled: false`). Set it to `true` to forward `zks_*` calls.
+The default `config.yaml` turns the `zksync` group off (`node.rpc.endpoints.zksync.enabled: false`). Keep it off. The key is still accepted, so existing configs that set it continue to load.
 
 ## Usage Examples
 

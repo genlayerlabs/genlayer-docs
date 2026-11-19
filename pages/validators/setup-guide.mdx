@@ -642,6 +642,8 @@ metrics:
 
 ```
 
+**Proxied RPC groups.** Under `node.rpc.endpoints`, the `ethereum` group forwards `eth_*` methods to the GenLayer Chain RPC in `rollup.genlayerchainrpcurl`. The `zksync` group forwards `zks_*` methods to the same RPC. `zksync` is a legacy name: GenLayer Chain is an Arbitrum Orbit L2, its RPC does not serve `zks_*` methods, and the example keeps the group off. The key is still accepted, so leave it as it is. See [GenLayer Node API](/api-references/genlayer-node).
+
 #### Network-Specific Consensus Configuration
 
 Replace the matching sections of your `config.yaml` with the block for the network you want to join. Replace each top-level section as a whole rather than adding a second `rollup:` or `consensus:` key.

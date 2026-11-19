@@ -162,6 +162,31 @@ for (const stub of removedStubs) {
   }
 }
 
+// GenLayer Chain is an Arbitrum Orbit L2. Pages must not describe it as a
+// ZK Stack / zkSync chain. Allowed: release history (changelogs), partners
+// built on the ZK Stack, and real identifiers (the legacy `zksync` RPC group,
+// `zks_*` methods, contract error names).
+const architectureExceptions = new Set([
+  path.join("pages", "validators", "changelog.mdx"),
+  path.join("pages", "partners", "heurist.mdx"),
+]);
+const outdatedArchitecture = [
+  [/\bZK ?Stack\b/i, "ZK Stack"],
+  [/\bzkSync Elastic\b/i, "zkSync Elastic Chain"],
+  [/\b(?:via|on|built (?:on|with)) zkSync\b/i, "zkSync as the chain's base"],
+  [/\bzks_getL2ToL1LogProof\b/, "zkSync L2-to-L1 proofs"],
+  [/\bzkSync RPC\b/i, "zkSync RPC"],
+];
+for (const file of walk(path.join(ROOT, "pages")).filter((file) => file.endsWith(".mdx"))) {
+  if (architectureExceptions.has(relative(file))) continue;
+  const content = fs.readFileSync(file, "utf8");
+  for (const [pattern, description] of outdatedArchitecture) {
+    if (pattern.test(content)) {
+      failures.push(`${relative(file)}: describes GenLayer Chain with outdated ${description} wording`);
+    }
+  }
+}
+
 if (failures.length) {
   console.error("check-protocol-docs: FAILED");
   for (const failure of failures) console.error(`  - ${failure}`);

@@ -57,7 +57,7 @@ Breaking changes involve a new consensus deployment. The old database is incompa
 - The node needs the trusted protocol manifest of the network. Set `consensus.manifestpath` (default `configs/node/protocol-manifest.json`) and `consensus.chainid`. The release package has no network files: take the manifest and values from [Network-Specific Consensus Configuration](/validators/setup-guide#network-specific-consensus-configuration).
 - GenVM moved from `third_party/genvm` to `opt/genvm/<version>`, with the link `opt/genvm/current` to it. Set `genvm.root_dir: ./opt/genvm/current` and run `python3 ./opt/genvm/current/bin/setup.py` (see [download instructions](/validators/setup-guide#download-the-node-software)).
 - The Bradbury RPC WebSocket needs an API key. Set it in the environment as `GENLAYERNODE_ROLLUP_GENLAYERCHAINRPCKEY`; it has no `config.yaml` key. See [Testnet Bradbury](/validators/setup-guide#testnet-bradbury).
-- The `genlayer_debug` (`gen_dbg_*`) and `zksync` (`zks_*`) RPC groups are off in the default `config.yaml` (`node.rpc.endpoints`).
+- The `genlayer_debug` (`gen_dbg_*`) and `zksync` (`zks_*`) RPC groups are off in the default `config.yaml` (`node.rpc.endpoints`). `zksync` is a legacy group name: GenLayer Chain is now an Arbitrum Orbit L2 and does not serve `zks_*` methods.
 - The data store is split into `genvm.db` and `ops.db`. On startup the node renames an old `genlayer.db` to `genvm.db`; it refuses to start if both exist.
 - Docker: `NODE_PASSWORD` has no default, and a validator needs it: the node refuses validator mode without a password. It reaches the node as `GENLAYERNODE_PASSWORD`, not as `--password`. See [Running the Node using docker-compose](/validators/setup-guide#running-the-node-using-docker-compose).
 - Docker: the node container runs as uid `10001`. Make `./data` writable by it once: `sudo chown -R 10001:10001 ./data`.
@@ -70,7 +70,7 @@ Breaking changes involve a new consensus deployment. The old database is incompa
 ### v0.4.x to v0.5.0 (Breaking)
 
 - The two consensus contract addresses (`contractmainaddress` and `contractdataaddress`) have been replaced by a single `consensusaddress` field. Do not copy your old consensus config — use the new example `config.yaml`.
-- The GenLayer Chain ZKSync RPC URLs (`genlayerchainrpcurl` and `genlayerchainwebsocketurl`) have changed. Update both the HTTP RPC and WebSocket URLs in your `config.yaml` to the new endpoints.
+- The GenLayer Chain RPC URLs (`genlayerchainrpcurl` and `genlayerchainwebsocketurl`) have changed. Update both the HTTP RPC and WebSocket URLs in your `config.yaml` to the new endpoints.
 - Database must be wiped (the node creates a fresh one on startup).
 - Re-staking is required — breaking changes involve a new consensus deployment, so you must stake again using the [validator wizard](/validators/setup-guide#using-the-validator-wizard).
 
