@@ -101,7 +101,7 @@ Choose the crediting threshold for each operation and record which signal the in
 
 - [ ] Pull chain IDs, RPC (HTTP + WS), currency, and explorer URLs from the [Networks](/developers/networks) page for **each** environment you support.
 - [ ] Verify the Bradbury Phase 2 genesis hash and AddressManager alongside the chain ID.
-- [ ] Confirm the **L1 GEN representation and bridge route** from the network's canonical setup/bridge info — never hardcode a token or bridge address from a third-party source.
+- [ ] Verify the L1 token and canonical bridge for each deployment. For Bradbury Phase 2, use the [bridge and Sepolia GEN links](/developers/bridging-gen).
 - [ ] Track native GEN via `eth_getBalance` and native transfers (not ERC-20 logs) on the GenLayer Chain.
 - [ ] Specify whether each credit requires sequencer inclusion, a confirmed assertion or a finalized Intelligent Contract result.
 - [ ] Check the supported `eth_*` methods and test full-block decoding against a block containing a Nitro system transaction.

@@ -94,7 +94,8 @@ validatorWallet.validatorExit(sharesToExit);
 </Callout>
 
 **Important Notes:**
-- Exited tokens stop earning rewards immediately
+- After epoch 0, an exit immediately removes the shares from the owner's available balance and queues the withdrawal. When priming processes that withdrawal, it prices the shares and updates active stake and selection weight.
+- The withdrawal still receives its share of rewards for the epochs it served and remains exposed to slashing for those epochs.
 - Tokens are locked for **7 epochs** before claiming
 - Each exit creates a separate withdrawal
 
@@ -200,16 +201,16 @@ genStaking.delegatorExit(validatorWallet, sharesToExit);
 </Callout>
 
 **Important Notes:**
-- Can exit partial amounts
-- Stop earning rewards immediately after exit
+- Can exit partial amounts, but a partial exit cannot leave the delegation below the minimum; exit all shares instead
+- After epoch 0, an exit immediately removes the shares from your available balance. When priming processes the withdrawal, it prices the shares and updates the validator's active delegated stake and selection weight.
 - Tokens are locked for **7 epochs**
 - Exit each validator separately if delegating to multiple
 
 **Unbonding Timeline:**
 ```
-Epoch 5:     delegatorExit() called
+Epoch 5:     delegatorExit() called (active stake still earns epoch 5 rewards)
 Epochs 6-11: Locked period
-Epoch 12:    delegatorClaim() available
+Epoch 12:    earliest delegatorClaim()
 ```
 
 ### Claiming Withdrawn Funds as a Delegator

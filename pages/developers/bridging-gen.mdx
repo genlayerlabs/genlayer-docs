@@ -12,7 +12,7 @@ GenLayer Chain is an Arbitrum Orbit L2. A deposit moves ERC-20 GEN on Ethereum t
 This guide follows a transfer through the canonical bridge from the first wallet signature to the balance change on the destination chain.
 
 <Callout type="warning">
-  Check your deployment on [Networks](/developers/networks). For Bradbury Phase 2, verify the chain ID and genesis hash. Obtain the canonical bridge route and L1 token address from the network’s official deployment information. If you cannot verify the route, stop before approving or sending GEN.
+  For Bradbury Phase 2, open the [GenLayer testnet bridge on Rollbridge](https://genlayer-chain-testnet-cfn8m3xc6l-86e44e69a1216817.testnets.rollbridge.app/). Check that the route connects Ethereum Sepolia (11155111) and GenLayer Chain (4221). Verify the [Phase 2 genesis hash](/developers/networks#testnet-bradbury) and the [Sepolia GEN token](https://sepolia.etherscan.io/address/0x424242424b68330CcFb022881d25a6acC29852ea). If you cannot verify the route or token, stop before approving or sending GEN.
 </Callout>
 
 ## Before you start
@@ -33,7 +33,7 @@ Bridging touches two chains, so you need both set up:
 
 Deposits are the fast direction. Bringing GEN from Ethereum onto the GenLayer Chain follows the standard rollup deposit flow:
 
-1. **Connect to the canonical bridge** for your deployment with the wallet that holds your L1 GEN. Verify the parent network in your wallet.
+1. **Connect your wallet** to the [Bradbury Phase 2 bridge](https://genlayer-chain-testnet-cfn8m3xc6l-86e44e69a1216817.testnets.rollbridge.app/) and select Ethereum Sepolia as the source. Use the wallet that holds your Sepolia GEN.
 2. **Select the deposit direction** (L1 → GenLayer Chain) and the amount of GEN.
 3. **Approve and deposit the GEN.** Check the spender and amount in the L1 token approval. Submit the native-token deposit through the chain’s ERC-20 Inbox.
 4. **Verify the L2 credit.** When the sequencer includes the deposit, check the recipient’s native GEN balance. A native GEN deposit uses a direct Inbox credit. Contract calls and messages can use retryable tickets.
@@ -84,7 +84,7 @@ Because a transfer spans two chains, you follow it on both:
 | Expecting a withdrawal to arrive as soon as the L2 receipt appears | Track the message until its assertion is confirmed and the Outbox claim succeeds. |
 | Forgetting the L1 finalization step | A withdrawal is not complete until the L1 claim/finalize transaction succeeds. If your network's bridge doesn't auto-finalize, you must return and complete it. |
 | No L1 gas to finalize | Keep some L1 gas token available to pay for the withdrawal's finalization transaction. |
-| Using an address from another network | Verify the bridge and token against the deployment’s official information and the chain identity on [Networks](/developers/networks). |
+| Using an address from another network | Match the route and Sepolia GEN token to the Bradbury links above. Verify the destination genesis hash on [Networks](/developers/networks#testnet-bradbury). |
 | Confusing GenLayer finality with L2→L1 settlement | Follow the appeal window for an Intelligent Contract result and the Outbox message status for a bridge withdrawal. |
 
 ---

@@ -126,27 +126,27 @@ See [Reward Distribution](/understand-genlayer-protocol/core-concepts/optimistic
 
 Unstaking is a two-phase process because of the unbonding period.
 
-**Phase 1 — Exit (start unbonding).** You specify how many **shares** to withdraw. Those shares stop earning immediately, and the corresponding GEN enters a **7-epoch** lock.
+**Phase 1 — Exit (start unbonding).** Specify how many **shares** to withdraw. The request removes them from your available balance and starts the seven-epoch wait. Active stake still earns its normal rewards for the exit epoch. Rewards on the withdrawn stake stop when validator priming processes the withdrawal and removes that stake from the active record.
 
 ```bash
 # Withdraw a number of shares from a validator you delegate to
 genlayer staking delegator-exit --validator 0xVALIDATOR_ADDRESS --shares SHARES
 ```
 
-**Phase 2 — Claim (after unbonding).** Once 7 full epochs have passed since your exit, claim the GEN back to your address:
+**Phase 2 — Claim (after unbonding).** Count seven epochs from the exit request. Once the withdrawal has matured and been priced, claim the GEN back to your address:
 
 ```bash
 genlayer staking delegator-claim --validator 0xVALIDATOR_ADDRESS
 ```
 
 ```
-Epoch 5:      delegator-exit  →  unbonding starts, shares stop earning
-Epochs 6–11:  locked period (cannot claim yet)
-Epoch 12:     delegator-claim available
+Epoch 5:      request exit (active stake still earns epoch 5 rewards)
+Epochs 6–11:  withdrawal remains locked
+Epoch 12:     earliest claim for the priced withdrawal
 ```
 
 <Callout type="warning">
-  Plan around the 7-epoch wait — that's roughly 7 days on the network. Exited GEN earns nothing during unbonding, so only exit what you actually intend to withdraw. Track eligibility with `genlayer staking epoch-info`.
+  Track the current epoch with `genlayer staking epoch-info`. A partial exit leaves your remaining active shares earning rewards.
 </Callout>
 
 <Callout type="info">
@@ -162,12 +162,12 @@ For the concept-level walkthrough of exits and cooldowns, see [Unstaking in GenL
 There is **no "redelegate" operation** on GenLayer. Moving your stake from one validator to another is not atomic — it is a full unstake from the old validator followed by a fresh delegation to the new one, with the unbonding period in between. Concretely:
 
 1. **Exit** your shares from your current validator: `genlayer staking delegator-exit --validator 0xOLD --shares SHARES`.
-2. **Wait** the full **7-epoch** unbonding period (~7 days on the network). Your GEN is locked and earning nothing during this time.
+2. **Wait** seven epochs from the exit request before claiming. The old delegation keeps its exit-epoch rewards.
 3. **Claim** the released GEN back to your wallet: `genlayer staking delegator-claim --validator 0xOLD`.
 4. **Delegate** the claimed GEN to the new validator: `genlayer staking delegator-join --validator 0xNEW --amount ...`. Remember this new delegation then takes **2 epochs** to activate.
 
 <Callout type="error">
-  **Switching is not instant and not free of downtime.** Between exiting the old validator and your new delegation activating, your GEN spends the unbonding period unstaked (no rewards) and then 2 more epochs pending activation. If you value continuity, consider building a new position with fresh GEN rather than moving an existing one — or diversifying across validators from the start so you rarely need to move stake at all.
+  The withdrawn stake stops earning with the old validator when priming removes it from the active record. It starts earning with the new validator once the new delegation activates.
 </Callout>
 
 ---
