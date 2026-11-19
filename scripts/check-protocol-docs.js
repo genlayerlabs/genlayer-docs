@@ -171,7 +171,8 @@ const architectureExceptions = new Set([
   path.join("pages", "partners", "heurist.mdx"),
 ]);
 const outdatedArchitecture = [
-  [/\bZK ?Stack\b/i, "ZK Stack"],
+  [/\bZK[- ]?Stack\b/i, "ZK Stack"],
+  [/\bZK[- ]?rollups?\b/i, "ZK rollup"],
   [/\bzkSync Elastic\b/i, "zkSync Elastic Chain"],
   [/\b(?:via|on|built (?:on|with)) zkSync\b/i, "zkSync as the chain's base"],
   [/\bzks_getL2ToL1LogProof\b/, "zkSync L2-to-L1 proofs"],

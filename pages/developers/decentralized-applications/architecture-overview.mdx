@@ -20,7 +20,7 @@ Fee-charging writes carry an explicit policy for consensus time units, execution
 ### Consensus Layer
 The consensus layer implements GenLayer's Optimistic Democracy mechanism to ensure reliable and secure execution of transactions using a validator-driven commit-reveal scheme. It also handles appeals and transaction finality to maintain integrity and fairness.
 
-It is built on ZK-stack rollups to provide scalability and cost-efficiency, secure state updates, and anchoring to Ethereum's security model.
+Its contracts run on GenLayer Chain, an EVM-compatible Arbitrum Orbit L2 that settles to Ethereum and uses GEN as its native gas token. See [GenLayer Chain integration](/understand-genlayer-protocol/core-concepts/rollup-integration) for how settlement works.
 
 ### Execution Environment
 The execution environment (the GenVM) is the engine that executes Intelligent Contracts. It supports both deterministic and non-deterministic operations, enabling AI integration and web data access.

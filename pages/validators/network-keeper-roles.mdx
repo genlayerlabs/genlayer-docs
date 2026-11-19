@@ -61,7 +61,15 @@ bool approved = GEN.isInflationRequestApproved(epochTo, gasPrice, gasLimit);
 
 **Recovery:** if the L2 delivery fails, the principal stays in the escrow and anyone can call `ArbitrumInflationEscrow.retry()` on L2. A ticket that is still live can be redeemed or kept alive. `GEN.retryInflationDelivery()` resends the same request, paid entirely by the caller; it never mints the principal again.
 
-**Cadence:** submit each step as soon as it becomes executable. Outbox executions wait for assertion confirmation, so do not assume a fixed delay. The steps are idempotent: a request that was already executed, or an approval for an epoch that was already issued, cannot be executed again.
+**Cadence:** submit each step as soon as it becomes executable. Outbox executions wait for assertion confirmation, so do not assume a fixed delay.
+
+**Replay protection, not idempotency.** Each step can succeed only once, and a repeated call **reverts**; it is not a silent no-op:
+
+- An Outbox message can be executed once. Executing it again reverts in the Outbox (`AlreadySpent`).
+- A successful `executeInflationRequest()` deletes its approval. Calling it again with the same parameters reverts with `ArbitrumRequestNotApproved`, as does a call after the one-day window.
+- `executeInflationRequest()` also reverts with `InflationTransferPending` while an earlier transfer is still open, and with `InflationAlreadyRealized` if `epochTo` is not beyond the last issued epoch.
+
+Before submitting, check the state so a duplicate costs nothing: simulate the call (`eth_call`), call `GEN.isInflationRequestApproved(epochTo, gasPrice, gasLimit)`, and compare `epochTo` with `GEN.lastInflationEpoch()`. When several keepers race, expect the losers' transactions to revert and pay gas; only the first call that lands is rewarded.
 
 ---
 
@@ -198,7 +206,7 @@ Paginated garbage collection that reclaims **expired** quarantine records. It on
 
 - **Prioritize the inflation relayer.** It is the only keeper whose absence halts the whole network, and the only one that pays a standing reward. Everything else is a backstop to already-automated behavior.
 - **Check for a reward before assuming one.** Only the inflation relayer (for `executeInflationRequest()`), the validator primer (only on an actually-enforced slash), and the appellant (only on a successful appeal) ever pay. The rest are unpaid liveness/hygiene work.
-- **Expect idempotency.** Inflation relays, stuck-tx healing, and quarantine GC are all safe to retry or double-submit — duplicate or non-applicable calls are no-ops, not errors.
+- **Know which calls are idempotent.** Stuck-tx healing and quarantine GC are safe to retry: non-applicable calls are no-ops. Inflation relay steps are not: each succeeds once and a duplicate reverts (see [replay protection](#inflation-relayer)), so simulate before sending.
 - **Watch gas vs. reward.** For the paid roles, compare the estimated reward (e.g. the gas-based `executeInflationRequest()` reward, or the pending slash amount) against the transaction cost before submitting.
 
 ## Related Resources
