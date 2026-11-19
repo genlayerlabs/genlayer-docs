@@ -48,6 +48,8 @@ Pass both images in the same `images` list to compare them in one prompt. The li
 
 This helper can be called from a contract method with two complete PNG/JPEG byte sequences, such as a product photo and a reference photo:
 
+{/* genvm-lint: required */}
+
 ```python
 def compare_images(product_image: bytes, reference_image: bytes) -> bool:
     def leader_fn():
@@ -58,7 +60,7 @@ def compare_images(product_image: bytes, reference_image: bytes) -> bool:
             response_format="json",
         )
         if not isinstance(result, dict) or not isinstance(result.get("matches"), bool):
-            raise gl.UserError("Expected a boolean matches field")
+            raise gl.vm.UserError("Expected a boolean matches field")
         return result["matches"]
 
     def validator_fn(leaders_res) -> bool:
