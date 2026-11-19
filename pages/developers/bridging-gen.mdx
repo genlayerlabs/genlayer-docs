@@ -12,7 +12,7 @@ GenLayer Chain is an Arbitrum Orbit L2. A deposit moves ERC-20 GEN on Ethereum t
 This guide follows a transfer through the canonical bridge from the first wallet signature to the balance change on the destination chain.
 
 <Callout type="warning">
-  For Bradbury Phase 2, open the [GenLayer testnet bridge on Rollbridge](https://genlayer-chain-testnet-cfn8m3xc6l-86e44e69a1216817.testnets.rollbridge.app/). Check that the route connects Ethereum Sepolia (11155111) and GenLayer Chain (4221). Verify the [Phase 2 genesis hash](/developers/networks#testnet-bradbury) and the [Sepolia GEN token](https://sepolia.etherscan.io/address/0x424242424b68330CcFb022881d25a6acC29852ea). If you cannot verify the route or token, stop before approving or sending GEN.
+  For Bradbury Phase 2, use the bridge and Sepolia GEN contract listed on [Networks & RPCs](/developers/networks#testnet-bradbury). Check that the route connects Ethereum Sepolia (11155111) and GenLayer Chain (4221), and verify the Phase 2 genesis hash. If you cannot verify the route or token, stop before approving or sending GEN.
 </Callout>
 
 ## Before you start
@@ -20,7 +20,7 @@ This guide follows a transfer through the canonical bridge from the first wallet
 Bridging touches two chains, so you need both set up:
 
 - **The GenLayer Chain (L2) in your wallet.** Add it from the [GenLayer Chain (L2)](/developers/networks#genlayer-chain-l2) section on the Networks page (it includes an "add to wallet" control). GEN is the **native** token on this chain — balances are denominated in wei (1 GEN = 10¹⁸ wei).
-- **The corresponding L1 (Ethereum) network** in the same wallet, holding the GEN you want to deposit plus a little of the L1 gas token to pay for the deposit transaction.
+- **The corresponding L1 (Ethereum) network** in the same wallet, holding the GEN you want to deposit plus Sepolia ETH to pay for the deposit transaction.
 - **Gas on both sides.** A deposit costs L1 gas; a withdrawal costs L2 gas to initiate and then L1 gas to finalize/claim on Ethereum.
 
 <Callout type="info">
@@ -31,9 +31,9 @@ Bridging touches two chains, so you need both set up:
 
 ## Deposit: L1 → L2
 
-Deposits are the fast direction. Bringing GEN from Ethereum onto the GenLayer Chain follows the standard rollup deposit flow:
+Deposits are the fast direction. Bringing GEN from Ethereum onto the GenLayer Chain follows the Orbit deposit flow:
 
-1. **Connect your wallet** to the [Bradbury Phase 2 bridge](https://genlayer-chain-testnet-cfn8m3xc6l-86e44e69a1216817.testnets.rollbridge.app/) and select Ethereum Sepolia as the source. Use the wallet that holds your Sepolia GEN.
+1. **Connect your wallet** to the bridge listed for [Bradbury Phase 2](/developers/networks#testnet-bradbury) and select Ethereum Sepolia as the source. Use the wallet that holds your Sepolia GEN.
 2. **Select the deposit direction** (L1 → GenLayer Chain) and the amount of GEN.
 3. **Approve and deposit the GEN.** Check the spender and amount in the L1 token approval. Submit the native-token deposit through the chain’s ERC-20 Inbox.
 4. **Verify the L2 credit.** When the sequencer includes the deposit, check the recipient’s native GEN balance. A native GEN deposit uses a direct Inbox credit. Contract calls and messages can use retryable tickets.
@@ -52,7 +52,7 @@ A [canonical withdrawal](https://docs.arbitrum.io/how-arbitrum-works/deep-dives/
 2. **Claim on L1.** Wait for the rollup assertion covering the message to be confirmed on Ethereum after the deployment’s challenge period. Once the message is executable, you or a relayer can submit its inclusion proof to the L1 Outbox. A successful execution releases ERC-20 GEN to the L1 recipient.
 
 <Callout type="warning">
-  **Check the message status before claiming.** The L2 receipt and publication of the batch are earlier milestones. The wait depends on the deployment’s challenge period and assertion confirmation.
+  **Check the message status before claiming.** The L2 receipt and publication of the batch are earlier milestones. The Bradbury Phase 2 deployment specifies a 60-Sepolia-block challenge window. Batch publication and assertion confirmation add time. Use the bridge’s executable message status to decide when to claim. See the [Phase 2 deployment runbook](https://github.com/genlayerlabs/genlayer-consensus/blob/v0.6-rc-3/docs/deployment/bradbury-phase-2-runbook.md#6a-wait-for-l1-confirmation-execute-the-config-leaf).
 </Callout>
 
 <Callout type="info">
@@ -83,7 +83,7 @@ Because a transfer spans two chains, you follow it on both:
 |---|---|
 | Expecting a withdrawal to arrive as soon as the L2 receipt appears | Track the message until its assertion is confirmed and the Outbox claim succeeds. |
 | Forgetting the L1 finalization step | A withdrawal is not complete until the L1 claim/finalize transaction succeeds. If your network's bridge doesn't auto-finalize, you must return and complete it. |
-| No L1 gas to finalize | Keep some L1 gas token available to pay for the withdrawal's finalization transaction. |
+| No L1 gas to finalize | Keep Sepolia ETH available to pay for the withdrawal's finalization transaction. |
 | Using an address from another network | Match the route and Sepolia GEN token to the Bradbury links above. Verify the destination genesis hash on [Networks](/developers/networks#testnet-bradbury). |
 | Confusing GenLayer finality with L2→L1 settlement | Follow the appeal window for an Intelligent Contract result and the Outbox message status for a bridge withdrawal. |
 

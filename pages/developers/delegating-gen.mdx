@@ -26,7 +26,7 @@ This guide is written for token holders. It walks through the whole lifecycle: c
   Because you hold **shares**, not a token balance, you always **exit by specifying a number of shares** (or a percentage of your shares), never a GEN amount. Keep this in mind for every unstake.
 </Callout>
 
-An epoch is a fixed time window in which the validator set is active; on the network, an epoch lasts one day. See [Epoch System](/understand-genlayer-protocol/core-concepts/optimistic-democracy/staking#epoch-activation-and-priming) for details.
+Normal epochs have a one-day default minimum. Epoch 0 has a 14-day default. An epoch can run longer while the network waits for any configured extra duration, inflation delivery and finalization of the previous epoch. Count withdrawals in epochs using `genlayer staking epoch-info`. See [Epoch System](/understand-genlayer-protocol/core-concepts/optimistic-democracy/staking#epoch-activation-and-priming) for details.
 
 ---
 
@@ -91,7 +91,7 @@ The `--amount` accepts a value in wei, or with a `gen` / `eth` suffix (for examp
 
 ### Add more to an existing delegation
 
-To increase a delegation you already hold, delegate again to the **same validator** — additional deposits have no minimum, and rewards on your existing position keep compounding in the meantime.
+To increase a delegation you already hold, delegate again to the **same validator** — any nonzero top-up is accepted if your total delegation to that validator meets the minimum, and rewards on your existing position keep compounding in the meantime.
 
 For the underlying contract-level calls (useful if you're integrating delegation into your own tooling rather than using the CLI), see the [Staking Contract Guide](/developers/staking-guide#delegator-operations).
 
@@ -133,7 +133,7 @@ Unstaking is a two-phase process because of the unbonding period.
 genlayer staking delegator-exit --validator 0xVALIDATOR_ADDRESS --shares SHARES
 ```
 
-**Phase 2 — Claim (after unbonding).** Count seven epochs from the exit request. Once the withdrawal has matured and been priced, claim the GEN back to your address:
+**Phase 2 — Claim (after unbonding).** Seven epochs after the exit request is the earliest possible claim. The withdrawal must also be priced and any slashing for the epochs it served must settle. Submit the claim from the address that owns the delegation. If a contract owns it, the contract must make the call.
 
 ```bash
 genlayer staking delegator-claim --validator 0xVALIDATOR_ADDRESS
@@ -142,11 +142,11 @@ genlayer staking delegator-claim --validator 0xVALIDATOR_ADDRESS
 ```
 Epoch 5:      request exit (active stake still earns epoch 5 rewards)
 Epochs 6–11:  withdrawal remains locked
-Epoch 12:     earliest claim for the priced withdrawal
+Epoch 12:     earliest claim if the withdrawal is priced and slashing has settled
 ```
 
 <Callout type="warning">
-  Track the current epoch with `genlayer staking epoch-info`. A partial exit leaves your remaining active shares earning rewards.
+  Track the current epoch with `genlayer staking epoch-info`. A partial exit must leave at least the minimum delegation with that validator. If the remainder would fall below the minimum, exit all shares.
 </Callout>
 
 <Callout type="info">
@@ -162,8 +162,8 @@ For the concept-level walkthrough of exits and cooldowns, see [Unstaking in GenL
 There is **no "redelegate" operation** on GenLayer. Moving your stake from one validator to another is not atomic — it is a full unstake from the old validator followed by a fresh delegation to the new one, with the unbonding period in between. Concretely:
 
 1. **Exit** your shares from your current validator: `genlayer staking delegator-exit --validator 0xOLD --shares SHARES`.
-2. **Wait** seven epochs from the exit request before claiming. The old delegation keeps its exit-epoch rewards.
-3. **Claim** the released GEN back to your wallet: `genlayer staking delegator-claim --validator 0xOLD`.
+2. **Wait** at least seven epochs from the exit request, plus any time needed for pricing and slash settlement. The old delegation keeps its exit-epoch rewards.
+3. **Claim** from the address that owns the delegation: `genlayer staking delegator-claim --validator 0xOLD`.
 4. **Delegate** the claimed GEN to the new validator: `genlayer staking delegator-join --validator 0xNEW --amount ...`. Remember this new delegation then takes **2 epochs** to activate.
 
 <Callout type="error">
@@ -177,13 +177,13 @@ There is **no "redelegate" operation** on GenLayer. Moving your stake from one v
 **Epoch 0 is the genesis bootstrapping period** before the network is operational. Its rules are deliberately relaxed to help the network launch, and they differ from everything above:
 
 - **Delegation is effectively free of the usual minimum** — any non-zero amount is accepted, so you can delegate below the normal 42 GEN threshold.
-- **Below-minimum delegations are allowed to register**, but a delegation only becomes **active in epoch 2** if it meets the normal minimum by then. The network jumps straight from epoch 0 to epoch 2 (epoch 1 is skipped).
+- **Activation in epoch 2.** Consensus v0.6 records and prices epoch-0 delegations immediately. They participate from epoch 2 if their validator qualifies, including meeting its own 42,000 GEN minimum. The network skips epoch 1 when inflation for epoch 2 has been initialized and delivered. Otherwise it waits in epoch 1 for that funding.
 - **No rewards are earned in epoch 0**, because no transactions are processed yet.
 
 From **epoch 2 onward, normal rules apply**: the 42 GEN minimum, the +2-epoch activation delay, and the 7-epoch unbonding period all take effect.
 
 <Callout type="warning">
-  If you delegate a below-minimum amount during epoch 0, top it up to at least **42 GEN** before epoch 2 begins, or that delegation will not activate.
+  The intended delegation minimum at activation is **42 GEN**. The v0.6 contract does not recheck each epoch-0 delegation at activation. A smaller delegation can therefore participate under this release. To meet the intended threshold, top up before epoch 2.
 </Callout>
 
 The full epoch-0 rules — including validator behavior, share calculation, and the transition to epoch 2 — are documented in [Genesis Epoch 0](/developers/staking-guide#genesis-epoch-0).

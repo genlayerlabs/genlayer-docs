@@ -66,15 +66,16 @@ GenLayer uses **Ethereum-style accounts**: addresses are `0x`-prefixed hexadecim
 
 ## Deposit detection
 
-For crediting user deposits of native GEN on the GenLayer Chain, the pattern mirrors any EVM chain:
+Decide which deposit routes you support and verify each credit on GenLayer Chain.
 
 1. **Assign and monitor deposit addresses** in the standard `0x` hex format. For direct native transfers, identify the customer by the destination address.
 2. **Follow new blocks** via the chain RPC (HTTP polling `eth_blockNumber` / `eth_getBlockByNumber`, or WebSocket subscriptions if available for your network).
 3. **Verify each deposit.** For direct native transfers, match the recipient and value and check that the receipt succeeded in the canonical block. If you also accept transfers made by contracts, use a trace-capable provider to identify successful internal value transfers. `eth_getBalance` gives the current balance, not a history of deposits.
-4. **Wait for finality before crediting** (see below) — don't credit on first inclusion.
+4. **Handle bridged GEN.** A canonical Inbox deposit produces a Nitro deposit transaction (`0x64`) on L2. Check the L2 recipient, native value and successful receipt. If you also accept retryable transfers, ticket creation (`0x69`) and redemption (`0x68`) are separate events. Credit the actual transfer to the customer on successful redemption, using a trace if a contract forwards the funds. Deduplicate by the executed L2 transfer so the L1 deposit, ticket and redemption cannot credit the same funds twice.
+5. **Wait for finality before crediting** (see below) — don't credit on first inclusion.
 
 <Callout type="info">
-  Full-block decoders must support Nitro system transactions, including type `0x6a`. If you only need hashes, request `eth_getBlockByNumber` with its second argument set to `false`. Fetch the relevant transaction and its receipt individually to verify the recipient, value and success before crediting it.
+  Use a [Nitro-aware decoder](https://docs.arbitrum.io/how-arbitrum-works/reference/geth) for full blocks. The internal transaction type `0x6a` carries ArbOS updates. If you only need hashes, request `eth_getBlockByNumber` with its second argument set to `false`. Fetch the relevant transaction and its receipt individually to verify the recipient, value and success before crediting it.
 </Callout>
 
 ---
@@ -101,7 +102,7 @@ Choose the crediting threshold for each operation and record which signal the in
 
 - [ ] Pull chain IDs, RPC (HTTP + WS), currency, and explorer URLs from the [Networks](/developers/networks) page for **each** environment you support.
 - [ ] Verify the Bradbury Phase 2 genesis hash and AddressManager alongside the chain ID.
-- [ ] Verify the L1 token and canonical bridge for each deployment. For Bradbury Phase 2, use the [bridge and Sepolia GEN links](/developers/bridging-gen).
+- [ ] Verify the L1 token and canonical bridge for each deployment. For Bradbury Phase 2, use the [bridge and Sepolia GEN links on Networks](/developers/networks#testnet-bradbury).
 - [ ] Track native GEN via `eth_getBalance` and native transfers (not ERC-20 logs) on the GenLayer Chain.
 - [ ] Specify whether each credit requires sequencer inclusion, a confirmed assertion or a finalized Intelligent Contract result.
 - [ ] Check the supported `eth_*` methods and test full-block decoding against a block containing a Nitro system transaction.
