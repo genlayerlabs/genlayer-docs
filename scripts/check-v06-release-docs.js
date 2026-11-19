@@ -167,6 +167,46 @@ requireText(deploying, "verify the execution result", "execution-aware deploymen
 requireText(deploying, "genlayer network set studio-dev", "Studio-dev network selection");
 forbidText(deploying, "testnetBradbury", "pre-v0.40 Bradbury alias");
 
+const workflow = "pages/developers/decentralized-applications/dapp-development-workflow.mdx";
+requireText(workflow, "genlayer network set studio-dev", "Studio-dev network selection");
+requireText(workflow, "https://studio-dev.genlayer.com/api", "canonical Studio-dev RPC");
+requireText(workflow, "`studioDevnet`", "Studio-dev SDK chain");
+requireText(workflow, "genlayer network info", "pre-signing network verification");
+requireText(workflow, "--contract contracts/my_contract.py", "CLI deployment step");
+requireText(workflow, "genlayer account create --name", "required --name option for account creation");
+if (/genlayer account create(?! --name)/.test(read(workflow))) {
+  failures.push(`${workflow}: genlayer account create without required --name option`);
+}
+forbidText(workflow, "testnetBradbury", "pre-v0.40 Bradbury alias");
+requireText(workflow, "--fee-profile fee-profile.json", "fee-aware CLI deploy");
+requireText(workflow, "/developers/decentralized-applications/fee-profiling-and-estimation", "fee profiling link");
+requireText(workflow, "sim_fundAccount", "CLI account funding on hosted Studio");
+requireText(workflow, 'pip install --pre "genlayer-test>=0.30.0rc2"', "genlayer-test fee-profile prerelease install");
+
+// Release facts in prose are matched on plain text (Markdown emphasis and
+// line breaks removed) so rewording or reformatting does not fail the build.
+const workflowProse = read(workflow).replace(/[*_`]/g, "").replace(/\s+/g, " ");
+function requireFact(pattern, description) {
+  if (!pattern.test(workflowProse)) failures.push(`${workflow}: missing ${description}`);
+}
+function forbidFact(pattern, description) {
+  if (pattern.test(workflowProse)) failures.push(`${workflow}: contains stale ${description}`);
+}
+requireFact(/v0\.40\.0/, "minimum fee-aware CLI version");
+requireFact(/Studio v0\.123 or later[^.]*protocol fees/i, "version-based fee rule");
+requireFact(/funding is optional|optional[^.]*fund/i, "optional CLI account funding");
+requireFact(/credits? the shortfall/i, "Studio auto-covered fee deposit");
+forbidFact(/account needs GEN for the fee deposit/i, "mandatory funding claim");
+requireFact(/deploy entry[^.]*tests? deploy/i, "deploy entry requirement");
+requireFact(/failed receipt/i, "fee-less deploy outcome");
+forbidFact(/(?<!not )reject(s|ed)? (a )?deploys? (that|without)/i, "incorrect RPC rejection claim");
+if (/gltest[^\n]*--fee-profile(?!\s+\S+\.json)/.test(read(workflow))) {
+  failures.push(`${workflow}: gltest --fee-profile without an output path`);
+}
+if (/npm install -g genlayer(?=\s)/.test(read(workflow))) {
+  failures.push(`${workflow}: unpinned "npm install -g genlayer" installs a pre-fee CLI`);
+}
+
 const valueTransfers = "pages/developers/intelligent-contracts/features/value-transfers.mdx";
 requireText(valueTransfers, "wallet must cover `value + feeValue`", "separate user value and protocol fee funding");
 
