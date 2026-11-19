@@ -1,0 +1,184 @@
+import { Callout } from 'nextra-theme-docs'
+import { RustSdkExperimental } from '../../../components/RustSdkExperimental'
+
+# Your First Contract
+
+<RustSdkExperimental />
+
+### Project Setup
+
+Create a new Rust project and configure it for WebAssembly:
+
+```bash
+cargo init --name my_contract
+```
+
+Your `Cargo.toml` should look like this:
+
+```toml
+[package]
+name = "my_contract"
+version = "0.1.0"
+edition = "2024"
+
+[dependencies]
+genlayer_sdk = "0.0.2"
+bytes = "1"
+```
+
+<Callout emoji="⚠️">
+  Contracts **must** be compiled for the `wasm32-wasip1` target. Floating point operations are forbidden in deterministic mode and will cause a VM error.
+</Callout>
+
+### The Contract Trait
+
+A Rust contract is a struct that implements the `Contract` trait. The trait has three methods corresponding to GenVM's entry points:
+
+```rust
+use genlayer_sdk::abi::entry::MessageData;
+use genlayer_sdk::abi::entry::contract_def::Contract;
+use genlayer_sdk::calldata::Value;
+
+#[derive(Default)]
+pub struct MyContract;
+
+impl Contract for MyContract {
+    fn handle_main(
+        &mut self,
+        message: MessageData,
+        data: bytes::Bytes,
+    ) -> Result<Value, String> {
+        Ok(Value::Str("Hello from Rust!".to_owned()))
+    }
+
+    fn handle_sandbox(
+        &mut self,
+        _message: MessageData,
+        _data: bytes::Bytes,
+    ) -> Result<Vec<u8>, String> {
+        unimplemented!()
+    }
+
+    fn handle_consensus_stage(
+        &mut self,
+        _message: MessageData,
+        _data: bytes::Bytes,
+        _stage_data: genlayer_sdk::abi::entry::contract_def::ConsensusStageData,
+    ) -> Result<Value, String> {
+        unimplemented!()
+    }
+}
+
+genlayer_sdk::contract_main!(MyContract);
+```
+
+The `contract_main!` macro generates the `main` function that reads the incoming message from stdin, dispatches to the correct handler, and sends the result back to GenVM.
+
+<Callout emoji="⚠️">
+  Your struct must implement `Default`. GenVM creates a fresh instance for each invocation.
+</Callout>
+
+### Handling Deploy vs Method Calls
+
+The `Contract` trait gives you raw calldata bytes. For a more ergonomic API that splits deployment from method calls, implement `ContractExt` instead:
+
+```rust
+use genlayer_sdk::abi::entry::MessageData;
+use genlayer_sdk::abi::entry::contract_def::{Contract, ContractExt};
+use genlayer_sdk::calldata::{self, Map, Value};
+
+#[derive(Default)]
+pub struct MyContract;
+
+impl ContractExt for MyContract {
+    type Error = String;
+
+    fn handle_deploy(
+        &mut self,
+        message: MessageData,
+        args: Vec<Value>,
+        kwargs: Map,
+    ) -> Result<Value, Self::Error> {
+        // Called when is_init == true
+        println!("Contract deployed by {:?}", message.sender_address);
+        Ok(Value::Null)
+    }
+
+    fn handle_method(
+        &mut self,
+        message: MessageData,
+        method: String,
+        args: Vec<Value>,
+        kwargs: Map,
+    ) -> Result<Value, Self::Error> {
+        match method.as_str() {
+            "greet" => {
+                let name = args.first()
+                    .and_then(|v| v.as_str())
+                    .unwrap_or("World");
+                Ok(Value::Str(format!("Hello, {name}!")))
+            }
+            _ => Err(format!("unknown method: {method}")),
+        }
+    }
+}
+
+// ContractExt provides the Contract impl automatically,
+// but you still need to implement handle_sandbox and handle_consensus_stage:
+impl Contract for MyContract {
+    fn handle_main(
+        &mut self,
+        message: MessageData,
+        data: bytes::Bytes,
+    ) -> Result<Value, String> {
+        ContractExt::handle_main(self, message, data.to_vec())
+    }
+
+    fn handle_sandbox(
+        &mut self,
+        _message: MessageData,
+        _data: bytes::Bytes,
+    ) -> Result<Vec<u8>, String> {
+        unimplemented!()
+    }
+
+    fn handle_consensus_stage(
+        &mut self,
+        _message: MessageData,
+        _data: bytes::Bytes,
+        _stage_data: genlayer_sdk::abi::entry::contract_def::ConsensusStageData,
+    ) -> Result<Value, String> {
+        unimplemented!()
+    }
+}
+
+genlayer_sdk::contract_main!(MyContract);
+```
+
+### Message Data
+
+Every handler receives a `MessageData` struct with the transaction context:
+
+| Field              | Type                       | Description                         |
+|--------------------|----------------------------|-------------------------------------|
+| `contract_address` | `Address` (`[u8; 20]`)     | This contract's address             |
+| `sender_address`   | `Address`                  | Immediate caller                    |
+| `origin_address`   | `Address`                  | Original transaction sender         |
+| `value`            | `BigInt`                   | Value sent with the call            |
+| `is_init`          | `bool`                     | Whether this is a deployment call   |
+| `datetime`         | `DateTime<Utc>`            | Transaction timestamp               |
+| `chain_id`         | `BigInt`                   | Chain identifier                    |
+
+### Building
+
+Compile your contract:
+
+```bash
+cargo build --target wasm32-wasip1 --release
+```
+
+The resulting `.wasm` file will be in `target/wasm32-wasip1/release/my_contract.wasm`.
+
+### Debugging
+
+You can use `println!` for debug output. Print statements are included in the GenVM execution log and are visible during development.
