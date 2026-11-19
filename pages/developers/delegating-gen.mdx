@@ -26,7 +26,7 @@ This guide is written for token holders. It walks through the whole lifecycle: c
   Because you hold **shares**, not a token balance, you always **exit by specifying a number of shares** (or a percentage of your shares), never a GEN amount. Keep this in mind for every unstake.
 </Callout>
 
-An epoch is a fixed time window in which the validator set is active; on the network, an epoch lasts one day. See [Epoch System](/understand-genlayer-protocol/core-concepts/optimistic-democracy/staking#epoch-system) for details.
+An epoch is a fixed time window in which the validator set is active; on the network, an epoch lasts one day. See [Epoch System](/understand-genlayer-protocol/core-concepts/optimistic-democracy/staking#epoch-activation-and-priming) for details.
 
 ---
 
@@ -36,7 +36,7 @@ Your rewards and risk both depend on the validator you back. Evaluate candidates
 
 ### Where to look
 
-- **Block explorer (no tooling required).** Open the explorer for your network and find its **Validators** view — it lists the active validator set with each validator's stake and status. On [Testnet Bradbury](/developers/networks#testnet-bradbury) that's [explorer-bradbury.genlayer.com](https://explorer-bradbury.genlayer.com); each network's explorer is linked from the [Networks](/developers/networks) page.
+- **Validator and staking UI.** On Bradbury Phase 2, use the [staking explorer](https://stakegen.com/explore/) to compare validators. Check the deployment details on [Networks](/developers/networks#testnet-bradbury) before connecting your wallet.
 - **CLI (for a scriptable, always-current list).** The [GenLayer CLI](/api-references/genlayer-cli) prints the validator set with stake, status, and voting power:
 
   ```bash
@@ -118,7 +118,7 @@ genlayer staking epoch-info
 genlayer staking epoch-info --epoch 4   # a specific (current or previous) epoch
 ```
 
-See [Reward Distribution](/understand-genlayer-protocol/core-concepts/optimistic-democracy/staking#reward-distribution) for how rewards are shared between a validator and its delegators.
+See [Reward Distribution](/understand-genlayer-protocol/core-concepts/optimistic-democracy/staking#rewards-and-risks) for how rewards are shared between a validator and its delegators.
 
 ---
 
@@ -198,5 +198,5 @@ The full epoch-0 rules — including validator behavior, share calculation, and 
 <Card title="🌱 Genesis Epoch 0" href="/developers/staking-guide#genesis-epoch-0" />
 <Card title="⛓️ Unstaking" href="/understand-genlayer-protocol/core-concepts/optimistic-democracy/unstaking" />
 <Card title="⚔️ Slashing" href="/understand-genlayer-protocol/core-concepts/optimistic-democracy/slashing" />
-<Card title="🛠️ GenLayer CLI: Staking" href="/api-references/genlayer-cli#staking-operations" />
+<Card title="🛠️ GenLayer CLI: Staking" href="/api-references/genlayer-cli/staking/staking" />
 </Cards>
