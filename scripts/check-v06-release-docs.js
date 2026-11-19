@@ -193,9 +193,7 @@ function forbidFact(pattern, description) {
   if (pattern.test(workflowProse)) failures.push(`${workflow}: contains stale ${description}`);
 }
 requireFact(/v0\.40\.0/, "minimum fee-aware CLI version");
-requireFact(/Studio v0\.123/, "Studio version that introduces fees");
-requireFact(/Studio-dev[^.]*v0\.123|v0\.123[^.]*Studio-dev/i, "fee scope limited to the Studio v0.123 environment");
-requireFact(/Studionet[^.]*(without|no) (protocol )?fees/i, "Studionet fee status");
+requireFact(/Studio v0\.123 or later[^.]*protocol fees/i, "version-based fee rule");
 requireFact(/funding is optional|optional[^.]*fund/i, "optional CLI account funding");
 requireFact(/credits? the shortfall/i, "Studio auto-covered fee deposit");
 forbidFact(/account needs GEN for the fee deposit/i, "mandatory funding claim");

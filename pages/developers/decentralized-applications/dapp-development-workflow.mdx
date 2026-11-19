@@ -31,9 +31,11 @@ Each Studio environment is a separate chain with its own RPC, chain ID, and cons
 See [Networks](/developers/networks) for explorers, faucets, and wallet settings.
 
 <Callout type="warning">
-Protocol fees on deploys and writes start with Studio v0.123. Today only **Studio-dev** runs v0.123. Studionet, and a Localnet started with `genlayer init`, still run earlier Studio versions without fees, so the fee-specific steps below apply to Studio-dev only until those environments are upgraded.
+Environments running **Studio v0.123 or later** charge protocol fees on deploys and writes. Earlier Studio versions do not. The fee-specific steps below apply only to environments on v0.123 or later.
 
-On Studio-dev, use GenLayer CLI **v0.40.0 or later**, the first release that sends fee options. v0.40.0 is currently published only as a release candidate (`genlayer@rc`, for example 0.40.0-rc.6), so install it explicitly. `npm install -g genlayer@latest` still installs the pre-fee 0.39 line, which is what Studionet and the default Localnet expect.
+**Current status:** Studio-dev runs v0.123; Studionet and a Localnet started with `genlayer init` run earlier versions.
+
+For Studio v0.123 or later, use GenLayer CLI **v0.40.0 or later**, the first release that sends fee options. v0.40.0 is currently published only as a release candidate (`genlayer@rc`, for example 0.40.0-rc.6), so install it explicitly. `npm install -g genlayer@latest` still installs the pre-fee 0.39 line, which matches earlier Studio versions.
 </Callout>
 
 ### Step 1: Connect to the environment
@@ -45,13 +47,13 @@ On Studio-dev, use GenLayer CLI **v0.40.0 or later**, the first release that sen
 3. To work with the same environment from a terminal, install the CLI and select the matching alias:
 
 ```bash
-# Studionet (no protocol fees yet): current stable CLI
+# Environment on Studio before v0.123: current stable CLI
 npm install -g genlayer@latest
-genlayer network set studionet
 
-# Studio-dev (Studio v0.123, protocol fees): v0.40.0 or later, currently the release candidate
+# Environment on Studio v0.123 or later: CLI v0.40.0 or later, currently the release candidate
 npm install -g genlayer@rc       # for example 0.40.0-rc.6
-genlayer network set studio-dev
+
+genlayer network set studionet   # or: genlayer network set studio-dev
 
 genlayer --version
 genlayer network info            # confirm the RPC and chain ID before signing
@@ -83,7 +85,7 @@ genlayer account create --name studio-dev-account   # creates an encrypted keyst
 genlayer account          # shows the address, balance, and active network
 ```
 
-Funding is optional for deploys and writes. On Studio v0.123, if the sender's balance is below the fee deposit, Studio credits the shortfall before debiting it, so a new account with 0 GEN can deploy and write. Environments without fees do not charge a deposit at all.
+Funding is optional for deploys and writes. On Studio v0.123 or later, if the sender's balance is below the fee deposit, Studio credits the shortfall before debiting it, so a new account with 0 GEN can deploy and write. Earlier Studio versions do not charge a deposit at all.
 
 Fund the account only if you want it to hold a GEN balance, for example to send GEN with `genlayer account send`. Studio cannot import a CLI keystore, so fund its address with `sim_fundAccount`, the same RPC method the 💧 button calls. Pass the address from `genlayer account` and an amount in wei (here 100 GEN), and send the request to the RPC of the environment you selected:
 
@@ -114,24 +116,23 @@ Intelligent Contracts are Python files that can use GenVM capabilities such as L
 
 **From the CLI**
 
-On Studionet and the default Localnet (no protocol fees yet), deploy without fee options:
+On an environment running Studio before v0.123 (see the current status above), deploy without fee options:
 
 ```bash
-genlayer network set studionet   # or: localnet
 genlayer deploy --contract contracts/my_contract.py
 ```
 
-On Studio-dev (Studio v0.123), every deploy needs a fee distribution. The RPC does not reject a deploy without one: the transaction is mined with a failed receipt. Pass a fee profile instead. Generate it with the genlayer-test 0.30 prerelease, which is the first version with the `--fee-profile` flag:
+On an environment running Studio v0.123 or later, every deploy needs a fee distribution. The RPC does not reject a deploy without one: the transaction is mined with a failed receipt. Pass a fee profile instead. Generate it with the genlayer-test 0.30 prerelease, which is the first version with the `--fee-profile` flag:
 
 ```bash
 pip install --pre "genlayer-test>=0.30.0rc2"
-gltest --network studio_devnet --fee-profile fee-profile.json   # runs your tests and writes the measured profile
+gltest --network studio_devnet --fee-profile fee-profile.json   # runs your tests against Studio-dev and writes the measured profile
 ```
 
-genlayer-test names this network `studio_devnet`; the CLI alias is `studio-dev`. The profile has a `deploy` entry only if your tests deploy the contract, so include at least one test that deploys it. The CLI uses that entry together with current network prices:
+Use the genlayer-test network name of the environment you deploy to; for Studio-dev it is `studio_devnet`, while the CLI alias is `studio-dev`. The profile has a `deploy` entry only if your tests deploy the contract, so include at least one test that deploys it. The CLI uses that entry together with current network prices:
 
 ```bash
-genlayer network set studio-dev
+genlayer network set studio-dev   # or another environment on Studio v0.123 or later
 genlayer deploy \
   --contract contracts/my_contract.py \
   --fee-profile fee-profile.json
@@ -143,7 +144,7 @@ The CLI prints the transaction hash and the contract address. See [Fee Profiling
 
 **From a deploy script or GenLayerJS**
 
-Create the client with the chain object that matches the environment (`localnet`, `studionet`, or `studioDevnet` from `genlayer-js/chains`), deploy (on Studio-dev, with fees estimated from your fee profile), and wait for finalization. [Deploy Scripts](/developers/intelligent-contracts/deploying/deploy-scripts) has a complete example; use it for multi-contract deployments or constructor arguments the CLI cannot express.
+Create the client with the chain object that matches the environment (`localnet`, `studionet`, or `studioDevnet` from `genlayer-js/chains`), deploy (on Studio v0.123 or later, with fees estimated from your fee profile), and wait for finalization. [Deploy Scripts](/developers/intelligent-contracts/deploying/deploy-scripts) has a complete example; use it for multi-contract deployments or constructor arguments the CLI cannot express.
 
 ### Step 5: Verify and interact
 
