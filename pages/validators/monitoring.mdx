@@ -79,7 +79,7 @@ curl -s http://localhost:9153/metrics | grep genlayer_node_
 </Callout>
 
 <Callout type="info">
-  Alert on the `/health` `zksync-connectivity` check and on sync lag (`gen_syncing` → `blocksBehind`). These two signals are what turn a silent problem into a paged incident — see [Rollup / Sequencer Outage](/validators/rollup-outage) and [State Recovery & Re-sync](/validators/state-recovery) for what to do when they fire.
+  Monitor the `/health` condition states for `chain.rpc` and `chain.websocket`, the age of the latest L2 head, and `blocksBehind` from `gen_syncing`. See [Rollup / Sequencer Outage](/validators/rollup-outage) to distinguish a provider failure from a chain-wide stall, or [State Recovery & Re-sync](/validators/state-recovery) when only local replay is behind.
 </Callout>
 
 ## Logs and Metrics Forwarding
