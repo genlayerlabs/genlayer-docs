@@ -23,7 +23,8 @@
     "node-generate-all": "bash .github/scripts/doc-generator.sh",
     "node-simulate-sync": "bash scripts/simulate-node-sync.sh",
     "check:node-sync": "node scripts/check-node-sync.js",
-    "test:release-versions": "node scripts/test-release-versions.js"
+    "test:release-versions": "node scripts/test-release-versions.js",
+    "test:full-docs": "node scripts/test-generate-full-docs.js"
   },
   "repository": {
     "type": "git",

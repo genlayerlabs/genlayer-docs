@@ -187,8 +187,8 @@ function transformJsxSegment(text) {
   });
   text = text.replace(/<\/?Cards[^>]*>/g, '');
 
-  // <Image src="..." alt="..." /> -> markdown image
-  text = text.replace(/<Image\s+([^>]*?)\/?>/g, (_, attrString) => {
+  // <Image src="..." alt="..." /> and <img ... /> -> markdown image
+  text = text.replace(/<(?:Image|img)\s+([^>]*?)\/?>/g, (_, attrString) => {
     const attrs = parseAttributes(attrString);
     return attrs.src ? `![${attrs.alt || ''}](${attrs.src})` : '';
   });
@@ -219,6 +219,36 @@ function cleanMdxContent(content) {
   return cleaned.replace(/\n{3,}/g, '\n\n').trim();
 }
 
+// Resolve a link target the way a browser would on the live page, so the
+// exported markdown stays usable when read outside docs.genlayer.com.
+// Fragment-only links (#section) become <page-url>#section.
+function absolutizeUrl(href, pageUrl) {
+  if (!href || /^[a-z][a-z0-9+.-]*:/i.test(href)) return href;
+  try {
+    return new URL(href, pageUrl).toString();
+  } catch {
+    return href;
+  }
+}
+
+// Rewrite relative markdown links/images and leftover href/src attributes to
+// absolute URLs, leaving fenced code blocks and inline code untouched
+function absolutizeLinks(markdown, pageUrl) {
+  const fix = href => absolutizeUrl(href, pageUrl);
+  return markdown
+    .split(/(```[\s\S]*?```|~~~[\s\S]*?~~~|`[^`\n]*`)/g)
+    .map((segment, i) => {
+      if (i % 2 === 1) return segment;
+      return segment
+        .replace(/(\]\()(<?)([^)\s>]+)/g, (_, open, angle, href) => `${open}${angle}${fix(href)}`)
+        .replace(/^(\s*\[[^\]]+\]:\s*)(?:<([^>\n]*)>|(\S+))/gm, (_, prefix, angled, bare) =>
+          angled !== undefined ? `${prefix}<${fix(angled)}>` : `${prefix}${fix(bare)}`
+        )
+        .replace(/\b(href|src)=(["'])([^"']*)\2/g, (_, attr, q, href) => `${attr}=${q}${fix(href)}${q}`);
+    })
+    .join('');
+}
+
 // First plain-text paragraph after the H1, for use as a link description
 function extractDescription(markdown) {
   for (const line of markdown.split('\n')) {
@@ -246,6 +276,7 @@ function preparePage(page, pagesDir, gitDates) {
 
   const route = routeForPage(page.filePath, pagesDir);
   const url = route ? `${DOMAIN}/${route}` : DOMAIN;
+  markdown = absolutizeLinks(markdown, url);
 
   const lines = markdown.split('\n');
   const h1Index = lines.findIndex(line => /^#\s/.test(line));
@@ -421,4 +452,8 @@ function generateFullDocs() {
   );
 }
 
-generateFullDocs();
+if (require.main === module) {
+  generateFullDocs();
+}
+
+module.exports = { absolutizeUrl, absolutizeLinks, cleanMdxContent };
