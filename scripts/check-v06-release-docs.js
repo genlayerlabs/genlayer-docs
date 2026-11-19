@@ -209,11 +209,16 @@ requireText(nodeApi, "## zkSync Compatibility", "preserved zkSync compatibility 
 requireText(nodeApi, "node.rpc.endpoints.zksync.enabled", "conditional zkSync upstream forwarding config");
 requireText(nodeApi, "default value of `false` on Bradbury Phase 2", "disabled zkSync forwarding on Orbit");
 requireText(keepers, "executeInflationRequest", "Orbit inflation request execution");
+requireText(keepers, "GEN.retryInflationDelivery(", "expired inflation ticket recovery");
+requireText(keepers, "KeeperRewardUnavailable", "successful relay with an unavailable fee quote");
 forbidText(keepers, "executeL2Message", "zkSync inflation relay call");
 const stakingGuide = "pages/developers/staking-guide.mdx";
 requireText(stakingGuide, "possessionProof", "operator key possession proof on join");
 forbidText(stakingGuide, "uint256[8]", "pre-v0.6 validatorView array layout");
 forbidText(stakingGuide, "genStaking.delegatorDeposit{", "nonexistent payable delegatorDeposit");
+if (/genStaking\.(?:delegatorClaim|sharesOf)\(\s*msg\.sender\b/.test(read(stakingGuide))) {
+  failures.push(`${stakingGuide}: use the delegating contract's address for its shares and claims`);
+}
 for (const relativePath of releaseDocs) {
   const content = read(relativePath);
 

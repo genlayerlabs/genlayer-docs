@@ -96,7 +96,7 @@ Exchanges, wallets, and indexers can treat GenLayer Chain as an Arbitrum-based E
 
 - Use standard Ethereum tooling and `eth_*` JSON-RPC methods against the GenLayer Chain RPC or the GenLayer RPC, which passes supported `eth_*` calls through. Chain IDs and endpoints are listed on [Networks](/developers/networks).
 - Track GEN on GenLayer Chain as the native asset, not as an ERC-20 token. On Ethereum, track it as an ERC-20 token.
-- Expect Arbitrum transaction types and receipt fields, such as the internal system transaction at the start of each block and `gasUsedForL1` in receipts. Current Ethereum libraries handle them; custom decoders may need updates.
+- If you index full blocks, use a decoder that supports Nitro transaction types. For example, upstream go-ethereum v1.17.10 returns `transaction type not supported` for Nitro's internal system transaction (type `0x6a`), so a full-block read can fail. If you only need transaction hashes, request `eth_getBlockByNumber` with its second argument set to `false`. Receipts also include Arbitrum-specific fields such as `gasUsedForL1`.
 - Plan for the challenge period on withdrawals to Ethereum. Native GEN deposits from Ethereum are credited once the sequencer includes them.
 - Use the Intelligent Contract transaction status from the GenLayer RPC to decide whether an Intelligent Contract outcome is final, as described below.
 

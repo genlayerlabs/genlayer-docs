@@ -46,7 +46,7 @@ Use your own key to operate the node yourself, or a separate hot key for cold/ho
 - Deposits activate **2 epochs after joining**
 - `validatorPrime()` is automatically called by your validator node each epoch
 - Monitor priming for proper activation within 2 epochs
-- The operator cannot be the zero address, and cannot already operate another owner's validator
+- The operator must be a nonzero address. If you register a separate hot key, it must be unused by any validator wallet, including your own. If you register the caller's own key, that address can operate multiple wallets.
 - To rotate the operator later, the owner calls `initiateOperatorTransfer` on the ValidatorWallet, then `completeOperatorTransfer` after the operator-transfer delay (or `cancelOperatorTransfer`)
 
 **Post-Join Steps:**
@@ -98,8 +98,8 @@ validatorWallet.validatorExit(sharesToExit);
 </Callout>
 
 **Important Notes:**
-- Exited shares stop counting toward stake and selection weight immediately
-- The withdrawal is priced at the validator's next priming; it still receives its share of rewards for the epochs it served and stays exposed to slashing for them
+- After epoch 0, an exit immediately removes the shares from the owner's available balance and queues the withdrawal. When priming processes that withdrawal, it prices the shares and updates active stake and selection weight.
+- The withdrawal still receives its share of rewards for the epochs it served and remains exposed to slashing for those epochs.
 - Tokens are locked for **7 epochs** before claiming
 - Each exit creates a separate withdrawal
 
@@ -120,7 +120,8 @@ validatorWallet.validatorClaim();
 
 **Important Notes:**
 - Must wait **7 full epochs** after calling `validatorExit()`
-- A withdrawal is claimable only after it has been priced and any slashing for the epochs it served has been settled; until then a claim pays nothing
+- Staking pays only withdrawals that have matured, have been priced, and have cleared the slash-settlement window. If none qualify, the Staking call returns zero.
+- If a slash is actively being processed for the validator, the claim reverts with `ValidatorSlashInProgress`. Retry after priming finishes processing the slash.
 - Multiple exits can be claimed in a single call
 - `genStaking.validatorClaim(validatorWallet)` is permissionless, but it pays the ValidatorWallet, not the owner; the owner still calls `validatorWallet.validatorClaim()` to receive the funds
 
@@ -137,6 +138,8 @@ if (genStaking.epoch() >= claimableAtEpoch) {
 ---
 
 ## Delegator Operations
+
+In these Solidity examples, the contract calling `genStaking` owns the delegation. It uses `address(this)` to look up its shares and claim its GEN. Give it a payable `receive()` function so it can accept the payout. If you delegated directly from a wallet, submit the claim from that wallet and pass its address as the delegator.
 
 ### Joining as a Delegator
 
@@ -190,8 +193,10 @@ genStaking.delegatorJoin{value: 500 ether}(validatorWallet);
 
 **Step 1: Calculate Shares**
 
+The v0.6 `IGenLayerStaking` interface returns a `Shares` value. Import `Shares` from the consensus contracts' `contracts/types/Quantities.sol` and unwrap it before doing arithmetic.
+
 ```solidity
-uint256 currentShares = genStaking.sharesOf(msg.sender, validatorWallet);
+uint256 currentShares = Shares.unwrap(genStaking.sharesOf(address(this), validatorWallet));
 uint256 sharesToExit = (currentShares * 50) / 100; // Exit 50%
 ```
 
@@ -207,7 +212,7 @@ genStaking.delegatorExit(validatorWallet, sharesToExit);
 
 **Important Notes:**
 - Can exit partial amounts, but a partial exit cannot leave the delegation below the minimum; exit all shares instead
-- Exited shares stop counting toward stake immediately; the withdrawal is priced at the validator's next priming
+- After epoch 0, an exit immediately removes the shares from your available balance. When priming processes the withdrawal, it prices the shares and updates the validator's active delegated stake and selection weight.
 - Tokens are locked for **7 epochs**
 - Exit each validator separately if delegating to multiple
 
@@ -221,10 +226,7 @@ Epoch 12:    earliest delegatorClaim()
 ### Claiming Withdrawn Funds as a Delegator
 
 ```solidity
-uint256 tokensReceived = genStaking.delegatorClaim(
-    msg.sender, // must be the delegator
-    validatorWallet
-);
+uint256 tokensReceived = genStaking.delegatorClaim(address(this), validatorWallet);
 ```
 
 **Important Notes:**
@@ -237,9 +239,9 @@ uint256 tokensReceived = genStaking.delegatorClaim(
 **Multi-Validator Claim Example:**
 
 ```solidity
-genStaking.delegatorClaim(msg.sender, validator1);
-genStaking.delegatorClaim(msg.sender, validator2);
-genStaking.delegatorClaim(msg.sender, validator3);
+genStaking.delegatorClaim(address(this), validator1);
+genStaking.delegatorClaim(address(this), validator2);
+genStaking.delegatorClaim(address(this), validator3);
 ```
 
 ---
@@ -412,11 +414,11 @@ genStaking.delegatorJoin{value: 2000 ether}(validator2);
 genStaking.delegatorJoin{value: 1500 ether}(validator3);
 
 // Later, exit from one validator
-uint256 shares = genStaking.sharesOf(msg.sender, validator1);
+uint256 shares = Shares.unwrap(genStaking.sharesOf(address(this), validator1));
 genStaking.delegatorExit(validator1, shares);
 
-// After 7 epochs:
-genStaking.delegatorClaim(msg.sender, validator1);
+// Once the withdrawal is claimable:
+genStaking.delegatorClaim(address(this), validator1);
 ```
 
 ### Scenario 3: Partial Validator Exit
@@ -468,9 +470,9 @@ validatorWallet.validatorClaim();
 |-------|-------|----------|
 | `ValidatorBelowMinimumStake` | Stake below 42,000 GEN | Deposit at least 42,000 GEN when joining |
 | `InvalidOperatorAddress` | Zero operator, or deposit not sent through a joined ValidatorWallet | Register a valid operator key; deposit through `validatorWallet.validatorDeposit()` |
-| `OperatorAlreadyAssigned` | Operator key in use by another owner's validator | Choose a different operator key |
+| `OperatorAlreadyAssigned` | The separate hot key already operates a validator wallet | Use an unused hot key, or register the caller's own key for self-operation |
 | `ValidatorMayNotDepositZeroValue` | Zero deposit amount | Deposit a non-zero amount |
-| `ValidatorSlashInProgress` | A slash against the validator is being settled | Wait for priming to settle the slash, then retry |
+| `ValidatorSlashInProgress` | A deposit or claim reverted during an active slash | Retry after priming finishes processing the slash |
 | `ValidatorExitExceedsShares` | Exiting more shares than owned | Check shares with `validatorSelfSharesOf()` |
 | `DelegatorExitWouldBeBelowMinimum` | Partial exit would leave less than the minimum delegation | Exit all shares or keep at least the minimum |
 | `UnauthorizedDelegatorClaim` | Claim sent by an address other than the delegator | Send `delegatorClaim()` from the delegator's address |
