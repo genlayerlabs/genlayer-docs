@@ -172,12 +172,19 @@ requireText(workflow, "genlayer network set studio-dev", "Studio-dev network sel
 requireText(workflow, "https://studio-dev.genlayer.com/api", "canonical Studio-dev RPC");
 requireText(workflow, "`studioDevnet`", "Studio-dev SDK chain");
 requireText(workflow, "genlayer network info", "pre-signing network verification");
-requireText(workflow, "genlayer deploy --contract", "CLI deployment step");
+requireText(workflow, "--contract contracts/my_contract.py", "CLI deployment step");
 requireText(workflow, "genlayer account create --name", "required --name option for account creation");
 if (/genlayer account create(?! --name)/.test(read(workflow))) {
   failures.push(`${workflow}: genlayer account create without required --name option`);
 }
 forbidText(workflow, "testnetBradbury", "pre-v0.40 Bradbury alias");
+requireText(workflow, "v0.40.0 or later", "minimum fee-aware CLI version");
+requireText(workflow, "--fee-profile fee-profile.json", "fee-aware CLI deploy");
+requireText(workflow, "/developers/decentralized-applications/fee-profiling-and-estimation", "fee profiling link");
+requireText(workflow, "sim_fundAccount", "CLI account funding on hosted Studio");
+if (/npm install -g genlayer(?=\s)/.test(read(workflow))) {
+  failures.push(`${workflow}: unpinned "npm install -g genlayer" installs a pre-fee CLI`);
+}
 
 const valueTransfers = "pages/developers/intelligent-contracts/features/value-transfers.mdx";
 requireText(valueTransfers, "wallet must cover `value + feeValue`", "separate user value and protocol fee funding");
