@@ -7,6 +7,6 @@
   "greybox-setup": "Greybox Setup",
   "upgrade": "Upgrade Guide",
   "state-recovery": "State Recovery & Re-sync",
-  "rollup-outage": "Rollup / Sequencer Outage",
+  "rollup-outage": "Chain / Sequencer Outage",
   "changelog": "Changelog"
 }

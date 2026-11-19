@@ -8,6 +8,7 @@ const failures = [];
 
 const releaseDocs = [
   "pages/developers/consensus-v06-migration.mdx",
+  "pages/developers/staking-guide.mdx",
   "pages/developers/error-reference.mdx",
   "pages/developers/networks.mdx",
   "pages/developers/decentralized-applications/architecture-overview.mdx",
@@ -34,6 +35,7 @@ const releaseDocs = [
   "pages/understand-genlayer-protocol/core-concepts/optimistic-democracy/slashing.mdx",
   "pages/understand-genlayer-protocol/core-concepts/optimistic-democracy/deterministic-violations-and-tribunals.mdx",
   "pages/understand-genlayer-protocol/core-concepts/optimistic-democracy/protocol-randomness.mdx",
+  "pages/understand-genlayer-protocol/core-concepts/rollup-integration.mdx",
   "pages/understand-genlayer-protocol/core-concepts/transactions/transaction-execution.mdx",
   "pages/understand-genlayer-protocol/core-concepts/transactions/transaction-statuses.mdx",
   "pages/validators/network-keeper-roles.mdx",
@@ -229,6 +231,34 @@ for (const relativePath of [
   forbidText(relativePath, "genlayer network testnet-bradbury", "pre-v0.40 network selection syntax");
 }
 
+for (const relativePath of [
+  "pages/FAQ.mdx",
+  "pages/developers/decentralized-applications/architecture-overview.mdx",
+  "pages/developers/networks.mdx",
+  "pages/developers/staking-guide.mdx",
+  "pages/understand-genlayer-protocol/what-is-genlayer.mdx",
+  "pages/understand-genlayer-protocol/core-concepts/rollup-integration.mdx",
+  "pages/validators/network-keeper-roles.mdx",
+]) {
+  forbidText(relativePath, "zksync", "pre-Orbit zkSync reference");
+  forbidText(relativePath, "ZK Stack", "pre-Orbit ZK Stack reference");
+  forbidText(relativePath, "ZK-stack", "pre-Orbit ZK Stack reference");
+}
+const nodeApi = "pages/api-references/genlayer-node.mdx";
+requireText(nodeApi, "## zkSync Compatibility", "preserved zkSync compatibility section anchor");
+requireText(nodeApi, "node.rpc.endpoints.zksync.enabled", "conditional zkSync upstream forwarding config");
+requireText(nodeApi, "default value of `false` on Bradbury Phase 2", "disabled zkSync forwarding on Orbit");
+requireText(keepers, "executeInflationRequest", "Orbit inflation request execution");
+requireText(keepers, "GEN.retryInflationDelivery(", "expired inflation ticket recovery");
+requireText(keepers, "KeeperRewardUnavailable", "successful relay with an unavailable fee quote");
+forbidText(keepers, "executeL2Message", "zkSync inflation relay call");
+const stakingGuide = "pages/developers/staking-guide.mdx";
+requireText(stakingGuide, "possessionProof", "operator key possession proof on join");
+forbidText(stakingGuide, "uint256[8]", "pre-v0.6 validatorView array layout");
+forbidText(stakingGuide, "genStaking.delegatorDeposit{", "nonexistent payable delegatorDeposit");
+if (/genStaking\.(?:delegatorClaim|sharesOf)\(\s*msg\.sender\b/.test(read(stakingGuide))) {
+  failures.push(`${stakingGuide}: use the delegating contract's address for its shares and claims`);
+}
 for (const relativePath of releaseDocs) {
   const content = read(relativePath);
 

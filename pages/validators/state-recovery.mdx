@@ -1,5 +1,5 @@
 ---
-description: "Recover a GenLayer validator that has fallen behind or lost state: seed a new node from a snapshot, or trustlessly rebuild the chain database from genesis by re-executing history through GenVM."
+description: "Recover a GenLayer validator that has fallen behind or lost state: seed a new node from a snapshot, or rebuild chain-derived state from genesis with GenVM and recorded execution outputs."
 ---
 
 import { Callout } from "nextra-theme-docs";
@@ -11,7 +11,7 @@ This runbook covers a validator whose local chain database is behind, corrupted,
 | Path | What it does | When to use it | Trust model |
 |---|---|---|---|
 | **Snapshot seeding** (fast) | Populate a new node's data directory from a snapshot captured on a node you already run | You operate more than one node, or you took a snapshot before the incident | Trusts the source node's state |
-| **Full re-sync from genesis** (trustless) | Start with an empty database; the node re-scans the rollup and re-executes all history through GenVM | You have no snapshot, or you want an independently verified state | Trustless — re-derives state from the chain |
+| **Full re-sync from genesis** | Start with an empty GenVM store and replay consensus events from GenLayer Chain | You lack a trusted snapshot or want to reconstruct chain-derived state | Uses the chain history and the leader’s recorded outputs for nondeterministic calls |
 
 <Callout type="info" emoji="💡">
   Both paths preserve your on-chain identity. Your validator wallet, stake, and operator key live on the rollup and in your keystore — they are **not** part of the chain database. Recovery only rebuilds local state; it never re-stakes. See [Backing Up Your Operator Key](/validators/setup-guide#backing-up-your-operator-key).
@@ -61,7 +61,7 @@ curl -s http://localhost:9153/health
 ./bin/genlayernode doctor
 ```
 
-`doctor` checks the configured GenLayer Chain HTTP and WebSocket endpoints alongside consensus configuration, GenVM and LLM connectivity. On Bradbury Phase 2 these endpoints serve the Orbit L2. Compare its head with another provider before starting local recovery. See [Rollup / Sequencer Outage](/validators/rollup-outage).
+`doctor` checks the configured GenLayer Chain HTTP and WebSocket endpoints alongside consensus configuration, GenVM and LLM connectivity. On Bradbury Phase 2 these endpoints serve the Orbit L2. Compare its head with another provider before starting local recovery. See [Chain / Sequencer Outage](/validators/rollup-outage).
 
 <Callout type="info">
   A node that falls far enough behind (thousands of blocks, or no sync progress for several minutes) enters a **hopelessly-behind** state: it skips consensus duties and pauses its sync pipeline rather than voting on stale state. This is expected protective behavior. It leaves that state automatically once it makes forward progress, and an internal stall-watchdog restarts the sync pipeline if it wedges — but a node that can *never* catch up (for example, replay is slower than the chain advances, or a dependency is down) is the case this runbook addresses. If a node stays stuck with the pipeline paused, a **process restart** is the historical remedy of last resort.
@@ -97,7 +97,7 @@ Stop the target node. Keep its original data directory, including its own `ops.d
 
 Restore validates the manifest version, scope and checkpoint metadata, then installs `genvm.db`. It rejects nonportable archives and populated destinations. Restoring does not independently verify historical execution. If the command warns that a checkpoint past genesis has no finalized root, replay from genesis when you need root comparisons.
 
-### Step 3 — Start from the restored directory
+### Step 3 — Configure the restored directory
 
 Keep the verified deployment configuration. Add a second YAML file, such as `restore-overlay.yaml`, to select the restored directory and default store names.
 
@@ -108,7 +108,23 @@ node:
   opsdb: ops.db
 ```
 
-A fresh node creates its own `ops.db` at startup. Chain history cannot recover outstanding votes or nonce records for a returning validator. Preserve its original operator records and keep the old instance stopped before enabling signing on the replacement. For validator mode, configure the target operator’s own [encrypted keystore](/validators/setup-guide#restoring-your-operator-key), password and trusted network manifest.
+### Restore the original operation store
+
+Before starting a returning validator, stop the old and replacement instances. Restore the **same operator’s latest intact `ops.db` from this deployment**. It contains private vote salts and nonce records that the portable GenVM snapshot omits. For Path A, do this **after** restoring the snapshot into the empty destination. For Path B, do it before starting replay with signing enabled.
+
+For example, with the default store name, the old data directory at `/var/lib/genlayer/original` and the new one at `/var/lib/genlayer/restored`, run the following offline as the node service user. Substitute the actual paths, including any configured `node.opsdb` override. The destination directory must exist and the destination store must be absent.
+
+```bash copy
+test -d /var/lib/genlayer/original/ops.db &&
+  test ! -e /var/lib/genlayer/restored/ops.db &&
+  cp -a /var/lib/genlayer/original/ops.db /var/lib/genlayer/restored/ops.db
+```
+
+Verify the copy succeeded and that the service user can read and write the copied store at the path selected by the new configuration. If a replacement has already created an empty store, keep it offline and prepare a fresh destination. Keep the original backup intact. Configure the operator’s [encrypted keystore](/validators/setup-guide#restoring-your-operator-key), password and trusted network manifest. Keep the old signer stopped when the replacement starts.
+
+A genuinely new operator can start with a fresh operation store. If a returning operator has lost its records, chain history cannot reconstruct a private salt for an outstanding vote reveal. Keep signing disabled and coordinate outstanding duties and nonce reconciliation with the validator operators before resuming.
+
+### Step 4 — Start the restored node
 
 ```bash copy
 ./bin/genlayernode run --config ./configs/node/config.yaml --config ./restore-overlay.yaml
@@ -118,17 +134,17 @@ The node resumes replay one block after the saved cursor. Query `gen_syncing` an
 
 ---
 
-## Path B — Full Re-sync From Genesis (Trustless)
+## Path B — Full Re-sync From Genesis
 
 Choose this path when you lack a trusted snapshot of this deployment or want to reconstruct chain-derived state independently. The node reads consensus events from GenLayer Chain and replays their history through GenVM.
 
 ### Step 1 — Prepare an empty replay store
 
-Stop the target and back up its data directory and operator keystore. Configure a fresh data directory for replay against the verified deployment. Retain the original directory and the validator’s private operation records for recovery. Only one instance may sign with an operator key at a time. See [Backing Up Your Operator Key](/validators/setup-guide#backing-up-your-operator-key).
+Stop the target and back up its data directory and operator keystore. Create a fresh data directory and leave `genvm.db` absent so replay starts from genesis. For a returning validator, follow [Restore the original operation store](#restore-the-original-operation-store) with this replay directory as the destination. Keep the old signer stopped. See [Backing Up Your Operator Key](/validators/setup-guide#backing-up-your-operator-key).
 
 ### Step 2 — Set the genesis block to bound the scan
 
-Confirm your `config.yaml` sets `consensus.genesis` for your network. This tells the node the first block of the consensus deployment so it does not scan the settlement chain from block 0.
+Confirm your `config.yaml` sets `consensus.genesis` for your network. This tells the node the first block of the consensus deployment so it starts scanning GenLayer Chain at the L2 deployment block. Ethereum Sepolia is the parent chain.
 
 ```yaml copy
 consensus:
@@ -143,16 +159,16 @@ consensus:
 
 ### Step 3 — (Optional) Raise replay throughput
 
-During re-sync the node is doing bulk GenVM replay, which is more parallel than steady-state operation. The `genvm.sync_permits` setting controls how many GenVM permits are used while the node is not yet synced; it defaults to the steady-state `permits` value if left empty.
+In node v0.6.0-rc.5, `permits` and `sync_permits` are budgets. A sync execution costs four permits and a live nondeterministic execution costs eight. The release configuration uses the following values:
 
 ```yaml copy
 genvm:
-  permits: 8         # steady-state concurrency
-  sync_permits: 64   # concurrency during bulk replay (while not synced)
-  sync_wait_timeout: "20s"
+  permits: 32
+  sync_permits: 256
+  sync_permits_lag_threshold: 1000
 ```
 
-Raising `sync_permits` speeds up replay only as far as your LLM provider's rate limits and your CPU allow. See [GenVM Configuration](/validators/genvm-configuration) for provider throughput and the greybox fallback.
+The node switches to the replay budget above the lag threshold (1,000 L2 blocks by default). At or below that threshold it uses the steady-state budget. An unset `sync_permits` reuses the steady-state value. Tune against available CPU, memory, disk I/O and historical RPC throughput. The separate `sync_wait_timeout` bounds how long a read RPC waits for synced data. See the [release configuration](https://github.com/genlayerlabs/genlayer-node/blob/v0.6.0-rc.5/configs/node/config.yaml.example).
 
 ### Step 4 — Start the node and monitor replay
 
@@ -163,10 +179,10 @@ Set `datadir` in `replay-overlay.yaml` to the fresh directory chosen in step 1. 
 ./bin/genlayernode run --config ./configs/node/config.yaml --config ./replay-overlay.yaml
 ```
 
-Watch `gen_syncing` and your logs. `blocksBehind` should fall steadily. Because replay re-runs Intelligent Contracts through your LLM provider, expect this to take significantly longer than a snapshot seed, and to consume LLM credits.
+Watch `gen_syncing` and your logs. `blocksBehind` should fall steadily. Historical replay executes deterministic code in GenVM and returns the recorded leader output for nondeterministic calls. Replay itself makes no LLM or web-module calls and uses no LLM credits. The startup self-test and live duties that invoke an LLM still need a working provider. See the [release execution modes](https://github.com/genlayerlabs/genlayer-node/blob/v0.6.0-rc.5/docs/spec/genvm-execution-modes.md).
 
 <Callout type="warning" emoji="⚠️">
-  If `blocksBehind` is **not** shrinking, the node is not making progress. Re-run `doctor` and check that the rollup RPC is reachable, the GenVM modules are running, and your LLM provider is not rate-limiting you. A stalled replay is almost always an upstream dependency, not the database.
+  If `blocksBehind` is **not** shrinking, the node is not making progress. Check that the chain RPC serves historical blocks and receipts, inspect the GenVM manager logs, and check CPU, memory and disk capacity.
 </Callout>
 
 ---
@@ -186,17 +202,17 @@ genlayer staking validator-info --validator 0xYourValidatorWallet...
 ```
 
 <Callout type="info">
-  If you were offline because the **rollup itself** was down (not just your node), see [Rollup / Sequencer Outage: Incident Response](/validators/rollup-outage) — in that scenario the whole network waits, and re-activation is coordinated rather than something you fix unilaterally.
+  If you were offline because the **rollup itself** was down (not just your node), see [Chain / Sequencer Outage: Incident Response](/validators/rollup-outage) — in that scenario the whole network waits, and re-activation is coordinated rather than something you fix unilaterally.
 </Callout>
 
 ---
 
 ## Quick Troubleshooting
 
-- **`gen_syncing` shows `blocksBehind` stuck or growing** — The node cannot keep up or cannot progress. Run `doctor`; check rollup RPC reachability, GenVM module health, and LLM rate limits before assuming database corruption.
+- **`gen_syncing` shows `blocksBehind` stuck or growing** — The node cannot keep up or cannot progress. Verify that the L2 RPC serves the required historical data. Check the GenVM manager logs and local resource limits.
 - **Restore refuses the archive or destination** — Verify the release format, `scope=genvm`, and an absent or empty destination for `--datadir`.
 - **`POST /snapshot` returns 401** — `GENLAYERNODE_NODE_OPERATOR_TOKEN` is unset or the header is wrong. Set the token on the node and restart; it is read once at startup and not hot-reloaded.
-- **Re-sync is extremely slow** — Expected for a full genesis replay: every historical Intelligent Contract is re-executed through GenVM. Confirm `consensus.genesis` is set, raise `genvm.sync_permits`, and check your LLM provider is not the bottleneck.
+- **Re-sync is extremely slow** — Expected for a full genesis replay: every historical Intelligent Contract is re-executed through GenVM. Confirm `consensus.genesis`, measure historical RPC latency and disk throughput, and tune the replay budget if the host has capacity.
 - **Recovered node runs but isn't selected for consensus** — You likely missed priming while down. Verify with `genlayer staking active-validators` / `quarantined-validators` and see [Validator Priming](/understand-genlayer-protocol/core-concepts/optimistic-democracy/staking#epoch-activation-and-priming).
 
 ## Related
@@ -204,5 +220,5 @@ genlayer staking validator-info --validator 0xYourValidatorWallet...
 - [Setup Guide](/validators/setup-guide) — installation, configuration, and operator-key backup/restore
 - [Upgrade Guide](/validators/upgrade) — breaking upgrades also require a fresh sync from genesis
 - [Monitoring & Telemetry](/validators/monitoring) — confirm the recovered node is healthy and participating
-- [Rollup / Sequencer Outage](/validators/rollup-outage) — when the failure is upstream, not local
+- [Chain / Sequencer Outage](/validators/rollup-outage) — when the failure is upstream, not local
 - [Staking](/understand-genlayer-protocol/core-concepts/optimistic-democracy/staking) — priming, active set, and quarantine
