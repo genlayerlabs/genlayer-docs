@@ -38,7 +38,7 @@ flowchart TB
 ```
 
 - The **owner key** joins, deposits, exits, claims, changes the operator, and controls the validator identity. Keep it offline when practical.
-- The **operator key** signs activations, proposals, commits, and reveals. It is the hot key configured on the node and can be replaced by the owner.
+- The **operator key** signs activations, proposals, commits, and reveals. It is the hot key configured on the node. The owner registers its public key with a proof of possession when joining and can replace it later through a delayed two-step operator transfer.
 - The **ValidatorWallet** is a smart contract created when the validator joins. It is the validator's onchain identity and holds its stake accounting. It has no private key.
 
 <Callout type="warning">

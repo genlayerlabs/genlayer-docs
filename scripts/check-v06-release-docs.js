@@ -8,6 +8,7 @@ const failures = [];
 
 const releaseDocs = [
   "pages/developers/consensus-v06-migration.mdx",
+  "pages/developers/staking-guide.mdx",
   "pages/developers/error-reference.mdx",
   "pages/developers/networks.mdx",
   "pages/developers/decentralized-applications/architecture-overview.mdx",
@@ -34,6 +35,7 @@ const releaseDocs = [
   "pages/understand-genlayer-protocol/core-concepts/optimistic-democracy/slashing.mdx",
   "pages/understand-genlayer-protocol/core-concepts/optimistic-democracy/deterministic-violations-and-tribunals.mdx",
   "pages/understand-genlayer-protocol/core-concepts/optimistic-democracy/protocol-randomness.mdx",
+  "pages/understand-genlayer-protocol/core-concepts/rollup-integration.mdx",
   "pages/understand-genlayer-protocol/core-concepts/transactions/transaction-execution.mdx",
   "pages/understand-genlayer-protocol/core-concepts/transactions/transaction-statuses.mdx",
   "pages/validators/network-keeper-roles.mdx",
@@ -167,6 +169,46 @@ requireText(deploying, "verify the execution result", "execution-aware deploymen
 requireText(deploying, "genlayer network set studio-dev", "Studio-dev network selection");
 forbidText(deploying, "testnetBradbury", "pre-v0.40 Bradbury alias");
 
+const workflow = "pages/developers/decentralized-applications/dapp-development-workflow.mdx";
+requireText(workflow, "genlayer network set studio-dev", "Studio-dev network selection");
+requireText(workflow, "https://studio-dev.genlayer.com/api", "canonical Studio-dev RPC");
+requireText(workflow, "`studioDevnet`", "Studio-dev SDK chain");
+requireText(workflow, "genlayer network info", "pre-signing network verification");
+requireText(workflow, "--contract contracts/my_contract.py", "CLI deployment step");
+requireText(workflow, "genlayer account create --name", "required --name option for account creation");
+if (/genlayer account create(?! --name)/.test(read(workflow))) {
+  failures.push(`${workflow}: genlayer account create without required --name option`);
+}
+forbidText(workflow, "testnetBradbury", "pre-v0.40 Bradbury alias");
+requireText(workflow, "--fee-profile fee-profile.json", "fee-aware CLI deploy");
+requireText(workflow, "/developers/decentralized-applications/fee-profiling-and-estimation", "fee profiling link");
+requireText(workflow, "sim_fundAccount", "CLI account funding on hosted Studio");
+requireText(workflow, 'pip install --pre "genlayer-test>=0.30.0rc2"', "genlayer-test fee-profile prerelease install");
+
+// Release facts in prose are matched on plain text (Markdown emphasis and
+// line breaks removed) so rewording or reformatting does not fail the build.
+const workflowProse = read(workflow).replace(/[*_`]/g, "").replace(/\s+/g, " ");
+function requireFact(pattern, description) {
+  if (!pattern.test(workflowProse)) failures.push(`${workflow}: missing ${description}`);
+}
+function forbidFact(pattern, description) {
+  if (pattern.test(workflowProse)) failures.push(`${workflow}: contains stale ${description}`);
+}
+requireFact(/v0\.40\.0/, "minimum fee-aware CLI version");
+requireFact(/Studio v0\.123 or later[^.]*protocol fees/i, "version-based fee rule");
+requireFact(/funding is optional|optional[^.]*fund/i, "optional CLI account funding");
+requireFact(/credits? the shortfall/i, "Studio auto-covered fee deposit");
+forbidFact(/account needs GEN for the fee deposit/i, "mandatory funding claim");
+requireFact(/deploy entry[^.]*tests? deploy/i, "deploy entry requirement");
+requireFact(/failed receipt/i, "fee-less deploy outcome");
+forbidFact(/(?<!not )reject(s|ed)? (a )?deploys? (that|without)/i, "incorrect RPC rejection claim");
+if (/gltest[^\n]*--fee-profile(?!\s+\S+\.json)/.test(read(workflow))) {
+  failures.push(`${workflow}: gltest --fee-profile without an output path`);
+}
+if (/npm install -g genlayer(?=\s)/.test(read(workflow))) {
+  failures.push(`${workflow}: unpinned "npm install -g genlayer" installs a pre-fee CLI`);
+}
+
 const valueTransfers = "pages/developers/intelligent-contracts/features/value-transfers.mdx";
 requireText(valueTransfers, "wallet must cover `value + feeValue`", "separate user value and protocol fee funding");
 
@@ -189,6 +231,34 @@ for (const relativePath of [
   forbidText(relativePath, "genlayer network testnet-bradbury", "pre-v0.40 network selection syntax");
 }
 
+for (const relativePath of [
+  "pages/FAQ.mdx",
+  "pages/developers/decentralized-applications/architecture-overview.mdx",
+  "pages/developers/networks.mdx",
+  "pages/developers/staking-guide.mdx",
+  "pages/understand-genlayer-protocol/what-is-genlayer.mdx",
+  "pages/understand-genlayer-protocol/core-concepts/rollup-integration.mdx",
+  "pages/validators/network-keeper-roles.mdx",
+]) {
+  forbidText(relativePath, "zksync", "pre-Orbit zkSync reference");
+  forbidText(relativePath, "ZK Stack", "pre-Orbit ZK Stack reference");
+  forbidText(relativePath, "ZK-stack", "pre-Orbit ZK Stack reference");
+}
+const nodeApi = "pages/api-references/genlayer-node.mdx";
+requireText(nodeApi, "## zkSync Compatibility", "preserved zkSync compatibility section anchor");
+requireText(nodeApi, "node.rpc.endpoints.zksync.enabled", "conditional zkSync upstream forwarding config");
+requireText(nodeApi, "default value of `false` on Bradbury Phase 2", "disabled zkSync forwarding on Orbit");
+requireText(keepers, "executeInflationRequest", "Orbit inflation request execution");
+requireText(keepers, "GEN.retryInflationDelivery(", "expired inflation ticket recovery");
+requireText(keepers, "KeeperRewardUnavailable", "successful relay with an unavailable fee quote");
+forbidText(keepers, "executeL2Message", "zkSync inflation relay call");
+const stakingGuide = "pages/developers/staking-guide.mdx";
+requireText(stakingGuide, "possessionProof", "operator key possession proof on join");
+forbidText(stakingGuide, "uint256[8]", "pre-v0.6 validatorView array layout");
+forbidText(stakingGuide, "genStaking.delegatorDeposit{", "nonexistent payable delegatorDeposit");
+if (/genStaking\.(?:delegatorClaim|sharesOf)\(\s*msg\.sender\b/.test(read(stakingGuide))) {
+  failures.push(`${stakingGuide}: use the delegating contract's address for its shares and claims`);
+}
 for (const relativePath of releaseDocs) {
   const content = read(relativePath);
 

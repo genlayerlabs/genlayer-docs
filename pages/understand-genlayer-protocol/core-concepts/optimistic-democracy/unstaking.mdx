@@ -27,10 +27,10 @@ flowchart TB
     linkStyle default stroke:#7C879C,stroke-width:1.8px;
 ```
 
-1. The validator owner or delegator chooses a positive number of shares and submits an exit.
-2. The protocol stages the withdrawal and processes it through the validator's epoch records and `validatorPrime()`.
+1. After epoch 0, the validator owner or delegator submits an exit. The requested shares immediately leave the holder's available balance.
+2. The protocol queues the withdrawal. When `validatorPrime()` processes it, the contract prices the shares and updates the validator's active stake and selection weight.
 3. Once removed from active stake, those shares no longer contribute to selection weight or earn rewards.
-4. After the unbonding period, anyone can trigger the claim for the beneficiary. Funds go to the owner or delegator, not the caller.
+4. After the unbonding period, and once any slashing for the epochs the stake served has been settled, the beneficiary claims the GEN. A delegator claims directly from the Staking contract; only the delegator can submit that claim. A validator owner claims through the ValidatorWallet, which forwards the GEN to the owner.
 
 Under the current rules, the exit epoch still earns its normal rewards, and the unbonding period is seven epochs measured from the exit request. These values are protocol parameters.
 
@@ -42,7 +42,7 @@ The owner key controls validator exits and claims. The node's operator key canno
 
 ## Delegator exits
 
-A delegator exits shares separately for each validator pool. Multiple matured withdrawals can be claimed together according to the staking contract's accounting. During unbonding, exited stake earns no rewards and remains subject to the protocol rules attached to the withdrawal record.
+A delegator exits shares separately for each validator pool. One claim can collect multiple matured withdrawals from the same pool. Each withdrawal includes rewards and remains exposed to slashing for the epochs the stake served.
 
 Use current contract views or the SDK to calculate shares and claimability; do not convert a desired GEN amount to shares using a stale exchange rate.
 
