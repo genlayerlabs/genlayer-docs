@@ -288,8 +288,14 @@ for (const relativePath of releaseDocs) {
         ["-c", "import ast,sys; ast.parse(sys.stdin.read())"],
         { input: source, encoding: "utf8" },
       );
+      if (result.error) {
+        console.error(
+          `Cannot validate Python examples: failed to run python3 (${result.error.code || result.error.message}). Install Python 3 and make sure python3 is on PATH.`,
+        );
+        process.exit(1);
+      }
       if (result.status !== 0) {
-        failures.push(`${relativePath}:${line}: invalid Python example: ${result.stderr.trim()}`);
+        failures.push(`${relativePath}:${line}: invalid Python example: ${(result.stderr || "").trim()}`);
       }
     } else {
       const result = ts.transpileModule(source, {

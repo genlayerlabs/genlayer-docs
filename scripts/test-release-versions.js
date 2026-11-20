@@ -118,6 +118,19 @@ const tests = {
   'no versions fails the generator': () => {
     assert.ok(guideFor([]).failed);
   },
+  'release docs checker reports a missing python3 instead of crashing': () => {
+    // Run against the real pages (they contain Python examples) with no python3 on PATH.
+    const root = path.join(__dirname, '..');
+    const script = path.join(__dirname, 'check-v06-release-docs.js');
+    const result = require('child_process').spawnSync(process.execPath, [script], {
+      cwd: root,
+      env: { ...process.env, PATH: path.join(os.tmpdir(), 'no-such-bin-dir') },
+      encoding: 'utf8',
+    });
+    assert.strictEqual(result.status, 1);
+    assert.match(result.stderr, /Cannot validate Python examples.*python3/);
+    assert.doesNotMatch(result.stderr, /TypeError/);
+  },
 };
 
 let failures = 0;
