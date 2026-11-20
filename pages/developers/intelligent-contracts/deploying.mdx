@@ -95,6 +95,30 @@ Follow this recommended progression:
   `studio-next.genlayer.com`, if enabled, is a browser alias for the preview. SDKs, CLI profiles, and wallets should keep using the canonical Studio-dev RPC and chain ID rather than treating it as a separate network.
 </Callout>
 
+## Contract Size and Packaging Notes
+
+Intelligent Contracts are Python contracts executed by GenVM; they are not compiled to EVM bytecode. That means the usual EVM contract bytecode-size limit is not the right model when planning a GenLayer deployment.
+
+Still keep deployed contracts reviewable and lightweight:
+
+- Split large applications into focused Python modules or cooperating contracts instead of one generated monolith.
+- Keep prompts, schemas, and fixtures concise; put bulky off-chain data behind stable URLs or content hashes when possible.
+- Use deploy scripts for multi-contract or multi-step deployments so addresses and constructor arguments are recorded repeatably.
+- If a contract is large because it contains mostly deterministic business logic, consider moving deterministic reads, indexing, caching, or UI-only aggregation outside consensus and only call GenLayer for decisions that require subjective or web-aware validation.
+
+<Callout emoji="⚠️">
+  If a large deployment returns a transaction hash but never gets mined, treat it as a likely network-specific package or gas-inclusion limit rather than a successful deploy. Confirm with a tiny control contract from the same wallet, then reduce the deployed artifact before retrying.
+</Callout>
+
+For larger applications, prefer deployment shapes that keep each onchain artifact small enough to include reliably:
+
+- split consensus-critical logic into cooperating contracts;
+- move helper code, deterministic aggregation, and UI-only logic outside the Intelligent Contract where possible;
+- use deploy scripts to deploy the pieces in order and persist their addresses; and
+- for advanced single-contract packaging, use a bootstrapper-style deployment that writes the source in smaller chunks before initialization.
+
+Do not assume Solidity patterns such as diamond proxies are required unless you are separately interacting with EVM contracts, and avoid hardcoding a numeric size or gas ceiling without checking the current target network.
+
 ## What's Next?
 
 After deploying your contracts:
