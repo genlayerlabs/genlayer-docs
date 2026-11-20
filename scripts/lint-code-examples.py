@@ -1,8 +1,8 @@
 #!/usr/bin/env python3
 """Extract Python code blocks from MDX files and lint them with genvm-lint.
 
-Extracts complete contracts (those with a Depends header) from documentation,
-writes them to temp files, and runs genvm-lint on each.
+Extracts complete contracts and snippets marked with {/* genvm-lint: required */}
+from documentation, writes them to temp files, and runs genvm-lint on each.
 
 Usage:
     python scripts/lint-code-examples.py [--fix-version VERSION] [--lint-snippets]
@@ -12,7 +12,8 @@ Checks:
     2. All complete contracts must pass genvm-lint lint (AST checks)
     3. Runner versions should be consistent across all examples
     4. GenLayer snippets must be valid Python (syntax check)
-    5. Method snippets wrapped in contracts must pass lint (--lint-snippets)
+    5. Marked snippets must pass lint and API checks by default; others are advisory (--lint-snippets)
+    6. Behavioural tests for the Code Snippets page (scripts/test-snippets.py)
 """
 
 import argparse
@@ -67,6 +68,9 @@ def extract_python_blocks(mdx_path: Path) -> list[dict]:
                 "is_contract": is_contract,
                 "is_genlayer": is_genlayer and not is_contract,
                 "depends": dict(DEPENDS_RE.findall(code)),
+                "lint_required": content[:match.start()].rstrip().endswith(
+                    "{/* genvm-lint: required */}"
+                ),
             }
         )
 
@@ -232,6 +236,14 @@ SNIPPET_IGNORE_CODES = {
 
 def lint_snippet(code: str, snippet_type: str, runner_hash: str, mdx_path: Path, line: int) -> list[str]:
     """Wrap a snippet and lint it. Returns error strings."""
+    # The SDK validator does not execute function bodies. Catch this invalid
+    # namespace explicitly, including error branches that examples seldom exercise.
+    for node in ast.walk(ast.parse(code)):
+        if (isinstance(node, ast.Attribute) and node.attr == "UserError"
+                and isinstance(node.value, ast.Name) and node.value.id == "gl"):
+            return [f"{mdx_path.relative_to(DOCS_ROOT)}:{line}+{node.lineno}: "
+                    "invalid API gl.UserError — use gl.vm.UserError"]
+
     wrapped = wrap_snippet(code, snippet_type, runner_hash)
     # Calculate wrapper line offset (lines added before the snippet code)
     wrapper_lines = wrapped.split("\n")
@@ -399,7 +411,9 @@ def main():
         print()
 
     # Lint wrapped snippets
-    if args.lint_snippets and all_snippets and not args.check_versions_only:
+    required_snippets = [(path, block) for path, block in all_snippets if block["lint_required"]]
+    selected_snippets = all_snippets if args.lint_snippets else required_snippets
+    if selected_snippets and not args.check_versions_only:
         # Get runner hash from first contract for the wrapper
         runner_hash = "test"
         for _, block in all_contracts:
@@ -409,7 +423,7 @@ def main():
 
         print("Linting wrapped GenLayer snippets...")
         snippet_warnings = 0
-        for mdx_path, block in all_snippets:
+        for mdx_path, block in selected_snippets:
             rel = mdx_path.relative_to(DOCS_ROOT)
             snippet_type = classify_snippet(block["code"])
             lint_errors = lint_snippet(
@@ -418,12 +432,23 @@ def main():
             if lint_errors:
                 for e in lint_errors:
                     print(f"  ⚠ {e}")
-                snippet_warnings += 1
-                # Don't add to errors — these are advisory for now
+                if block["lint_required"]:
+                    errors.extend(lint_errors)
+                else:
+                    snippet_warnings += 1
             else:
                 print(f"  ✓ {rel}:{block['line']} ({snippet_type})")
         if snippet_warnings:
             print(f"  {snippet_warnings} snippet(s) had lint issues (advisory)")
+        print()
+
+    # Behavioural tests for the Code Snippets page
+    if not args.check_versions_only:
+        print("Running snippet behaviour tests...", flush=True)
+        test_script = Path(__file__).parent / "test-snippets.py"
+        result = subprocess.run([sys.executable, str(test_script)])
+        if result.returncode != 0:
+            errors.append("scripts/test-snippets.py failed")
         print()
 
     if errors:

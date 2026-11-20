@@ -5,11 +5,13 @@ on:
     paths:
       - 'pages/**/*.mdx'
       - 'scripts/lint-code-examples.py'
+      - 'scripts/test-lint-code-examples.py'
   push:
     branches: [main]
     paths:
       - 'pages/**/*.mdx'
       - 'scripts/lint-code-examples.py'
+      - 'scripts/test-lint-code-examples.py'
 
 jobs:
   lint-code-examples:
@@ -20,4 +22,5 @@ jobs:
         with:
           python-version: '3.12'
       - run: pip install genvm-linter
+      - run: python scripts/test-lint-code-examples.py
       - run: python scripts/lint-code-examples.py

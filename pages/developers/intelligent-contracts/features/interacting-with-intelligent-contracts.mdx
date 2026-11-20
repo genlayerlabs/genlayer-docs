@@ -6,7 +6,7 @@ description: "Interacting with Intelligent Contracts: get references, call view 
 
 Interacting with Intelligent Contracts means referencing another contract by address, calling its read-only `view()` methods, emitting asynchronous write messages with `emit()`, and deploying child contracts.
 
-> This page covers syntax for internal messages (IC → IC). See [Messages](/developers/intelligent-contracts/features/messages) for the conceptual model and [Value Transfers](/developers/intelligent-contracts/features/value-transfers) for sending GEN.
+> This page covers syntax for internal messages (IC → IC). See [Messages](/developers/intelligent-contracts/features/messages) for the conceptual model and [Value Transfers](/developers/intelligent-contracts/features/value-transfers) for sending GEN. For complete, explained contracts, see [Code Snippets](/developers/intelligent-contracts/examples/snippets).
 
 ## Getting Contract References
 
@@ -58,8 +58,8 @@ other.emit(value=u256(100), on='finalized').deposit()
 
 ```python
 gl.deploy_contract(code=contract_code)
-salt: u256 = u256(1) # not zero
-child_address = gl.deploy_contract(code=contract_code, salt=salt)
+salt_nonce: u256 = u256(1) # not zero
+child_address = gl.deploy_contract(code=contract_code, salt_nonce=salt_nonce)
 ```
 
 ## View vs Emit

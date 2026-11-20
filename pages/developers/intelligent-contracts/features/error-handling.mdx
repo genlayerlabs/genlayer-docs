@@ -106,7 +106,7 @@ def validator_fn(leaders_res: gl.vm.Result) -> bool:
         try:
             leader_fn()
             return False  # Leader errored but we succeeded — disagree
-        except gl.UserError as e:
+        except gl.vm.UserError as e:
             validator_msg = str(e)
             # Both hit the same business logic error — agree
             if validator_msg == leader_msg:
