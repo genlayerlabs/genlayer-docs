@@ -13,6 +13,7 @@ Checks:
     3. Runner versions should be consistent across all examples
     4. GenLayer snippets must be valid Python (syntax check)
     5. Marked snippets must pass lint and API checks by default; others are advisory (--lint-snippets)
+    6. Behavioural tests for the Code Snippets page (scripts/test-snippets.py)
 """
 
 import argparse
@@ -439,6 +440,15 @@ def main():
                 print(f"  ✓ {rel}:{block['line']} ({snippet_type})")
         if snippet_warnings:
             print(f"  {snippet_warnings} snippet(s) had lint issues (advisory)")
+        print()
+
+    # Behavioural tests for the Code Snippets page
+    if not args.check_versions_only:
+        print("Running snippet behaviour tests...", flush=True)
+        test_script = Path(__file__).parent / "test-snippets.py"
+        result = subprocess.run([sys.executable, str(test_script)])
+        if result.returncode != 0:
+            errors.append("scripts/test-snippets.py failed")
         print()
 
     if errors:
