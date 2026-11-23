@@ -25,8 +25,14 @@ def leader_fn():
 def validator_fn(leaders_res) -> bool:
     if not isinstance(leaders_res, gl.vm.Return):
         return False
-    my_result = leader_fn()
-    return my_result == leaders_res.calldata
+    mine = leader_fn()
+    theirs = leaders_res.calldata
+    # Compare only the decision fields. The free-text "reason" will
+    # differ between runs and must not break consensus.
+    return (
+        mine.get("verdict") == theirs.get("verdict")
+        and mine.get("score") == theirs.get("score")
+    )
 
 result = gl.vm.run_nondet_unsafe(leader_fn, validator_fn)
 
@@ -37,7 +43,7 @@ if verdict not in ("approve", "reject", "needs_review"):
     raise ValueError("[EXPECTED] LLM returned an unknown verdict")
 ```
 
-Do not put validation logic inside `leader_fn` or `validator_fn` in a way that changes what they return — the two functions must agree on the raw result first, and the checks run on the agreed result.
+Do not put validation logic inside `leader_fn` or `validator_fn` in a way that changes what they return — the two functions must agree on the decision fields first, and the checks run on the agreed result.
 
 ## Allowlist Enums, Don't Match Free Text
 
@@ -65,7 +71,11 @@ if (
     raise ValueError(f"[EXPECTED] Score outside 0-100: {score!r}")
 
 amount = result.get("amount")
-if not isinstance(amount, (int, float)) or amount <= 0:
+if (
+    isinstance(amount, bool)
+    or not isinstance(amount, (int, float))
+    or amount <= 0
+):
     raise ValueError(f"[EXPECTED] Invalid amount: {amount!r}")
 ```
 
@@ -81,6 +91,17 @@ if not isinstance(amount, (int, float)) or amount <= 0:
 def require_fields(data: dict, spec: dict) -> None:
     for key, expected_type in spec.items():
         value = data.get(key)
+        # bool is a subclass of int in Python, so True passes
+        # isinstance(True, int). Reject booleans explicitly wherever
+        # a number is expected.
+        if isinstance(value, bool) and expected_type in (
+            int,
+            float,
+            (int, float),
+        ):
+            raise ValueError(
+                f"[EXPECTED] Field {key!r} must be a number, not a boolean"
+            )
         if not isinstance(value, expected_type):
             raise ValueError(
                 f"[EXPECTED] Field {key!r} has wrong type: {type(value).__name__}"
@@ -100,11 +121,27 @@ A small helper like this, reused across your contract's methods, catches missing
 For actions that move value or grant access, one LLM call is not enough evidence. Confirm the decision against a second, independent source — a web fetch, a second prompt with different wording, or an on-chain fact — and require agreement before proceeding:
 
 ```python
-# Two independent judgments must agree before funds move
-first = gl.nondet.exec_prompt(prompt_a, response_format="json")
-second = gl.nondet.exec_prompt(prompt_b, response_format="json")
+# Two independent judgments must agree before funds move.
+# Both prompts run inside one non-deterministic function, so the
+# whole pair is validated by consensus before it is used.
+def cross_check_fn():
+    first = gl.nondet.exec_prompt(prompt_a, response_format="json")
+    second = gl.nondet.exec_prompt(prompt_b, response_format="json")
+    return {"first": first, "second": second}
 
-if first.get("verdict") != second.get("verdict"):
+def cross_check_validator(leaders_res) -> bool:
+    if not isinstance(leaders_res, gl.vm.Return):
+        return False
+    mine = cross_check_fn()
+    theirs = leaders_res.calldata
+    return (
+        mine["first"].get("verdict") == theirs["first"].get("verdict")
+        and mine["second"].get("verdict") == theirs["second"].get("verdict")
+    )
+
+checks = gl.vm.run_nondet_unsafe(cross_check_fn, cross_check_validator)
+
+if checks["first"].get("verdict") != checks["second"].get("verdict"):
     raise ValueError("[EXPECTED] Independent checks disagree, aborting")
 ```
 
