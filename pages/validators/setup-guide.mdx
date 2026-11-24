@@ -241,7 +241,7 @@ See the [GenVM Configuration](/validators/genvm-configuration) page for partner 
 
 #### GenLayer Chain RPC access
 
-Each validator needs HTTP and WebSocket access to the [GenLayer Chain](/understand-genlayer-protocol/core-concepts/rollup-integration) to read state, send transactions and subscribe to chain updates. For Bradbury Phase 2:
+Each validator needs HTTP and WebSocket access to the [GenLayer Chain](/understand-genlayer-protocol/core-concepts/rollup-integration) to read state, send transactions and subscribe to chain updates. For Bradbury Phase 3:
 
 - HTTP: `https://rpc.testnet-chain.genlayer.com`
 - WebSocket: `wss://rpc.testnet-chain.genlayer.com` (API key required)
@@ -276,7 +276,7 @@ One full node can be shared between multiple validators. The optimal validator-t
    v0.6.0
    ```
 
-   Typically, you will want to run the latest version **approved for Bradbury Phase 2**, not an arbitrary `latest` tag. The list above is a documentation example generated from changelog entries; an entry can precede artifact publication. Confirm the exact version in the release announcement and check all download URLs before installation. Do not fall back to an older release when a target artifact returns 404.
+   Typically, you will want to run the latest version **approved for Bradbury Phase 3**, not an arbitrary `latest` tag. The list above is a documentation example generated from changelog entries; an entry can precede artifact publication. Confirm the exact version in the release announcement and check all download URLs before installation. Do not fall back to an older release when a target artifact returns 404.
 
 2. Download the packaged application
    ```sh copy
@@ -665,7 +665,7 @@ Since v0.6, the node refuses to start unless `consensus.manifestpath` points at 
 ##### Testnet Bradbury
 
 ```yaml copy
-# Bradbury Phase 2 network configuration (GenLayer testnet, chain id 4221).
+# Bradbury Phase 3 network configuration (GenLayer testnet, chain id 4221).
 #
 # Put these values into configs/node/config.yaml, and save the Bradbury protocol
 # manifest (bradbury.protocol-manifest.json) as configs/node/protocol-manifest.json.
@@ -1305,7 +1305,7 @@ HEALTHCHECK_AUTO_RESTART=true
 This is the release package's `.env.example`: copy it to `.env` next to `docker-compose.yaml`. The release package also ships `docker-compose.yaml` and `genvm-module-web-docker.yaml`. Set at least:
 
 - `NODE_PASSWORD`: the keystore password. A validator needs it: the node refuses validator mode without a password, and there is no default. A full node and the WebDriver-only stack need none.
-- `NODE_VERSION`: pin the exact version approved for Bradbury Phase 2. The `latest` image can belong to an older release family.
+- `NODE_VERSION`: pin the exact version approved for Bradbury Phase 3. The `latest` image can belong to an older release family.
 - the API key of at least one LLM provider.
 - `GENLAYERNODE_ROLLUP_GENLAYERCHAINRPCKEY`, when your chain RPC provider needs a key (the Bradbury WebSocket does).
 
