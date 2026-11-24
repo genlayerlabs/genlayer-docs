@@ -273,18 +273,14 @@ One full node can be shared between multiple validators. The optimal validator-t
    You should see a list like this
 
    ```sh
-   v0.6.0-rc.5
-   v0.6.0-rc.4
-   v0.6.0-rc.3
-   v0.6.0-rc.2
-   v0.6.0-rc.1
+   v0.6.0
    ```
 
    Typically, you will want to run the latest version **approved for Bradbury Phase 2**, not an arbitrary `latest` tag. The list above is a documentation example generated from changelog entries; an entry can precede artifact publication. Confirm the exact version in the release announcement and check all download URLs before installation. Do not fall back to an older release when a target artifact returns 404.
 
 2. Download the packaged application
    ```sh copy
-   export version=v0.6.0-rc.5 # example target; confirm it is published and approved before use
+   export version=v0.6.0 # example target; confirm it is published and approved before use
    base=https://storage.googleapis.com/gh-af/genlayer-node/bin/amd64/${version}
    curl -fI "${base}/genlayer-node-linux-amd64-${version}.tar.gz"
    curl -fI "${base}/genlayer-node_${version}_SHA256SUMS"
@@ -373,8 +369,9 @@ consensus:
   consensusaddress: "" # AddressManager contract address for this deployment.
   manifestpath: "configs/node/protocol-manifest.json" # Trusted producer protocol manifest for this deployment: save your network's manifest (from its documentation) at this path; a dev-env deploy places its own here too. Relative paths resolve against the node root. A mismatch with consensusaddress is refused at startup.
   chainid: "" # DECIMAL chain id this deployment was made on (not hex, no leading zeros). Held independently of the manifest so a manifest describing another deployment is caught.
-  # genesis: 47930 # (Optional) Genesis block number for this consensus deployment. If not provided, it will be auto-detected by searching for the first log from the ConsensusMain contract.
+  # genesis: 47930 # (Optional) The block that deployed the AddressManager (consensusaddress). The node checks it with two eth_getCode calls and keys GenVM's forks on its timestamp; without it the node searches for that block (about 20 eth_getCode calls, an RPC endpoint that serves old state) and replay starts at the first ConsensusMain log.
   # sync_halt_block: 20000 # Node-local, full mode only; stop replay exactly here and keep RPC/ops serving. Zero disables.
+  # log_read_interval: "1s" # (Optional) Shortest time between two log reads of the sync filter and of the event router. Heads inside it only move the target; the next read covers every block since the last one, so the reads follow time, not the chain's block rate (which another network on the same chain can raise). "0s" reads at every head. Default 1s.
   # chain_submit_buffer: "30s" # (Optional) Slack reserved at the end of each consensus step to submit the resulting on-chain tx (commit vote, reveal vote, proposed receipt) before the slot closes. Tune to underlying settlement chain latency. Default 30s.
   # admissiontimeout: "15s" # (Optional) Bound on the startup deployment admission check. Never unbounded. Default 15s.
   # Cache of repeated transaction reads; on by default. A value read at a finalized
@@ -386,9 +383,9 @@ consensus:
   #   settled_ttl: 15m          # values read at or below the finalized block
   #   unsettled_ttl: 30s        # snapshots read above it
   #   unsettled_long_ttl: 10m   # fee states and history answers read above it
-  #   max_snapshots: 1024
-  #   max_fee_states: 1024
-  #   max_history: 4096
+  #   max_snapshots: 256
+  #   max_fee_states: 256
+  #   max_history: 128
   #   preload_workers: 5        # sync filter history preloads reading the chain at a time
 # data directory
 datadir: "./data/node"
@@ -434,6 +431,9 @@ node:
   # Mode can be "validator" or "full".
   # Default value is "validator".
   mode: "validator"
+  # Network name for logs and metrics, detected from consensus.consensusaddress for a
+  # known deployment. GenVM's forks do not depend on it: they follow the deployment's genesis.
+  # network: "custom"
   # Address of the ValidatorWallet contract (required for validator mode)
   validatorWalletAddress: ""
   # Address of the operator that performs consensus duties for the ValidatorWallet
@@ -578,19 +578,29 @@ node:
   #   sweep_interval: 10m             # how often aged-out history is scheduled for pruning
 # genvm configuration
 genvm:
-  root_dir: ./opt/genvm/v0.6.0-rc10
+  root_dir: ./opt/genvm/v0.6.0-rc17
   start_manager: true # if true node will start genvm manager itself
   manager_url: http://127.0.0.1:3999
-  # Permits are charged PER EXECUTION by the genvm manager, and one
-  # nondeterministic execution costs 8 of them (permits.nondet). This value is
-  # therefore a permit budget, not an execution count: 32 admits 4 concurrent
-  # nondet executions, which is what the previous `8` bought when a run cost 2
-  # permits. Leaving it EMPTY is preferable — autodiscovery sizes it from the
-  # host and already speaks this unit.
-  permits: 32 # Leave empty for autodiscovery, put a number for updating genvm permits on startup
-  # Same unit as `permits` above, but a sync execution costs 4 rather than 8,
-  # so 256 admits the 64 concurrent replays the previous `64` bought at cost 1.
-  sync_permits: 256 # Optional: permits used while significantly behind (bulk replay). Leave empty to reuse the steady-state `permits` value.
+  # The node writes the GenVM chainforks schedule it runs to <datadir>/chainforks.json at every start. An external manager
+  # (start_manager: false) must run a copy of it: --chainforks-path <that file> --default-network node.
+  # GenVM permits are a budget, not a run count: a duty (nondeterministic) run
+  # costs 8 permits and a sync replay run 4, so 32 permits admit 4 duty runs.
+  #
+  # `permits` and `sync_permits` are UPPER LIMITS. The node uses
+  # min(value, what the host or the container (pod) holds), from the cgroup
+  # memory and CPU limits when they are tighter than the host:
+  # - `permits` holds max(2, min(CPUs x 8, memory GiB - 2)).
+  # - `sync_permits` holds max(16, 8 x that).
+  # A value above that is lowered, with WARN "configured GenVM permits exceeds
+  # capacity; clamping" (configured and capacity). So 32 / 256 run as 2 / 16 on
+  # a 4 GiB / 1 CPU pod and as 32 / 256 on a host that holds them.
+  # Empty, absent or 0 means the node uses that capacity. The node logs the
+  # values it uses and where each came from at startup ("resolved GenVM permits").
+  #
+  # The GenVM manager's own pool is never below 8 (one duty run): on a smaller
+  # budget the node sets the manager to 8 and schedules its own budget itself.
+  permits: 32 # Upper limit; lowered to what the host or pod holds (see above).
+  sync_permits: 256 # Upper limit, used while more than sync_permits_lag_threshold blocks behind; lowered like permits.
   # sync_permits_lag_threshold: blocks-behind above which the node runs the replay
   # budget (sync_permits) instead of the live budget (permits); at or below it the
   # node is treated as caught up. Keyed on the actual sync lag, not the health
@@ -608,13 +618,17 @@ genvm:
   # that never ticks.
   # sync_wait_poll_interval: "100ms"
   replay:
+    scheduler: "lanes" # "lanes": replay accepted transactions in parallel by recipient across blocks, commit blocks in chain order. "block": one block at a time
+    # lane_workers: 0 # Lane executions at the same time under "lanes"; 0 derives it from the GenVM permit budget and the host CPUs
+    # lend_duty_reserve: true # Under "lanes", with a GenVM budget under 12 permits: replay may use the permits kept for a duty run while no duty needs them; a duty then waits at most one replay run, as it already did. false keeps them free whenever duties are on
+    # The four keys below apply under scheduler "block" only
     parallel_enabled: false # Opt in to bounded parallel replay of independent accepted transactions in the same block
     workers: 4 # Maximum concurrent replay executions
     consensus_reserve_permits: 2 # Kept free for live validator duties unless a duty is waiting on replayed state
     replay_floor_permits: 1 # Minimum replay capacity while replay work is queued
     max_journal_bytes: 268435456 # 256 MiB block-wide cap; overflow falls back to serial replay
     reorg_history_blocks: 4096 # Number of hash-identified replay checkpoints retained for exact canonical rollback
-    max_reorg_journal_bytes: 268435456 # 256 MiB inverse-journal cap per block; overflow aborts replay and keeps duties disabled
+    max_reorg_journal_bytes: 268435456 # 256 MiB inverse-journal cap per block; overflow commits a non-reversible baseline
 # Advanced configuration
 merkleforest:
   maxdepth: 16
@@ -673,10 +687,10 @@ rollup:
 
 # consensus contracts configuration
 consensus:
-  consensusaddress: "0x3F71AE080BD6270A91dBcc7960d88797828538E0" # AddressManager contract address. The node names the network bradbury-phase2 from it.
+  consensusaddress: "0x0192C6C9482251790965B7136352B26234d81d79" # AddressManager contract address. The node names the network bradbury-phase3 from it.
   chainid: "4221" # DECIMAL chain id of this deployment.
   manifestpath: "configs/node/protocol-manifest.json" # Where bradbury.protocol-manifest.json is saved; a relative path resolves against the node root.
-  genesis: 47930 # Genesis block number for this consensus deployment (AddressManager deployment block).
+  genesis: 694191 # Genesis block number for this consensus deployment (AddressManager deployment block).
 
 ```
 

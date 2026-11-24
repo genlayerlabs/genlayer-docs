@@ -20,7 +20,7 @@ rollup:
 
 # consensus contracts configuration
 consensus:
-  consensusaddress: "0x3F71AE080BD6270A91dBcc7960d88797828538E0" # AddressManager contract address. The node names the network bradbury-phase2 from it.
+  consensusaddress: "0x0192C6C9482251790965B7136352B26234d81d79" # AddressManager contract address. The node names the network bradbury-phase3 from it.
   chainid: "4221" # DECIMAL chain id of this deployment.
   manifestpath: "configs/node/protocol-manifest.json" # Where bradbury.protocol-manifest.json is saved; a relative path resolves against the node root.
-  genesis: 47930 # Genesis block number for this consensus deployment (AddressManager deployment block).
+  genesis: 694191 # Genesis block number for this consensus deployment (AddressManager deployment block).

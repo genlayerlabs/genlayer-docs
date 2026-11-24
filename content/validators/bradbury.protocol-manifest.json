@@ -1,311 +1,275 @@
 {
   "version": 1,
   "chainId": "4221",
-  "registry": "0x3F71AE080BD6270A91dBcc7960d88797828538E0",
+  "registry": "0x0192C6C9482251790965B7136352B26234d81d79",
   "entries": [
     {
       "key": "Voting",
-      "addr": "0xB8E01fA102f91ec2E402CfBD23f162e088C2CD3A"
+      "addr": "0xf6B844D49c6D353da31F54fA53379f7bF5197f00"
     },
     {
       "key": "ValidatorPrimeUtils",
-      "addr": "0x1CDE9c9f3a17cBeB6bCFBE1fd732745309f81576"
+      "addr": "0x2d882bE1932dEc4641BEdBF0f352e3BB99587275"
     },
     {
       "key": "VestingBeacon",
-      "addr": "0x6A5f7bb80b8760B8978e3E2D57a4639111ebba05"
+      "addr": "0x21a2D557f3528020FEF467b6Cb6050b474EC2d60"
     },
     {
       "key": "Utils",
-      "addr": "0x215952B66D801c805e68E2503AfC751cAA84Af7c"
+      "addr": "0x37a00dC86CDAd498A9D889224325Bfa12dD16a9B"
     },
     {
       "key": "ConsensusMain",
-      "addr": "0x2E2766cbc3E5e61Ce93bBcdCBb3eAcB82082A019"
+      "addr": "0x0f4F0e05475723790E4a2ed0598370783C300926"
     },
     {
       "key": "SnapshotSelectionKernel",
-      "addr": "0x84c06bc3d53c5859334BA32d707604750D761196"
-    },
-    {
-      "key": "GovernanceCouncilElections",
-      "addr": "0xFF203aBb22412c81Fa04Dfb1F9620790F7ca581c"
+      "addr": "0x9934E54D63809d1ba1f0651696c06CfBD34032B0"
     },
     {
       "key": "VestingFactory",
-      "addr": "0x82cA5e0e7A9345CF3ED5ee68A7fba41EF2202316"
+      "addr": "0x753B5DC3841F640cD93d61F26E5EAa088Da6f1B6"
     },
     {
       "key": "IdlenessPhase",
-      "addr": "0xa2f3360c3359e45AD07E889018567BaBB914d3eB"
+      "addr": "0x646986a9d9Ccebdc7E86ACeBB49494FA0461438b"
     },
     {
       "key": "Rounds",
-      "addr": "0xe1B234B6959deA2AD0873fc7248a91a53a6185f9"
+      "addr": "0xECaCC88106F0E35e4fB58D02a37Fe2B5C5752E03"
     },
     {
       "key": "RandomnessUtils",
-      "addr": "0xd7DE7Feeed4B6f51D851AAf347CB0895D1275342"
+      "addr": "0x5951A7F3be3390Fd4030918332742d64B8CBB780"
     },
     {
       "key": "ConsensusData",
-      "addr": "0xc5FA6f82BEe53598825d6edf7E3e24613082c75B"
+      "addr": "0x2247b85b7ca7fb1Fea990b4aFAB4328D9c597f28"
     },
     {
       "key": "IdlenessViews",
-      "addr": "0x0861c1c7ACAAA2a56c6c49FB13261171DcB10855"
+      "addr": "0x830652BD781a2E07f6e868ba2441219a3D012fe9"
     },
     {
       "key": "Queues",
-      "addr": "0xBfE2ece1f2c62Ab3700C94Ed6bB76286bccC8CB3"
+      "addr": "0x29F80b0240Da2f549A05B6C83FbED0396A4B6363"
     },
     {
       "key": "RemedySelectionKernel",
-      "addr": "0x0CB262aD8b7964CC88Ec3C96eb6E1474f16D5bf6"
+      "addr": "0x5F10f7fF8451A61f2E37D47f9E5B96fe577a2db5"
     },
     {
       "key": "ValidatorSlashSettlement",
-      "addr": "0x217530Bf7227CF6BC290Bab5ece5e9375E4fa3Cf"
+      "addr": "0x92bb807514D1c709922e90EE355C2Dda0a76ec1e"
     },
     {
       "key": "MessagePaymentsTerminalHelpers",
-      "addr": "0x7534f102EF52EdC0FCb835eE58e8b15Df757092c"
+      "addr": "0x5da56DDD5046B9E7B528CA639cB96ffEE777ae24"
     },
     {
       "key": "Staking",
-      "addr": "0xD8fBa96C0dBB0257028dBc0107060b958e5c7113"
+      "addr": "0xcE16862EAf10B97A0619BeBb662991fb4a52e346"
     },
     {
       "key": "Transactions",
-      "addr": "0xaCe5e4191Bf408957538Caa9493aBB64F63D92c4"
+      "addr": "0x0D0bb0B33A0A781385E148286B0F12F6C085942e"
     },
     {
       "key": "Messages",
-      "addr": "0xD14B0489157FE420555F1e5A6AFBA031E978aCE5"
-    },
-    {
-      "key": "GovernanceVotingPower",
-      "addr": "0xc42590416fF93dD12a038b601088Ff2629559aBf"
+      "addr": "0x6dE24De6299C81E4302D12a53191b204C8924c79"
     },
     {
       "key": "StakingReadModel",
-      "addr": "0xf1fBdE733A9ceE2C0A44b8f724d944F89aE6D8A4"
-    },
-    {
-      "key": "SecurityCouncil",
-      "addr": "0x48713683CdB19ece4f6f9601Ffe64c8862827cFC"
+      "addr": "0x04f3DFa8537af96E657CC2157f0E5cB110352868"
     },
     {
       "key": "ConsensusFinalizationHelpers",
-      "addr": "0xa2F211EE0D1CcC372695766a47c18af3C4FE46fC"
+      "addr": "0x3B1624193Bf8884a29ee9F1166e1b9487994C2F9"
     },
     {
       "key": "ValidatorUtils",
-      "addr": "0xe13742A806c532972964A25d5A3795FB1702eBc2"
+      "addr": "0x4f87dD8852A44b7b0a90A0b9a89805703AbB1989"
     },
     {
       "key": "TerminalRoundKernel",
-      "addr": "0x62d3aaBF65d58D51D32B8781C32ca40174a39a5F"
+      "addr": "0xA5681274394DFF7e6bf85D9Fe6C504E9dd1D7e6a"
     },
     {
       "key": "GhostManager",
-      "addr": "0x2E2766cbc3E5e61Ce93bBcdCBb3eAcB82082A019"
+      "addr": "0x0f4F0e05475723790E4a2ed0598370783C300926"
     },
     {
       "key": "RoundsCreation",
-      "addr": "0x35A36496861b11199486121621EEb86E0528630C"
-    },
-    {
-      "key": "GovernanceClock",
-      "addr": "0xBDb6b4cAEdF3Bfca166745c2a4C16053351A57a6"
+      "addr": "0x6B3c425A0BCa97DcF61c8f428F5f88D75A7BD5cd"
     },
     {
       "key": "QueueStepUtils",
-      "addr": "0xb4d264c5f8D51FDfE48fd3b7dbd2F3943eC8c073"
-    },
-    {
-      "key": "GovernanceL1Bridge",
-      "addr": "0x94b1907087590241e3B55e6655A7EdaFfEC10300"
+      "addr": "0x0047ECC230AcB66c81B1a9F2b6B250B7125e242f"
     },
     {
       "key": "Slashing",
-      "addr": "0x9C30189686B7d6ec5e525eA6f155B57987d2086f"
+      "addr": "0x3927c3a6ceD5de740F02f29c59eb9c253C735B6D"
     },
     {
       "key": "RevealingPhase",
-      "addr": "0x88c6D8Ff2BC235eEf758014dd92C2E45D1E5C8F7"
+      "addr": "0xFc85662f5835B8D0D05c9B40042E25EA5e6d4283"
     },
     {
       "key": "Idleness",
-      "addr": "0x8f4167edC14Ce4E0640de65cF70DcdE3dfba9FF1"
+      "addr": "0xB33dDcDF61bd941293e82e09e68bc91bF638CD02"
     },
     {
       "key": "TransactionFeesManager",
-      "addr": "0xd122de4CB6704C0FDdbb061275F0171e1119A429"
+      "addr": "0xF80d6551EF06C98cc375c9dA14627e187096868F"
     },
     {
       "key": "FeeManager",
-      "addr": "0x7678587A847712f2A96082AC07883A88D0fc7245"
+      "addr": "0x8E8B6194020dB1CbEf9C6c9dcFeE8FfF1e5E33c3"
     },
     {
       "key": "FinalizationPhase",
-      "addr": "0x0c746f9c1b5F4cD135cB152fdb10CFd36d6560B5"
+      "addr": "0x9eF8Ed3f6E30A9c52Da674db4a5925df877A5c84"
     },
     {
       "key": "GhostBlueprint",
-      "addr": "0x450d2B06aB240773d1E23e69d0c5d616bEF4Ba2d"
+      "addr": "0xd6b3DA3eB6327D3E7A97935217612c4a17b1938B"
     },
     {
       "key": "CreationPhase",
-      "addr": "0x56a1517B263c849Be4a0c861540C14e1d51E6273"
+      "addr": "0x35E9B0E09C0BB69a9CA7864b0bBa4Eaa4E1E80d5"
     },
     {
       "key": "ValidatorWalletBeacon",
-      "addr": "0xb9F17C1799DdCd26C0e621d65D8Ce0A3191B0495"
+      "addr": "0xA7b09be68096fE63e0a069B7862Ed25aB45494D1"
     },
     {
       "key": "VestingBlueprint",
-      "addr": "0xd52998F07eF136d44B41Dc73c131492c8985e204"
+      "addr": "0x2eF0bf94DB54AEf6dBAdbD492E59ADd56abB8368"
     },
     {
       "key": "FeeAppealHelpers",
-      "addr": "0x76F6ECdFb9256BD96bf7Da9Dc724873D8F78429f"
+      "addr": "0x2Ee268A981C660bF9F26dBb1147ACe5FB37eD848"
     },
     {
       "key": "FeeProfileHelpers",
-      "addr": "0x7EBa83806Cd72ba96A10995840B4Aefc2802F8EF"
+      "addr": "0xBb03819a4d0897B6b6B1cC6C6f20898398d2c606"
     },
     {
       "key": "RoundsVoting",
-      "addr": "0xFBA6A1F9a1FB76Cdb1559241A7e0Ddeb4C1DF5a1"
+      "addr": "0x885975509c454E7a579714b8B94B8F3d6141be53"
     },
     {
       "key": "ConsensusManager",
-      "addr": "0x3F748d4CbDA4FDfe8356690aFD73ac4cFc4eE56B"
+      "addr": "0x5fCDfB221dcd20aCc6e42C1ab8f705CCD5f3d222"
     },
     {
       "key": "RecoveryHelpers",
-      "addr": "0x2dAE85871C61b8896Ec0485050E66F2Cba4925fB"
+      "addr": "0xec51fcB9C78A2F6c3757F47b0ac381CC5B71dC1B"
     },
     {
       "key": "MessageFeeAllocations",
-      "addr": "0x1B1eA007C42C1087d889233Ff7157237e7DAe3A9"
+      "addr": "0x7f38Dafa2481Ca232B2921412140F47f04C82337"
     },
     {
       "key": "IGenLayerStaking",
-      "addr": "0xD8fBa96C0dBB0257028dBc0107060b958e5c7113"
+      "addr": "0xcE16862EAf10B97A0619BeBb662991fb4a52e346"
     },
     {
       "key": "ContributionLedger",
-      "addr": "0x9dC6642157b88da4E05ec2F57a186d5F2C03c106"
+      "addr": "0x8e2191AcfD7D63eE532Fb2295b2b9F1adB5B9B10"
     },
     {
       "key": "ActivationPhase",
-      "addr": "0x62541A8314b9112407E53B3bc5cf8970906E845c"
+      "addr": "0x30b6387F3d160311d3b1274d3f27c3FcceBa1B40"
     },
     {
       "key": "ArrayUtils",
-      "addr": "0x87B8BC807392DeD881b49d544032a3A8ac411613"
+      "addr": "0x26662Ce95A67aF8fA5d98Baabb4712cA64F83519"
     },
     {
       "key": "Vesting",
-      "addr": "0xd52998F07eF136d44B41Dc73c131492c8985e204"
+      "addr": "0x2eF0bf94DB54AEf6dBAdbD492E59ADd56abB8368"
     },
     {
       "key": "ValidatorWalletBlueprint",
-      "addr": "0xAE308333af9e4aB7418E0CA6f1Fd5fAb8915BAf2"
+      "addr": "0xFbE6c54FfBE2eC87cB21c3768c47Dd29aAc5bd82"
     },
     {
       "key": "FeesVerifier",
-      "addr": "0xE5DaA0860E1a1dc08a219762f96Fe2e5006504b3"
+      "addr": "0x19438f5F7E7fB40120A03FAD05434089C9E71b44"
     },
     {
       "key": "TribunalInitializationManager",
-      "addr": "0xb80D257061358fF158B6F3e68CE659a3b74443Ff"
+      "addr": "0x1ed053887d0375D311D0d4B7829C45c45A8C2b13"
     },
     {
       "key": "GhostFactory",
-      "addr": "0x901ECAeFc35aed5Dd9967feF4E161d42199aAd9d"
+      "addr": "0xFE1173e275F0f496B54a68CEA75be0DE94C18ec0"
     },
     {
       "key": "ConsensusDataBigRounds",
-      "addr": "0xc0aB228Ba46b4825fcd6461ea56d5B732AcA0E3B"
+      "addr": "0xC2c9c75a8F90A02CCf4F04bAD5d8f54DFf598056"
     },
     {
       "key": "AddressManager",
-      "addr": "0x3F71AE080BD6270A91dBcc7960d88797828538E0"
+      "addr": "0x0192C6C9482251790965B7136352B26234d81d79"
     },
     {
       "key": "CommittingPhase",
-      "addr": "0xC08fDE7309d590e01FB93E37a808DEf2a8aB6bc2"
-    },
-    {
-      "key": "Governance",
-      "addr": "0x14b647BE7358aE0678DB5B60eC8B8fd90e895917"
+      "addr": "0x3b8d202dEC8bB4C05d783dB68eFD348A42038fd1"
     },
     {
       "key": "AppealFundingHelpers",
-      "addr": "0x6ea7466625A45272AC786bdCbED179C6fBcEc376"
-    },
-    {
-      "key": "GovernanceGESRegistry",
-      "addr": "0x9a59348e756f9dD54C58B31ac764fB0130B51e06"
+      "addr": "0x745EB6Ff0ca3C484dD6E2B8B2a31D1B349b24757"
     },
     {
       "key": "ConsensusMainWithFees",
-      "addr": "0x2E2766cbc3E5e61Ce93bBcdCBb3eAcB82082A019"
+      "addr": "0x0f4F0e05475723790E4a2ed0598370783C300926"
     },
     {
       "key": "RoundsLight",
-      "addr": "0xe1B234B6959deA2AD0873fc7248a91a53a6185f9"
+      "addr": "0xECaCC88106F0E35e4fB58D02a37Fe2B5C5752E03"
     },
     {
       "key": "ConsensusProposalHelpers",
-      "addr": "0x06871c41b23D42E940dFD09CA84117d21dC88C8B"
+      "addr": "0x3cEeD684659D9feBA304B66Cd833d953456d33c1"
     },
     {
       "key": "FeeSplitUtils",
-      "addr": "0x868D93f0f6ee923DD609788842e635ae27A16A0D"
+      "addr": "0x2F57067640369420EE71dF8F763C1D0a0D268186"
     },
     {
       "key": "MinimumStakeTransitionManager",
-      "addr": "0x37f083c99A72e71B9f564B85cAE9eFa26ebA59F8"
-    },
-    {
-      "key": "GovernanceVoting",
-      "addr": "0xF4Fbb5C9FEe31cF45ECb37a3578699F8E88A52C3"
+      "addr": "0xF194C8F7E410190a97eaBF207B1E6f4094e2DD94"
     },
     {
       "key": "NFTMinter",
-      "addr": "0xEe307BCE38733cD16c15A13FE7e928BBE40e96E1"
+      "addr": "0x0c921E00351d3c44AcDDF5D87103789E841dAe1e"
     },
     {
       "key": "ConsensusHelpers",
-      "addr": "0x9F757AeC38Bd4d217A3F05fC9c715112ca5279f6"
+      "addr": "0x86A4Ff8520bb3a215cd61dBd876fDca7a4831Cd7"
     },
     {
       "key": "GenManager",
-      "addr": "0x3F748d4CbDA4FDfe8356690aFD73ac4cFc4eE56B"
+      "addr": "0x5fCDfB221dcd20aCc6e42C1ab8f705CCD5f3d222"
     },
     {
       "key": "DeepthoughtReserve",
-      "addr": "0x9d8c991Fe71d27589f004c24505f4ce4C6fD3F78"
+      "addr": "0xefB951e463C9eA6E986cA2A0154c0c4D5aB5CF6c"
     },
     {
       "key": "ValidatorSlashProgress",
-      "addr": "0x71fD566E1143cf97d3448e641D7A04f1e2C6dE41"
-    },
-    {
-      "key": "GovernanceClassRegistry",
-      "addr": "0x172AE46D9eceE2f7c93c2e0226D78266DB77270f"
+      "addr": "0xDA4bFE604dCd6260f978D5f986fb3C771Add8586"
     },
     {
       "key": "FeesProcessor",
-      "addr": "0x040a455CA9c6A8Cdc696F6fE603152692D4CA775"
+      "addr": "0x0c74AC5e70E07C5E10EC8c8fC6D852F36F944Ea4"
     },
     {
       "key": "FeeManagerHelpers",
-      "addr": "0x4b21cF7CDe9F4a72C618204aAA2509A1c37De2C6"
+      "addr": "0xc09e965C3F1e159838dd6946f0E2e30cF3D8D167"
     },
     {
       "key": "Gen",
@@ -313,84 +277,88 @@
     },
     {
       "key": "DelegatorUtils",
-      "addr": "0xddF2a0491745B238818bcc02CE71aD5145bfd93A"
+      "addr": "0x3Fd5e0aE2ED6209787001d91e0cd91A81C1E9667"
+    },
+    {
+      "key": "FeeClassificationHelpers",
+      "addr": "0xa7b583277355fbfd01214CFc3FE80dCDadbbb949"
     },
     {
       "key": "TransitionEnforcer",
-      "addr": "0xA30098a857e9246268cf9c8E7F126bDa882289aC"
+      "addr": "0x9C3E1DF05DAD8C7C1630f5704740d2E683ba01EB"
     },
     {
       "key": "ValidatorWalletFactory",
-      "addr": "0x399FCBe6b442903cbA4d3B647B4b30EddF729314"
+      "addr": "0xfE7bA48e90FeA19C955c18bBDE8BdC0810C2e6ed"
     },
     {
       "key": "TransactionManager",
-      "addr": "0xaCe5e4191Bf408957538Caa9493aBB64F63D92c4"
+      "addr": "0x0D0bb0B33A0A781385E148286B0F12F6C085942e"
     },
     {
       "key": "MessagePaymentsHelpers",
-      "addr": "0x8101882d8a2Fea752Bf041Aaeb068C3B4FD62B97"
+      "addr": "0x29383158C8385165E1308D280161b8A156c4EA7c"
     },
     {
       "key": "Appeals",
-      "addr": "0xdc953c3bCf8837987853ca05a78D52fFC3E18651"
+      "addr": "0x10F2d70ABB8F588f96bEB1a02c99163EB75A2CF1"
     },
     {
       "key": "ResolutionKernel",
-      "addr": "0x274663eB1F7E1c23E7192Fd102212F05dbb02e85"
+      "addr": "0xa5de063d92fD9c9e52B504b2d0F981B3B3d477b9"
     },
     {
       "key": "ProposalPhase",
-      "addr": "0x44aFCc45720c6ab951BabB726C07A651De9aA4b3"
+      "addr": "0x1188F13a2cc3CC6B2B7fB4930bC1E029DAF6e2ba"
     },
     {
       "key": "TribunalAppeal",
-      "addr": "0x7cf2D3Fa7f63F3547C5036dC955ba1a70235682a"
+      "addr": "0xcEEfD06bE321DD07C48B3fcF45F528AaC45A12ab"
     },
     {
       "key": "ValidatorSelectionUtils",
-      "addr": "0x549dC20c5F22D59b0F662Bb5bC800daE0a7b7a2F"
+      "addr": "0xD22Be71BF480fc665F9677132f1CC9347F1f1519"
     },
     {
       "key": "StakingData",
-      "addr": "0x8951E93ae3E95F44Bc700fd8D145d30f5eeD408E"
+      "addr": "0x93C23BB63772868D536e7f4A46f8D947E0b9538C"
     },
     {
       "key": "IdlenessHelpers",
-      "addr": "0x894B9b1Fbc238318f10200cbE03eBf6e2ccCa637"
+      "addr": "0x02C18252DE7481B91cc98de65D957dc64Ed179F4"
     },
     {
       "key": "Slash",
-      "addr": "0x9C30189686B7d6ec5e525eA6f155B57987d2086f"
+      "addr": "0x3927c3a6ceD5de740F02f29c59eb9c253C735B6D"
     },
     {
       "key": "FeesRecorder",
-      "addr": "0x8beE3d0b24e07183A840bd0B51041C1f71914797"
+      "addr": "0xB484F95c677adCf89ac8502098A12842dcf5b747"
     },
     {
       "key": "MessagePayments",
-      "addr": "0x5Ac4717C772107c335f2db699e2cDA4ebC192faE"
+      "addr": "0x57eDAd932353136cA5B4763A10020faf9ae6107b"
     },
     {
       "key": "BatchTransactionHandler",
-      "addr": "0x318d04EbeB53d121e0a8566a9448ffE84af0D1C4"
+      "addr": "0xa869D5D29DF58fD5792442BFAB64b17eB792e15b"
     },
     {
       "key": "StakingInvariant",
-      "addr": "0xf9F9bed2008EcD50AdbB101eA455CBe42F1b6Be4"
+      "addr": "0xd374E2E7BFBD4EaD4d80D5fB1C898800807cCE95"
     },
     {
       "key": "StakingViews",
-      "addr": "0xf1fBdE733A9ceE2C0A44b8f724d944F89aE6D8A4"
+      "addr": "0x04f3DFa8537af96E657CC2157f0E5cB110352868"
     },
     {
       "key": "IdlenessCrank",
-      "addr": "0xea447c0a9656cf5C6983578Da910bb88eF8e0e30"
+      "addr": "0x3b53123346C6A7c901297c38b312E6D0A98748b1"
     },
     {
       "key": "RoundsStorage",
-      "addr": "0x4038d4F72C7aAbA5a442cC0dA946012B9E3f4B8a"
+      "addr": "0xa6bdB728B82c23786D6e3CAfc0B97235490A64Fb"
     }
   ],
-  "commitment": "0x766bc682ffac57a2a540f92c667c1b33ec694deeb7627ca4f41e9759b9dbf524"
+  "commitment": "0xebfcdbf8479a0f6984eee7b8feb97bff1dd8e599f5983c54f76a9203dfb18478"
 }

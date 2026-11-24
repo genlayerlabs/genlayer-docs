@@ -21,7 +21,7 @@ curl -X GET http://localhost:9153/health
 ```json
 {
   "status": "healthy",
-  "network": "bradbury-phase2",
+  "network": "bradbury-phase3",
   "node_version": "v0.6.0",
   "protocol_version": "0.3.0",
   "genvm_version": "v0.0.18",
@@ -29,16 +29,19 @@ curl -X GET http://localhost:9153/health
   "validator_moniker": "my-validator",
   "conditions": {
     "chain.rpc":                { "state": "healthy", "occurrences": 0, "consecutive_failures": 0, "since": "2026-09-01T08:00:03Z", "updated_at": "2026-09-01T10:31:12Z", "last_ok": "2026-09-01T10:31:12Z" },
-    "chain.websocket":          { "state": "healthy", "occurrences": 0, "consecutive_failures": 0, "since": "2026-09-01T08:00:03Z", "updated_at": "2026-09-01T10:31:12Z", "last_ok": "2026-09-01T10:31:12Z" },
     "chain.sync":               { "state": "healthy", "occurrences": 0, "consecutive_failures": 0, "since": "2026-09-01T08:02:14Z", "updated_at": "2026-09-01T10:31:12Z", "last_ok": "2026-09-01T10:31:12Z" },
+    "events.delivery":          { "state": "healthy", "occurrences": 0, "consecutive_failures": 0, "since": "2026-09-01T08:02:14Z", "updated_at": "2026-09-01T10:31:12Z", "last_ok": "2026-09-01T10:31:12Z" },
+    "chain.websocket":          { "state": "healthy", "occurrences": 0, "consecutive_failures": 0, "since": "2026-09-01T08:00:03Z", "updated_at": "2026-09-01T10:31:12Z", "last_ok": "2026-09-01T10:31:12Z" },
     "consensus.ban":            { "state": "healthy", "occurrences": 0, "consecutive_failures": 0, "since": "2026-09-01T08:00:03Z", "updated_at": "2026-09-01T10:31:12Z", "last_ok": "2026-09-01T10:31:12Z" },
-    "consensus.stake":          { "state": "healthy", "occurrences": 0, "consecutive_failures": 0, "since": "2026-09-01T08:00:03Z", "updated_at": "2026-09-01T10:31:12Z", "last_ok": "2026-09-01T10:31:12Z" },
     "consensus.operator_funds": { "state": "healthy", "occurrences": 0, "consecutive_failures": 0, "since": "2026-09-01T08:00:03Z", "updated_at": "2026-09-01T10:31:12Z", "last_ok": "2026-09-01T10:31:12Z" },
     "consensus.prime":          { "state": "healthy", "occurrences": 0, "consecutive_failures": 0, "since": "2026-09-01T08:04:41Z", "updated_at": "2026-09-01T10:31:12Z", "last_ok": "2026-09-01T10:31:12Z" },
+    "consensus.stake":          { "state": "healthy", "occurrences": 0, "consecutive_failures": 0, "since": "2026-09-01T08:00:03Z", "updated_at": "2026-09-01T10:31:12Z", "last_ok": "2026-09-01T10:31:12Z" },
     "genvm.llm":                { "state": "healthy", "occurrences": 0, "consecutive_failures": 0, "since": "2026-09-01T08:00:31Z", "updated_at": "2026-09-01T10:29:56Z", "last_ok": "2026-09-01T10:29:56Z" },
     "genvm.web":                { "state": "healthy", "occurrences": 0, "consecutive_failures": 0, "since": "2026-09-01T08:00:31Z", "updated_at": "2026-09-01T10:29:56Z", "last_ok": "2026-09-01T10:29:56Z" },
     "node.disk":                { "state": "healthy", "occurrences": 0, "consecutive_failures": 0, "since": "2026-09-01T08:00:03Z", "updated_at": "2026-09-01T10:31:12Z", "last_ok": "2026-09-01T10:31:12Z" },
     "node.snapshot_age":        { "state": "healthy", "occurrences": 0, "consecutive_failures": 0, "since": "2026-09-01T08:00:03Z", "updated_at": "2026-09-01T10:31:12Z", "last_ok": "2026-09-01T10:31:12Z" },
+    "submission.ledger":        { "state": "healthy", "occurrences": 0, "consecutive_failures": 0, "since": "2026-09-01T08:00:03Z", "updated_at": "2026-09-01T10:31:12Z", "last_ok": "2026-09-01T10:31:12Z" },
+    "submission.recovery":      { "state": "healthy", "occurrences": 0, "consecutive_failures": 0, "since": "2026-09-01T08:00:03Z", "updated_at": "2026-09-01T10:31:12Z", "last_ok": "2026-09-01T10:31:12Z" },
     "webdriver.render":         { "state": "healthy", "occurrences": 0, "consecutive_failures": 0, "since": "2026-09-01T08:00:03Z", "updated_at": "2026-09-01T10:31:12Z", "last_ok": "2026-09-01T10:31:12Z" }
   }
 }
@@ -84,14 +87,22 @@ If **no** condition has been observed at all, `status` is `unknown` — nothing 
 
 A condition can never exceed the liveness cap its catalog entry declares. The GenVM conditions are capped at `degraded`, so a dead LLM provider returns **200**: that node is still booted, synced and voting — it votes Timeout on the transactions it cannot execute, which is the designed behaviour rather than an outage. Failing the endpoint would pull a working validator out of a load balancer.
 
-503 means the node cannot make progress or cannot act. Only four conditions can return it:
+503 means the node cannot make progress or cannot act. Six conditions can return it:
 
 | Condition | Reason | 503 when |
 |---|---|---|
 | `chain.rpc` | `chain_rpc_unreachable` | The HTTP endpoint has failed every check for 30 seconds. The node cannot submit a duty, read a receipt or read its nonce. |
 | `chain.websocket` | `websocket_disconnected` | The WebSocket endpoint has failed every check for 30 seconds. The node receives no new chain heads and no contract events. |
 | `chain.sync` | `sync_blocked`, `sync_block_unreadable` | The chain head is above the synced block and the synced block has not moved for 5 minutes. See below. |
+| `events.delivery` | `events_delivery_stalled` | The event router has published no block for 5 minutes while the chain head is at least 10 blocks past its last routed block. The node takes no duty. See below. |
 | `node.disk` | `disk_space_critical` | 2% or less of the disk is free. The node cannot write new blocks or receipts. |
+| `submission.ledger` | `submission_ledger_unavailable` | A signer lane cannot access its submission ledger. |
+
+`submission.ledger` is updated directly by the submission lanes.
+Check the `ops.db` volume for free space and storage errors. Submission and
+reconciliation retry ledger reads and writes automatically; all affected lanes
+must recover before the condition becomes healthy. Reading health does not
+trigger recovery. Invalid ledger data at startup still refuses to start.
 
 A shorter transport failure is `suspect`, then `degraded` (HTTP 200). The checks run when a client calls this endpoint, so the 30 seconds are measured in time, not in checks.
 
@@ -101,12 +112,18 @@ A shorter transport failure is `suspect`, then `degraded` (HTTP 200). The checks
 
 `consensus.stake` is capped at `warning`: below the minimum self-stake the node keeps syncing, and only the consensus contracts do not select the validator for duties. The reason is `self_stake_pending` when a pending self-stake deposit covers the gap (it becomes stake at the validator's prime in a later epoch), and `self_stake_below_minimum` otherwise.
 
+`submission.recovery` is capped at `degraded` (reason `submission_recovery_stalled`). Each transaction manager of the node, the main one and every operational submission lane, runs a background loop that recovers the node's own sends while no duty runs: a held nonce, a failed cancellation, a nonce whose duty gave up. The condition is `degraded` when a loop was never started, or when no loop pass finished for longer than the pass deadline plus two loop intervals (150 seconds by default). The threshold is long on purpose: one pass may run up to its deadline, and a slow pass is not a stalled loop. A quiet node stays healthy, because the loop passes on every interval when there is nothing to do. The details give `stalled_loops`, `loops`, `max_age_seconds` and `stall_after_seconds`. Duties still send while it is `degraded`, so it does not return 503. The loop stops only on a defect: restart the node and report it. `genlayer_node_transact_reconcile_last_tick_age_seconds` shows when the main manager's loop last passed.
+
 **WebDriver render check**
 
 `webdriver.render` runs the same fresh render probe as `doctor`, using
 `webdriver_host` from the configured GenVM's `genvm-module-web.yaml`. It requires
 HTTP 200, `Resulting-Status: 200`, and exactly `Hello world!` from the diagnostic
 page, within 10 seconds. It bypasses WebDriver's cached `/healthcheck` response.
+The node renders at most once a minute: a `/health` request inside that minute
+returns the last result at once, and `updated_at` shows when it was rendered.
+One WebDriver can serve many validators, and a render on every probe would
+saturate it.
 A failure reports `degraded` with reason `webdriver_check_failed` and safe
 `failure`, `http_status` and `page_status` details. The endpoint still returns
 HTTP 200: a browser outage does not stop the node syncing and voting.
@@ -174,13 +191,29 @@ The sync is blocked when the chain head is above the synced block and the synced
 
 | Reason | State | HTTP | When |
 |---|---|---|---|
-| `sync_lagging` | `warning` | 200 | 1–100 blocks behind for 30 s, or the sync cursor cannot be read |
+| `sync_lagging` | `warning` | 200 | 1–100 blocks behind for 30 s while the lag grows or the synced block does not advance, or the sync cursor cannot be read. A lag that stays while the synced block advances, as on a chain that makes a block about every read, is not lagging |
 | `sync_catching_up` | `degraded` | 200 | More than 100 blocks behind, at any depth |
 | `sync_block_unreadable` | `degraded` | 200 | The node cannot read the logs of a block, for less than 5 minutes (`details`: `unreadable_block`, `unreadable_seconds`) |
 | `sync_blocked` | `unavailable` | **503** | The sync is blocked (`details`: `chain_head`, `blocked_seconds`; `failing_block`, `failures`, `failing_seconds` when the sync loop failed at a block) |
 | `sync_block_unreadable` | `unavailable` | **503** | The sync is blocked below a block the node cannot read (`details`: as `sync_blocked`, plus `unreadable_block`, `unreadable_seconds`) |
 
 The node never skips a duty because it is behind. It votes Timeout only on a transaction that reads state it has not synced; a new contract deploy still runs.
+
+**`events.delivery` — 503 only when the event router has stopped**
+
+The event router publishes each block's contract events to the duty watchers. The sync path reads the chain on its own, so `chain.sync` cannot see a router that stopped: such a node reports synced and takes no duty. `events.delivery` compares the router's last routed block with the chain head (the same head `chain.sync` reads).
+
+A quiet chain is not a fault: with the chain head fewer than 10 blocks past the routed block there is nothing to route. A router that advances is never taken out of service, however far behind it is. A stall has two steps, because one heavy block or a long replay can hold a live router for minutes:
+
+| Reason | State | HTTP | When |
+|---|---|---|---|
+| `events_delivery_lagging` | `degraded` | 200 | The chain head is more than 100 blocks past the routed block and the routed block still advances |
+| `events_delivery_stalled` | `degraded` | 200 | The routed block has not moved for 2 minutes while the head is at least 10 blocks past it |
+| `events_delivery_stalled` | `unavailable` | **503** | The same for 5 minutes |
+
+`details`: `routed_block`, `chain_head`, `lag_blocks`, `no_progress_seconds`. The metrics `genlayer_node_routed_block` and `genlayer_node_event_delivery_lag_blocks` show the same values over time.
+
+Which probe should read it: use `/health` for **readiness** (alerting, a load balancer, a dashboard): `degraded` keeps HTTP 200. Use it for **liveness** (an automatic restart) only if a restart is the action you want for a stopped router: the 503 comes only after 5 minutes without a routed block, and a restart is the remedy that worked when routers stopped on Bradbury on 2026-11-20. How to read it: `events_delivery_stalled` with `no_progress_seconds` that keeps growing is a stopped router; restart the node and report it with its logs from `routed_block`. `events_delivery_lagging` with a `routed_block` that grows is a node catching up; watch it.
 
 **cURL Example with Headers:**
 
