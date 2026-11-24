@@ -3,6 +3,12 @@ set -euo pipefail
 
 # Version detection and handling utilities
 
+# Newest release tag among the tags on stdin: stable and -rc.N only, so alpha
+# and other pre-release tags are ignored. The sed pair sorts v0.6.0-rc.N below v0.6.0.
+pick_latest_release_tag() {
+    grep -E '^v[0-9]+\.[0-9]+\.[0-9]+(-rc\.[0-9]+)?$' | sed 's/-rc/~rc/' | sort -V | sed 's/~rc/-rc/' | tail -n1
+}
+
 # Detect latest version from repository
 detect_latest_version() {
     local token="${1:-$GITHUB_TOKEN}"
@@ -27,7 +33,7 @@ detect_latest_version() {
     # Latest release tag: a release candidate counts until its stable release
     # exists (scripts/lib/release-versions.js). The sed pair sorts v0.6.0-rc.N below v0.6.0.
     local latest_tag
-    latest_tag=$(git tag -l | grep -E '^v[0-9]+\.[0-9]+\.[0-9]+(-rc\.[0-9]+)?$' | sed 's/-rc/~rc/' | sort -V | sed 's/~rc/-rc/' | tail -n1)
+    latest_tag=$(git tag -l | pick_latest_release_tag)
     
     # Cleanup
     cd /

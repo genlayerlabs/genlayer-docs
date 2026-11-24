@@ -27,8 +27,12 @@ API_OPS_PATH="${API_OPS_PATH:-docs/api/ops}"
 API_GEN_REGEX="${API_GEN_REGEX:-gen_(?!dbg_).*}"
 API_DEBUG_REGEX="${API_DEBUG_REGEX:-gen_dbg_(?!load_test).*}"
 
+# Node alpha changelogs (vX.Y.Z-alpha.N.md) are not synced: the node folds them
+# into one release changelog later, so the docs publish no alpha page.
+CHANGELOG_REGEX="(?!.*-alpha[.]).*"
+
 # type|title|node path|docs target|filter
-TABLE="changelog|Changelog|${CHANGELOG_PATH}|content/validators/changelog|.*
+TABLE="changelog|Changelog|${CHANGELOG_PATH}|content/validators/changelog|${CHANGELOG_REGEX}
 config|Config File|configs/node/config.yaml.example|content/validators/config.yaml|.*
 config_bradbury|Config File (Bradbury)|configs/node/bradbury.yaml.example|content/validators/bradbury.yaml|.*
 config_bradbury_manifest|Protocol Manifest (Bradbury)|configs/node/bradbury.protocol-manifest.json|content/validators/bradbury.protocol-manifest.json|.*

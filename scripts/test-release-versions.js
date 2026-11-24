@@ -115,6 +115,31 @@ const tests = {
     const once = guideFor([...STABLE, 'v0.6.0-rc.2']).guide;
     assert.strictEqual(guideFor([...STABLE, 'v0.6.0-rc.2'], once).guide, once);
   },
+  'the changelog sync skips node alpha files and keeps rc, release and testnet files': () => {
+    const root = path.resolve(__dirname, '..');
+    const tmp = fs.mkdtempSync(path.join(os.tmpdir(), 'alpha-sync-'));
+    const src = path.join(tmp, 'src');
+    fs.mkdirSync(src);
+    const names = ['v0.5.14', 'v0.6.0-rc.1', 'v0.6.0-rc.5', 'v0.2.0-testnet005', 'v0.6.0-alpha.1', 'v0.6.0-alpha.11'];
+    for (const n of names) fs.writeFileSync(path.join(src, `${n}.md`), `## ${n}\n`);
+    const filter = execFileSync('bash', ['.github/scripts/node-sync-params.sh', 'changelog'], { cwd: root, encoding: 'utf8' })
+      .match(/^filter_pattern=(.*)$/m)[1];
+    const out = path.join(tmp, 'out');
+    execFileSync('bash', [path.join(root, '.github/actions/sync-files/sync.sh'), 'changelog', 'Changelog', src, out, filter, 'README'],
+      { cwd: tmp, env: { ...process.env, GITHUB_OUTPUT: path.join(tmp, 'gh-output') }, stdio: 'pipe' });
+    assert.deepStrictEqual(fs.readdirSync(out).sort(), names.filter((n) => !n.includes('alpha')).map((n) => `${n}.mdx`).sort());
+    fs.rmSync(tmp, { recursive: true, force: true });
+  },
+  'latest detection ignores alpha tags': () => {
+    const root = path.resolve(__dirname, '..');
+    const pick = (tags) => execFileSync('bash', ['-c', `source .github/scripts/version-utils.sh; printf '${tags.join('\\n')}\\n' | pick_latest_release_tag`], { cwd: root, encoding: 'utf8' }).trim();
+    assert.strictEqual(pick(['v0.5.14', 'v0.6.0-rc.5', 'v0.6.0-alpha.11']), 'v0.6.0-rc.5');
+    assert.strictEqual(pick(['v0.5.14', 'v0.6.0-alpha.11', 'v0.6.1-alpha.1']), 'v0.5.14');
+    assert.strictEqual(pick(['v0.6.0-rc.5', 'v0.6.0', 'v0.6.1-alpha.2']), 'v0.6.0');
+  },
+  'the generator does not accept alpha': () => {
+    assert.deepStrictEqual(publishedVersions(['v0.5.14', 'v0.6.0-alpha.11']), ['v0.5.14']);
+  },
   'no versions fails the generator': () => {
     assert.ok(guideFor([]).failed);
   },
