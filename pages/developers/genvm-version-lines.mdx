@@ -197,26 +197,24 @@ gl.chain.Account(address).emit_transfer(amount)
 
 The transfer is applied on finalization and never runs the recipient's code. The `on` and `use_balance` arguments are gone; the value still comes from the sending contract's balance. EVM contract proxies keep their `emit_transfer(value)` method.
 
-### Undecorate the fallback methods
+### Contracts built on an earlier v0.3 release candidate
+
+v0.3 only existed as release candidates, and some of them changed the API. A contract built on an earlier candidate than `py-genlayer:babwp9t37...` needs those changes too. The [SDK migration guide](https://sdk.genlayer.com/main/executors/v0.4/python-sdk/migration-guide.html) lists them under "Within v0.3: Release-Candidate Changes". Two of them often break contracts.
 
 `__handle_undefined_method__` must not carry a `gl.public` decorator; decorating it, or any other method whose name starts with `__`, raises `TypeError`. A call with value to an undefined method is refused unless the contract defines `__handle_undefined_method_payable__`:
 
 ```python
-# v0.3
+# before
 @gl.public.write.payable
 def __handle_undefined_method__(self, method_name, args, kwargs): ...
 
-# v0.4
+# now
 def __handle_undefined_method_payable__(self, method_name, args, kwargs): ...
 ```
 
 Without value, `__handle_undefined_method__` is called if you define it, and `__handle_undefined_method_payable__` otherwise.
 
-### Check `gl.vm.unpack_result` calls
-
-It now raises `TypeError` when given anything other than a VM result, such as the value `gl.vm.run_nondet` already returns unwrapped.
-
-v0.3 only existed as release candidates, so a contract built on an earlier candidate may need more changes than these. The [SDK migration guide](https://sdk.genlayer.com/main/executors/v0.4/python-sdk/migration-guide.html) lists them under "Within v0.3: Release-Candidate Changes".
+`gl.vm.unpack_result` raises `TypeError` when given anything other than a VM result, such as the value `gl.vm.run_nondet` already returns unwrapped.
 
 ## Fix `runner malformed`
 
