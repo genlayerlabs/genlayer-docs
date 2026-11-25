@@ -2,5 +2,6 @@
   "deployment-methods": "Deployment Methods",
   "network-configuration": "Network Configuration",
   "cli-deployment": "CLI Deployment",
-  "deploy-scripts": "Deploy Scripts"
+  "deploy-scripts": "Deploy Scripts",
+  "large-contracts": "Deploying Large Contracts"
 } 
