@@ -110,9 +110,11 @@ Because there is no in-place upgrade, migrating means deploying a new v0.4 contr
 3. **Test on a v0.123 Studio.** Run your tests against a local Studio v0.123 or [studio-dev](https://studio-dev.genlayer.com) before deploying to a shared Studio.
 4. **Deploy the new contract.** It gets a new address. The old v0.2 contract keeps running at its address.
 5. **Stop writes to the old contract.** Use its pause or admin switch if it has one; without one, you can only stop the writes that go through your application (see the freeze step [below](#migrate-with-minimal-downtime)). Then wait until its pending transactions are finalized: an appeal can still change state after a transaction is accepted. Keep writes stopped until step 7.
-6. **Move the state.** Nothing is copied for you. Read the old contract through its view methods and write the data into the new one, through constructor arguments or an import method that only an admin can call. Balances held by the old contract stay at the old address, so they move only if the old contract has a method that can send them out.
+6. **Move the state.** Nothing is copied for you. Read the old contract through its view methods and write the data into the new one through an import method that only an admin can call. Balances held by the old contract stay at the old address, so they move only if the old contract has a method that can send them out.
 7. **Repoint clients.** Update every frontend, backend, script and contract that stores the old address. Contracts that call the old address need their own migration or an admin setter. Writes resume on the new address.
 8. **Keep the old contract.** It stays available for reads and history.
+
+To pass the state through constructor arguments instead, do step 5 first, read the final state, and deploy the new contract with it: the constructor runs only once, at deploy time.
 
 If writes cannot stop for the whole copy, use the procedure in [Migrate with minimal downtime](#migrate-with-minimal-downtime), which pauses writes only for a final sync.
 
