@@ -11,7 +11,7 @@ GenLayer operates as two layers: the **GenLayer RPC** handles intelligent contra
 
 For the full RPC reference, see [GenLayer Node API](/api-references/genlayer-node).
 
-For transfers and staking, connect to the **GenLayer Chain RPC**. Intelligent-contract methods such as `gen_call` require a **GenLayer node RPC**; the Conduit chain RPC does not provide them. Use a Phase 2-compatible GenLayer node endpoint for SDK intelligent-contract operations.
+For transfers and staking, connect to the **GenLayer Chain RPC**. Intelligent-contract methods such as `gen_call` require a **GenLayer node RPC**; the Conduit chain RPC does not provide them. Use a Phase 3-compatible GenLayer node endpoint for SDK intelligent-contract operations.
 
 ---
 
@@ -21,7 +21,7 @@ Production-like testnet with real AI/LLM workloads.
 
 | Setting | Value |
 |:--|:--|
-| **GenLayer RPC** | Use the Phase 2 node RPC published in the release announcement, or your own qualified node |
+| **GenLayer RPC** | Use the Phase 3 node RPC published in the release announcement, or your own qualified node |
 | **GenLayer Chain RPC** | `https://rpc.testnet-chain.genlayer.com` |
 | **Chain ID** | 4221 |
 | **Currency** | GEN |
@@ -31,7 +31,7 @@ Production-like testnet with real AI/LLM workloads.
 <AddToWallet chain={{chainId: "0x107d", chainName: "GenLayer Bradbury", rpcUrls: ["https://rpc.testnet-chain.genlayer.com"], nativeCurrency: {name: "GEN Token", symbol: "GEN", decimals: 18}, blockExplorerUrls: ["https://scan.testnet-chain.genlayer.com"]}} />
 
 <Callout type="warning">
-Bradbury Phase 2 reuses chain ID **4221**. Verify block zero has hash `0x17d89764d4f4f963158fc4c5e8f2cb670c2837740b35f37081c12860c3df97e4`, and the AddressManager is `0x3F71AE080BD6270A91dBcc7960d88797828538E0`. An old RPC can return the right chain ID but lead to a different deployment. If a public domain returns a different genesis, stop and have its routing corrected.
+Bradbury Phase 3 uses chain ID **4221**. Verify block zero has hash `0x17d89764d4f4f963158fc4c5e8f2cb670c2837740b35f37081c12860c3df97e4`, and the AddressManager is `0x0192C6C9482251790965B7136352B26234d81d79`. An old RPC can return the right chain ID but lead to a different deployment. If a public domain returns a different genesis, stop and have its routing corrected.
 </Callout>
 
 The GenLayer Chain WebSocket is `wss://rpc.testnet-chain.genlayer.com` and requires an API key. Create a key at [app.conduit.xyz/rpc-keys](https://app.conduit.xyz/rpc-keys) and configure it as `GENLAYERNODE_ROLLUP_GENLAYERCHAINRPCKEY` in the node environment (or the `.env` next to `docker-compose.yaml`). Never add it to URLs or `config.yaml`. Resolve Staking and ConsensusMain through the AddressManager instead of treating their initial addresses as permanent network identity.
@@ -93,7 +93,7 @@ Local development with full control. Requires [GenLayer Studio](/developers/inte
 
 ## GenLayer Chain (L2)
 
-The underlying Arbitrum Orbit L2 for Bradbury Phase 2. GEN is its native currency, so balances and gas are in GEN. You typically don't need to interact with this directly — the GenLayer RPC passes through supported `eth_*` calls. But if you need direct L2 access (e.g., token transfers, contract debugging at the EVM level), you can add this chain to your wallet.
+The underlying Arbitrum Orbit L2 for Bradbury Phase 3. GEN is its native currency, so balances and gas are in GEN. You typically don't need to interact with this directly — the GenLayer RPC passes through supported `eth_*` calls. But if you need direct L2 access (e.g., token transfers, contract debugging at the EVM level), you can add this chain to your wallet.
 
 | Setting | Value |
 |:--|:--|
