@@ -247,7 +247,7 @@ for (const relativePath of [
 const nodeApi = "pages/api-references/genlayer-node.mdx";
 requireText(nodeApi, "## zkSync Compatibility", "preserved zkSync compatibility section anchor");
 requireText(nodeApi, "node.rpc.endpoints.zksync.enabled", "conditional zkSync upstream forwarding config");
-requireText(nodeApi, "default value of `false` on Bradbury Phase 2", "disabled zkSync forwarding on Orbit");
+requireText(nodeApi, "default value of `false` on Bradbury Phase 3", "disabled zkSync forwarding on Orbit");
 requireText(keepers, "executeInflationRequest", "Orbit inflation request execution");
 requireText(keepers, "GEN.retryInflationDelivery(", "expired inflation ticket recovery");
 requireText(keepers, "KeeperRewardUnavailable", "successful relay with an unavailable fee quote");

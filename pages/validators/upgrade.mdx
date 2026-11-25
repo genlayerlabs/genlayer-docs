@@ -53,7 +53,7 @@ Breaking changes involve a new consensus deployment. The old database is incompa
 
 ### v0.5.x to v0.6.0 (Breaking)
 
-- Bradbury Phase 2 is a new deployment on a new chain, with a new `consensusaddress` and a new staking contract. Phase 1 validators are not carried over: join again as a validator, with stake, on Phase 2. Follow the [breaking upgrade](#breaking-change-upgrade) steps.
+- Bradbury Phase 3 is a new deployment on the Bradbury chain (chain ID 4221), with a new `consensusaddress` and a new staking contract. Validators of earlier phases are not carried over: join again as a validator, with stake, on Phase 3. Follow the [breaking upgrade](#breaking-change-upgrade) steps.
 - The node needs the trusted protocol manifest of the network. Set `consensus.manifestpath` (default `configs/node/protocol-manifest.json`) and `consensus.chainid`. The release package has no network files: take the manifest and values from [Network-Specific Consensus Configuration](/validators/setup-guide#network-specific-consensus-configuration).
 - GenVM moved from `third_party/genvm` to `opt/genvm/<version>`, with the link `opt/genvm/current` to it. Set `genvm.root_dir: ./opt/genvm/current` and run `python3 ./opt/genvm/current/bin/setup.py` (see [download instructions](/validators/setup-guide#download-the-node-software)).
 - The Bradbury RPC WebSocket needs an API key. Set it in the environment as `GENLAYERNODE_ROLLUP_GENLAYERCHAINRPCKEY`; it has no `config.yaml` key. See [Testnet Bradbury](/validators/setup-guide#testnet-bradbury).

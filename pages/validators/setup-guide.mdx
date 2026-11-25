@@ -121,9 +121,9 @@ The wizard outputs all three addresses at the end. Save them - you'll need the V
 ### Prerequisites
 
 - **Node.js** (v20 or higher; Node.js 22 for a fresh installation)
-- **GenLayer CLI** - Install the release candidate (`rc` tag), the v0.40 line for Bradbury Phase 2. The default npm tag (`latest`) still selects an older release:
+- **GenLayer CLI** - Install v0.40.1 or later (the `latest` tag), which supports Bradbury Phase 3:
   ```bash copy
-  npm install -g genlayer@rc
+  npm install -g genlayer@latest
   genlayer --version
   ```
 - **GEN tokens** - Read the deployed self-stake minimum with `genlayer staking epoch-info --network testnet-bradbury`, and keep additional GEN for gas. **42,000 GEN is a protocol default, not a guaranteed current network setting.** Delegation does not replace required self-stake.
@@ -155,7 +155,7 @@ The wizard guides you through:
 </Callout>
 
 <Callout type="warning">
-  Phase 2 registration requires the operator public key and a proof of possession bound to the owner, chain and validator-wallet factory. Use an operator account available to the qualified CLI so it can sign the proof. An external operator address alone is not sufficient; do not use the old `validatorJoin(address)` flow.
+  Phase 3 registration requires the operator public key and a proof of possession bound to the owner, chain and validator-wallet factory. Use an operator account available to the qualified CLI so it can sign the proof. An external operator address alone is not sufficient; do not use the old `validatorJoin(address)` flow.
 </Callout>
 
 #### Operator Keystore Export
@@ -280,6 +280,7 @@ One full node can be shared between multiple validators. The optimal validator-t
    You should see a list like this
 
    ```sh
+   v0.6.1
    v0.6.0
    ```
 
@@ -287,7 +288,7 @@ One full node can be shared between multiple validators. The optimal validator-t
 
 2. Download the packaged application
    ```sh copy
-   export version=v0.6.0 # example target; confirm it is published and approved before use
+   export version=v0.6.1 # example target; confirm it is published and approved before use
    base=https://storage.googleapis.com/gh-af/genlayer-node/bin/amd64/${version}
    curl -fI "${base}/genlayer-node-linux-amd64-${version}.tar.gz"
    curl -fI "${base}/genlayer-node_${version}_SHA256SUMS"
@@ -376,7 +377,7 @@ consensus:
   consensusaddress: "" # AddressManager contract address for this deployment.
   manifestpath: "configs/node/protocol-manifest.json" # Trusted producer protocol manifest for this deployment: save your network's manifest (from its documentation) at this path; a dev-env deploy places its own here too. Relative paths resolve against the node root. A mismatch with consensusaddress is refused at startup.
   chainid: "" # DECIMAL chain id this deployment was made on (not hex, no leading zeros). Held independently of the manifest so a manifest describing another deployment is caught.
-  # genesis: 47930 # (Optional) The block that deployed the AddressManager (consensusaddress). The node checks it with two eth_getCode calls and keys GenVM's forks on its timestamp; without it the node searches for that block (about 20 eth_getCode calls, an RPC endpoint that serves old state) and replay starts at the first ConsensusMain log.
+  # genesis: <deploy-block> # (Optional) The block that deployed the AddressManager (consensusaddress). The node checks it with two eth_getCode calls and keys GenVM's forks on its timestamp; without it the node searches for that block (about 20 eth_getCode calls, an RPC endpoint that serves old state) and replay starts at the first ConsensusMain log.
   # sync_halt_block: 20000 # Node-local, full mode only; stop replay exactly here and keep RPC/ops serving. Zero disables.
   # log_read_interval: "1s" # (Optional) Shortest time between two log reads of the sync filter and of the event router. Heads inside it only move the target; the next read covers every block since the last one, so the reads follow time, not the chain's block rate (which another network on the same chain can raise). "0s" reads at every head. Default 1s.
   # chain_submit_buffer: "30s" # (Optional) Slack reserved at the end of each consensus step to submit the resulting on-chain tx (commit vote, reveal vote, proposed receipt) before the slot closes. Tune to underlying settlement chain latency. Default 30s.
@@ -817,7 +818,7 @@ You can also generate a new operator key directly on the server:
 ./bin/genlayernode account new -c $(pwd)/configs/node/config.yaml --setup
 ```
 
-For Phase 2 registration, the CLI also needs that operator account to sign its proof of possession. Securely export/import the operator keystore into the owner-side CLI and select it in the wizard; providing the address alone is insufficient. Never transfer the owner key to the server.
+For Phase 3 registration, the CLI also needs that operator account to sign its proof of possession. Securely export/import the operator keystore into the owner-side CLI and select it in the wizard; providing the address alone is insufficient. Never transfer the owner key to the server.
 
 #### Restoring Your Operator Key
 

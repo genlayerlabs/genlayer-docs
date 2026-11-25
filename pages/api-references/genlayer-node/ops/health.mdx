@@ -85,26 +85,30 @@ If **no** condition has been observed at all, `status` is `unknown` — nothing 
 
 **Only `unavailable` returns 503.**
 
+**503 means one thing: the node is deadlocked, and a restart is the fix.** Use it for liveness (an automatic restart). A fault outside the process, such as a provider that is down, a full disk or a slow chain, is `degraded` at most (HTTP 200): a restart cannot fix it, and every restart misses duties, which the consensus contracts strike.
+
 A condition can never exceed the liveness cap its catalog entry declares. The GenVM conditions are capped at `degraded`, so a dead LLM provider returns **200**: that node is still booted, synced and voting — it votes Timeout on the transactions it cannot execute, which is the designed behaviour rather than an outage. Failing the endpoint would pull a working validator out of a load balancer.
 
-503 means the node cannot make progress or cannot act. Six conditions can return it:
+Four conditions can return 503:
 
 | Condition | Reason | 503 when |
 |---|---|---|
-| `chain.rpc` | `chain_rpc_unreachable` | The HTTP endpoint has failed every check for 30 seconds. The node cannot submit a duty, read a receipt or read its nonce. |
-| `chain.websocket` | `websocket_disconnected` | The WebSocket endpoint has failed every check for 30 seconds. The node receives no new chain heads and no contract events. |
-| `chain.sync` | `sync_blocked`, `sync_block_unreadable` | The chain head is above the synced block and the synced block has not moved for 5 minutes. See below. |
-| `events.delivery` | `events_delivery_stalled` | The event router has published no block for 5 minutes while the chain head is at least 10 blocks past its last routed block. The node takes no duty. See below. |
-| `node.disk` | `disk_space_critical` | 2% or less of the disk is free. The node cannot write new blocks or receipts. |
-| `submission.ledger` | `submission_ledger_unavailable` | A signer lane cannot access its submission ledger. |
+| `chain.websocket` | `websocket_disconnected` | The WebSocket endpoint has failed every check for 2 minutes. The node receives no new chain heads and no contract events. |
+| `chain.rpc` | `chain_rpc_unreachable` | The HTTP endpoint and the WebSocket endpoint have both failed every check for 30 seconds. The node is cut off from the chain. HTTP down alone is `degraded`: the node still sees the chain. |
+| `chain.sync` | `sync_loop_stuck` | The sync loop has given no sign of life for 5 minutes, and it does not wait to retry a block. See below. |
+| `events.delivery` | `events_router_stuck` | The event router has given no sign of life for 5 minutes, and it does not wait on a chain read. See below. |
+
+A shorter transport failure is `suspect`, then `degraded` (HTTP 200). The checks run when a client calls this endpoint, so the windows are measured in time, not in checks. `chain.websocket` gives `down_seconds` and `head_age_seconds` (how long the subscription head has not changed, as far as this endpoint has seen it). `chain.rpc` gives `down_seconds` and `websocket_down`.
+
+`node.disk` is capped at `degraded` (HTTP 200): a restart frees no space. It warns (`disk_space_low`) at 15% free or less, and it warns (`disk_filling_up`) when the volume fills at a rate that makes it full within 72 hours (`details`: `hours_to_full`). The rate is measured over 10 to 60 minutes of samples; it starts again when free space grows. At 2% free or less it is `degraded` (`disk_space_critical`). At 0% the store stops the process by itself.
+
+`submission.ledger` is capped at `degraded` (HTTP 200, reason `submission_ledger_unavailable`): the ledger heals on the lane's next submission.
 
 `submission.ledger` is updated directly by the submission lanes.
 Check the `ops.db` volume for free space and storage errors. Submission and
 reconciliation retry ledger reads and writes automatically; all affected lanes
 must recover before the condition becomes healthy. Reading health does not
 trigger recovery. Invalid ledger data at startup still refuses to start.
-
-A shorter transport failure is `suspect`, then `degraded` (HTTP 200). The checks run when a client calls this endpoint, so the 30 seconds are measured in time, not in checks.
 
 `consensus.ban` and `consensus.operator_funds` are capped at `warning`. A banned node, and a node whose operator balance is below the critical amount (reason `operator_balance_critical`), still syncs and serves; leaving rotation or a restart fixes neither.
 
@@ -183,37 +187,41 @@ that owns the manager configuration. Observed `genvm.web` results still apply.
 }
 ```
 
-**`chain.sync` — 503 only when the sync is blocked**
+**`chain.sync` — 503 only when the sync loop is stuck**
 
 Depth is not a fault. A node syncing from genesis is millions of blocks behind and healthy while its synced block advances. A quiet chain is not a fault either: when the chain head is at the synced block there is nothing to sync, however long no block arrives.
 
-The sync is blocked when the chain head is above the synced block and the synced block has not moved for 5 minutes. The node reads the chain head with a request (`eth_blockNumber`), not only from its head subscription, so a subscription that stopped delivering heads is also seen. The 5 minutes start when there is a block to sync: a failure at a block, an unreadable block, or the first check that saw the head above the synced block.
+The sync is blocked when the chain head is above the synced block and the synced block has not moved for 5 minutes. The node reads the chain head with a request (`eth_blockNumber`), not only from its head subscription, so a subscription that stopped delivering heads is also seen. The 5 minutes start when there is a block to sync: a failure at a block, an unreadable block, or the first check that saw the head above the synced block. A blocked sync is `degraded`: the sync loop still runs, and it retries the block, waits for an unreadable block, or replays a slow one. A restart does none of that faster.
+
+The sync loop beats a heartbeat every 10 seconds, also while a replay or an unreadable block holds the cursor. A failure at a block and a failed read of an unreadable block also count as signs of life. The loop is stuck when it has given no sign of life for 5 minutes and it does not wait to retry a block (the retry backoff grows to 10 minutes). Only then is `chain.sync` unavailable.
 
 | Reason | State | HTTP | When |
 |---|---|---|---|
 | `sync_lagging` | `warning` | 200 | 1–100 blocks behind for 30 s while the lag grows or the synced block does not advance, or the sync cursor cannot be read. A lag that stays while the synced block advances, as on a chain that makes a block about every read, is not lagging |
 | `sync_catching_up` | `degraded` | 200 | More than 100 blocks behind, at any depth |
-| `sync_block_unreadable` | `degraded` | 200 | The node cannot read the logs of a block, for less than 5 minutes (`details`: `unreadable_block`, `unreadable_seconds`) |
-| `sync_blocked` | `unavailable` | **503** | The sync is blocked (`details`: `chain_head`, `blocked_seconds`; `failing_block`, `failures`, `failing_seconds` when the sync loop failed at a block) |
-| `sync_block_unreadable` | `unavailable` | **503** | The sync is blocked below a block the node cannot read (`details`: as `sync_blocked`, plus `unreadable_block`, `unreadable_seconds`) |
+| `sync_block_unreadable` | `degraded` | 200 | The node cannot read the logs of a block (`details`: `unreadable_block`, `unreadable_seconds`; past 5 minutes also `chain_head`, `blocked_seconds`) |
+| `sync_blocked` | `degraded` | 200 | The sync is blocked, or the sync loop failed 3 times in a row at one block (`details`: `chain_head`, `blocked_seconds` when blocked; `failing_block`, `failures`, `failing_seconds`, `last_failure_seconds` when the loop failed at a block) |
+| `sync_loop_stuck` | `unavailable` | **503** | The sync loop is stuck (`details`: `heartbeat_seconds`, plus the block numbers) |
 
 The node never skips a duty because it is behind. It votes Timeout only on a transaction that reads state it has not synced; a new contract deploy still runs.
 
-**`events.delivery` — 503 only when the event router has stopped**
+**`events.delivery` — 503 only when the event router is stuck**
 
 The event router publishes each block's contract events to the duty watchers. The sync path reads the chain on its own, so `chain.sync` cannot see a router that stopped: such a node reports synced and takes no duty. `events.delivery` compares the router's last routed block with the chain head (the same head `chain.sync` reads).
 
-A quiet chain is not a fault: with the chain head fewer than 10 blocks past the routed block there is nothing to route. A router that advances is never taken out of service, however far behind it is. A stall has two steps, because one heavy block or a long replay can hold a live router for minutes:
+A quiet chain is not a fault: with the chain head fewer than 10 blocks past the routed block there is nothing to route. The stall window opens when the head first moves 10 blocks past the routed block, so a burst of blocks after a quiet chain is new work, not a stall. A routed block that does not move is `degraded`: a slow chain read or one heavy block holds a live router, and a restart reads no faster.
+
+The router loops beat a heartbeat every 30 seconds, also on a quiet chain. A chain read is a wait, not silence. The router is stuck when one of its loops has given no sign of life for 5 minutes outside a chain read. Only then is `events.delivery` unavailable.
 
 | Reason | State | HTTP | When |
 |---|---|---|---|
 | `events_delivery_lagging` | `degraded` | 200 | The chain head is more than 100 blocks past the routed block and the routed block still advances |
 | `events_delivery_stalled` | `degraded` | 200 | The routed block has not moved for 2 minutes while the head is at least 10 blocks past it |
-| `events_delivery_stalled` | `unavailable` | **503** | The same for 5 minutes |
+| `events_router_stuck` | `unavailable` | **503** | The router is stuck (`details`: `heartbeat_seconds`, `routed_block`) |
 
-`details`: `routed_block`, `chain_head`, `lag_blocks`, `no_progress_seconds`. The metrics `genlayer_node_routed_block` and `genlayer_node_event_delivery_lag_blocks` show the same values over time.
+`details` of the degraded reasons: `routed_block`, `chain_head`, `lag_blocks`, `no_progress_seconds` (how long the stall window has been open). The metrics `genlayer_node_routed_block` and `genlayer_node_event_delivery_lag_blocks` show the same values over time.
 
-Which probe should read it: use `/health` for **readiness** (alerting, a load balancer, a dashboard): `degraded` keeps HTTP 200. Use it for **liveness** (an automatic restart) only if a restart is the action you want for a stopped router: the 503 comes only after 5 minutes without a routed block, and a restart is the remedy that worked when routers stopped on Bradbury on 2026-11-20. How to read it: `events_delivery_stalled` with `no_progress_seconds` that keeps growing is a stopped router; restart the node and report it with its logs from `routed_block`. `events_delivery_lagging` with a `routed_block` that grows is a node catching up; watch it.
+How to read it: `events_router_stuck` is a router that stopped; the orchestrator restarts the node; report it with its logs from `routed_block`. `events_delivery_stalled` with `no_progress_seconds` that keeps growing is a router that waits on the chain; check the chain RPC endpoint. `events_delivery_lagging` with a `routed_block` that grows is a node catching up; watch it.
 
 **cURL Example with Headers:**
 
