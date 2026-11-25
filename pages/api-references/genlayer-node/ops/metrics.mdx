@@ -260,7 +260,7 @@ The last block whose contract events the event router published to the duty watc
 
 **genlayer_node_event_delivery_lag_blocks**
 
-How many blocks the chain head (`genlayer_node_latest_block`) is past `genlayer_node_routed_block`; 0 before the first routed block or while the router is at the head. A value that grows while `genlayer_node_routed_block` stays still is a stopped router (`events.delivery` reports `events_delivery_stalled`); a value that is high but falls is a router catching up.
+How many blocks the chain head (`genlayer_node_latest_block`) is past `genlayer_node_routed_block`; 0 before the first routed block or while the router is at the head. A value that grows while `genlayer_node_routed_block` stays still is a router that does not advance (`events.delivery` reports `events_delivery_stalled`, or `events_router_stuck` when the router has stopped); a value that is high but falls is a router catching up.
 
 **Type:** Gauge
 

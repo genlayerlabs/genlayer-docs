@@ -1,0 +1,17 @@
+## v0.6.1
+
+Upgrade now: on v0.6.0 a provider outage or a full disk makes `/health` return 503, and a restart loop then misses duties and can get idleness strikes. `/health` now returns 503 only for a stuck sync loop, a stuck event router or both chain transports down, so review alert rules and restart policies that read the 503 code (see `docs/api/ops/health.md`).
+
+### New features
+
+- New metrics show when a replay the node waits on holds back live runs; read `docs/deploy/configuration.md` for the `genlayer_node_replay_*` metrics
+- `genlayernode doctor` reports stuck sync and late event delivery with new codes such as `NODE_SYNC_STUCK` and `NODE_EVENTS_STALLED`
+
+### Misc
+
+- The example configs name Bradbury Phase 3 and no longer show a Phase 2 `genesis` block
+
+### Bug fixes
+
+- A provider outage, a full disk or a failed submission ledger now reports `degraded` with HTTP 200, not 503
+  - a warning `disk_filling_up` shows when the disk is less than 72 hours from full
