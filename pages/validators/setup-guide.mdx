@@ -26,7 +26,7 @@ For a deeper understanding of how staking works in GenLayer, see the [Staking do
 | **Disk** | 128 GB SSD/NVMe (excluding swap) |
 | **Network** | 100 Mbps |
 | **OS** | 64-bit Linux |
-| **Software** | Docker, Python 3.10+ (`python3` on `PATH`, with pip and venv) |
+| **Software** | Docker, Python 3.10+ (`python3` on `PATH`) |
 
 GPU not required unless running LLMs locally. See [detailed requirements](/validators/system-requirements) for more info.
 
@@ -330,19 +330,19 @@ One full node can be shared between multiple validators. The optimal validator-t
 
 5. Run the GenVM setup
 
-   This step needs Python 3.10 or newer, available as `python3` on your `PATH`, with `pip` and `venv` (on Debian/Ubuntu: `python3-pip` and `python3-venv`). Check with `python3 --version`.
+   This step needs Python 3.10 or newer, available as `python3` on your `PATH`. Check with `python3 --version`. The script uses only the Python standard library, so `pip` and `venv` are not needed.
 
-   Run it in the final install location: it writes this directory's absolute path into the GenVM binaries. If you move the installation later, run it again there.
+   It makes the installation work from this directory. The GenVM binaries are otherwise relocatable; only when the host lacks the musl interpreter (see [System Requirements](/validators/system-requirements#musl-libc-recommended-on-linux)) does the script write this directory's absolute path into them, and then it needs `patchelf`. Run it in the final install location, and run it again if you move the installation later.
 
    ```sh copy
    python3 ./opt/genvm/current/bin/setup.py
    ```
-It does following:
 
-- Downloads missing runners if any
-- Verifies runners hashes
-- Sets `elf`/`mach-o` interpreter for all binaries (modules, genvm)
-- Rust precompilation for built-in runners
+   It does the following. Nothing is downloaded: the runners ship in the release.
+
+   - On Linux, if a binary's baked-in ELF interpreter is missing on the host, points it at the bundled musl loader with `patchelf`. An interpreter that exists is left alone
+   - Runs `--version` on `genvm-modules` and on each executor in the manifest
+   - Runs `genvm-modules manager check-install --precompile`: verifies the runner registry and runner hashes, then precompiles the runners for every executor in the manifest
 
 ### Configuration
 

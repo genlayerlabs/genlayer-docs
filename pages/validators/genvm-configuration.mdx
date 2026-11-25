@@ -33,16 +33,12 @@ You can modify configuration files on the fly and reload without stopping your n
 PORT=3999  # GenVM manager port
 
 # Restart LLM module (reloads Lua script + YAML config)
-curl -X POST "http://127.0.0.1:${PORT}/module/stop" \
-  -H 'Content-Type: application/json' \
-  -d '{"module_type": "Llm"}'
-
-curl -X POST "http://127.0.0.1:${PORT}/module/start" \
+curl -X POST "http://127.0.0.1:${PORT}/module/restart" \
   -H 'Content-Type: application/json' \
   -d '{"module_type": "Llm", "config": null}'
 ```
 
-Repeat for each GenVM instance if running multiple. A module reload picks up YAML and Lua changes only. A new or changed API key in `.env` needs a full node restart, because a running process cannot see environment changes. For a full restart: `sudo systemctl restart genlayer-node`.
+The manager stops the running module and starts the new one under a single lock. It reads the YAML file first, so a missing file or a YAML syntax error leaves the old module running; an invalid config or a Lua script that fails to load leaves the module stopped, so check the response and fix and restart again. Use `"module_type": "Web"` to reload the web module the same way. Repeat for each GenVM instance if running multiple. A module reload picks up YAML and Lua changes only. A new or changed API key in `.env` needs a full node restart, because a running process cannot see environment changes. For a full restart: `sudo systemctl restart genlayer-node`.
 
 ## Configuration Files
 
@@ -52,7 +48,7 @@ All configuration lives in the GenVM tree of the release, at `opt/genvm/current/
 |---|---|---|
 | `genvm-module-llm.yaml` | LLM providers, models, prompt templates, Lua script selection | **Yes** — this is your main configuration file |
 | `genvm-module-web.yaml` | Web access, webdriver, URL restrictions | Rarely — only for advanced URL policy changes |
-| `genvm-manager.yaml` | Permit pool (concurrency), VM pool | Rarely — the node sets the permit budget from its own `genvm.permits` (see below) |
+| `genvm-manager.yaml` | Permit pool (concurrency), executor schedule, log filter | Rarely — the node sets the permit budget from its own `genvm.permits` (see below) |
 
 ## Configuring Your LLM Backends
 
@@ -203,7 +199,7 @@ Greyboxing encompasses several layers of configuration, all implemented in the L
 
 **LLM parameters** — Temperature, max tokens, system prompts. Configured per-model in YAML or overridden in your Lua script.
 
-**Cost management** — In future versions, your greyboxing script will be able to track execution costs and decide when a transaction is too expensive to process. As a validator, if the cost of LLM calls exceeds what makes economic sense, you can timeout the transaction rather than executing at a loss.
+**Cost management** — The default script charges every successful LLM call by the tokens the provider reports: `total tokens × GEN-wei per time unit × rate / 1000`, rounded up. The GEN-wei per time unit comes from the transaction's gas data; the rate is `1/4` unless the model sets `meta.time_units_per_1k_tokens` (a non-negative rational string such as `"1/2"`). The charge is reported back to GenVM as consumed fuel. The budget is the transaction's initial time-unit allocation converted to GEN-wei (`initial time units × GEN-wei per time unit`). When the total charged in a session reaches it, the budget is exhausted and further prompts in that session fail as out of budget instead of running at a loss. Without gas data there is no budget. Your own script can apply a different rule.
 
 ### Built-in strategies
 
@@ -263,7 +259,7 @@ models:
 
 For full control, write your own Lua script. Create a `.lua` file in the config directory and point `lua_script_path` to it.
 
-Your script must export two global functions:
+Your script must export two global functions, `ExecPrompt` and `ExecPromptTemplate`. It may also export `Setup(ctx)` and `Teardown(ctx)`, which run at the start and the end of each execution session. `ctx` is one table that persists across all calls of the session; keep per-session state in it rather than in globals, because sessions are not tied to one Lua VM and several run in parallel. The default script uses `Setup` to initialise its budget and statistics and `Teardown` to persist the statistics to `stats.sqlite` in the GenVM data directory.
 
 ```lua
 local lib = require("lib-genvm")
@@ -273,13 +269,13 @@ function ExecPrompt(ctx, args, remaining_gen)
     -- args.prompt: the text prompt
     -- args.response_format: "text" or "json"
     -- args.images: table of image bytes (may be nil)
-    -- remaining_gen: gas budget (for future cost tracking)
-
-    -- Transform the raw args into internal format
-    local mapped = llm.exec_prompt_transform(args)
+    -- remaining_gen: fuel left for this execution, in GEN-wei
 
     -- Apply input filters
     args.prompt = lib.rs.filter_text(args.prompt, {'NFKC', 'NormalizeWS'})
+
+    -- Transform the raw args into internal format
+    local mapped = llm.exec_prompt_transform(args)
 
     -- Select providers that match requirements
     local providers = llm.select_providers_for(mapped.prompt, mapped.format)
@@ -292,7 +288,7 @@ function ExecPrompt(ctx, args, remaining_gen)
         format = mapped.format,
     })
 
-    result.consumed_gen = 0  -- Cost tracking (future)
+    result.consumed_gen = 0  -- GEN-wei to charge for this call
     return result
 end
 
@@ -321,6 +317,8 @@ Three templates, using `#{variable}` syntax for substitution:
 
 You can tune these prompts to improve your validator's judgment quality. Better prompts → more accurate consensus → higher rewards.
 
+In the two judge templates (`eq_comparative` and `eq_non_comparative_validator`), substituted values are HTML-escaped (`&`, `<`, `>`), so a value cannot close the tags that wrap it. Keep that guard when you edit them: leave each placeholder inside its wrapping section, and keep the template's instruction to treat the escaped input as data. A custom script that builds judge prompts itself should escape values with `lib.rs.escape_html`. `eq_non_comparative_leader` is not escaped. Each value is inserted once and is never re-scanned for `#{variable}`.
+
 ## Lua Scripting API
 
 ### Core functions (`lib.rs`)
@@ -329,7 +327,7 @@ Available in all Lua scripts:
 
 | Function | Description |
 |---|---|
-| `lib.rs.request(ctx, {method, url, headers, body, json, sign})` | HTTP request. `json: true` returns parsed response. |
+| `lib.rs.request(ctx, {method, url, headers, body, json, sign, error_on_status, response_body_max_size, timeout, unfiltered})` | HTTP request, returns `{body, status, headers}`. `json: true` returns the parsed body. `error_on_status` raises on any status other than 200. `response_body_max_size` caps the body and `timeout` the call, in seconds. `unfiltered: true` skips the SSRF guard that otherwise drops non-global addresses; use it only for hosts you trust. |
 | `lib.rs.json_parse(str)` | Parse JSON string to Lua table |
 | `lib.rs.json_stringify(value)` | Serialize Lua table to JSON |
 | `lib.rs.base64_encode(data)` / `base64_decode(data)` | Base64 encode/decode |
@@ -339,16 +337,27 @@ Available in all Lua scripts:
 | `lib.rs.url_encode(text)` | URL-encode text |
 | `lib.rs.sleep_seconds(n)` | Async sleep |
 | `lib.rs.random_bytes(n)` / `random_float()` | Random data generation |
+| `lib.rs.escape_html(text)` | Escape `&`, `<`, `>` (used for judge templates) |
+| `lib.rs.sha2_256(data)` / `sha3_256(data)` / `keccak256(data)` | Hash functions |
+| `lib.rs.monotonic_ms()` | Monotonic clock in milliseconds |
+| `lib.rs.data_dir` | Path of the GenVM data directory |
 | `lib.rs.user_error({causes, fatal, ctx})` | Raise a user error |
 | `lib.rs.as_user_error(err)` | Try to convert error to user error (nil if not) |
-| `lib.log({level, message, ...})` | Structured logging (trace, debug, info, warn, error) |
+| `lib.log({level, message, audience, ...})` | Structured logging (trace, debug, info, warn, error). `audience` is `"user"`, `"operator"` or `"introspector"` (default); see [Manager logs](#manager-logs) |
+| `lib.get_first_from_table(t)` / `get_first_from_table_assert(t)` | First `{key, value}` of a table; `nil` for an empty one, or an error for the `_assert` form |
+| `lib.reraise_with_fatality(err, fatal)` | Re-raise a user error with a different `fatal` flag; other errors are re-raised as is |
+| `lib.finally(body, cleanup)` | Run `body`, always run `cleanup`, then return the result or re-raise the error of `body` |
+| `lib.map_01_to_range(v, min, max)` | Linearly map `v` from `[0, 1]` onto `[min, max]` |
 
 ### LLM functions (`llm.rs`)
 
 | Function | Description |
 |---|---|
-| `llm.rs.exec_prompt_in_provider(ctx, request)` | Execute prompt on a specific provider/model |
+| `llm.rs.exec_prompt_in_provider(ctx, request)` | Execute prompt on a specific provider/model. The result carries `data`, `tokens` (`input`, `output`, `total`, `cache_read`, `cache_write`, `image_units`) and `consumed_gen` |
+| `llm.exhaust()` | Signal that the budget is exhausted; raises and never returns |
 | `llm.providers` | Table of all configured backends and models |
+| `llm.providers_with_json_support` / `providers_with_image_support` / `providers_with_image_and_json_support` | `llm.providers` narrowed by capability |
+| `llm.provider_http_error_description(status)` | Map an HTTP status to a failure kind (`rate_limit`, `auth_error`, `server_error`, …; `network_error` for `nil`) |
 | `llm.templates` | Equivalence Principle prompt templates |
 | `llm.select_providers_for(prompt, format)` | Filter backends by capability (JSON, images) |
 | `llm.exec_prompt_transform(args)` | Transform raw prompt args to internal format |
@@ -359,9 +368,11 @@ Available in all Lua scripts:
 
 | Function | Description |
 |---|---|
-| `web.config` | Web module configuration |
-| `web.allowed_tld` | Set of allowed top-level domains |
-| `web.check_url(url)` | Validate URL against schema, port, and TLD restrictions |
+| `web.rs.config` | Web module configuration (`always_allow_hosts`, `webdriver_host`, …) |
+| `web.rs.allowed_tld` | Set of allowed top-level domains |
+| `web.allowed_schemas` | Set of permitted URL schemas (`http`, `https`) |
+| `web.check_url(url)` | Validate URL against schema, port, and TLD restrictions; returns `true` when the host is in `always_allow_hosts` |
+| `web.reraise_as_webdriver_unavailable(err)` | Re-raise a failure of your own webdriver as a fatal `WEBDRIVER_UNAVAILABLE` error, so the node abstains instead of voting on a page it never saw |
 
 ## Advanced: Web Module
 
@@ -373,22 +384,75 @@ The Lua script (`genvm-web-default.lua`) implements two functions:
 
 **What you might customize:**
 - `extra_tld: ["local"]` — allow additional TLDs beyond the standard set
-- `always_allow_hosts: ["my-api.internal"]` — bypass URL checks for specific hosts
+- `always_allow_hosts: ["my-api.internal"]` — skip the port and TLD checks for specific hosts
+
+The schema check still applies to every URL, and `extra_tld` only widens the TLD check: it does not open private networks. `Request` calls to hosts that are not in `always_allow_hosts` go through an SSRF guard that drops non-global addresses (loopback, private ranges, link-local), so a contract cannot reach services on your host or LAN. If a contract legitimately needs a private host, list it in `always_allow_hosts`: `Request` calls to those hosts bypass the guard. `Render` always goes through the WebDriver container, which has its own guard and ignores `always_allow_hosts`.
 
 ## Advanced: GenVM Manager
 
-The manager (`genvm-manager.yaml`) controls concurrency through a pool of permits. The node sets that pool on startup from `genvm.permits` in its `config.yaml`:
+The manager (`genvm-manager.yaml`) schedules executions and modules. Its keys:
+
+| Key | Meaning |
+|---|---|
+| `permits.total` | Size of the permit pool. When `null`, it is the free memory (RAM plus swap) in GiB times `permits.per_gib`, measured at startup |
+| `permits.per_gib` | Permits per GiB of free memory, an integer or a ratio (`1/4` is one permit per 4 GiB). Default `1` |
+| `permits.sync` / `permits.nondet` | Permits one sync (replay) or non-deterministic execution costs: `4` and `8` by default. The pool is raised to at least the larger of the two |
+| `allow_two_workers` | Overlap deterministic execution with non-deterministic validation |
+| `chainforks_path` | Schedule of executor lines and runners per network (see [Networks and executor lines](#networks-and-executor-lines)) |
+| `default_network` | Network used for a request that names none; `null` rejects such a request |
+| `manifest_path` | Executor and runner manifest of the GenVM tree |
+| `execution_retention` | How long a finished execution is kept before it is dropped if never acknowledged. Default `5m` |
+| `threads`, `blocking_threads`, `max_message_bytes` | Runtime threads and the websocket message cap |
+| `log_level`, `log_disable` | Log filter (see [Manager logs](#manager-logs)) |
+
+The node sets the permit pool on startup from `genvm.permits` in its `config.yaml`:
 
 ```yaml
 genvm:
   permits: 32 # Leave empty for autodiscovery
 ```
 
-`permits` is a permit budget, not an execution count. Each execution costs permits, and one nondeterministic execution costs 8, so `32` admits 4 nondeterministic executions at a time. Leaving it empty is preferable: autodiscovery sizes the budget from the host. `sync_permits` uses the same unit; a sync execution costs 4.
+`permits` is a permit budget, not an execution count. Each execution costs permits, and one nondeterministic execution costs 8, so `32` admits 4 nondeterministic executions at a time. When it is empty, autodiscovery sizes the budget from the host at startup, counting free (not available) RAM plus free swap at 1 permit per GiB. On a host with large swap most of that budget comes from swap, and a full page cache at startup lowers it; set `permits` explicitly if you want concurrency sized from RAM alone. `sync_permits` uses the same unit; a sync execution costs 4.
 
 <Callout type="info">
   On macOS (native), auto-detection is not supported: GenVM falls back to a fixed default. Set `genvm.permits` manually (e.g., `32`).
 </Callout>
+
+## Networks and executor lines
+
+A GenVM release ships several executor lines side by side, one directory per version under `opt/genvm/current/executor/` (for example `v0.2.17`, `v0.3.0`). A schedule of forks decides when each line (`genvm/executor/v0.2`, `v0.3`, `v0.4`) is active. The schedule shipped in the GenVM tree (`opt/genvm/current/data/genvm-chainforks.json`) defines only a `dev` network and is not used by the node.
+
+The node computes the schedule itself from its fork rules and the deployment's genesis (`consensus.genesis`), writes it to `<datadir>/chainforks.json` at every start, and starts the manager with `--chainforks-path <that file> --default-network node`. Before running contracts it checks that the manager runs the same schedule; a manager with a different one is refused. `./bin/genlayernode doctor` shows the schedule as `GenVM Network: node and GenVM agree`.
+
+With `genvm.start_manager: false`, run the external manager with the same two flags, pointing at the node's `<datadir>/chainforks.json`, and restart it whenever the node rewrites that file.
+
+Each executor needs its precompile cache; without it replay runs about 5 times slower. `doctor` checks this too.
+
+## Manager logs
+
+The manager and the executors write one JSON object per line. Every record has `level` and `audience` first, then `target`, `message` and `ts`, plus any structured fields of the call site. `audience` says who should act on the line:
+
+| `audience` | Reader |
+|---|---|
+| `user` | The contract developer: the line is a consequence of the contract's own input, code or budget |
+| `operator` | You: configuration, environment, providers, broken internal invariants, panics |
+| `introspector` | Someone debugging GenVM itself (the default for a line that names none) |
+
+When the node starts the manager, it re-logs each of these lines as a node log line with the message `manager log` and the record under `data`, at the record's `level`. To see only what needs your attention, filter on the audience:
+
+```bash
+<node log source> | jq -c 'select(.data.audience? == "operator")'
+```
+
+The starting level is `log_level` in `genvm-manager.yaml`. Change it on a running manager without a restart:
+
+```bash
+curl -X POST "http://127.0.0.1:${PORT}/log/level" \
+  -H 'Content-Type: application/json' \
+  -d '{"level": "debug"}'
+```
+
+The level is one of `trace`, `debug`, `info`, `warn`, `error`.
 
 ## Troubleshooting
 
