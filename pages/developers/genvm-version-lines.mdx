@@ -109,12 +109,15 @@ Because there is no in-place upgrade, migrating means deploying a new v0.4 contr
 2. **Switch the runner.** Remove any `# v0.2.x` header and declare the v0.4 runner: `py-genlayer:kzybg95x1gn21dw72m7hyg0maaap04n4nx55j9yt6fkdqxtz6bz0`, or `py-genlayer-multi:ys9w7shpvsdswe2fhrxh7agke954catkqb28cngq5924zw9bzx80` for a zip package. Check every `Depends` entry, including library runners and the `runner.json` of zip packages: one leftover v0.2-only runner sends the whole deploy to v0.2.
 3. **Test on a v0.123 Studio.** Run your tests against a local Studio v0.123 or [studio-dev](https://studio-dev.genlayer.com) before deploying to a shared Studio.
 4. **Deploy the new contract.** It gets a new address. The old v0.2 contract keeps running at its address.
-5. **Move the state.** Nothing is copied for you. Read the old contract through its view methods and write the data into the new one, through constructor arguments or an import method that only an admin can call. Balances held by the old contract stay at the old address, so they move only if the old contract has a method that can send them out.
-6. **Repoint clients.** Update every frontend, backend, script and contract that stores the old address. Contracts that call the old address need their own migration or an admin setter.
-7. **Retire the old contract.** If it has a pause or admin switch, use it so that users stop writing to the old address.
+5. **Stop writes to the old contract.** Use its pause or admin switch if it has one; without one, you can only stop the writes that go through your application (see the freeze step [below](#migrate-with-minimal-downtime)). Then wait until its pending transactions are finalized: an appeal can still change state after a transaction is accepted. Keep writes stopped until step 7.
+6. **Move the state.** Nothing is copied for you. Read the old contract through its view methods and write the data into the new one, through constructor arguments or an import method that only an admin can call. Balances held by the old contract stay at the old address, so they move only if the old contract has a method that can send them out.
+7. **Repoint clients.** Update every frontend, backend, script and contract that stores the old address. Contracts that call the old address need their own migration or an admin setter. Writes resume on the new address.
+8. **Keep the old contract.** It stays available for reads and history.
+
+If writes cannot stop for the whole copy, use the procedure in [Migrate with minimal downtime](#migrate-with-minimal-downtime), which pauses writes only for a final sync.
 
 <Callout type="info">
-Plan the state move before you deploy. A v0.2 contract that has no way to export its data or withdraw its balance cannot be emptied after the fact, so add those methods to any v0.2 contract you still redeploy during the window.
+Plan the state move before you deploy. A v0.2 contract that has no way to export its data, pause writes or withdraw its balance cannot be emptied after the fact, so add those methods to any v0.2 contract you still redeploy during the window.
 </Callout>
 
 ### Migrate with minimal downtime
@@ -126,7 +129,7 @@ When you do migrate, run the old and new contracts side by side so that only wri
 1. **Prepare.** Give the v0.4 contract an admin-only import method that loads state in batches. Make every client read the contract address from configuration (an environment variable, your API or an on-chain registry) so you can switch it without rebuilding the frontend.
 2. **Deploy in parallel.** Deploy the v0.4 contract while the v0.2 contract keeps serving users.
 3. **Backfill.** Copy the existing state from the old contract's view methods into the new one. Record a checkpoint of what you copied.
-4. **Freeze writes.** Stop writes to the old contract, with its pause switch if it has one, or in your application by disabling write actions or queueing them in your backend. Wait until the old contract's pending transactions are finalized: an appeal can still change state after a transaction is accepted.
+4. **Freeze writes.** Stop writes to the old contract with its pause switch, and wait until its pending transactions are finalized: an appeal can still change state after a transaction is accepted. Disabling write actions in your application, or queueing them in your backend, is enough only if every write reaches the contract through your application. If anyone can call the contract directly, from a wallet, an SDK or another contract, a write that lands after the delta sync is missing from the new contract.
 5. **Sync the delta.** Copy only what changed since the checkpoint, then compare the views of both contracts.
 6. **Switch.** Point clients at the new address, resume writes, and send any queued writes to the new contract.
 7. **Keep the old contract.** It stays available for reads and history.
