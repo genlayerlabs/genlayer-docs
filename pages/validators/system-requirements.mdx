@@ -12,7 +12,13 @@ System Requirements for a GenLayer validator node are the **initial** recommende
 - **Recommended:** 16 GB
 - **Why:**
   - GenLayer's _genvm_ can spawn multiple Sub-VMs for contract calls and non-deterministic blocks.
-  - Each Sub-VM can consume up to ~4 GB of RAM for storage.
+  - The GenVM manager meters memory in permits: by default 1 permit per GiB of free RAM plus free swap, measured when the manager starts. A non-deterministic execution costs 8 permits and a sync (replay) execution costs 4, so every 8 GiB of free memory admits 1 non-deterministic execution at a time. Swap counts too; with the recommended swap, consider setting `genvm.permits` explicitly. See [GenVM Configuration](/validators/genvm-configuration#advanced-genvm-manager).
+
+## Swap
+
+- **Recommended:** 128 GB of swap, in addition to the recommended RAM
+- **Why:** Transaction throughput and the resulting memory demand are not yet known, so size swap conservatively to provide headroom for memory spikes
+- Monitor RAM and swap usage as network load becomes clearer; sustained swapping can slow transaction execution
 
 ## CPU
 
@@ -25,7 +31,7 @@ System Requirements for a GenLayer validator node are the **initial** recommende
 
 ## Storage
 
-- **Recommended Disk Space:** 128 GB+
+- **Recommended Disk Space:** 128 GB+ (excluding swap)
 - **Preferred Type:** SSD or NVMe (M.2)
 
 ## Network
@@ -48,4 +54,25 @@ System Requirements for a GenLayer validator node are the **initial** recommende
 
 - Operating System - 64-bit Linux (Ubuntu, Debian, CentOS, etc.)
 - `docker` - for running the WebDriver container
-- Python 3.10 or newer, available as `python3` on your `PATH`, with `pip` and `venv` (on Debian/Ubuntu: `python3-pip` and `python3-venv`) - for GenVM setup
+- Python 3.10 or newer, available as `python3` on your `PATH` - for GenVM setup. The setup script uses only the Python standard library, so `pip` and `venv` are not needed
+- `patchelf` - only if the musl interpreter below is absent (see next section)
+
+### musl libc (Recommended on Linux)
+
+We recommend installing musl libc on Linux so GenVM binaries can use their default ELF interpreter path. On Ubuntu or Debian:
+
+```bash copy
+sudo apt-get update
+sudo apt-get install -y musl
+```
+
+For other Linux distributions, install the musl runtime package using your distribution's package manager. Check that the interpreter for your architecture exists and is executable:
+
+| Architecture | Default ELF Interpreter Path |
+|--------------|------------------------------|
+| AMD64 (`x86_64`) | `/lib/ld-musl-x86_64.so.1` |
+| ARM64 (`aarch64`) | `/lib/ld-musl-aarch64.so.1` |
+
+The AArch64 path is provided as a GenVM reference; validator nodes currently support AMD64 only
+
+If the interpreter is missing, the GenVM setup step points the binaries at the musl loader bundled in the release instead. That needs `patchelf` on your `PATH` (on Debian/Ubuntu: `sudo apt-get install -y patchelf`); setup fails if it is absent.

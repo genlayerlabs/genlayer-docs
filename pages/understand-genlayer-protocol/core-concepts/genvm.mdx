@@ -49,6 +49,10 @@ GenVM executes WebAssembly contracts through **runners**. A runner packages the 
 
 The standard developer experience uses Python on a CPython WebAssembly runner. The runtime boundary is WebAssembly/WASI, so the architecture can support other compatible runners and compiled languages as they become available.
 
+## Executor lines
+
+A deployed contract cannot be migrated, so a breaking change to GenVM ships as a new executor beside the old one rather than replacing it. Several GenVM versions (executor lines) therefore ship side by side in one release. Network forks decide which lines are active on a given network. A new contract is routed to a line by its version comment and the runners it declares, and it stays on that line for its whole life, so existing contracts keep the semantics they were validated against.
+
 ## Security boundary
 
 GenVM constrains contract capabilities through its WebAssembly runtime and host interface. Intelligent Contracts do not receive unrestricted access to the validator machine. Web and LLM functions are available through the non-deterministic interface, where their output is subject to the contract's [equivalence rule](/understand-genlayer-protocol/core-concepts/optimistic-democracy/equivalence-principle).

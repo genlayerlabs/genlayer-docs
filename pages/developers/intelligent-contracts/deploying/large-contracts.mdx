@@ -1,0 +1,245 @@
+---
+description: "Deploy an Intelligent Contract whose code is too large for one transaction by uploading it in chunks through a bootstrapper contract."
+---
+import { Callout } from 'nextra-theme-docs'
+
+# Deploying Large Contracts
+
+A deployment carries the whole contract source in one transaction. Two limits cap how large that transaction can be:
+
+- The settlement chain caps the gas of a single transaction and the size of a block. Deploying costs gas per byte of source, so the gas cap turns into a source-size cap of a few tens of KB, depending on the network
+- JSON-RPC sends the payload hex-encoded, which doubles its size; in practice the request stops being accepted at about 31 KB
+
+A contract that does not fit can still be deployed. Deploy a small **bootstrapper** contract first, upload the real code to it in chunks, then switch the contract over to that code. The contract keeps its address and becomes the uploaded contract.
+
+<Callout type="info">
+  Before reaching for a bootstrapper, check whether the contract can be split into cooperating contracts or can move non-consensus logic off-chain. See [Deploy Scripts](./deploy-scripts) for deploying several contracts in order.
+</Callout>
+
+## How It Works
+
+The bootstrapper writes directly to the contract's storage slots, including the root slot that tells GenVM which code to run:
+
+1. `__init__` saves the default locked slots aside and unlocks them, so the code can be replaced later in the same contract
+2. `push_code(code)` appends a chunk of code to a vacant storage slot. Call it as many times as needed
+3. `write(data)` optionally writes raw storage, for example the initial state of the target contract
+4. `finish()` restores the locked slots and points the root at the uploaded code
+
+After `finish`, every call goes to the uploaded contract. Its `__init__` never runs: the target starts from whatever state `write` stored, or from zeroed storage.
+
+<Callout type="info">
+  `gen_getContractCode` reads the default code slot, so after `finish` it still returns the bootstrapper's source, not the uploaded code. Explorers and verification tools that use it show the bootstrapper.
+</Callout>
+
+## Bootstrapper Contract
+
+Save the code below as `bootstrapper.py`, with the runner header as its first line: `# { "Depends": "py-genlayer:<hash>" }`. Replace `<hash>` with the `py-genlayer` runner hash of the network you deploy to. The runner must be from GenVM v0.3 or newer: v0.2 runners have no `Root.code_slot`, so `finish` cannot redirect the code there.
+
+```python
+import typing
+
+import genlayer as gl
+
+_CALC_MANAGER = gl.storage.InmemManager()
+CODE_SLOT = (
+    _CALC_MANAGER.get_store_slot(gl.storage.ROOT_SLOT_ID)
+    .indirect(gl.vm.ABI.root_offsets.CODE)
+    .id
+)
+LOCKED_SLOT = (
+    _CALC_MANAGER.get_store_slot(gl.storage.ROOT_SLOT_ID)
+    .indirect(gl.vm.ABI.root_offsets.LOCKED_SLOTS)
+    .id
+)
+
+VACANT_SLOT = _CALC_MANAGER.get_store_slot(gl.storage.ROOT_SLOT_ID).indirect(
+    gl.vm.ABI.root_offsets.MAJOR
+)
+
+SPECIAL_SLOTS = [gl.storage.ROOT_SLOT_ID, LOCKED_SLOT]
+
+SPECIAL_SLOTS_TWINS = {
+    slt: VACANT_SLOT.indirect(i).id for i, slt in enumerate(SPECIAL_SLOTS)
+}
+
+CODE_TARGET_SLOT = VACANT_SLOT.indirect(len(SPECIAL_SLOTS)).id
+
+
+def get_twin_vla(slot_id: bytes) -> gl.storage.VLA[gl.types.u8]:
+    return gl.storage.cast_slot(
+        gl.storage.VLA[gl.types.u8], gl.storage.Root.MANAGER, slot_id, 0
+    )
+
+
+def write_to_twin(slot_id: bytes, offset: int, data: bytes):
+    as_vla = get_twin_vla(slot_id)
+    old_len = len(as_vla)
+    as_vla.slot().write(as_vla.data_offset() + offset, data)
+    as_vla.set_length(max(old_len, offset + len(data)))
+
+
+def read_from_twin(slot_id: bytes, offset: int, length: int) -> bytes:
+    slot = gl.storage.Root.MANAGER.get_store_slot(slot_id)
+    return slot.read(offset + 4, length)
+
+
+class Contract(gl.contract.Contract):
+    def __init__(self, *, save_default_locked_slots: bool = True):
+        root = gl.storage.Root.get()
+
+        if save_default_locked_slots:
+            twin_slot_id = SPECIAL_SLOTS_TWINS[LOCKED_SLOT]
+            locked_slots_dst = gl.storage.cast_slot(
+                gl.storage.VLA[gl.types.u256], gl.storage.Root.MANAGER, twin_slot_id, 4
+            )
+            locked_slots_dst.assign(root.locked_slots.get())
+
+            locked_slots_dst_vla = get_twin_vla(twin_slot_id)
+            locked_slots_dst_vla.set_length(
+                len(locked_slots_dst) * 32 + locked_slots_dst.data_offset()
+            )
+
+        root.locked_slots.get().truncate()
+
+    @gl.public.write
+    def write(self, data: list[typing.Any]):
+        """
+        Write data to the contract.
+
+        :param data: list of data items to write in format ``(slot: byte[32], offset: u32, data: bytes)``
+        """
+
+        for slot, offset, slice in data:
+            if slot in SPECIAL_SLOTS_TWINS.values() or slot == CODE_TARGET_SLOT:
+                gl.vm.UserError.immediate('Cannot write to the temporary slots')
+            if twin := SPECIAL_SLOTS_TWINS.get(slot):
+                write_to_twin(twin, offset, slice)
+            else:
+                if slot == CODE_SLOT:
+                    slot = CODE_TARGET_SLOT
+                gl.storage.Root.MANAGER.get_store_slot(slot).write(offset, slice)
+
+    @gl.public.write
+    def push_code(self, code: bytes):
+        """
+        Push code to the contract. This will append the code to a slot, which the ``finish`` method makes the code slot.
+
+        :param code: code to push
+
+        .. warning::
+            Exactly one of ``write`` or ``push_code`` must be called for code initialization,
+            otherwise the contract may be left in undefined state
+        """
+
+        gl.storage.cast_slot(
+            gl.storage.VLA[gl.types.u8], gl.storage.Root.MANAGER, CODE_TARGET_SLOT, 0
+        ).extend(code)
+
+    @gl.public.write
+    def finish(self):
+        """
+        Finish bootstrapping. This will copy the root and locked slots from their temporary slots and point the root at the pushed code, making it available for execution.
+        """
+        BUF_SIZE = 65536
+        for dst, src in SPECIAL_SLOTS_TWINS.items():
+            vla_from = get_twin_vla(src)
+            copy_len = len(vla_from)
+            to = gl.storage.Root.MANAGER.get_store_slot(dst)
+            for offset in range(0, copy_len, BUF_SIZE):
+                chunk_size = min(BUF_SIZE, copy_len - offset)
+                data = vla_from.slot().read(vla_from.data_offset() + offset, chunk_size)
+                to.write(offset, data)
+
+        root = gl.storage.Root.get()
+        code_target = int.from_bytes(CODE_TARGET_SLOT, 'little')
+        root.code_slot = code_target
+        locked = root.locked_slots.get()
+        if int.from_bytes(CODE_SLOT, 'little') in locked:
+            locked.append(code_target)
+```
+
+The uploaded contract declares its own runner in its first line as usual, but it must use a runner from the same executor line as the bootstrapper: the contract stays on the line it was deployed on, and GenVM checks the major recorded at deploy on every call.
+
+<Callout type="warning">
+  The bootstrapper has no access control: until `finish` runs, anyone can push code, write storage or finish the upload. For a real deployment, check `gl.message.sender_address` against the deployer in `write`, `push_code` and `finish`, and store the deployer outside the contract instance slot, which the target contract will own. Call `finish` once; every call after it reaches the uploaded contract instead.
+</Callout>
+
+## Uploading the Code
+
+Deploy the bootstrapper, push the target code in chunks, then finish. Each chunk below is 12 KiB, which stays under the JSON-RPC limit once hex-encoded and well under the per-transaction gas cap:
+
+```typescript
+import { readFileSync } from 'node:fs';
+import { isSuccessful } from 'genlayer-js';
+import type { DecodedDeployData, GenLayerClient } from 'genlayer-js/types';
+
+const CHUNK_SIZE = 12 * 1024;
+
+async function waitOk(client: GenLayerClient<any>, hash: `0x${string}`, step: string) {
+  const tx = await client.waitForFinalization({ hash });
+  if (!isSuccessful(tx)) {
+    throw new Error(`${step} failed: ${tx.statusName} / ${tx.txExecutionResultName}`);
+  }
+  return tx;
+}
+
+export default async function main(client: GenLayerClient<any>) {
+  const bootstrapper = new Uint8Array(
+    readFileSync(new URL('../contracts/bootstrapper.py', import.meta.url)),
+  );
+  const target = new Uint8Array(
+    readFileSync(new URL('../contracts/big_contract.py', import.meta.url)),
+  );
+
+  const deployTx = await waitOk(
+    client,
+    await client.deployContract({ code: bootstrapper, args: [] }),
+    'Bootstrapper deploy',
+  );
+  const decoded = deployTx.txDataDecoded as DecodedDeployData | undefined;
+  const address = decoded?.contractAddress ?? deployTx.recipient;
+  if (!address) throw new Error('Finalized deployment has no contract address');
+
+  for (let offset = 0; offset < target.length; offset += CHUNK_SIZE) {
+    const chunk = target.subarray(offset, offset + CHUNK_SIZE);
+    await waitOk(
+      client,
+      await client.writeContract({ address, functionName: 'push_code', args: [chunk] }),
+      `push_code at ${offset}`,
+    );
+  }
+
+  await waitOk(
+    client,
+    await client.writeContract({ address, functionName: 'finish', args: [] }),
+    'finish',
+  );
+
+  console.log('Large contract deployed', { address });
+  return address;
+}
+```
+
+Wait for each chunk to finalize before sending the next: `push_code` appends, so chunks must land in order. On a fee-charging network, pass `fees` to each call as shown in [Deploy Scripts](./deploy-scripts#fee-aware-deploy-helper).
+
+## Setting Initial State
+
+Because the target's `__init__` never runs, give it initial state either by:
+
+- Exposing a guarded initialization method on the target and calling it after `finish`
+- Writing raw storage with `write` before `finish`. Each item is `(slot, offset, data)`; the target's contract fields start in the slot `sha3_256(32 zero bytes + (1).to_bytes(4, 'little'))`, encoded with GenVM's storage layout. Do not write the root slot (32 zero bytes): `finish` copies it over the whole root, including the recorded major, and a wrong value makes every later call fail
+
+For example, this writes the 32-bit field of a contract whose only field is an `i32` as `42`:
+
+```python
+import hashlib
+
+slot = hashlib.sha3_256(bytes(32) + (1).to_bytes(4, 'little')).digest()
+args = [[(slot, 0, (42).to_bytes(4, 'little'))]]
+```
+
+## Related
+
+- [Deploy Scripts](./deploy-scripts)
+- [Upgradability](/developers/intelligent-contracts/features/upgradability)
+- [Contract Storage](/developers/intelligent-contracts/storage)
