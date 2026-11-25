@@ -172,7 +172,7 @@ Use the SDK's `isSuccessful` helper or Transaction Kit's normalized outcome. Tra
 - Display deposit, consumed fees, and final refund as different values.
 - Require both successful status and execution result before showing an application action as complete.
 - Re-run profile tests whenever contract code, GenVM, Studio, or the fee policy changes.
-- Start new contracts on GenVM v0.4 and plan the redeploy of v0.2 contracts before v0.2 deploys close; see [GenVM Version Lines](/developers/genvm-version-lines).
+- Start new contracts on GenVM v0.4, and port any v0.2 code you still need to deploy before new v0.2 deploys close (deployed v0.2 contracts keep running after that); see [GenVM Version Lines](/developers/genvm-version-lines).
 
 <Callout type="warning">
 Studio-dev is a release-candidate environment and may reset. Move durable production-like testing to Bradbury only after the compatible v0.6 stack has been promoted there.
