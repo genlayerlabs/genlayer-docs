@@ -1,0 +1,108 @@
+## v0.6.0
+
+Upgrade now: v0.6.0 runs only on the v0.6 consensus contracts (Bradbury Phase 3), and a v0.5 node cannot do its duties there. Before the first start, use the new Bradbury example config and protocol manifest, set `consensus.genesis`, `consensus.manifestpath`, `consensus.chainid` and `genvm.root_dir`, run `genlayernode doctor`, and expect a full resync into a new `genvm.db` that v0.5 cannot read (read `docs/deploy/configuration.md`).
+
+### New features
+
+- Support Bradbury Phase 3: the node detects the network `bradbury-phase3` from the Bradbury consensus address
+- Run the v0.6 fee model: fees pinned at activation, storage and receipt budgets, message fee limits and fee allocations
+- Serve as a tribunal juror: re-run the accused execution, commit and reveal the tribunal vote, also after a restart
+- Deliver the messages that accepted and finalized transactions owe, in turns with the other validators that voted
+- Prepare the validator's fee claims every epoch, so self-stake withdrawals are no longer held
+- Prove activations and leader proposals with an ECVRF proof from the operator key; a signer that cannot do this does not start
+- After a restart, resume every duty the node accepted but did not finish, including commits, reveals and message delivery
+- At start-up and in `doctor`, refuse a consensus deployment that differs from the protocol manifest of the network
+  - new required settings: `consensus.manifestpath`, `consensus.chainid` and `consensus.genesis`
+- Opt-in operational keys for the duties that do not need the operator key: settings under `consensus.operational_keys`
+- Sync replays the transactions of different contracts in parallel (`genvm.replay.scheduler: lanes`, the default)
+- Optional contract-state pruning: set `node.state.enabled: true`, and read `docs/deploy/state-pruning.md` first
+- `genlayernode snapshot restore` installs a `genvm` snapshot; `POST /snapshot` takes a `scope` (`all`, `genvm`, `ops`)
+- Change the chain RPC key without a restart: put it in a file and set `rollup.genlayerchainrpckeyfile`
+- The node makes fewer chain RPC calls: it caches transaction reads and pinned contract reads, and skips reorg checks below `finalized`
+- `doctor` checks validator participation, the operator key unlock, the GenVM network and the GenVM precompile
+- `genlayernode doctor fix` runs every repair in one run; `doctor --only config` checks the config files without network
+- `doctor --output json` writes one JSON document with a stable `code` and `action` for each finding
+- `/health` reports the operator balance, `validator_address` and `validator_moniker`, and the WebDriver render check
+- `/health` reports a stopped event router in `events.delivery`: degraded after 2 minutes, unavailable (503) after 5 minutes
+- New RPC methods: `gen_getLogs`, `gen_subscribe`, `gen_unsubscribe`, `gen_getTransactionLifecycle`, `gen_getTransactionData`, `net_version`
+- The `leadership` stream of `gen_subscribe` has the new kind `TransactionLeaderReplaced` for a leader swap inside Proposing
+- `gen_getTransactionReceipt` has a `fees` object: deposit, distribution, locked prices, consumed counters and allocations
+- New limits for RPC reads, events and traces: settings under `node.rpc`, `node.events` and `node.trace`
+- New metrics for gas, fees, duties, sync, replay, caches and GenVM runs: read `docs/api/ops/metrics.md`
+- The release publishes signed checksums, an `install.sh` script and cosign-signed node images
+- The release compose file restarts a WebDriver or Alloy that stays unhealthy; set `HEALTHCHECK_AUTO_RESTART=false` to stop this
+- The release LLM config has an Unhardcoded backend: set `UNHARDCODED_API_KEY` in `.env` to use it
+
+### Misc
+
+- Ship GenVM `v0.6.0-rc17` under `opt/genvm/<version>`: set `genvm.root_dir: ./opt/genvm/v0.6.0-rc17` or `./opt/genvm/current`
+- The node uses the GenVM manager WebSocket protocol: an external manager (`genvm.start_manager: false`) must be the shipped GenVM
+- Replace `node.genlayerdb` with `node.genvmdb` and `node.opsdb`: the database is split into `genvm.db` and `ops.db`
+- The node ignores a v0.5 `<datadir>/genlayer.db` and syncs from genesis into a new `genvm.db`; you can delete the old folder
+- `genvm.permits` and `genvm.sync_permits` are permit budgets: leave them empty, or multiply old values by 4
+- Move RPC groups from `node.rpc.endpoints.groups.<group>` to `node.rpc.endpoints.<group>`; the node ignores the old form
+- `gen_dbg_*` methods are off unless `node.rpc.endpoints.genlayer_debug.enabled: true`
+- A denied `eth_*` or `zks_*` method returns `-32601` instead of `-32004`
+- New `/health` body: a `status` and a `conditions` catalog; `checks` and `genvm_modules` are gone; read `docs/api/ops/health.md`
+  - HTTP 503 only for `unavailable`; check liveness probes and alert rules against the new conditions
+- `gen_getTransactionStatus` returns the stored status; `ReadyToFinalize` is removed, so statuses 12 to 14 move down by one
+- The `status` parameter of `gen_call`, `gen_getContractState` and `gen_getContractCode` takes `decided`, not `accepted`
+- `previousStatus` in `gen_getTransactionReceipt` is always `null`
+- The node refuses to start when the config file is missing or a required field is empty, and warns about unknown keys
+- The Docker image runs as uid 10001: run `sudo chown -R 10001:10001 ./data` once before the first start
+- Docker: mount custom GenVM configs at `/app/opt/genvm/current/config/`; the node no longer reads `/app/third_party/genvm/config/`
+- The release compose file needs `NODE_PASSWORD` for a validator and has no default `CENTRAL_*` values: set them in `.env`
+- The `genlayer_node_disk_*` metrics report `directory="genvm.db"` and `directory="ops.db"` in place of `genlayer.db`
+- Signed GenVM web requests send the validator wallet address in the `genlayer-node-address` header
+- Contract `eth_call`s from GenVM use a fixed gas of 10,000,000, so validators on RPCs with different gas caps agree
+- New setting `consensus.log_read_interval` (default `1s`): the node reads new chain logs at most once per interval
+- `/health` checks WebDriver rendering at most once a minute and returns the last result in between
+- Logs show a transaction execution as `0x<txid>#<round>@0x<activation block>`
+- Update Go to 1.26.11, `go-ethereum` to v1.17.10, and the release image to Alpine 3.24.4
+
+### Bug fixes
+
+- A leader no longer gets a strike when the commit phase ends on a timeout with enough commits: it now reveals
+- A replacement for an idle leader runs the transaction at the validators' block, so a tribunal no longer convicts an honest leader
+- A validator seated by a rotation, or assigned a duty during a phase, now acts in its slot and no longer gets a strike
+- Seat owners act at the window end, read from the chain, so a clock drift no longer makes them miss a window
+- After a reorg or a head-subscription reconnect, the node does the duties it missed, such as an activation
+- Validators send idleness calls in their own turn windows, and a large committee no longer leaves a phase open
+- Keep committed votes and salts across restarts and replays, and never regenerate a vote or receipt, so reveals are not missed
+- Keep every nonce owned until the chain settles it: one stuck or dropped send no longer blocks later transactions
+- Duty transactions no longer cancel pending commits and reveals, and a mined transaction is not sent again
+- A GenVM manager restart during a duty no longer turns the transaction into a leader timeout
+- Stagger finalization, one validator at a time, so validators stop reverting with `already finalized`
+- Epochs advance and finalize at their normal pace, and a validator no longer skips an epoch's prime
+- Sync no longer loses events on reorgs or bloom false positives, and the sync cursor never moves back
+- Sync no longer stops at an unagreed leader result, a large block or a slow replay, and keeps syncing when far behind
+- A node that syncs no longer votes Timeout on missing data or state: it waits for sync, or repairs the state
+- Sync fetches at most 16 transactions at a time and uses fewer chain RPC calls near the head
+- Retry a chain HTTP request once after a dropped connection, a 502/503/504 or a rate limit, and fall back to WebSocket
+- A rate limit from the chain RPC no longer opens the circuit breaker; the node slows its reads instead
+- Contracts get the real chain ID, the transaction submitter as `origin_address` and the signer in `gl.message.signer_address`
+- A contract that calls a reverting EVM view gets `evm reverted`, which it can catch
+- Stop crashes on malformed chain data, calldata, GenVM output and leader payloads, and fix data races and a memory leak
+- Exit with a non-zero status after a panic or a failed start worker, so Docker or systemd restarts the node
+- Raise the open-file limit at start-up, so GenVM stops failing with `Too many open files`
+- Autodiscovered GenVM permits follow the container's memory and CPU limits, and 2 or 4 permits now work
+- At start, precompile every GenVM executor, and finish a precompile that was stopped
+- Honor `node.rpc.host`, and allow full-mode nodes to start without a password
+- Omit `result` from JSON-RPC error responses, and stop `gen_syncing` from reporting a huge `blocksBehind`
+
+### Removed
+
+- Remove `node.environment`, `node.dev.disableSubscription` and the `doctor --network` flag
+- `doctor --fix genvm-network` is deprecated: use `genlayernode doctor fix`
+
+### Security
+
+- Keep the chain RPC key, the operator token and the GenVM token out of logs, errors, `doctor` output and GenVM processes
+- Return generic messages for internal API errors, and restrict `POST /snapshot` to `node.admin.snapshot_dir`
+- Write exported account files with owner-only permissions; a validator refuses to start when its operator account is missing
+- Bound the memory that GenVM frames, manager responses, contract output, `gen_call` and `gen_getLogs` can take
+- Limit metric labels and cache `/balance`, so public requests cannot grow metric series or multiply chain RPC calls
+- Public `eth_*` and `zks_*` failures no longer open the circuit breaker that guards validator duties
+- Drop all Linux capabilities from the node container in the release compose file
+- `install.sh` accepts only a checksum signature from the release workflow on a release line
+- Update Go, `golang.org/x/crypto`, `golang.org/x/net`, `labstack/echo`, OpenTelemetry and `gorilla/websocket` for known advisories

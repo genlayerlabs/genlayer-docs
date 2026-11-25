@@ -222,6 +222,15 @@ Number of blocks behind the latest block.
 **Labels:**
 - `node`: Node address (hex format)
 
+**genlayer_node_blocks_held**
+
+Part of `genlayer_node_blocks_behind` that `consensus.log_read_interval` holds: new blocks the sync filter reads at its next read, at most one interval away. The health state does not count them as lag.
+
+**Type:** Gauge
+
+**Labels:**
+- `node`: Node address (hex format)
+
 **genlayer_node_latest_block**
 
 Latest block number in the network.
@@ -234,6 +243,24 @@ Latest block number in the network.
 **genlayer_node_processing_block**
 
 Currently processing block number.
+
+**Type:** Gauge
+
+**Labels:**
+- `node`: Node address (hex format)
+
+**genlayer_node_routed_block**
+
+The last block whose contract events the event router published to the duty watchers. The sync path reads the chain on its own, so `genlayer_node_synced_block` keeps advancing on a node whose router has stopped; this gauge does not. It is 0 before the router routes its first block. The `events.delivery` health condition reads the same value.
+
+**Type:** Gauge
+
+**Labels:**
+- `node`: Node address (hex format)
+
+**genlayer_node_event_delivery_lag_blocks**
+
+How many blocks the chain head (`genlayer_node_latest_block`) is past `genlayer_node_routed_block`; 0 before the first routed block or while the router is at the head. A value that grows while `genlayer_node_routed_block` stays still is a stopped router (`events.delivery` reports `events_delivery_stalled`); a value that is high but falls is a router catching up.
 
 **Type:** Gauge
 
@@ -290,6 +317,20 @@ Contract-state pruning (`node.state.enabled`). All are gauges labelled with `nod
 | `genlayer_node_state_pruning_skipped_contracts_total` | Contracts left unpruned in a sweep because a version is not built on the finalized chain; the next finalization retries them |
 | `genlayer_node_state_pruning_pending_tasks` | Prune tasks the collector has not finished |
 | `genlayer_node_state_disk_bytes` | Estimated on-disk size of all contract state |
+
+**Fee claim preparation metrics**
+
+The validator's fee-claim preparation (`prepareValidatorEpoch`), which keeps its claim floor current so self-stake withdrawals are not held. Validator nodes only. All are gauges labelled with `node`; the `_total` ones count since the process started.
+
+| Metric | Description |
+|---|---|
+| `genlayer_node_fee_claim_floor_lag_epochs` | Current epoch minus the validator's claim floor (`penaltyAssessmentFloor`). It should stay at about 2; a value that keeps growing means the floor does not keep up. Absent until the validator has a claim cursor |
+| `genlayer_node_fee_claim_blocked_epochs` | Epochs the last pass could not finish because a transaction in them is not finalized or its ledgers are not settled |
+| `genlayer_node_fee_claim_legacy_epochs` | Epochs skipped for good because they revert with `LegacyClaimEpoch` (not expected on v0.6 networks) |
+| `genlayer_node_fee_claim_prepare_sends_total` | `prepareValidatorEpoch` transactions sent |
+| `genlayer_node_fee_claim_prepare_send_failures_total` | Passes that ended on a failed read or send; the next pass retries |
+| `genlayer_node_fee_claim_records_prepared_total` | Fee records prepared by those sends |
+| `genlayer_node_fee_claim_held_for_prime_total` | Passes that sent nothing because, without operational keys, preparation waits for the epoch's prime on the operator key |
 
 **genlayer_node_uptime_seconds**
 
@@ -482,6 +523,57 @@ A backlog that keeps growing in a catch-up means the preloads cannot keep up wit
 
 **Type:** Counter
 
+**genlayer_node_sync_fee_state_preloads_queued_total**
+
+Fee state preloads the sync filter queued: one per accepted transaction that has a receipt processing block, to put into the transaction read cache the fee state the replay reads at that block. They run on the same `consensus.transaction_cache.preload_workers` as the history preloads, and a sync that stops drops their backlog the same way. Each finished preload counts once in `genlayer_node_transaction_read_cache_total{flow="sync",method="fee_state"}`, so the difference is the backlog, plus the backlogs that sync restarts dropped:
+
+```promql
+genlayer_node_sync_fee_state_preloads_queued_total
+- sum(genlayer_node_transaction_read_cache_total{flow="sync",method="fee_state"})
+```
+
+The replay's own reads show the effect: `genlayer_node_transaction_read_cache_total{flow="replay",method="fee_state",outcome="hit"}` rises when the preloads finish before the replay reaches the transaction. With `consensus.transaction_cache.enabled: false` a preload does nothing and the query does not apply.
+
+**Type:** Counter
+
+**genlayer_node_sync_log_range_blocks**
+
+Blocks the next log read of the sync asks for. It starts at 201. A read that times out (30 s) is read again at once as two halves, and the next ranges use the half; it does not go below 25. After 10 reads in a row without a timeout it doubles, up to 201. The size is kept when the sync restarts. A value below 201 means the chain RPC cannot answer a full range of logs in time, usually because it is loaded.
+
+**Type:** Gauge
+
+**genlayer_node_sync_log_range_splits_total**
+
+Sync log reads that timed out and were read again at once as two halves. A rise with no sync failure means the node keeps up on smaller reads. When a range of 25 to 49 blocks times out it cannot be split, the sync run fails and the sync backoff (60 s, doubling to 10 min) applies.
+
+**Type:** Counter
+
+**genlayer_node_canonical_height_resolutions_total**
+
+Protocol heights the node resolved to the block identity the chain reported (block number and hash), for snapshot anchors and execution reads. A finalized height is read once and kept; a live height is answered from the reorg detector's retained branch when it holds it, and read from the chain otherwise. A rising `chain` share means live heights the detector does not hold, for example right after a restart or during a reorg.
+
+**Type:** Counter
+
+**Labels:**
+- `source`: `cache` (a retained finalized block), `ring` (the reorg detector's retained live branch), `chain` (a block read), `binding` (an anchor the transaction's first snapshot bound)
+
+**genlayer_node_canonical_detector_stale_heads_total**
+
+Observed heads the node dropped because they were below its canonical tip while the chain still held that tip. Such a head is a late or replayed new-head notification of a block the node already passed, not a reorg, so the node does not rewind for it. A rising count means the chain RPC's new-head subscription sends old headers, for example from a lagging upstream node behind a load balancer.
+
+**Type:** Counter
+
+**genlayer_rollup_ws_head_seeds_total**
+
+Latest-head reads after the new-head subscription reconnected. A subscription delivers only the heads produced while it is live, so the node reads the latest head once the replacement is live and routes it. A rising `recovered` count means heads are produced during reconnects and the node routed them at once instead of with the next head; a rising `error` count means the read failed, and such a head waits for the next pushed one.
+
+**Type:** Counter
+
+**Labels:**
+- `subscription_type`: `newHeads`
+- `outcome`: `recovered` (the latest head was above the last one observed), `current` (nothing was missed), `error` (the read failed)
+- `provider`: the configured chain RPC provider name
+
 **genlayer_node_transaction_read_cache_purges_total**
 
 Times the transaction read cache was emptied. The cache pins its reads by block number, and a reorg can replace a block above the chain's finalized block, so the node empties it when it detects one. A steady rate means the chain reorganizes often; each purge costs the cache, not correctness.
@@ -489,7 +581,7 @@ Times the transaction read cache was emptied. The cache pins its reads by block 
 **Type:** Counter
 
 **Labels:**
-- `reason`: One of `canonical_reorg` (the replay rolled back to the canonical chain), `router_rewind` (the event router rewound over a replaced block range)
+- `reason`: `canonical_reorg` (the shared detector invalidated transaction reads before publishing a reorg, or replay recovery purged the cache). Older nodes emitted `router_rewind` for router-owned purges.
 
 **genlayer_node_transaction_read_cache_evictions_total**
 
@@ -510,6 +602,158 @@ Values the transaction read cache keeps now, per tier and per finality of the bl
 **Labels:**
 - `method`: One of `snapshot`, `fee_state`, `latest_with_effect`
 - `finality`: `settled` (read at or below the chain's finalized block) or `unsettled` (above it)
+
+**genlayer_node_cache_reads_total**
+
+Reads of a cache built from the node's shared cache types, by the name of the cache. An evicting cache holds values the node can read again from their source. A read-write-through cache holds values that must not be lost, in a fast main storage in front of a fallback storage that holds the original.
+
+The canonical chain reports its finalized-header cache activity and size under `cache="canonical-finalized"`.
+
+The consensus contracts report their pinned contract read cache under `cache="pinned-calls"`. It keeps, for 30 seconds and up to 512 entries, the answers of `eth_call` reads pinned by block hash, keyed by block hash, sender, contract and calldata. The state of a block never changes, so a kept answer is never stale; reads by number, by tag or pending are never kept. A `shared` read is an identical read that waited for one in flight instead of calling the chain.
+
+**Type:** Counter
+
+**Labels:**
+- `cache`: The name the cache was given
+- `outcome`: One of `hit` (the cache had the value), `miss` (it had none), `shared` (served by another caller's load of the same key), `fallback` (a read-write-through cache took the value from its fallback storage and now keeps it in main), `error` (a storage call failed)
+
+**genlayer_node_cache_writes_total**
+
+Writes of a read-write-through cache. A write goes to the fallback storage first; `error` means the fallback storage did not take it, and the main storage was left as it was.
+
+**Type:** Counter
+
+**Labels:**
+- `cache`: The name the cache was given
+- `operation`: `set` or `delete`
+- `outcome`: `ok` or `error`
+
+**genlayer_node_cache_evictions_total**
+
+Values a cache dropped by itself or did not keep. Many `expired` mean a TTL is shorter than the time between the reads it should serve; any `capacity` means a size limit is too small for the values the cache should keep. `oversize` and `failed` come from an in-memory cache such as `block-logs` (the shared block-hash log reads): a value above its weight bound is served to the callers of its load but not kept, and a failed load leaves nothing to keep, so the next read loads again. A value nobody read again that is dropped after its TTL is not counted.
+
+**Type:** Counter
+
+**Labels:**
+- `cache`: The name the cache was given
+- `reason`: One of `expired` (a read found its value past its TTL), `capacity` (a live value dropped to make room), `oversize` (a loaded value above the cache's weight bound, served but not kept), `failed` (a load that failed, so nothing was kept)
+
+**genlayer_node_cache_entries**
+
+Number of values a cache keeps now. An evicting cache counts them by the tag its policy gave them, expired values not yet dropped included. A read-write-through cache counts the values in its main storage, with an empty tag.
+
+**Type:** Gauge
+
+**Labels:**
+- `cache`: The name the cache was given
+- `tag`: The tag the cache's policy gave the values; empty when it gave none
+
+**genlayer_node_cache_bytes**
+
+Memory, in bytes, that the values of a cache use now: the values an evicting cache keeps in RAM, or the values in the main storage of a read-write-through cache. It is an estimate, not a measure of the Go heap: the node counts each entry when it stores it, as the size of the key and the value and of everything they reach through pointers, slices, strings and maps. Memory that two entries share is counted for each of them. A cache that keeps its values on disk publishes no value.
+
+**Type:** Gauge
+
+**Labels:**
+- `cache`: The name the cache was given
+
+**genlayer_node_streamer_outbox_entries**
+
+Events the node's event stream holds for its must-not-drop subscribers: published and not yet acknowledged by every subscriber that needs them. The outbox is in memory and has no size limit. In normal work the value returns to a low number after each block. A value that keeps rising means that a subscriber stopped acknowledging; use `genlayer_node_streamer_redeliveries_total` to find it.
+
+**Type:** Gauge
+
+**genlayer_node_streamer_outbox_oldest_timestamp_seconds**
+
+Publish time, in Unix seconds, of the oldest event the event stream still holds. `0` when it holds none. The age of the oldest event is `time() - genlayer_node_streamer_outbox_oldest_timestamp_seconds` for a value above 0.
+
+**Type:** Gauge
+
+**genlayer_node_streamer_redeliveries_total**
+
+Events the event stream sent again to a must-not-drop subscriber, because the subscriber did not acknowledge them within its acknowledgment window (`node.streamer.ack_wait_seconds`). A few after a slow block are normal. A steady rise for one subscriber means that subscriber is slow or stopped.
+
+**Type:** Counter
+
+**Labels:**
+- `topic`: The event topic
+- `subscriber`: The name the subscriber gave when it subscribed
+
+The sync queues use these fixed `buffer` labels:
+
+- `sync-batches`: 1,000 waiting batches. The filter waits when the queue is full. Accepted batches stay in order. This backend publishes no age series.
+- `sync-range-targets`: 1,000 waiting targets. When full, the queue removes pending targets and keeps the newest target. Catch-up also clears pending targets. The dropped counter records the actual number removed, with reason `keep_latest` for overflow or `cleared` for catch-up.
+
+**genlayer_node_buffer_depth**
+
+Items a buffer built from the node's shared buffer type holds now: accepted from a producer and not yet taken by the consumer. A buffer holds work between a producer and a consumer, with a capacity and one rule for what happens when it is full. The series appear when a node component gives its buffer a metrics sink.
+
+The WebSocket queues use these `buffer` labels (the sync queues are listed above):
+
+- `buffer="ws-mux-inbox"` covers upstream subscription inboxes. Each inbox has 64 slots and drops the newest item when full.
+- `buffer="ws-connection-outbox"` covers outbound messages for inbound WebSocket connections. Each outbox uses the configured capacity, which defaults to 256 slots. When a full outbox rejects a message, the handler closes the connection.
+
+The depth and capacity gauges sum the active queues of each kind. For the WebSocket queues, the oldest timestamp is the earliest enqueue time among items still in those queues.
+
+**Type:** Gauge
+
+**Labels:**
+- `buffer`: The name the buffer was given
+
+**genlayer_node_buffer_capacity**
+
+Number of items that can wait before the full-buffer rule applies. A ring buffer can hold one additional item on its way to the consumer, so its depth can exceed its waiting capacity by one. The WebSocket buffers use native channels and their depth cannot exceed their capacity. An individual queue can fill while the aggregate depth is below the aggregate capacity.
+
+**Type:** Gauge
+
+**Labels:**
+- `buffer`: The name the buffer was given
+
+**genlayer_node_buffer_oldest_timestamp_seconds**
+
+Time, in Unix seconds, at which a buffer accepted the oldest item it still holds. `0` when it holds none. The age of the oldest item is `time() - genlayer_node_buffer_oldest_timestamp_seconds` for a value above 0.
+
+**Type:** Gauge
+
+**Labels:**
+- `buffer`: The name the buffer was given
+
+**genlayer_node_buffer_accepted_total**
+
+Items a buffer accepted from its producers. Accepted items are delivered to the consumer, or counted in `genlayer_node_buffer_dropped_total` when a rule or the owner drops them later.
+
+**Type:** Counter
+
+**Labels:**
+- `buffer`: The name the buffer was given
+
+**genlayer_node_buffer_dropped_total**
+
+Items a buffer did not deliver.
+
+**Type:** Counter
+
+**Labels:**
+- `buffer`: The name the buffer was given
+- `reason`: One of `reject` (the buffer was full and the producer got an error), `drop_newest` (the buffer was full and the new item was dropped), `drop_oldest` (the buffer was full and the item that waited longest was dropped), `keep_latest` (the buffer was full and every waiting item was dropped for the new one), `cleared` (the owner emptied the buffer)
+
+**genlayer_node_buffer_blocked_total**
+
+Times a producer had to wait because a buffer was full. Only a buffer whose rule is to make the producer wait counts here.
+
+**Type:** Counter
+
+**Labels:**
+- `buffer`: The name the buffer was given
+
+**genlayer_node_buffer_blocked_seconds_total**
+
+Time, in seconds, that producers waited because a buffer was full. Divide its rate by the rate of `genlayer_node_buffer_blocked_total` for the mean wait.
+
+**Type:** Counter
+
+**Labels:**
+- `buffer`: The name the buffer was given
 
 **Fee Flow Metrics (v0.6 ConsensusMainWithFees)**
 

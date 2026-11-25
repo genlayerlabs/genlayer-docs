@@ -1,6 +1,6 @@
 ### gen_getTransactionData
 
-Retrieves the on-chain transaction data for one round together with the contract execution outputs (`returnData`, `leaderPublicData`) recovered from the node's local trace store. If the node no longer holds the trace (restart, pruning), the on-chain fields are still returned with `returnData: null` — the transaction is never replayed.
+Retrieves the on-chain transaction data for one round together with the contract execution outputs (`returnData`, `leaderPublicData`) recovered from the node's local trace store. If the node has no local trace (it did not execute the transaction, restarted, or pruned the trace), the on-chain fields are still returned with `returnData: null` — the transaction is never replayed.
 
 **Method:** `gen_getTransactionData`
 
@@ -95,9 +95,9 @@ An object with the on-chain transaction fields for the selected round plus the l
 **Notes:**
 
 - Multi-round appeal data (`roundData`) and fee accounting stay on `gen_getTransactionReceipt`; debug output (stdout, stderr, genvm_log) and trace replay stay on `gen_dbg_traceTransaction`.
-- `returnData` and `leaderPublicData` come from the node's local trace store only — a node that never executed the transaction (or pruned the trace) serves `returnData: null` and `leaderPublicData: "0x"` without replaying.
+- `returnData` and `leaderPublicData` come from the node's local trace store only. Sync skips executions without a state effect, including `FinishedWithError` and other non-Return outcomes. If this node did not execute that outcome, it can return `returnData: null` and `leaderPublicData: "0x"`; the receipt still reports the execution result code. Request [`gen_dbg_traceTransaction`](gen_dbg_traceTransaction.md) to re-execute on demand when no trace is stored.
 - **Retention.** `returnData` and `leaderPublicData` come from the trace store, which operators bound with `node.trace.retention_blocks` (default 1,000,000 blocks; `0` disables). Past the watermark this endpoint answers from chain data with `returnData: null`, exactly as it does for a transaction the node never executed.
-- The trace is persisted asynchronously after a transaction is accepted, so a query issued immediately after acceptance can still return `returnData: null`. Clients that need the execution output should poll until it appears (or fall back to `gen_dbg_traceTransaction`, which replays on demand).
+- For executions replayed during sync, the trace is persisted asynchronously after acceptance, so an immediate query can return `returnData: null`. Polling cannot recover an execution that sync skipped; clients needing its output should request `gen_dbg_traceTransaction`.
 - An explicit `round` beyond the rounds the transaction has returns a `-32001` error.
 - A malformed `txId` (not a 32-byte hex string) returns `-32602`; a transaction not found on-chain returns `-32001`.
 - This endpoint is in the `genlayer` group and is enabled by default.
