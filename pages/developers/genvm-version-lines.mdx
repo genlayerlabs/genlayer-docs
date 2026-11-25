@@ -223,10 +223,10 @@ Without value, `__handle_undefined_method__` is called if you define it, and `__
 | Cause | Fix |
 |:--|:--|
 | v0.4 code with a `# v0.2.x` first line | Remove the header. |
-| v0.2 code that declares a runner alias or a hash the Studio does not know, so it went to the newest line | Pin a v0.2 runner hash, such as `py-genlayer:1jb45aa8ynh2a9c9xn3b7qqh8sm5q93hwfp7jqmwsfhh8jpz09h6`, or add a `# v0.2.16` first line. |
+| v0.2 code that declares a runner alias, such as `py-genlayer:latest`, so it went to the newest line | Pin a v0.2 runner hash, such as `py-genlayer:1jb45aa8ynh2a9c9xn3b7qqh8sm5q93hwfp7jqmwsfhh8jpz09h6`. |
+| A runner hash that no executor line on the Studio ships | Replace it with a runner hash of the line you target. A version header does not help: it only changes the line, and the hash is missing on every line. |
 | A v0.3 runner hash, such as `py-genlayer:babwp9t37...` | Port the code to v0.4 and use a v0.4 runner hash; see [Migrate a contract from v0.3 to v0.4](#migrate-a-contract-from-v03-to-v04). |
 | `Depends` entries from both lines in one contract | Use runners from a single line. |
-| A v0.2 deploy after v0.2 deploys closed on that Studio | Migrate the contract to v0.4. |
 
 ## v0.2 deploy window
 
