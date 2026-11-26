@@ -15,6 +15,28 @@ For transfers and staking, connect to the **GenLayer Chain RPC**. Intelligent-co
 
 ---
 
+## Testnet Clarke
+
+Public testnet running GenVM v0.4. It is a separate deployment of the Bradbury Phase 3 contracts on the same GenLayer Chain, so it shares Bradbury's chain ID, RPC, explorer, and GEN balances.
+
+| Setting | Value |
+|:--|:--|
+| **GenLayer RPC** | Not published yet |
+| **GenLayer Chain RPC** | `https://rpc.testnet-chain.genlayer.com` |
+| **Chain ID** | 4221 |
+| **Currency** | GEN |
+| **Chain Explorer** | [scan.testnet-chain.genlayer.com](https://scan.testnet-chain.genlayer.com/) |
+| **Faucet** | [testnet-faucet.genlayer.foundation](https://testnet-faucet.genlayer.foundation) |
+| **AddressManager** | `0xA79dA7c238905fD0F10298cD579B0733ad1B1d0E` |
+
+<Callout type="warning">
+Chain ID **4221** does not tell Clarke from Bradbury: both deployments live on the same chain. Select the deployment explicitly with the `testnetClarke` (genlayer-js) or `testnet_clarke` (genlayer-py, genlayer-test) preset, and verify that the AddressManager is the one above.
+</Callout>
+
+Transactions and staking go through the GenLayer Chain RPC. Reads such as `gen_call` need a Clarke GenLayer node RPC, which is not published yet.
+
+---
+
 ## Testnet Bradbury
 
 Production-like testnet with real AI/LLM workloads.
@@ -93,7 +115,7 @@ Local development with full control. Requires [GenLayer Studio](/developers/inte
 
 ## GenLayer Chain (L2)
 
-The underlying Arbitrum Orbit L2 for Bradbury Phase 3. GEN is its native currency, so balances and gas are in GEN. You typically don't need to interact with this directly — the GenLayer RPC passes through supported `eth_*` calls. But if you need direct L2 access (e.g., token transfers, contract debugging at the EVM level), you can add this chain to your wallet.
+The underlying Arbitrum Orbit L2 for Clarke and Bradbury Phase 3. GEN is its native currency, so balances and gas are in GEN. You typically don't need to interact with this directly — the GenLayer RPC passes through supported `eth_*` calls. But if you need direct L2 access (e.g., token transfers, contract debugging at the EVM level), you can add this chain to your wallet.
 
 | Setting | Value |
 |:--|:--|
@@ -108,17 +130,17 @@ The underlying Arbitrum Orbit L2 for Bradbury Phase 3. GEN is its native currenc
 
 ## Network Comparison
 
-| | Bradbury | Studionet | Studio dev | Localnet |
-|---|---|---|---|---|
-| **Purpose** | Production-like testing | Hosted stable dev | Next-stack RC validation | Local dev |
-| **Setup** | None | None | Matching RC tooling | Docker or GLSim |
-| **Persistence** | Persistent | Temporary | Temporary; resets expected | Local only |
-| **LLM execution** | Real models | Real models | Real models | Configurable |
-| **Faucet** | [Available](https://testnet-faucet.genlayer.foundation) | Built-in | Built-in | Built-in |
+| | Clarke | Bradbury | Studionet | Studio dev | Localnet |
+|---|---|---|---|---|---|
+| **Purpose** | Production-like testing on GenVM v0.4 | Production-like testing | Hosted stable dev | Next-stack RC validation | Local dev |
+| **Setup** | None | None | None | Matching RC tooling | Docker or GLSim |
+| **Persistence** | Persistent | Persistent | Temporary | Temporary; resets expected | Local only |
+| **LLM execution** | Real models | Real models | Real models | Real models | Configurable |
+| **Faucet** | [Available](https://testnet-faucet.genlayer.foundation) | [Available](https://testnet-faucet.genlayer.foundation) | Built-in | Built-in | Built-in |
 
 ## Recommended Flow
 
 1. **Start on Studionet** — zero setup, open [studio.genlayer.com](https://studio.genlayer.com)
 2. **Use Studio dev only for release-candidate validation** — open [studio-dev.genlayer.com](https://studio-dev.genlayer.com) with the matching RC tooling
 3. **Move to Localnet** — when you need full control and fast iteration
-4. **Deploy to Bradbury** — when ready for production-like testing with real AI workloads
+4. **Deploy to Clarke or Bradbury** — when ready for production-like testing with real AI workloads

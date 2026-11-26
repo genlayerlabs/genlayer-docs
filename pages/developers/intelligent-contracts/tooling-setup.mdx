@@ -318,6 +318,12 @@ networks:
       - "${ACCOUNT_PRIVATE_KEY_2}"
 ```
 
+### Testnet Clarke
+
+**Setup:** account with private keys, genlayer-test 0.30.2 or later
+
+Same as Bradbury, on the Clarke deployment: pass `--network testnet_clarke` and configure its accounts under `networks.testnet_clarke`. Reads need a Clarke GenLayer node RPC, which is not published yet; see [Networks](/developers/networks#testnet-clarke).
+
 ## IDE Support
 
 The [GenLayer VS Code Extension](https://marketplace.visualstudio.com/items?itemName=genlayer-labs.genlayer) provides syntax highlighting, snippets, and language support for Intelligent Contracts. Works with VS Code, Cursor, and other VS Code-compatible editors.

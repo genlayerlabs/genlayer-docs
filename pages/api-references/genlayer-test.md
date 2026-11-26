@@ -155,6 +155,11 @@ networks:
       - "${ACCOUNT_PRIVATE_KEY_2}"
     from: "${ACCOUNT_PRIVATE_KEY_1}"
 
+  testnet_clarke:
+    accounts:
+      - "${ACCOUNT_PRIVATE_KEY_1}"
+    from: "${ACCOUNT_PRIVATE_KEY_1}"
+
 paths:
   contracts: "contracts"
   artifacts: "artifacts"
@@ -163,7 +168,7 @@ environment: .env
 ```
 
 Key options:
-- **Networks**: `localnet` and `studionet` work out of the box. `testnet_bradbury` requires account keys.
+- **Networks**: `localnet` and `studionet` work out of the box. `testnet_bradbury` and `testnet_clarke` (genlayer-test 0.30.2 or later) require account keys.
 - **Paths**: Where your contracts and artifacts live.
 - **Environment**: `.env` file for private keys.
 

@@ -28,7 +28,7 @@ const client = createClient({
 });
 ```
 
-Use `testnetBradbury` or `studionet` for the corresponding hosted network. The v0.123 preview uses the matching RC's `studioDevnet` definition, which binds chain ID 61997, its RPC, and its consensus deployment together.
+Use `testnetClarke`, `testnetBradbury`, or `studionet` for the corresponding hosted network. `testnetClarke` needs genlayer-js 2.2.0 or later; it shares chain ID 4221 with `testnetBradbury` and differs only in its contract addresses. The v0.123 preview uses the matching RC's `studioDevnet` definition, which binds chain ID 61997, its RPC, and its consensus deployment together.
 
 ## Read a contract
 

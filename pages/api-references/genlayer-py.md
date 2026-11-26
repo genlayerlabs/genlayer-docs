@@ -24,6 +24,8 @@ account = create_account()
 client = create_client(chain=localnet, account=account)
 ```
 
+Use `testnet_clarke` (genlayer-py 0.19.2 or later) or `testnet_bradbury` for the public testnets: both are chain ID 4221 and differ only in their contract addresses.
+
 Use the matching v0.19 RC's Studio-dev chain definition for the v0.123 preview. Do not substitute stable Studionet: Studio-dev is chain ID 61997 and has its own consensus deployment.
 
 ## Read a contract
