@@ -78,7 +78,8 @@ Deploy to different networks based on your development stage:
 | **Localnet** | Local development | Fast, resettable testing and fee profiling |
 | **Studionet** | Stable hosted Studio | Collaboration and stable hosted examples |
 | **Studio-dev** | v0.123 / v0.6 preview | Release-candidate compatibility testing |
-| **Bradbury** | Persistent public testnet | Production-like application validation |
+| **Clarke** | Persistent public testnet | Production-like application validation |
+| **Bradbury** | Preview public testnet | Trying new protocol features |
 
 [Explore Network Configuration →](./deploying/network-configuration)
 
@@ -89,7 +90,7 @@ Follow this recommended progression:
 1. **Develop and measure locally** on `localnet`.
 2. **Commit the generated fee profile** and test its low, standard, and high policies.
 3. **Test the release candidate** on `studio-dev` with matching SDK and CLI RCs.
-4. **Use Studionet or Bradbury** when you need the corresponding stable hosted environment.
+4. **Use Studionet or Clarke** when you need the corresponding stable hosted environment, and Bradbury to try preview protocol features.
 
 <Callout emoji="💡">
   `studio-next.genlayer.com`, if enabled, is a browser alias for the preview. SDKs, CLI profiles, and wallets should keep using the canonical Studio-dev RPC and chain ID rather than treating it as a separate network.

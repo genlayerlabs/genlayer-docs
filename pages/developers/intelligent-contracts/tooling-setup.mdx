@@ -298,25 +298,31 @@ Hosted Studio — convenient when you don't want to run Docker locally. Rate lim
 gltest tests/integration/ -v -s --network studionet
 ```
 
-### Testnet Bradbury
+### Testnet Clarke
 
-**Setup:** account with private keys
+**Setup:** account with private keys, genlayer-test 0.30.2 or later
 
-The most realistic environment — the actual GenLayer testnet with real validators. You don't get full validator logs like you do with local Studio, so this is best for final pre-production validation rather than active debugging.
+The most realistic environment — the public GenLayer testnet for testing contracts, with real validators. You don't get full validator logs like you do with local Studio, so this is best for final pre-production validation rather than active debugging. Reads need a Clarke GenLayer node RPC, which is not published yet; see [Networks](/developers/networks#testnet-clarke).
 
 ```bash
-gltest tests/integration/ -v -s --network testnet_bradbury
+gltest tests/integration/ -v -s --network testnet_clarke
 ```
 
 Configure accounts in `gltest.config.yaml`:
 
 ```yaml
 networks:
-  testnet_bradbury:
+  testnet_clarke:
     accounts:
       - "${ACCOUNT_PRIVATE_KEY_1}"
       - "${ACCOUNT_PRIVATE_KEY_2}"
 ```
+
+### Testnet Bradbury
+
+**Setup:** account with private keys
+
+Preview testnet for trying new protocol features before they reach Clarke. Same setup as Clarke: pass `--network testnet_bradbury` and configure its accounts under `networks.testnet_bradbury`.
 
 ## IDE Support
 

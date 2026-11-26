@@ -1,5 +1,5 @@
 ---
-description: "Choose and configure Localnet, Studionet, the Studio development preview, or Bradbury."
+description: "Choose and configure Localnet, Studionet, the Studio development preview, Clarke, or Bradbury."
 ---
 
 import { Callout } from 'nextra-theme-docs'
@@ -24,7 +24,8 @@ The stable built-in aliases are:
 |:--|:--|
 | `localnet` | Local Studio or GLSim; full control and resets |
 | `studionet` | Stable hosted Studio at `studio.genlayer.com` |
-| `testnet-bradbury` | Production-like testing with real AI workloads |
+| `testnet-clarke` | Production-like contract testing with real AI workloads |
+| `testnet-bradbury` | Preview testnet for new protocol features |
 
 The v0.123 / Consensus v0.6 release-candidate tooling adds `studio-dev`, backed by the JavaScript SDK's `studioDevnet` chain definition:
 
@@ -69,14 +70,14 @@ Both have browser faucets. Studio-dev is temporary: expect resets and do not dep
 
 ## Public testnets
 
-Use Bradbury for production-like contract testing:
+Use Clarke for production-like contract testing:
 
 ```bash
-genlayer network set testnet-bradbury
+genlayer network set testnet-clarke
 genlayer deploy --contract contracts/my_contract.py
 ```
 
-Get test GEN from the [testnet faucet](https://testnet-faucet.genlayer.foundation/).
+Get test GEN from the [testnet faucet](https://testnet-faucet.genlayer.foundation/). Use `testnet-bradbury` instead to try preview protocol features.
 
 ## Custom deployment profiles
 
@@ -101,7 +102,7 @@ The CLI also accepts explicit consensus-address overrides. Run `genlayer network
 1. Develop and profile contract behavior on Localnet.
 2. Use stable Studionet for quick hosted collaboration.
 3. Use Studio-dev only when the application must validate the release-candidate stack.
-4. Deploy to Bradbury for persistent, production-like testnet validation.
+4. Deploy to Clarke for persistent, production-like testnet validation.
 
 ## Next steps
 
