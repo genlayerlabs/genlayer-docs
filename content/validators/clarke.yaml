@@ -24,3 +24,9 @@ consensus:
   chainid: "4221" # DECIMAL chain id of this deployment.
   manifestpath: "configs/node/protocol-manifest.json" # Where clarke.protocol-manifest.json is saved; a relative path resolves against the node root.
   genesis: 713692 # Genesis block number for this consensus deployment (AddressManager deployment block).
+
+# node configuration
+# Add this one key to the node: section you already have. Do not replace the
+# whole section: it also holds your mode and validator wallet address.
+node:
+  network: "clarke" # Network name for logs, metrics, the ops API and doctor messages. Node v0.6.1 does not detect Clarke from the AddressManager address, so set it here.

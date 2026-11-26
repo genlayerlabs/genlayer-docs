@@ -754,9 +754,17 @@ consensus:
   manifestpath: "configs/node/protocol-manifest.json" # Where clarke.protocol-manifest.json is saved; a relative path resolves against the node root.
   genesis: 713692 # Genesis block number for this consensus deployment (AddressManager deployment block).
 
+# node configuration
+# Add this one key to the node: section you already have. Do not replace the
+# whole section: it also holds your mode and validator wallet address.
+node:
+  network: "clarke" # Network name for logs, metrics, the ops API and doctor messages. Node v0.6.1 does not detect Clarke from the AddressManager address, so set it here.
+
 ```
 
 Clarke is a separate consensus deployment on the same chain as Bradbury Phase 3 (chain id 4221). The RPC and WebSocket URLs are the same: `consensus.consensusaddress` and the manifest select Clarke. Clarke needs node v0.6.1 or later.
+
+**Network name.** Node v0.6.1 does not detect Clarke from its AddressManager address, so set `node.network` to `"clarke"`. Add this key to your existing `node:` section rather than replacing the section. The name only labels logs, metrics, the ops API and `doctor` messages: a missing name does not stop the node.
 
 **Protocol manifest.** Download the Clarke manifest and save it as `configs/node/protocol-manifest.json`. Run this from the node directory (the extracted release, or the directory with your `docker-compose.yaml`):
 
