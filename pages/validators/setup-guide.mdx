@@ -724,6 +724,49 @@ The binary reads it from that path. Docker Compose mounts the same file into the
 
 The node sends the key in the `X-AccessKey` header on both the RPC and WebSocket connections. To use a different header name, set `rollup.genlayerchainrpckeyheader`.
 
+##### Testnet Clarke
+
+```yaml copy
+# Clarke network configuration (GenLayer public testnet on the Bradbury rollup, chain id 4221).
+#
+# Put these values into configs/node/config.yaml, and save the Clarke protocol
+# manifest (clarke.protocol-manifest.json) as configs/node/protocol-manifest.json.
+# They come from the genlayer-consensus deployment record
+# deployments/clarke.json and its sealed protocol manifest.
+
+# rollup configuration
+rollup:
+  genlayerchainrpcurl: "https://rpc.testnet-chain.genlayer.com/" # GenLayer Chain RPC URL
+  genlayerchainwebsocketurl: "wss://rpc.testnet-chain.genlayer.com/" # GenLayer Chain WebSocket URL
+  # The WebSocket refuses a connection without an API key. The chain is
+  # operated by Conduit: create a key at https://app.conduit.xyz/rpc-keys and
+  # set it in the environment as
+  # GENLAYERNODE_ROLLUP_GENLAYERCHAINRPCKEY (or in the file that
+  # genlayerchainrpckeyfile names), never in these URLs or this file.
+  # The node sends it in the X-AccessKey header on the RPC and WebSocket
+  # connections.
+  provider: "conduit" # Rollup operator name; surfaces as the "provider" label on RPC-driven metrics.
+
+# consensus contracts configuration
+consensus:
+  consensusaddress: "0xA79dA7c238905fD0F10298cD579B0733ad1B1d0E" # AddressManager contract address. Shares chain 4221 with Bradbury Phase 3: the address is what selects Clarke.
+  chainid: "4221" # DECIMAL chain id of this deployment.
+  manifestpath: "configs/node/protocol-manifest.json" # Where clarke.protocol-manifest.json is saved; a relative path resolves against the node root.
+  genesis: 713692 # Genesis block number for this consensus deployment (AddressManager deployment block).
+
+```
+
+Clarke is a separate consensus deployment on the same chain as Bradbury Phase 3 (chain id 4221). The RPC and WebSocket URLs are the same: `consensus.consensusaddress` and the manifest select Clarke. Clarke needs node v0.6.1 or later.
+
+**Protocol manifest.** Download the Clarke manifest and save it as `configs/node/protocol-manifest.json`. Run this from the node directory (the extracted release, or the directory with your `docker-compose.yaml`):
+
+```sh copy
+mkdir -p configs/node
+curl -fsSL https://docs.genlayer.com/validators/clarke.protocol-manifest.json -o configs/node/protocol-manifest.json
+```
+
+**WebSocket API key.** Clarke uses the same WebSocket endpoint as Bradbury, so it needs the same Conduit API key. Follow the steps in the Bradbury section above.
+
 #### Overriding Configuration with Environment Variables
 
 Any configuration value in `config.yaml` can be overridden using environment variables with the prefix `GENLAYERNODE_`. Only keys that exist in the file are picked up: a key that is commented out, such as `consensus.genesis` in the template, must be uncommented before its variable has an effect.

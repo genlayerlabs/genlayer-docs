@@ -9,7 +9,7 @@ const path = require('path');
  * /validators/<network>.protocol-manifest.json. The public copies are build
  * output (gitignored).
  */
-const MANIFESTS = ['bradbury.protocol-manifest.json'];
+const MANIFESTS = ['bradbury.protocol-manifest.json', 'clarke.protocol-manifest.json'];
 
 function publishNetworkManifests() {
   const sourceDir = path.join(process.cwd(), 'content/validators');
