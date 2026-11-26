@@ -43,7 +43,15 @@ for path in "${SYNC_PATHS[@]}"; do
         echo "  Found $file_count files in $path"
         
         # Always run rsync with delete to ensure stale files are removed even when source is empty
-        rsync -av --delete "$source_path/" "$target_path/"
+        # The Clarke network files were added to content/validators by hand:
+        # node v0.6.1 supports Clarke but does not ship them. "P" protects
+        # them from --delete while the source lacks them and still lets the
+        # source overwrite them once the node ships configs/node/clarke.*.
+        # Remove these two rules (and add Clarke to node-sync-params.sh) then.
+        rsync -av --delete \
+            --filter='P /clarke.yaml' \
+            --filter='P /clarke.protocol-manifest.json' \
+            "$source_path/" "$target_path/"
         total_synced=$((total_synced + file_count))
         
         if [[ $file_count -gt 0 ]]; then

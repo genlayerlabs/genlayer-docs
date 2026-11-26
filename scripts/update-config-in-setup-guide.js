@@ -6,13 +6,18 @@ const path = require('path');
 // A generator that cannot find its source or its target block fails the build.
 const fail = (msg) => { console.error(msg); process.exitCode = 1; };
 
+// Each network has a "##### Testnet <name>" heading followed by a yaml block.
+const NETWORKS = [
+  { name: 'Bradbury', file: 'bradbury.yaml' },
+  { name: 'Clarke', file: 'clarke.yaml' },
+];
+
 /**
  * Update the setup guide with the latest config from content/validators/config.yaml
- * and the network-specific config from content/validators/bradbury.yaml
+ * and the network-specific configs from content/validators/<network>.yaml
  */
 function updateConfigInSetupGuide() {
   const configPath = path.join(process.cwd(), 'content/validators/config.yaml');
-  const bradburyPath = path.join(process.cwd(), 'content/validators/bradbury.yaml');
   const setupGuidePath = path.join(process.cwd(), 'pages/validators/setup-guide.mdx');
 
   if (!fs.existsSync(setupGuidePath)) {
@@ -38,19 +43,21 @@ function updateConfigInSetupGuide() {
     }
   }
 
-  // Update Bradbury network config (rollup + consensus)
-  if (fs.existsSync(bradburyPath)) {
-    const bradburyContent = fs.readFileSync(bradburyPath, 'utf8');
-    const bradburyPattern = /(##### Testnet Bradbury\s*```yaml[^\n]*\n)([\s\S]*?)(\n```)/;
+  // Update the network config blocks (rollup + consensus)
+  for (const { name, file } of NETWORKS) {
+    const networkPath = path.join(process.cwd(), 'content/validators', file);
+    if (!fs.existsSync(networkPath)) continue;
+    const networkContent = fs.readFileSync(networkPath, 'utf8');
+    const networkPattern = new RegExp(`(##### Testnet ${name}\\s*\`\`\`yaml[^\\n]*\\n)([\\s\\S]*?)(\\n\`\`\`)`);
 
-    if (bradburyPattern.test(setupGuideContent)) {
+    if (networkPattern.test(setupGuideContent)) {
       setupGuideContent = setupGuideContent.replace(
-        bradburyPattern,
-        (_, before, _old, after) => before + bradburyContent + after
+        networkPattern,
+        (_, before, _old, after) => before + networkContent + after
       );
-      console.log(`Updated Bradbury config block at ${new Date().toISOString()}`);
+      console.log(`Updated ${name} config block at ${new Date().toISOString()}`);
     } else {
-      fail('Could not find Bradbury config pattern in setup guide');
+      fail(`Could not find ${name} config pattern in setup guide`);
     }
   }
 

@@ -9,7 +9,7 @@
 // - every generated page block contains its source file verbatim (catches
 //   generators that drop, duplicate or rewrite content, e.g. `$$` -> `$`);
 // - sanitized files are sanitized (no live RPC URLs, no alloy service);
-// - the Bradbury manifest is valid JSON and matches bradbury.yaml;
+// - each network manifest (Bradbury, Clarke) is valid JSON and matches its yaml;
 // - no Asimov references in validator and node API pages;
 // - no changelog version disappears compared with BASE_REF (default origin/main),
 //   except a release candidate: the node removes rc changelog files on purpose.
@@ -73,6 +73,8 @@ const setup = 'pages/validators/setup-guide.mdx';
 const monitoring = 'pages/validators/monitoring.mdx';
 sameBlock('config', setup, 'You can use the following example configuration', 'yaml', read('content/validators/config.yaml'));
 sameBlock('config_bradbury', setup, '##### Testnet Bradbury', 'yaml', read('content/validators/bradbury.yaml'));
+// Clarke is not synced yet (added by hand until the node ships it); its block is generated the same way.
+sameBlock('config_clarke', setup, '##### Testnet Clarke', 'yaml', read('content/validators/clarke.yaml'));
 sameBlock('docker_compose', setup, 'Create a `docker-compose.yaml` file with the following content:', 'yaml', read('content/validators/docker-compose.yaml'));
 sameBlock('env_example', setup, 'Set the required environment variables in a `.env` file:', 'env', read('content/validators/env.example'));
 sameBlock('alloy_config', monitoring, 'Create or update ./alloy-config.river', 'river', read('content/validators/alloy-config.river'));
@@ -96,20 +98,23 @@ if (/^  alloy:/m.test(read('content/validators/docker-compose.yaml'))) {
   fail('docker_compose: the alloy service must be removed (sanitize-docker-compose.sh)');
 }
 
-// 4. Manifest matches the Bradbury block.
-try {
-  const manifest = JSON.parse(read('content/validators/bradbury.protocol-manifest.json'));
-  const bradbury = read('content/validators/bradbury.yaml');
-  const address = (bradbury.match(/consensusaddress: "([^"]+)"/) || [])[1];
-  const chainid = (bradbury.match(/chainid: "([^"]+)"/) || [])[1];
-  if (!address || manifest.registry.toLowerCase() !== address.toLowerCase()) {
-    fail(`manifest: registry ${manifest.registry} does not match bradbury.yaml consensusaddress ${address}`);
+// 4. Each network manifest matches its config block.
+for (const network of ['bradbury', 'clarke']) {
+  const manifestFile = `content/validators/${network}.protocol-manifest.json`;
+  try {
+    const manifest = JSON.parse(read(manifestFile));
+    const config = read(`content/validators/${network}.yaml`);
+    const address = (config.match(/consensusaddress: "([^"]+)"/) || [])[1];
+    const chainid = (config.match(/chainid: "([^"]+)"/) || [])[1];
+    if (!address || manifest.registry.toLowerCase() !== address.toLowerCase()) {
+      fail(`manifest: registry ${manifest.registry} does not match ${network}.yaml consensusaddress ${address}`);
+    }
+    if (!chainid || String(manifest.chainId) !== chainid) {
+      fail(`manifest: chainId ${manifest.chainId} does not match ${network}.yaml chainid ${chainid}`);
+    }
+  } catch (e) {
+    fail(`manifest: ${manifestFile} is not valid JSON (${e.message})`);
   }
-  if (!chainid || String(manifest.chainId) !== chainid) {
-    fail(`manifest: chainId ${manifest.chainId} does not match bradbury.yaml chainid ${chainid}`);
-  }
-} catch (e) {
-  fail(`manifest: content/validators/bradbury.protocol-manifest.json is not valid JSON (${e.message})`);
 }
 
 // 5. Asimov is retired.
