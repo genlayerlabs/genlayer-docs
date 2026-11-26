@@ -10,7 +10,7 @@ Usage:
 Checks:
     1. Complete contracts must not use "test" or "latest" as runner hash
     2. All complete contracts must pass genvm-lint lint (AST checks)
-    3. Runner versions should be consistent across all examples
+    3. Runner hashes must be listed in RUNNER_LINES for some executor line
     4. GenLayer snippets must be valid Python (syntax check)
     5. Marked snippets must pass lint and API checks by default; others are advisory (--lint-snippets)
     6. Behavioural tests for the Code Snippets page (scripts/test-snippets.py)
@@ -29,6 +29,20 @@ DOCS_ROOT = Path(__file__).parent.parent / "pages"
 DEPENDS_RE = re.compile(r'"Depends"\s*:\s*"([^:]+):([^"]+)"')
 CODE_BLOCK_RE = re.compile(r"```py(?:thon)?[^\n]*\n(.*?)```", re.DOTALL)
 DISALLOWED_HASHES = {"test", "latest"}
+
+# Runner hashes examples may pin, per GenVM executor line
+RUNNER_LINES = {
+    "v0.2": {
+        "py-genlayer": "1jb45aa8ynh2a9c9xn3b7qqh8sm5q93hwfp7jqmwsfhh8jpz09h6",
+        "py-lib-genlayermodelwrappers": "1jb45aa8ynh2a9c9xn3b7qqh8sm5q93hwfp7jqmwsfhh8jpz09h6",
+    },
+    "v0.4": {
+        "py-genlayer": "kzybg95x1gn21dw72m7hyg0maaap04n4nx55j9yt6fkdqxtz6bz0",
+        "py-genlayer-multi": "ys9w7shpvsdswe2fhrxh7agke954catkqb28cngq5924zw9bzx80",
+    },
+}
+# Line whose SDK the wrapped snippets use
+SNIPPET_LINE = "v0.2"
 
 # Old API → new API. Checked in both code blocks and prose.
 DEPRECATED_APIS = {
@@ -78,9 +92,8 @@ def extract_python_blocks(mdx_path: Path) -> list[dict]:
 
 
 def check_runner_versions(blocks: list[tuple[Path, dict]]) -> list[str]:
-    """Check that no contract uses test/latest and versions are consistent."""
+    """Check that no contract uses test/latest and every pin is a known runner hash."""
     errors = []
-    runner_versions: dict[str, set[str]] = {}
 
     for mdx_path, block in blocks:
         rel = mdx_path.relative_to(DOCS_ROOT)
@@ -90,16 +103,14 @@ def check_runner_versions(blocks: list[tuple[Path, dict]]) -> list[str]:
                     f"{rel}:{block['line']}: {name} uses '{hash_val}' — "
                     f"pin to a specific runner hash"
                 )
-            else:
-                runner_versions.setdefault(name, set()).add(hash_val)
-
-    # Check consistency — all examples should use the same runner version
-    for name, versions in runner_versions.items():
-        if len(versions) > 1:
-            errors.append(
-                f"Inconsistent {name} versions across examples: "
-                + ", ".join(sorted(versions))
-            )
+                continue
+            known = {line: runners[name] for line, runners in RUNNER_LINES.items() if name in runners}
+            if hash_val not in known.values():
+                listed = ", ".join(f"{line}: {h}" for line, h in known.items()) or "none"
+                errors.append(
+                    f"{rel}:{block['line']}: unknown {name} runner hash {hash_val} "
+                    f"(known: {listed}; add new lines to RUNNER_LINES)"
+                )
 
     return errors
 
@@ -414,12 +425,7 @@ def main():
     required_snippets = [(path, block) for path, block in all_snippets if block["lint_required"]]
     selected_snippets = all_snippets if args.lint_snippets else required_snippets
     if selected_snippets and not args.check_versions_only:
-        # Get runner hash from first contract for the wrapper
-        runner_hash = "test"
-        for _, block in all_contracts:
-            if block["depends"].get("py-genlayer"):
-                runner_hash = block["depends"]["py-genlayer"]
-                break
+        runner_hash = RUNNER_LINES[SNIPPET_LINE]["py-genlayer"]
 
         print("Linting wrapped GenLayer snippets...")
         snippet_warnings = 0

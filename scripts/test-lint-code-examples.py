@@ -53,5 +53,38 @@ class RequiredSnippetTests(unittest.TestCase):
         self.assertEqual(check.call_args.args[0], self.example["code"])
 
 
+class RunnerVersionTests(unittest.TestCase):
+    page = lint.DOCS_ROOT / "developers/example.mdx"
+
+    def check(self, *pins):
+        blocks = [
+            (self.page, {"line": i + 1, "depends": dict([pin.split(":", 1)])})
+            for i, pin in enumerate(pins)
+        ]
+        return lint.check_runner_versions(blocks)
+
+    def pin(self, line, runner="py-genlayer"):
+        return f"{runner}:{lint.RUNNER_LINES[line][runner]}"
+
+    def test_pins_of_different_lines_pass(self):
+        self.assertEqual(self.check(self.pin("v0.2"), self.pin("v0.4")), [])
+
+    def test_unknown_hash_is_rejected(self):
+        errors = self.check(self.pin("v0.2"), "py-genlayer:" + "x" * 52)
+        self.assertEqual(len(errors), 1)
+        self.assertIn("unknown py-genlayer runner hash", errors[0])
+        self.assertIn(lint.RUNNER_LINES["v0.4"]["py-genlayer"], errors[0])
+
+    def test_unknown_runner_is_rejected(self):
+        errors = self.check("py-unknown:" + lint.RUNNER_LINES["v0.2"]["py-genlayer"])
+        self.assertEqual(len(errors), 1)
+        self.assertIn("unknown py-unknown runner hash", errors[0])
+
+    def test_test_hash_is_rejected(self):
+        errors = self.check("py-genlayer:test")
+        self.assertEqual(len(errors), 1)
+        self.assertIn("pin to a specific runner hash", errors[0])
+
+
 if __name__ == "__main__":
     unittest.main()

@@ -110,6 +110,10 @@ One Python environment cannot hold two versions of `genlayer-py`. Run the same p
 
 Once every Studio your app talks to answers `sim_getFeeConfig`, remove the old SDK and the probe. The v0.6 path then follows the rest of this guide, starting with fee submission below.
 
+## GenVM v0.2 and v0.4
+
+Studio v0.123 adds the GenVM v0.4 executor line and keeps v0.2 for existing contracts. Contracts deployed before the upgrade stay on v0.2, unchanged v0.2 code can still be deployed during a transition window, and moving a contract to v0.4 means redeploying it at a new address. GenVM v0.3 is not part of this release: contracts deployed with a v0.3 runner on studio-dev stop working and must be redeployed on v0.4. See [GenVM Version Lines](/developers/genvm-version-lines) for how Studio picks the line for a new deploy, how to migrate, and how to fix `runner malformed`.
+
 ## Migrate fee submission
 
 On a fee-charging deployment, every deploy and write must carry a `FeesDistribution` and its quoted fee value. The recommended path is:
@@ -168,6 +172,7 @@ Use the SDK's `isSuccessful` helper or Transaction Kit's normalized outcome. Tra
 - Display deposit, consumed fees, and final refund as different values.
 - Require both successful status and execution result before showing an application action as complete.
 - Re-run profile tests whenever contract code, GenVM, Studio, or the fee policy changes.
+- Start new contracts on GenVM v0.4, and port any v0.2 code you still need to deploy before new v0.2 deploys close (deployed v0.2 contracts keep running after that); see [GenVM Version Lines](/developers/genvm-version-lines).
 
 <Callout type="warning">
 Studio-dev is a release-candidate environment and may reset. Move durable production-like testing to Bradbury only after the compatible v0.6 stack has been promoted there.
