@@ -1,0 +1,171 @@
+---
+description: "Defensive validation for LLM outputs in Intelligent Contracts: allowlists, range and schema checks, cross-checks, and fail-closed handling"
+---
+
+# Validating LLM Outputs
+
+import { Callout } from 'nextra-theme-docs'
+
+An LLM's output is untrusted input. Even with a carefully written prompt and `response_format="json"`, a model can return an unknown enum value, a number outside the expected range, a missing field, or a hallucinated fact — and your contract's deterministic logic will act on whatever it receives. Validate every LLM output in deterministic code **before** it touches contract state.
+
+The rule is simple: **never let a raw LLM value decide a state change.** Parse it, check it, and only then use it.
+
+## Validate After the Non-Deterministic Call
+
+Validation runs in deterministic code, after the non-deterministic call returns — so every validator performs the same checks on its own result and consensus still holds:
+
+```python
+def leader_fn():
+    prompt = f"""Review this proposal and respond as JSON:
+    {{"verdict": "approve|reject|needs_review", "score": 0-100, "reason": "..."}}
+
+    Proposal: {proposal_text}"""
+    return gl.nondet.exec_prompt(prompt, response_format="json")
+
+def validator_fn(leaders_res) -> bool:
+    if not isinstance(leaders_res, gl.vm.Return):
+        return False
+    mine = leader_fn()
+    theirs = leaders_res.calldata
+    # Compare only the decision fields. The free-text "reason" will
+    # differ between runs and must not break consensus.
+    return (
+        mine.get("verdict") == theirs.get("verdict")
+        and mine.get("score") == theirs.get("score")
+    )
+
+result = gl.vm.run_nondet_unsafe(leader_fn, validator_fn)
+
+# Deterministic validation happens HERE, after consensus,
+# before any state change:
+verdict = result.get("verdict")
+if verdict not in ("approve", "reject", "needs_review"):
+    raise ValueError("[EXPECTED] LLM returned an unknown verdict")
+```
+
+Do not put validation logic inside `leader_fn` or `validator_fn` in a way that changes what they return — the two functions must agree on the decision fields first, and the checks run on the agreed result.
+
+## Allowlist Enums, Don't Match Free Text
+
+When the LLM must pick one of a fixed set of outcomes, check membership in an explicit allowlist and reject anything else. Never match free text with `in` or substring checks — "approved-ish", "approve?" and "APPROVE" are all different strings, and a model that invents a fourth option ("escalate") must not slip through:
+
+```python
+ALLOWED_VERDICTS = ("approve", "reject", "needs_review")
+
+verdict = result.get("verdict")
+if verdict not in ALLOWED_VERDICTS:
+    raise ValueError(f"[EXPECTED] Unknown verdict: {verdict!r}")
+```
+
+## Range-Check Numbers
+
+Scores, amounts, and counts need bounds. A score of 250 on a 0–100 scale, a negative transfer amount, or a `null` where a number was expected are all signs the output cannot be trusted:
+
+```python
+score = result.get("score")
+if (
+    not isinstance(score, (int, float))
+    or isinstance(score, bool)
+    or not 0 <= score <= 100
+):
+    raise ValueError(f"[EXPECTED] Score outside 0-100: {score!r}")
+
+amount = result.get("amount")
+if (
+    isinstance(amount, bool)
+    or not isinstance(amount, (int, float))
+    or amount <= 0
+):
+    raise ValueError(f"[EXPECTED] Invalid amount: {amount!r}")
+```
+
+<Callout type="warning">
+    Never silently clamp or coerce a bad value into a good one (for example, forcing a score of 250 down to 100). A coerced value hides the fact that the model misbehaved, and different validators may coerce differently. Reject the output instead.
+</Callout>
+
+## Schema-Check the JSON Before Using It
+
+`response_format="json"` guarantees valid JSON, not the shape you asked for. Check that every required key exists and has the right type before reading any of them:
+
+```python
+def require_fields(data: dict, spec: dict) -> None:
+    for key, expected_type in spec.items():
+        value = data.get(key)
+        # bool is a subclass of int in Python, so True passes
+        # isinstance(True, int). Reject booleans explicitly wherever
+        # a number is expected.
+        if isinstance(value, bool) and expected_type in (
+            int,
+            float,
+            (int, float),
+        ):
+            raise ValueError(
+                f"[EXPECTED] Field {key!r} must be a number, not a boolean"
+            )
+        if not isinstance(value, expected_type):
+            raise ValueError(
+                f"[EXPECTED] Field {key!r} has wrong type: {type(value).__name__}"
+            )
+
+require_fields(result, {
+    "verdict": str,
+    "score": (int, float),
+    "reason": str,
+})
+```
+
+A small helper like this, reused across your contract's methods, catches missing and mistyped fields in one place.
+
+## Cross-Check High-Value Decisions
+
+For actions that move value or grant access, one LLM call is not enough evidence. Confirm the decision against a second, independent source — a web fetch, a second prompt with different wording, or an on-chain fact — and require agreement before proceeding:
+
+```python
+# Two independent judgments must agree before funds move.
+# Both prompts run inside one non-deterministic function, so the
+# whole pair is validated by consensus before it is used.
+def cross_check_fn():
+    first = gl.nondet.exec_prompt(prompt_a, response_format="json")
+    second = gl.nondet.exec_prompt(prompt_b, response_format="json")
+    return {"first": first, "second": second}
+
+def cross_check_validator(leaders_res) -> bool:
+    if not isinstance(leaders_res, gl.vm.Return):
+        return False
+    mine = cross_check_fn()
+    theirs = leaders_res.calldata
+    return (
+        mine["first"].get("verdict") == theirs["first"].get("verdict")
+        and mine["second"].get("verdict") == theirs["second"].get("verdict")
+    )
+
+checks = gl.vm.run_nondet_unsafe(cross_check_fn, cross_check_validator)
+
+if checks["first"].get("verdict") != checks["second"].get("verdict"):
+    raise ValueError("[EXPECTED] Independent checks disagree, aborting")
+```
+
+If the sources disagree, the safe outcome is to abort the transaction — not to pick the more convenient answer.
+
+## Fail Closed
+
+Every check above ends the same way: the transaction fails. That is the correct outcome. A validation failure means the contract cannot trust the data it was given, so it must do nothing rather than guess:
+
+- **Raise, don't default.** A fallback like `verdict = result.get("verdict", "approve")` turns every malformed output into an approval. The default must never be the permissive option.
+- **Use the `[EXPECTED]` prefix** for validation failures, so the error is treated as a deterministic business-logic failure, consistent across all nodes. See [Prompt & Data Techniques](/developers/intelligent-contracts/crafting-prompts) for the error-prefix convention.
+- **Log what was rejected.** Include the offending value in the error message (as above) so the failure is debuggable from transaction logs.
+
+## Checklist
+
+- [ ] Every LLM output is validated in deterministic code, after the non-deterministic call and before any state change
+- [ ] Enum decisions are checked against an explicit allowlist
+- [ ] Numbers are range-checked and type-checked; `null` and booleans are rejected where a number is expected
+- [ ] Required JSON fields and their types are verified with a shared helper
+- [ ] High-value actions require agreement from a second independent source
+- [ ] Validation failures raise an error — they never silently coerce a value or fall back to a permissive default
+
+## See Also
+
+- [Prompt Injection](/developers/intelligent-contracts/security-and-best-practices/prompt-injection) — restricting inputs and outputs to limit what a manipulated prompt can do
+- [Prompt & Data Techniques](/developers/intelligent-contracts/crafting-prompts) — structured JSON outputs, stable web data, and grounding LLM judgments with programmatic facts
+- [Equivalence Principle](/developers/intelligent-contracts/equivalence-principle) — how leader and validator agreement is established
