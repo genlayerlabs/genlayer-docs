@@ -10,7 +10,7 @@ The Staking Contract Guide explains how developers can interact directly with Ge
 To understand the concepts behind staking, including the epoch system, shares vs stake, validator selection weights, and reward distribution, see [Staking in GenLayer](/understand-genlayer-protocol/core-concepts/optimistic-democracy/staking).
 
 <Callout type="info">
-  For CLI-based staking operations (recommended for most users), see the [GenLayer CLI Staking Commands](/api-references/genlayer-cli#staking-operations). The CLI and [genlayer-js](/api-references/genlayer-js/staking) also build the operator key proof that joining requires.
+  For CLI-based staking operations (recommended for most users), see the [GenLayer CLI Staking Commands](/api-references/genlayer-cli/staking/staking). The CLI and [genlayer-js](/api-references/genlayer-js/staking) also build the operator key proof that joining requires. See [Delegating GEN](/developers/delegating-gen) for a CLI walkthrough for token holders.
 </Callout>
 
 Stake is denominated in GEN, the native token of GenLayer Chain, so staking calls send GEN as `msg.value`. The minimums, unbonding periods, and epoch durations below are current defaults that governance can change. Read the minimums from the Staking contract with `validatorMinStake()` and `delegatorMinStake()` instead of hardcoding them.
@@ -219,7 +219,7 @@ genStaking.delegatorExit(validatorWallet, sharesToExit);
 
 **Unbonding Timeline:**
 ```
-Epoch 5:     delegatorExit() called
+Epoch 5:     delegatorExit() called (active stake still earns epoch 5 rewards)
 Epochs 6-11: Locked period
 Epoch 12:    earliest delegatorClaim()
 ```
@@ -495,5 +495,6 @@ validatorWallet.validatorClaim();
 - [Staking Concepts](/understand-genlayer-protocol/core-concepts/optimistic-democracy/staking) - How staking works in GenLayer
 - [Unstaking](/understand-genlayer-protocol/core-concepts/optimistic-democracy/unstaking) - Unstaking process details
 - [Slashing](/understand-genlayer-protocol/core-concepts/optimistic-democracy/slashing) - Slashing penalties and conditions
-- [GenLayer CLI Staking Commands](/api-references/genlayer-cli#staking-operations) - CLI reference for staking
+- [GenLayer CLI Staking Commands](/api-references/genlayer-cli/staking/staking) - CLI reference for staking
 - [genlayer-js staking methods](/api-references/genlayer-js/staking) - SDK reference for staking
+- [Delegating GEN](/developers/delegating-gen) - Choose a validator, delegate, and withdraw GEN
