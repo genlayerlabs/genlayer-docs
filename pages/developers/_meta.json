@@ -1,5 +1,6 @@
 {
   "networks": "Networks & RPCs",
+  "testnet-bridge": "Testnet Bridge",
   "consensus-v06-migration": "Consensus v0.6 Migration",
   "intelligent-contracts": "Intelligent Contracts",
   "decentralized-applications": "Frontend & SDK Integration",
