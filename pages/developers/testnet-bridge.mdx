@@ -1,0 +1,203 @@
+---
+description: "Move test GEN between Ethereum Sepolia, Base Sepolia and GenLayer Chain Testnet with the testnet bridge at testnet.bridge.genlayer.com: routes, timing, wallets, the contracts and calls behind each route, and Hyperlane messaging from the testnet to Base Sepolia and Base mainnet."
+---
+
+import { Callout } from "nextra-theme-docs";
+
+# Testnet Bridge
+
+The testnet bridge at [testnet.bridge.genlayer.com](https://testnet.bridge.genlayer.com) moves test GEN between three chains:
+
+- **Ethereum Sepolia** (chain ID 11155111), where test GEN is an ERC-20 token;
+- **Base Sepolia** (chain ID 84532), where it is an ERC-20 token bridged from Sepolia;
+- **GenLayer Chain Testnet** (chain ID 4221), where it is the native currency. [Testnet Clarke and Testnet Bradbury](/developers/networks) both run on this chain, so GEN bridged here can be used on either.
+
+All three hold the same test GEN: the Base Sepolia token and native GEN on GenLayer Chain Testnet are both backed by GEN `0x424242424b68330CcFb022881d25a6acC29852ea` on Sepolia. Test GEN has no value.
+
+The page is a static site that runs in your browser. It uses each chain's own bridge contracts; it has no server of its own, and it never holds your GEN.
+
+<Callout type="info">
+  The first part of this page is for anyone moving test GEN. [For developers](#for-developers) lists every contract and call, for wallets, scripts and apps that bridge without the page.
+</Callout>
+
+---
+
+## Routes and timing
+
+| Route | Bridge | Time |
+|:--|:--|:--|
+| Sepolia → GenLayer Chain Testnet | GenLayer Chain bridge | Usually within 15 minutes |
+| GenLayer Chain Testnet → Sepolia | GenLayer Chain bridge | About an hour, then a claim on Sepolia |
+| Sepolia → Base Sepolia | Base bridge | About 3 minutes |
+| Base Sepolia → Sepolia | Base bridge | About 5 days: prove, then claim on Sepolia |
+| Base Sepolia → GenLayer Chain Testnet | Hyperlane | A few minutes |
+| GenLayer Chain Testnet → Base Sepolia | Hyperlane | A few minutes |
+
+The GenLayer Chain bridge is the chain's own Arbitrum Orbit bridge; the Base bridge is Base's standard OP Stack bridge. Hyperlane charges a flat **5 GEN** on top of the amount. The other routes charge only gas.
+
+When there is more than one way to get somewhere, the page shows each with its time and selects the fastest. For example, Base Sepolia → Sepolia through GenLayer Chain Testnet (Hyperlane, then GenLayer Chain's bridge) takes about an hour, where Base's own withdrawal takes about 5 days. You can choose either.
+
+---
+
+## Before you start
+
+- **Test GEN.** The [testnet faucet](https://testnet-faucet.genlayer.foundation) sends native GEN on GenLayer Chain Testnet. Bridge it to Sepolia or Base Sepolia from there.
+- **Gas on each chain you send from.** Sepolia ETH on Sepolia, Base Sepolia ETH on Base Sepolia. On GenLayer Chain Testnet, gas is paid in GEN, so keep a little back when you send.
+- **Gas for the follow-up steps.** Withdrawals to Sepolia end with a claim on Sepolia, and Base withdrawals also need a prove step there. Both cost Sepolia ETH.
+
+## Connect a wallet
+
+The page lists each browser wallet installed in your browser separately, so several wallets can be installed at once. It also connects:
+
+- **Ledger** directly over USB, in desktop Chrome, Edge or Brave. Contract calls need *Blind signing* turned on in the Ethereum app on the Ledger.
+- **Trezor** through Trezor Suite (the desktop app, or Suite's web pop-up).
+- **WalletConnect**, for mobile wallets, Ledger Wallet and Trezor Suite. A WalletConnect wallet can only sign on chains it approved for the connection; the page warns you before you start if a chain is missing.
+- **Safe**: open the page as a custom app in Safe\{Wallet\}. All transactions for a step go to the Safe as one batch, and the transfer starts once the owners sign and execute it.
+
+A Ledger or Trezor added to Rabby or MetaMask also works through that wallet.
+
+## Send GEN
+
+1. Choose **From** and **To**, and enter the amount.
+2. Check the route on the right. If there is more than one, pick one.
+3. Leave the recipient as your own address, or choose **Send to another address**. A different address must be confirmed before you can sign.
+4. Read the summary: what you send, what arrives, the recipient in full, every fee, and the time.
+5. Sign. Sending from Sepolia or Base Sepolia first asks you to approve the exact amount for the bridge contract, then to send.
+
+The transfer then appears under **Your transfers** with its status.
+
+<Callout type="warning">
+  Sending from a Safe: a Safe's address on one chain is usually not a Safe on another. The page only lets a Safe send to an address that has a contract on the destination chain. Choose a recipient you control there.
+</Callout>
+
+## Follow a transfer
+
+**Your transfers** shows each transfer's status and the next step, if there is one:
+
+- **Prove** (Base Sepolia → Sepolia): available once a dispute game on Sepolia covers the withdrawal, usually within an hour.
+- **Claim** (to Sepolia from Base Sepolia or GenLayer Chain Testnet): available once the waiting period ends. The page shows the expected time.
+- **Continue** (routes through another chain): when the first transfer arrives, the page fills in the next one for you to sign.
+
+Anyone can send the prove and claim transactions; the GEN always goes to the recipient.
+
+Transfers are saved in your browser only. On another device, or after clearing browser data, open **Find a transfer by its transaction hash**, choose the chain the transfer started on, and paste the hash.
+
+## Checks the page makes
+
+Every contract address is fixed in the page. When it loads, and again before you sign, the page checks each route on chain: that the contracts are linked to each other as expected, that the token mappings and owners are the expected ones, and, for Hyperlane, that the destination pool holds enough GEN. A route that fails a check is shown as closed, with the reason, and cannot be used. **Route checks** at the bottom of the page shows each result, and **Contracts this page uses** lists the addresses.
+
+---
+
+## For developers
+
+The same transfers can be made without the page. All amounts use 18 decimals.
+
+### Addresses
+
+**Ethereum Sepolia (11155111)**
+
+| Contract | Address |
+|:--|:--|
+| GEN (ERC-20) | `0x424242424b68330CcFb022881d25a6acC29852ea` |
+| GenLayer Chain Testnet Inbox (ERC-20 Inbox) | `0x0f76cf640B349bA9D66DB844CF420c138C43d49A` |
+| GenLayer Chain Testnet Bridge | `0x4F408768E4eC8Fffb55E84c9ac21801c088C183c` |
+| GenLayer Chain Testnet Rollup | `0x96cb416A3defB4Ec596e23806581Eb02f6def71a` |
+| GenLayer Chain Testnet Outbox | `0x2e61FF852ECF20c5b4964C283eA20b07d7ea27Ff` |
+| Base Sepolia L1StandardBridge | `0xfd0Bf71F60660E2f608ed56e1659C450eB113120` |
+| Base Sepolia OptimismPortal | `0x49f53e41452C74589E85cA1677426Ba426459e85` |
+| Base Sepolia DisputeGameFactory | `0xd6E6dBf4F7EA0ac412fD8b65ED297e64BB7a06E1` |
+
+**Base Sepolia (84532)**
+
+| Contract | Address |
+|:--|:--|
+| GEN (OptimismMintableERC20, `remoteToken` = Sepolia GEN) | `0x11D020691eA5E7c3e3C681d14Eb4e82Acd04F571` |
+| L2StandardBridge | `0x4200000000000000000000000000000000000010` |
+| Hyperlane GEN route (collateral pool) | `0xCB3A198F68d560C96383B076AfdB079538737A1E` |
+| Hyperlane Mailbox | `0x6966b0E55883d49BFB24539356a2f8A673E02039` |
+
+**GenLayer Chain Testnet (4221)**
+
+| Contract | Address |
+|:--|:--|
+| GEN | Native currency, no token contract |
+| `ArbSys` | `0x0000000000000000000000000000000000000064` |
+| `NodeInterface` | `0x00000000000000000000000000000000000000C8` |
+| Hyperlane GEN route (native pool) | `0xCB3A198F68d560C96383B076AfdB079538737A1E` |
+| Hyperlane Mailbox | `0x6Ee210B4c78D03cE422da56ccfA7f89e7bCfDc38` |
+
+Hyperlane domain IDs are `84532` (Base Sepolia) and `4221` (GenLayer Chain Testnet).
+
+### Sepolia ↔ GenLayer Chain Testnet
+
+GenLayer Chain Testnet is an Arbitrum Orbit chain that settles to Sepolia, with GEN as its gas token. See [GenLayer Chain integration](/understand-genlayer-protocol/core-concepts/rollup-integration) for how deposits and withdrawals work.
+
+**Deposit (Sepolia → GenLayer Chain Testnet)**
+
+1. `GEN.approve(Inbox, amount)` on Sepolia. The Inbox pulls the GEN; approve the Inbox, not the Bridge.
+2. `Inbox.depositERC20(amount)`. The same address is credited with native GEN on GenLayer Chain Testnet; no ticket needs redeeming.
+
+`depositERC20` credits the sender's own address. When the sender is a contract, that is the contract's *aliased* address on GenLayer Chain Testnet, which the contract may not control. To credit a different address, or when sending from a contract, use `Inbox.createRetryableTicket(to, l2CallValue, maxSubmissionCost, excessFeeRefundAddress, callValueRefundAddress, gasLimit, maxFeePerGas, tokenTotalFeeAmount, data)` with `tokenTotalFeeAmount` equal to the GEN you send and `to` set to the recipient. Set both refund addresses to an address you control on GenLayer Chain Testnet. Unused gas is refunded to `excessFeeRefundAddress`. If the ticket fails, the GEN goes to `callValueRefundAddress`, which is also the only address that can cancel the ticket. A refund address that has code on Sepolia is replaced by its aliased address, so don't use a Sepolia contract's address, or a recipient contract's, as a refund address.
+
+**Withdrawal (GenLayer Chain Testnet → Sepolia)**
+
+1. `ArbSys.withdrawEth(destination)` on GenLayer Chain Testnet, sending the GEN as `msg.value`. Keep the transaction hash, and read the `L2ToL1Tx` event from its receipt.
+2. Wait until an assertion containing the withdrawal is confirmed on Sepolia. The rollup's challenge period is 60 Sepolia blocks (`confirmPeriodBlocks`); with the time until the next assertion, a withdrawal is usually claimable within about an hour.
+3. Build the proof with `NodeInterface.constructOutboxProof(size, leaf)` on GenLayer Chain Testnet, where `leaf` is the event's `position` and `size` is the send count of the confirmed assertion.
+4. Call `Outbox.executeTransaction(proof, index, l2Sender, to, l2Block, l1Block, l2Timestamp, value, data)` on Sepolia with the event's fields. Anyone can send it. `Outbox.isSpent(index)` tells you whether it has been claimed.
+
+### Sepolia ↔ Base Sepolia
+
+Base's standard bridge (OP Stack). GEN on Base Sepolia is an `OptimismMintableERC20` minted and burned by the L2StandardBridge.
+
+**Deposit (Sepolia → Base Sepolia)**
+
+1. `GEN.approve(L1StandardBridge, amount)` on Sepolia.
+2. `L1StandardBridge.depositERC20To(l1Token, l2Token, to, amount, minGasLimit, extraData)` with `l1Token` = Sepolia GEN, `l2Token` = Base Sepolia GEN, `minGasLimit` = `200000` and `extraData` = `0x`. Use `depositERC20To` rather than `depositERC20`: the latter accepts only externally owned accounts.
+
+**Withdrawal (Base Sepolia → Sepolia)**
+
+1. `L2StandardBridge.withdrawTo(l2Token, to, amount, minGasLimit, extraData)` on Base Sepolia. No approval is needed: the bridge burns the GEN.
+2. **Prove** on Sepolia once a dispute game covers the withdrawal's block: `OptimismPortal.proveWithdrawalTransaction`.
+3. **Finalize** after the games resolve (about 5 days in total): `OptimismPortal.finalizeWithdrawalTransactionExternalProof(tx, prover)`. This variant lets any account finalize a withdrawal proven by another.
+
+Base Sepolia's portal uses dispute game type 621, as Base mainnet does. viem's [OP Stack withdrawal actions](https://viem.sh/op-stack/guides/withdrawals) (`getWithdrawalStatus`, `buildProveWithdrawal`, `proveWithdrawal`, `finalizeWithdrawal`) work with it. Building the proof calls `eth_getProof` at an older Base Sepolia block; `https://sepolia.base.org` serves it, while some public RPCs refuse.
+
+### Base Sepolia ↔ GenLayer Chain Testnet (Hyperlane)
+
+A Hyperlane warp route with a GEN pool on each side: Base Sepolia GEN on Base Sepolia, native GEN on GenLayer Chain Testnet. Both pools use the same router address.
+
+1. Quote: `quoteTransferRemote(destination, recipient, amount)` returns `(token, amount)` pairs: the gas payment in native currency, and the GEN the route takes (the amount plus the 5 GEN fee).
+2. From Base Sepolia, `GEN.approve(router, amount + fee)`, then `router.transferRemote(4221, recipient, amount)`.
+3. From GenLayer Chain Testnet, `router.transferRemote(84532, recipient, amount)` with `msg.value` = the amount plus the fee (GEN is native there).
+
+`recipient` is the address left-padded to 32 bytes. Delivery depends on the destination pool: check that it holds at least the amount (the router's GEN balance on Base Sepolia, its native balance on GenLayer Chain Testnet). Track delivery with the `DispatchId` event on the source Mailbox and `Mailbox.delivered(messageId)` on the destination.
+
+### Messages from GenLayer Chain Testnet (Hyperlane)
+
+Besides GEN transfers, GenLayer Chain Testnet has a Hyperlane Mailbox for sending arbitrary messages to Base Sepolia and to **Base mainnet**. It lets a contract on the testnet trigger something on Base, for example to test a cross-chain flow before mainnet. The bridge page does not use these routes; you call the Mailbox directly.
+
+| | GenLayer Chain Testnet → Base Sepolia | GenLayer Chain Testnet → Base mainnet |
+|:--|:--|:--|
+| Who can use it | Anyone | Permissioned: only receivers on the relayer's allow-list |
+| Destination domain | `84532` | `8453` |
+| Destination Mailbox | `0x6966b0E55883d49BFB24539356a2f8A673E02039` | `0xeA87ae93Fa0019a82A727bfd3eBd1cFCa8f64f1D` |
+| Security module for your receiver | `0x20952b72Cc55c6e16C90D29C9AACBD03eeF56C64` | `0x2309215DF907f87c28B4a439a1f2a6465CC8966a` |
+
+Source Mailbox on GenLayer Chain Testnet (domain `4221`): `0x6Ee210B4c78D03cE422da56ccfA7f89e7bCfDc38`. Dispatching costs only gas: `quoteDispatch` returns 0.
+
+1. On GenLayer Chain Testnet, call `Mailbox.dispatch(destinationDomain, recipient, body)`, with `recipient` your Base contract's address left-padded to 32 bytes.
+2. On Base, your contract implements `handle(uint32 origin, bytes32 sender, bytes body)` and accepts calls only from the Mailbox.
+3. Your contract's `interchainSecurityModule()` must return the security module in the table. Base's default module does not know domain 4221, so without it the message cannot be verified. The module checks the GenLayer Foundation's validator signature and has a pause switch.
+
+The Foundation's relayer delivers the messages. Every receiver on Base Sepolia is delivered to; on Base mainnet, delivery costs real ETH, so only allow-listed receivers are delivered to. To have a Base mainnet receiver added, email [bridge@genlayer.foundation](mailto:bridge@genlayer.foundation) with its address and what it is for.
+
+<Callout type="warning">
+  These routes have a single validator and a pause switch: they are for testing, not for value. Do not let a Base mainnet contract hold or release anything of value on the strength of a message from the testnet, which can be reset.
+</Callout>
+
+Messages in the other direction, from Base Sepolia to GenLayer Chain Testnet, are relayed too, but the testnet Mailbox's default security module has no Base Sepolia route yet: a receiving contract on GenLayer Chain Testnet must set its own module.
+
+<Callout type="warning">
+  Use only these addresses, and verify the chain ID before you sign. GEN on Base Sepolia must report `remoteToken()` = Sepolia GEN, and the Orbit Bridge must report `nativeToken()` = Sepolia GEN. An Arbitrum Sepolia or other Orbit chain's bridge belongs to a different chain.
+</Callout>
